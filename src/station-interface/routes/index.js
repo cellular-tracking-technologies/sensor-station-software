@@ -15,6 +15,11 @@ const ConfigFileURI = '/etc/ctt/station-config.json'
 
 const router = express.Router()
 
+const ReadConfig = () => {
+  const contents = fs.readFileSync('/etc/ctt/station-config.json')
+  return JSON.parse(contents)
+}
+
 router.get('/', function (req, res, next) {
   res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
 })
@@ -106,6 +111,16 @@ router.get('/ctt-data-current', (req, res, next) => {
       next(err)
     })
   })
+})
+
+router.get('/file-updload-config', (req, res) => {
+  const station_config = ReadConfig()
+  res.json(station_config.upload)
+})
+
+router.get('/data-record-status', (req, res) => {
+  const station_config = ReadConfig()
+  res.json({ record: station_config.record.enabled })
 })
 
 router.get('/ctt-logfile', (req, res, next) => {
