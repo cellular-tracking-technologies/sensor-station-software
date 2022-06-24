@@ -36,4 +36,11 @@ sudo systemctl restart station-lcd-interface
 sudo systemctl restart station-radio-interface
 sudo systemctl restart station-web-interface
 
-
+# pull sensorgnome code updates
+dir="$home/sensorgnome/sensorgnome"
+cd $dir
+git stash
+git pull
+changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)" 
+check_run package.json "npm install"
+sudo systemctl restart sensorgnome

@@ -1,5 +1,5 @@
-import RunCommand from '../command.js'
+import fs from 'fs'
 
 export default async () => {
-  return RunCommand('station-id')
+  return fs.readFileSync('/etc/ctt/station-id').toString().trim()
 }
