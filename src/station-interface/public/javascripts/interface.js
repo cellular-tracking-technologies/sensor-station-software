@@ -312,7 +312,7 @@ const format_beep = function (beep) {
         node_id = beep.meta.source.id;
         rssi = beep.data.rssi;
         tag_id = beep.data.id;
-        tag_at = moment(new Date(beep.data.rec_at * 1000));
+        tag_at = moment(new Date(beep.data.rec_at * 1000)).utc();
       }
       if (beep.meta.data_type == 'coded_id') {
         rssi = beep.meta.rssi;
@@ -322,7 +322,7 @@ const format_beep = function (beep) {
       if (beep.meta.data_type == 'telemetry') {
         tag_id = beep.meta.source.id;
         rssi = beep.meta.rssi;
-        tag_at = moment(new Date(beep.data.time * 1000));
+        tag_at = moment(new Date(beep.data.time * 1000)).utc();
       }
     }
 
