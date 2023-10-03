@@ -1,17 +1,18 @@
 import SerialClient from './serial_client.js'
 import DfuManager from './dfu_manager.js'
+import EventEmitter from 'events'
 
 /**
  * @class 
  */
-class BluReceiverIo {
+class BluReceiverIo extends EventEmitter {
 
   #data
 
   /**
    * Command identifiers used for communicating with the serial receiver.
    */
-  commands = Object.freeze({
+  #commands = Object.freeze({
     VERSION: 1,
     DFU_START: 2,
     DFU_FRAGMENT: 3,
@@ -23,6 +24,7 @@ class BluReceiverIo {
   })
 
   constructor(opts) {
+    super()
     /** Initialize private data structure */
     this.#data = {
       detections: [],
@@ -35,26 +37,37 @@ class BluReceiverIo {
     }
 
     this.#data.usb.connect()
-    this.#data.usb.on('connect', (data) => {
+    this.#data.usb.on('open', (data) => {
       /** 
        * Power must be applied to the upstream device AFTER a usb connection 
        * has been established.
        */
       this.power_on()
+      /**
+       * Wait for the device to boot before sending commands
+       */
+      setTimeout(() => {
+        this.emit('open')
+      }, 1000)
+    })
+    this.#data.usb.on('close', (data) => {
+      this.emit('close')
     })
   }
+
   /**
    * 
    */
   power_off() {
-    this.#data.usb.dtr = true    
+    this.#data.usb.dtr = true
   }
   power_on() {
+    console.log('Booting Device...')
     this.#data.usb.dtr = false
   }
   reboot(channel) {
     this.send_command({
-      type: this.commands.REBOOT,
+      type: this.#commands.REBOOT,
       channel: channel,
       data: {}
     })
@@ -64,14 +77,14 @@ class BluReceiverIo {
         this.clear_send_timeout()
         try {
           let o = JSON.parse(data)
-          if (o.type === this.commands.REBOOT) {
+          if (o.type === this.#commands.REBOOT) {
             resolve({
               channel: o.channel
             })
             return true
           }
         } catch (e) {
-          reject()
+          reject(e)
           return true
         }
         return false
@@ -99,19 +112,23 @@ class BluReceiverIo {
    * @returns {Promise<VersionPromise>} resolve: {@link VersionResolveData} reject: {@link VersionRejectData}
    */
   version(channel) {
-
-    this.send_command({
-      type: this.commands.VERSION,
-      channel: channel,
-      data: {}
-    })
-
     return new Promise((resolve, reject) => {
+
+      this.send_command({
+        type: this.#commands.VERSION,
+        channel: channel,
+        data: {}
+      })
+
+      let timeout = setTimeout(() => {
+        reject('timeout')
+      }, 250)
+
       this.addSelfDestructingEventListener('line', (data) => {
-        this.clear_send_timeout()
+        clearTimeout(timeout);
         try {
           let o = JSON.parse(data)
-          if (o.type === this.commands.VERSION) {
+          if (o.type === this.#commands.VERSION) {
             resolve({
               channel: o.channel,
               app: o.data.app,
@@ -119,8 +136,8 @@ class BluReceiverIo {
             })
             return true
           }
-        } catch (e) {          
-          reject()
+        } catch (e) {
+          reject(e)
           return true
         }
         return false
@@ -129,7 +146,7 @@ class BluReceiverIo {
   }
   /**
    * 
-   * @param {Number} channel Radio Channel 
+   * @param {Number} channel Radio Channel
    * @param {Number} opts.data.channel Led Channel {Logo|Beep}
    * @param {Number} opts.data.state Desired Led State {Blink|On|Off}
    * @param {Number} opts.data.blink_rate_ms Rate at which the LED blinks [milliseconds]
@@ -149,7 +166,7 @@ class BluReceiverIo {
    */
   led(channel, opts) {
     this.send_command({
-      type: this.commands.LEDS,
+      type: this.#commands.LEDS,
       channel: channel,
       data: {
         channel: opts.channel,
@@ -160,11 +177,16 @@ class BluReceiverIo {
     })
 
     return new Promise((resolve, reject) => {
+
+      let timeout = setTimeout(() => {
+        reject('timeout')
+      }, 250)
+
       this.addSelfDestructingEventListener('line', (data) => {
-        this.clear_send_timeout()
+        clearTimeout(timeout);
         try {
           let o = JSON.parse(data)
-          if (o.type !== this.commands.LEDS) { return false }
+          if (o.type !== this.#commands.LEDS) { return false }
 
           resolve({
             channel: o.channel,
@@ -173,7 +195,7 @@ class BluReceiverIo {
 
           return true
         } catch (e) {
-          reject()
+          reject(e)
           return true
         }
       })
@@ -187,39 +209,52 @@ class BluReceiverIo {
    * @returns {Promise} 
    */
   dfu(channel, file) {
-    this.send_command(this.#data.dfu.start(this.commands.DFU_START, {
+    this.send_command(this.#data.dfu.start(this.#commands.DFU_START, {
       channel,
       file,
     }))
 
     return new Promise((resolve, reject) => {
+
+      let timeout = setTimeout(() => {
+        reject('timeout')
+      }, 250)
+
       this.addSelfDestructingEventListener('line', (data) => {
-        this.clear_send_timeout()
+        clearTimeout(timeout);
 
         try {
           let o = JSON.parse(data)
           switch (o.type) {
-            case this.commands.DFU_START:
-              this.send_command(this.#data.dfu.fragment(this.commands.DFU_FRAGMENT))
+            case this.#commands.DFU_START:
+              this.send_command(this.#data.dfu.fragment(this.#commands.DFU_FRAGMENT))
+              timeout = setTimeout(() => {
+                reject('timeout')
+              }, 250)
+
               break
-            case this.commands.DFU_FRAGMENT:
+            case this.#commands.DFU_FRAGMENT:
               if (this.#data.dfu.end_of_fragments()) {
-                this.send_command(this.#data.dfu.finish(this.commands.DFU_FINISH))
+                this.send_command(this.#data.dfu.finish(this.#commands.DFU_FINISH))
               } else {
-                this.send_command(this.#data.dfu.fragment(this.commands.DFU_FRAGMENT))
+                this.send_command(this.#data.dfu.fragment(this.#commands.DFU_FRAGMENT))
               }
+              timeout = setTimeout(() => {
+                reject('timeout')
+              }, 250)
+
               break
-            case this.commands.DFU_FINISH:
-            case this.commands.DFU_CANCEL:
+            case this.#commands.DFU_FINISH:
+            case this.#commands.DFU_CANCEL:
               resolve({
                 channel: o.channel,
                 error: 'none',
-              }) 
+              })
               return true
           }
 
         } catch (e) {
-          reject()
+          reject(e)
           return true
         }
 
@@ -234,22 +269,27 @@ class BluReceiverIo {
    */
   poll_detections(channel) {
     this.send_command({
-      type: this.commands.DETECTIONS,
+      type: this.#commands.DETECTIONS,
       channel: channel,
       data: {}
-    }, 1000)
+    })
 
     return new Promise((resolve, reject) => {
       let detections = []
+
+      let timeout = setTimeout(() => {
+        reject('timeout')
+      }, 1000)
+
       this.addSelfDestructingEventListener('line', (data) => {
 
-        this.clear_send_timeout()
         try {
           let o = JSON.parse(data)
-          if (o.type !== this.commands.DETECTIONS) { return false }
+          if (o.type !== this.#commands.DETECTIONS) { return false }
 
           /** Device has no more detections when it responds with an empty data object */
           if (Object.keys(o.data).length === 0) {
+            clearTimeout(timeout)
             resolve(detections)
             return true
           } else {
@@ -270,7 +310,8 @@ class BluReceiverIo {
           }
 
         } catch (e) {
-          reject()
+          clearTimeout(timeout)
+          reject(e)
           return true
         }
       })
@@ -292,17 +333,8 @@ class BluReceiverIo {
     };
     this.#data.usb.on(eventType, this.handler);
   };
-  clear_send_timeout() {
-    clearTimeout(this.#data.timeout);
-    this.#data.timeout = null
-  }
-  send_command(command, timeout = 250) {
-    if (this.#data.timeout !== null) {
-      throw new Error('Command Already in Progress');
-    }
-    this.#data.timeout = setTimeout(() => {
-      console.log(`Timeout: ${JSON.stringify(command)}`)
-    }, timeout)
+
+  send_command(command) {
     this.#data.usb.write_line(JSON.stringify(command))
   }
 }

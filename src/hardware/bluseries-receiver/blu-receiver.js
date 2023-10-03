@@ -13,12 +13,20 @@ class BluReceiver extends EventEmitter {
   #data
   constructor(opts) {
     super()
-    console.log('creating bui receiver object', opts)
     this.#data = {
       io: new BluReceiverIo({ path: opts.path }),
       queue: [],
-      processing: false
+      processing: false,
+      connected: false
     }
+
+    this.#data.io.on('open', () => {
+      this.#data.connected = true
+      this.run_schedule()
+    })
+    this.#data.io.on('close', () => {
+      this.#data.connected = false
+    })
   }
   /**
    * 
@@ -33,7 +41,10 @@ class BluReceiver extends EventEmitter {
       this.run_schedule()
     }
   }
-  run_schedule() {
+  async run_schedule() {
+    if (this.#data.connected === false) {
+      return
+    }
     if (this.#data.queue.length === 0) {
       this.#data.processing = false
       return
@@ -43,30 +54,28 @@ class BluReceiver extends EventEmitter {
 
     switch (job.task) {
       case BluReceiverTask.VERSION:
-        this.#data.io.version(job.channel).then((res) => {    
 
+        try {
+          const { app, version } = await this.#data.io.version(job.channel)
           this.finalize({
             task: BluReceiverTask.VERSION,
             channel: job.channel,
             error: null,
             data: {
-              app: res.app,
-              version: res.version
+              app,
+              version
             }
           })
-
-        }).catch((err) => {
-
+        } catch (e) {
           this.finalize({
             task: BluReceiverTask.VERSION,
             channel: job.channel,
-            error: err,
+            error: e,
             data: null
           })
-
-        }).finally(() => {
+        } finally {
           this.run_schedule()
-        })
+        }
 
         break
       case BluReceiverTask.DETECTIONS:
