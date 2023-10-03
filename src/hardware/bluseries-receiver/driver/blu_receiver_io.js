@@ -129,7 +129,7 @@ class BluReceiverIo {
   }
   /**
    * 
-   * @param {Number} channel Radio Channel
+   * @param {Number} channel Radio Channel 
    * @param {Number} opts.data.channel Led Channel {Logo|Beep}
    * @param {Number} opts.data.state Desired Led State {Blink|On|Off}
    * @param {Number} opts.data.blink_rate_ms Rate at which the LED blinks [milliseconds]
