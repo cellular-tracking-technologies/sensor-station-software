@@ -116,11 +116,12 @@ class BluReceiver extends EventEmitter {
    * @param {Object} opts.data
    */
   finalize(opts) {
+    const { task, channel, error, data } = opts
     this.emit('complete', {
-      task: opts.task,
-      channel: opts.channel,
-      error: opts.error,
-      data: opts.data
+      task,
+      channel,
+      error,
+      data,
     })
   }
 }
