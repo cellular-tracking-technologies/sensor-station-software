@@ -279,7 +279,7 @@ class BluReceiverIo extends EventEmitter {
 
       let timeout = setTimeout(() => {
         reject('timeout')
-      }, 1000)
+      }, 500)
 
       this.addSelfDestructingEventListener('line', (data) => {
 
@@ -287,10 +287,15 @@ class BluReceiverIo extends EventEmitter {
           let o = JSON.parse(data)
           if (o.type !== this.#commands.DETECTIONS) { return false }
 
+          clearTimeout(timeout)
+          timeout = setTimeout(() => {
+            reject({ error: 'timeout', data: detections })
+          }, 500)
+
           /** Device has no more detections when it responds with an empty data object */
           if (Object.keys(o.data).length === 0) {
             clearTimeout(timeout)
-            resolve(detections)
+            resolve({ error: e, data: detections })
             return true
           } else {
 
@@ -311,7 +316,7 @@ class BluReceiverIo extends EventEmitter {
 
         } catch (e) {
           clearTimeout(timeout)
-          reject(e)
+          reject({ error: e, data: detections })
           return true
         }
       })

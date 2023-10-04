@@ -79,18 +79,31 @@ class BluReceiver extends EventEmitter {
 
         break
       case BluReceiverTask.DETECTIONS:
-        this.#data.io.poll_detections(job.channel).then((res) => {
 
+        try {
+
+          const { data } = await this.#data.io.poll_detections(job.channel)
           this.finalize({
             task: BluReceiverTask.DETECTIONS,
             channel: job.channel,
             error: null,
-            data: res
+            data,
           })
 
-        }).catch((err) => {
-          console.log(err)
-        }).finally(() => { this.run_schedule() })
+        } catch (e) {
+
+          const { error, data } = e
+          this.finalize({
+            task: BluReceiverTask.DETECTIONS,
+            channel: job.channel,
+            error,
+            data,
+          })
+
+        } finally {
+          this.run_schedule()
+        }
+
         break
       case BluReceiverTask.DFU:
         this.#data.io.dfu(job.channel, job.data.file).then((res) => {
