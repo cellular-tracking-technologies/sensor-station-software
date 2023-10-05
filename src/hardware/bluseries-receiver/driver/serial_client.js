@@ -51,7 +51,7 @@ class SerialClient extends EventEmitter {
     this.port.write(buffer)
   }
   write_line(buffer) {
-    console.log("tx-> " + buffer)
+    // console.log("tx-> " + buffer)
     this.write(buffer + "\r\n")
   }
   /**

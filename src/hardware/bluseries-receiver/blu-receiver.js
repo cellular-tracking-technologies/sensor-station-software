@@ -7,6 +7,8 @@ class BluReceiverTask {
   static get LEDS() { return 3 }
   static get DFU() { return 4 }
   static get REBOOT() { return 5 }
+  static get CONFIG() { return 6 }
+  static get STATS() { return 7 }
 }
 
 class BluReceiver extends EventEmitter {
@@ -26,12 +28,13 @@ class BluReceiver extends EventEmitter {
     })
     this.#data.io.on('close', () => {
       this.#data.connected = false
+      process.exit()
     })
   }
   /**
    * 
    * @param {Number} opts.task For options, see BluReceiverTask
-   * @param {Number} opts.channel
+   * @param {Number} opts.radio_channel
    * @param {Number} opts.data
    */
   schedule(opts) {
@@ -56,10 +59,11 @@ class BluReceiver extends EventEmitter {
       case BluReceiverTask.VERSION:
 
         try {
-          const { app, version } = await this.#data.io.version(job.channel)
+          const { app, version } = await this.#data.io.version(job.radio_channel)
+
           this.finalize({
             task: BluReceiverTask.VERSION,
-            channel: job.channel,
+            radio_channel: job.radio_channel,
             error: null,
             data: {
               app,
@@ -69,7 +73,7 @@ class BluReceiver extends EventEmitter {
         } catch (e) {
           this.finalize({
             task: BluReceiverTask.VERSION,
-            channel: job.channel,
+            radio_channel: job.radio_channel,
             error: e,
             data: null
           })
@@ -82,10 +86,10 @@ class BluReceiver extends EventEmitter {
 
         try {
 
-          const { data } = await this.#data.io.poll_detections(job.channel)
+          const { data } = await this.#data.io.poll_detections(job.radio_channel)
           this.finalize({
             task: BluReceiverTask.DETECTIONS,
-            channel: job.channel,
+            radio_channel: job.radio_channel,
             error: null,
             data,
           })
@@ -95,7 +99,7 @@ class BluReceiver extends EventEmitter {
           const { error, data } = e
           this.finalize({
             task: BluReceiverTask.DETECTIONS,
-            channel: job.channel,
+            radio_channel: job.radio_channel,
             error,
             data,
           })
@@ -106,26 +110,143 @@ class BluReceiver extends EventEmitter {
 
         break
       case BluReceiverTask.DFU:
-        this.#data.io.dfu(job.channel, job.data.file).then((res) => {
-          console.log(res)
-        }).catch((err) => {
-          console.log(err)
-        }).finally(() => { this.run_schedule() })
+
+        try {
+          const data = await this.#data.io.dfu(job.radio_channel, job.data.file)
+
+          this.finalize({
+            task: BluReceiverTask.DFU,
+            radio_channel: job.radio_channel,
+            error: null,
+            data,
+          })
+
+        } catch (e) {
+
+          this.finalize({
+            task: BluReceiverTask.DFU,
+            radio_channel: job.radio_channel,
+            error,
+            data: {}
+          })
+
+        } finally {
+          this.run_schedule()
+        }
+
         break
       case BluReceiverTask.LEDS:
-        this.#data.io.led(job.channel, {
-          channel: job.data.channel,
-          state: job.data.state,
-          blink_rate_ms: job.data.blink_rate_ms,
-          blink_count: job.data.blink_count
-        }).then((res) => {
-          console.log(res)
-        }).catch((err) => {
-          console.log(err)
-        }).finally(() => { this.run_schedule() })
+
+        try {
+
+          const { led_channel, state, blink_rate_ms, blink_count } = job.data
+          await this.#data.io.led(job.radio_channel, {
+            channel: led_channel,
+            state,
+            blink_rate_ms,
+            blink_count
+          })
+
+          this.finalize({
+            task: BluReceiverTask.LEDS,
+            radio_channel: job.radio_channel,
+            error: null,
+            data: {},
+          })
+
+        } catch (e) {
+
+          this.finalize({
+            task: BluReceiverTask.LEDS,
+            radio_channel: job.radio_channel,
+            error: e,
+            data: {},
+          })
+
+        } finally {
+          this.run_schedule()
+        }
+
         break
       case BluReceiverTask.REBOOT:
+
+        try {
+          const data = await this.#data.io.reboot(job.radio_channel)
+
+          this.finalize({
+            task: BluReceiverTask.REBOOT,
+            radio_channel: job.radio_channel,
+            error: null,
+            data,
+          })
+
+        } catch (e) {
+
+          this.finalize({
+            task: BluReceiverTask.REBOOT,
+            radio_channel: job.radio_channel,
+            error: e,
+            data: null
+          })
+
+        } finally {
+          this.run_schedule()
+        }
+
         break
+      case BluReceiverTask.CONFIG:
+
+        try {
+
+          const data = await this.#data.io.config(job.radio_channel, job.data)
+
+          this.finalize({
+            task: BluReceiverTask.CONFIG,
+            radio_channel: job.radio_channel,
+            error: null,
+            data,
+          })
+
+        } catch (e) {
+
+          this.finalize({
+            task: BluReceiverTask.CONFIG,
+            radio_channel: job.radio_channel,
+            error: e,
+            data: null
+          })
+
+        } finally {
+          this.run_schedule()
+        }
+
+        break;
+      case BluReceiverTask.STATS:
+
+        try {
+          const data = await this.#data.io.stats(job.radio_channel)
+
+          this.finalize({
+            task: BluReceiverTask.STATS,
+            radio_channel: job.radio_channel,
+            error: null,
+            data,
+          })
+
+        } catch (e) {
+
+          this.finalize({
+            task: BluReceiverTask.STATS,
+            radio_channel: job.radio_channel,
+            error: e,
+            data: null
+          })
+
+        } finally {
+          this.run_schedule()
+        }
+
+        break;
       default:
         break
     }
@@ -138,10 +259,10 @@ class BluReceiver extends EventEmitter {
    * @param {Object} opts.data
    */
   finalize(opts) {
-    const { task, channel, error, data } = opts
+    const { task, radio_channel, error, data } = opts
     this.emit('complete', {
       task,
-      channel,
+      radio_channel,
       error,
       data,
     })

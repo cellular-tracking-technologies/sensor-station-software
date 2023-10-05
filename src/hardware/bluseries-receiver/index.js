@@ -3,7 +3,7 @@ import SerialClient from './driver/serial_client.js'
 import fs from 'fs'
 import Leds from './driver/leds.js'
 
-import {BluReceiver, BluReceiverTask} from './blu-receiver.js'
+import { BluReceiver, BluReceiverTask } from './blu-receiver.js'
 
 SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
 
@@ -17,62 +17,88 @@ SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
   driver.on('complete', (job) => {
     switch (job.task) {
       case BluReceiverTask.VERSION:
-        console.log(JSON.stringify(job))
+        console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
         break
       case BluReceiverTask.DETECTIONS:
-        console.log(JSON.stringify(job))
+        console.log(`BluReceiverTask.DETECTIONS ${job.data.length}`)
+        break
       case BluReceiverTask.DFU:
-        console.log(JSON.stringify(job))
+        console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
+        break
+      case BluReceiverTask.REBOOT:
+        console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
+        break
+      case BluReceiverTask.LEDS:
+        console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
+        break
+      case BluReceiverTask.CONFIG:
+        console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
+        break
+      case BluReceiverTask.STATS:
+        console.log(`BluReceiverTask.STATS ${JSON.stringify(job)}`)
+        break
       default:
         break
     }
   })
 
-  driver.schedule({task: BluReceiverTask.VERSION, channel: 1})
-  driver.schedule({task: BluReceiverTask.VERSION, channel: 2})
-  driver.schedule({task: BluReceiverTask.VERSION, channel: 3})
-  driver.schedule({task: BluReceiverTask.VERSION, channel: 4})
+  driver.schedule({ task: BluReceiverTask.VERSION, radio_channel: 1 })
+  driver.schedule({ task: BluReceiverTask.VERSION, radio_channel: 2 })
+  driver.schedule({ task: BluReceiverTask.VERSION, radio_channel: 3 })
+  driver.schedule({ task: BluReceiverTask.VERSION, radio_channel: 4 })
 
   driver.schedule({
-    task: BluReceiverTask.LEDS, channel: 1,
+    task: BluReceiverTask.LEDS, radio_channel: 1,
     data: {
-      channel: Leds.type.logo,
-      state: Leds.state.blink,
-      blink_rate_ms: 100,
-      blink_count: Leds.utils.forever
-  }})
-  driver.schedule({
-    task: BluReceiverTask.LEDS, channel: 2,
-    data: {
-      channel: Leds.type.logo,
+      led_channel: Leds.type.logo,
       state: Leds.state.blink,
       blink_rate_ms: 100,
       blink_count: Leds.utils.forever
     }
   })
   driver.schedule({
-    task: BluReceiverTask.LEDS, channel: 3,
+    task: BluReceiverTask.LEDS, radio_channel: 2,
     data: {
-      channel: Leds.type.logo,
+      led_channel: Leds.type.logo,
       state: Leds.state.blink,
       blink_rate_ms: 100,
       blink_count: Leds.utils.forever
     }
   })
   driver.schedule({
-    task: BluReceiverTask.LEDS, channel: 4,
+    task: BluReceiverTask.LEDS, radio_channel: 3,
     data: {
-      channel: Leds.type.logo,
+      led_channel: Leds.type.logo,
+      state: Leds.state.blink,
+      blink_rate_ms: 100,
+      blink_count: Leds.utils.forever
+    }
+  })
+  driver.schedule({
+    task: BluReceiverTask.LEDS, radio_channel: 4,
+    data: {
+      led_channel: Leds.type.logo,
       state: Leds.state.blink,
       blink_rate_ms: 100,
       blink_count: Leds.utils.forever
     }
   })
 
-  driver.schedule({ task: BluReceiverTask.DETECTIONS, channel: 1 })
+  driver.schedule({ task: BluReceiverTask.STATS, radio_channel: 1 })
+
+  driver.schedule({
+    task: BluReceiverTask.CONFIG, radio_channel: 1, data: {
+      rx_blink: true,
+      scan: true
+    }
+  })
+
+  setTimeout(() => {
+    driver.schedule({ task: BluReceiverTask.DETECTIONS, radio_channel: 1 })
+  }, 10000)
 
   // driver.schedule({
-  //   task: BluReceiverTask.DFU, channel: 1,
+  //   task: BluReceiverTask.DFU, radio_channel: 1,
   //   data: {
   //     file: fs.readFileSync('app_update_blink.bin')
   // }})
