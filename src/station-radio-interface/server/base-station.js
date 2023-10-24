@@ -199,7 +199,7 @@ class BaseStation {
             this.blu_reader.stopDetections(Number(cmd.data.channel))
             this.blu_reader.rebootBluReceiver(Number(cmd.data.channel))
             this.blu_reader.setBluConfig( Number(cmd.data.channel),{ scan: 1, rx_blink: 1,})
-            this.blu_reader.getDetections(Number(cmd.data.channel), Number(cmd.data.poll_interval))
+            this.blu_reader.getDetections(Number(cmd.data.channel), poll_interval)
           break
         case ('stats'):
           let stats = this.data_manager.stats.stats

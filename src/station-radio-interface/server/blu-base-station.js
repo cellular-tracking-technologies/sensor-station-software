@@ -140,9 +140,12 @@ class BluStation extends BluReceiver {
     // console.log('this detections dropped', this.detections.dropped)
     if(Object.keys(this.detections).includes(key)) {
       // if channel exists within detections object, do nothing
+      this.detections[key] = { polling: this.polling, dropped: this.dropped, }
+
     } else {
       // if channel does not exist, channel is added to object and its value as key and the setInterval as value
-      this.detections[key] = { polling: this.polling, dropped: this.dropped, }}
+      this.detections[key] = { polling: this.polling, dropped: this.dropped, }
+    }
 
     // this.detections.radio_channel = radio_channel
     console.log('this detections', this.detections)
