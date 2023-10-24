@@ -207,8 +207,13 @@ const initialize_controls = function () {
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       let radio_id = e.target.getAttribute('value');
-      let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' on?');
-      if (res) {
+      let res = window.prompt(`Turning on Radio ${radio_id} and setting polling interval as:`);
+      // if (res) {
+        res = Number(res)
+        console.log('polling res', res, typeof res)
+        if (isNaN(res) === true) {
+          window.alert('Invalid Input, please enter an integer (number with no decimals).')
+        } else {
         document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio On'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
@@ -216,6 +221,7 @@ const initialize_controls = function () {
           data: {
             type: 'blu_on',
             channel: radio_id,
+            poll_interval: res,
             scan: 1,
             rx_blink: 1,
           }

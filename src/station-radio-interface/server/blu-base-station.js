@@ -16,62 +16,12 @@ class BluStation extends BluReceiver {
     })
     this.data_manager = opts.data_manager
     this.broadcast = opts.broadcast
-    this.blu_radios = [1, 2, 3, 4]
+    // this.blu_radios = [1, 2, 3, 4]
     this.open_blu = []
     this.buffer_interval
-    this.detections = {}
-    this.polling
+    this.blu_radios = {}
+    this.beeps
     this.dropped
-
-
-    // console.log('bl broadcast', this.broadcast)
-
-    // this.on('complete', (job) => { // why does thsi need to be in the constructor
-    //   switch (job.task) {
-    //     case BluReceiverTask.VERSION:
-    //       console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
-    //       // console.log('Blu Receiver Version', job.data.version)
-    //       break
-    //     case BluReceiverTask.DETECTIONS:
-    //       if(job.data.length) {
-    //         console.log('Radio', job.radio_channel, 'has', job.data.length, 'detections')
-    //       }
-    //       job.data.forEach((beep) => {
-    //         beep.data = { id: beep.id }
-    //         beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
-    //         this.data_manager.handleBleBeep(beep)
-    //         beep.msg_type = "blu"
-    //         // beep.msg_type = "beep"
-    //         beep.protocol = "1.0.0"
-    //         beep.received_at = moment(new Date(beep.time)).utc()
-    //         // console.log('beep', beep)\
-    //         this.broadcast(JSON.stringify(beep))
-    //         // console.log('string beep', JSON.stringify(beep))
-    //       })
-    //       break
-    //     case BluReceiverTask.DFU:
-    //       console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
-    //       break
-    //     case BluReceiverTask.REBOOT:
-
-    //       console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
-    //       break
-    //     case BluReceiverTask.LEDS:
-    //       console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
-    //       // console.log('BluReceiverTask.LED', job)
-    //       break
-    //     case BluReceiverTask.CONFIG:
-    //       console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
-    //       break
-    //     case BluReceiverTask.STATS:
-    //       // console.log(`BluReceiverTask.STATS ${JSON.stringify(job)}`)
-    //       console.log('Radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
-    //       this.broadcast(JSON.stringify(job.data.det_dropped))
-    //       break
-    //     default:
-    //       break
-    //   }
-    // })
   }
 
   /**
@@ -130,40 +80,43 @@ class BluStation extends BluReceiver {
   getDetections(radio_channel, buffer_interval) {
     console.log('getting detections on radio', radio_channel, 'at', buffer_interval)
     const key = radio_channel.toString()
-    this.polling = setInterval(() => {
+    this.beeps = setInterval(() => {
       this.schedule({
         task: BluReceiverTask.DETECTIONS,
         radio_channel,
       })
     }, buffer_interval)
     this.getDroppedDetections(radio_channel, buffer_interval)
-    // console.log('this detections dropped', this.detections.dropped)
-    if(Object.keys(this.detections).includes(key)) {
+    // console.log('this detections dropped', this.blu_radios.dropped)
+    if(Object.keys(this.blu_radios).includes(key)) {
       // if channel exists within detections object, do nothing
-      this.detections[key] = { polling: this.polling, dropped: this.dropped, }
+      this.blu_radios[key] = { polling: this.beeps, dropped: this.dropped, }
 
     } else {
       // if channel does not exist, channel is added to object and its value as key and the setInterval as value
-      this.detections[key] = { polling: this.polling, dropped: this.dropped, }
+      this.blu_radios[key] = { polling: this.beeps, dropped: this.dropped, }
     }
 
-    // this.detections.radio_channel = radio_channel
-    console.log('this detections', this.detections)
-    // return this.detections.polling
-    return this.detections[key].polling
+    // this.blu_radios.radio_channel = radio_channel
+    console.log('this detections', this.blu_radios)
+    // return this.blu_radios.polling
+    return this.blu_radios[key].polling
   }
 
   startDetections() {
 
   }
+  /**
+   * @param {Number} radio_channel 
+   */
   stopDetections(radio_channel) {
     const key = radio_channel.toString()
-    console.log('stop detections key', key, this.detections[key])
-    // console.log('stop detections radio channel', this.detections.radio_channel, 'and ', radio_channel)
-    if(Object.keys(this.detections).includes(key)) {
-      clearInterval(this.detections[key].polling)
-      clearInterval(this.detections[key].dropped)
-      this.setBluConfig(Number(key),{ scan: 0, rx_blink: 0,})
+    console.log('stop detections key', key, this.blu_radios[key])
+    // console.log('stop detections radio channel', this.blu_radios.radio_channel, 'and ', radio_channel)
+    if(Object.keys(this.blu_radios).includes(key)) {
+      clearInterval(this.blu_radios[key].polling)
+      clearInterval(this.blu_radios[key].dropped)
+      this.setBluConfig(Number(key), { scan: 0, rx_blink: 0,})
       this.setLogoFlash(Number(key), {led_state: 0, blink_rate: 0,  blink_count: 0,})
     }
     
@@ -300,14 +253,20 @@ class BluStation extends BluReceiver {
 
   }
 
-  /**
-   * @param {Number} poll_interval Number of milliseconds between  
-   */
-  setPollInterval(poll_interval) {
-    buffer_interval = poll_interval
-    return buffer_interval
+  radioOn(radio_channel, buffer_interval) {
+    this.setLogoFlash(radio_channel, { led_state: 1, blink_rate: null, blink_count: null, })
+    this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1,})
+    this.getDetections(radio_channel, buffer_interval)
   }
 
+  radioOff(radio_channel) {
+    this.setLogoFlash(radio_channel, { led_state: 0, blink_rate: null, blink_count: null, })
+    this.setBluConfig(radio_channel, { scan: 0, rx_blink: 0,})
+    this.stopDetections(radio_channel)
+    let key = radio_channel.toString()
+    this.blu_radios[key] = null
+    console.log('active blu radios', this.blu_radios)
+  }
 }
 
 export { BluStation }

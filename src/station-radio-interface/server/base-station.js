@@ -161,12 +161,17 @@ class BaseStation {
         case ('toggle_blu'):
           console.log('blu radio button clicked', cmd)
           let blu_channel = Number(cmd.data.channel)
-          this.blu_reader.setBluConfig(
-            blu_channel,
-            {
-            scan: cmd.data.scan,
-            rx_blink: cmd.data.rx_blink,
-          })
+          if (cmd.data.type === 'blu_on') {
+            this.blu_reader.radioOn(blu_channel, cmd.data.poll_interval)
+          } else if (cmd.data.type === "blu_off") {
+            this.blu_reader.radioOff(blu_channel)
+          }
+          // this.blu_reader.setBluConfig(
+          //   blu_channel,
+          //   {
+          //   scan: cmd.data.scan,
+          //   rx_blink: cmd.data.rx_blink,
+          // })
           console.log('turning blu radio on/off')
           break
         case ('toggle_blu_led'):
