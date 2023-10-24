@@ -1,4 +1,9 @@
 import { RadioReceiver } from './radio-receiver.js'
+import { BluStation } from './blu-base-station.js'
+import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
+import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
+import SerialClient from '../../hardware/bluseries-receiver/driver/serial_client.js'
+
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
@@ -49,6 +54,7 @@ class BaseStation {
     this.heartbeat = heartbeats.createHeart(1000)
     this.server_api = new ServerApi()
     this.radio_fw = {}
+    this.blu_radios = [1,2,3,4]
   }
 
   /**
@@ -86,11 +92,34 @@ class BaseStation {
     this.log_filename = `sensor-station-${this.station_id}.log`
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
+    // declare blu_reader class here to use it in websocket
+    SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
+      console.log('instantiating receiver', port)
+      const { comName: path } = port
+      console.log(path)
+      // return path
+    }).catch((err) => {
+      console.log(err)
+    })
+
+    console.log('this blu path', this.blu_path)
+    this.blu_reader = new BluStation({
+      // path: this.blu_path,
+      // path: path,
+      path: '/dev/ttyUSB0',
+      data_manager: this.data_manager,
+      broadcast: this.broadcast,
+    })
+
+
+
     this.gps_client.start()
     this.stationLog('initializing base station')
     this.startWebsocketServer()
     this.startTimers()
     this.startRadios()
+
+    this.startBluRadios()
   }
 
   /**
@@ -129,9 +158,53 @@ class BaseStation {
             mode: cmd.data.type
           })
           break
+        case ('toggle_blu'):
+          console.log('blu radio button clicked', cmd)
+          let blu_channel = Number(cmd.data.channel)
+          this.blu_reader.setBluConfig(
+            blu_channel,
+            {
+            scan: cmd.data.scan,
+            rx_blink: cmd.data.rx_blink,
+          })
+          console.log('turning blu radio on/off')
+          break
+        case ('toggle_blu_led'):
+          console.log('blu radio button clicked', cmd)
+          // blu_channel = Number(cmd.data.channel)
+          this.blu_reader.setBluConfig(
+            Number(cmd.data.channel),
+            {
+            scan: cmd.data.scan,
+            rx_blink: cmd.data.rx_blink,
+          })
+          console.log('turning blu led on/off')
+          break
+        case ('reboot_blu_radio'):
+          console.log('blu radio button clicked', cmd)
+          // blu_channel = Number(cmd.data.channel)
+          this.blu_reader.rebootBluReceiver(Number(cmd.data.channel))
+          this.blu_reader.setBluConfig(
+            Number(cmd.data.channel),
+            {
+              scan: 1,
+              rx_blink: 1,
+            })
+          console.log('reboot blu receiver')
+          break
+        case ('change_poll'):
+            console.log('changing polling interval on Radio', cmd)
+            let poll_interval = Number(cmd.data.poll_interval)
+            console.log('poll interval', poll_interval, typeof poll_interval)
+            this.blu_reader.stopDetections(Number(cmd.data.channel))
+            this.blu_reader.rebootBluReceiver(Number(cmd.data.channel))
+            this.blu_reader.setBluConfig( Number(cmd.data.channel),{ scan: 1, rx_blink: 1,})
+            this.blu_reader.getDetections(Number(cmd.data.channel), Number(cmd.data.poll_interval))
+          break
         case ('stats'):
           let stats = this.data_manager.stats.stats
           stats.msg_type = 'stats'
+          // console.log('base station stats', JSON.stringify(stats.channels))
           this.broadcast(JSON.stringify(stats))
           break
         case ('checkin'):
@@ -237,9 +310,9 @@ class BaseStation {
   getRadioFirmware() {
     return Object.keys(this.radio_fw)
       .map((channel) => ({
-          channel: channel,
-          version: this.radio_fw[channel],
-        }))
+        channel: channel,
+        version: this.radio_fw[channel],
+      }))
   }
 
   /**
@@ -268,7 +341,7 @@ class BaseStation {
       .catch(err => {
         console.log('unable to toggle LEDs')
         console.error(err)
-       })
+      })
   }
 
   /**
@@ -312,7 +385,7 @@ class BaseStation {
     this.heartbeat.createEvent(this.config.data.record.rotation_frequency_minutes * 60, this.rotateDataFiles.bind(this))
     this.heartbeat.createEvent(this.config.data.record.sensor_data_frequency_minutes * 60, this.pollSensors.bind(this))
     this.heartbeat.createEvent(this.config.data.record.checkin_frequency_minutes * 60, this.checkin.bind(this))
-    
+
     this.heartbeat.createEvent(this.config.data.led.toggle_frequency_seconds, this.toggleLeds.bind(this))
     this.heartbeat.createEvent(this.config.data.record.alive_frequency_seconds, this.writeAliveMsg.bind(this))
     if (this.config.data.record.enabled === true) {
@@ -363,6 +436,7 @@ class BaseStation {
     console.log('starting radio receivers')
     this.stationLog('starting radio receivers')
     this.config.data.radios.forEach((radio) => {
+      // console.log('radio path', radio)
       if (radio.path) {
         let beep_reader = new RadioReceiver({
           baud_rate: 115200,
@@ -370,6 +444,7 @@ class BaseStation {
           channel: radio.channel
         })
         beep_reader.on('beep', (beep) => {
+          // console.log('beep', beep)
           this.data_manager.handleRadioBeep(beep)
           beep.msg_type = 'beep'
           this.broadcast(JSON.stringify(beep))
@@ -399,9 +474,122 @@ class BaseStation {
         })
         beep_reader.start(1000)
         this.active_radios[radio.channel] = beep_reader
-      }
-    })
+        
+      } // end of if(radio.path)
+    }) // end of config.data.radios for loop      
+  } // end of startRadios()
+
+  startBluRadios() {
+    console.log('blu receiver on')
+    // SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
+    //   console.log('instantiating receiver', port)
+    //   const { comName: path } = port
+    //   console.log(path)
+
+    //   let blu_reader = new BluStation({
+    //     path: path,
+    //     data_manager: this.data_manager,
+    //     broadcast: this.broadcast,
+    //   })
+
+      this.blu_reader.on('complete', (job) => {
+        switch (job.task) {
+          case BluReceiverTask.VERSION:
+            console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
+            break
+          case BluReceiverTask.DETECTIONS:
+            if(job.data.length) {
+              console.log('Radio', job.radio_channel, 'has', job.data.length, 'detections')
+            }
+            job.data.forEach((beep) => {
+              beep.data = { id: beep.id }
+              beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
+              this.data_manager.handleBluBeep(beep)
+              beep.msg_type = "blu"
+              beep.protocol = "1.0.0"
+              beep.received_at = moment(new Date(beep.time)).utc()
+              // beep.blu_channel = beep.channel
+              // beep.channel = undefined
+              // console.log('blu beep', beep)
+              this.broadcast(JSON.stringify(beep))
+              // console.log('string beep', JSON.stringify(beep))
+            })
+            break
+            // console.log(JSON.stringify(job))
+          case BluReceiverTask.DFU:
+            console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
+            break
+          case BluReceiverTask.REBOOT:
+            // console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
+            // this.setLogoFlash(radio_channel, 
+            //   { led_state: 2, blink_rate: 1000, blink_count: -1 })
+        
+            console.log('Blu Receiver is rebooting!', job.radio_channel)
+
+            break
+          case BluReceiverTask.LEDS:
+            console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
+            break
+          case BluReceiverTask.CONFIG:
+            console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
+            break
+          case BluReceiverTask.STATS:
+            if (job.data.det_dropped !== null) {
+            console.log('Radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
+            let blu_stats = { 
+              channel: job.radio_channel,
+              blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
+              msg_type: "blu_stats",
+            }
+            // this.broadcast(JSON.stringify(job.data.det_dropped))
+            this.broadcast(JSON.stringify(blu_stats))
+          }
+            break
+          default:
+            break
+        }
+      })
+      this.blu_reader.on('close', (job) => {
+        console.log('blu radio is closed', job)
+      })
+
+      console.log('blureader', this.blu_reader)
+
+      // blu_reader.startUpFlashIcon()
+
+      this.blu_radios.forEach((radio) => {
+        this.blu_reader.getBluVersion(radio)
+      })
+
+      this.blu_reader.setBluConfig(1, {scan: true, rx_blink: true})
+      this.blu_reader.setBluConfig(2, {scan: true, rx_blink: true})
+      this.blu_reader.setBluConfig(3, {scan: true, rx_blink: true})
+      this.blu_reader.setBluConfig(4, {scan: true, rx_blink: true})
+
+      // this.blu_reader.getDetections(1, 10000)
+      // this.blu_reader.getDroppedDetections(1, 10000)
+
+      // this.blu_reader.getDetections(2, 5000)
+      // this.blu_reader.getDroppedDetections(2, 5000)
+
+      // this.blu_reader.getDetections(3, 3000)
+      // this.blu_reader.getDroppedDetections(3,1000)
+
+      // this.blu_reader.getDetections(4, 1000)
+      // this.blu_reader.getDroppedDetections(4, 1000)
+
+      // setInterval(() => {
+        this.blu_radios.forEach((radio) => {
+          this.blu_reader.getDetections(radio, 10000)
+          // this.blu_reader.getDroppedDetections(radio, 10000)
+        })
+      // }, 10000)
+      
+    // }).catch((err) => {
+    //   console.log(err)
+    // })
   }
-}
+
+} // end of base station class
 
 export { BaseStation }

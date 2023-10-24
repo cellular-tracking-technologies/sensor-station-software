@@ -37,6 +37,7 @@ class RadioReceiver extends EventEmitter {
       ook: "preset:ooktag",
       version: "version",
     }
+    // console.log('build serial interface port', this.port_uri)
 
     this.pollFirmware = this.pollFirmware.bind(this)
   }
@@ -87,17 +88,21 @@ class RadioReceiver extends EventEmitter {
    * @param {*} data - write given data to the radio
    */
   write(data) {
-    console.log(`${moment(new Date()).utc().format('YYYY-MM-DD HH:mm:ss')} writing to radio ${this.channel}:  ${data.trim()}`)
-    // emit 'write' message  with data to write / channel
-    this.emit('write', {
-      msg: data.trim(),
-      channel: this.channel
-    })
-    this.serialport.write(data.trim() + '\r\n', function (err) {
-      if (err) {
-        this.emit('error', `error writing to radio ${this.data()} ${err.toString()}`)
-      }
-    })
+    if (data) { // data was coming in null...
+      console.log('radio receiver write data', data)
+      console.log(`${moment(new Date()).utc().format('YYYY-MM-DD HH:mm:ss')} writing to radio ${this.channel}:  ${data.trim()}`)
+      // emit 'write' message  with data to write / channel
+      this.emit('write', {
+        // msg: data.trim(),
+        msg: data,
+        channel: this.channel
+      })
+      this.serialport.write(data.trim() + '\r\n', function (err) {
+        if (err) {
+          this.emit('error', `error writing to radio ${this.data()} ${err.toString()}`)
+        }
+      })
+    }
   }
 
   /**

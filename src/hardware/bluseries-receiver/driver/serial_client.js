@@ -13,6 +13,7 @@ class SerialClient extends EventEmitter {
       baudRate: opts.baud ? opts.baud : 115200,
       autoOpen: false,
     })
+    console.log('baud rate', opts.baud)
 
     this.port.on('open', () => {
       console.log(`opened serial port ${this.port.path}; baud: ${this.port.baudRate}`)

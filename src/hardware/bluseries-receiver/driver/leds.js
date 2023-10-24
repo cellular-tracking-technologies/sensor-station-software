@@ -9,6 +9,7 @@ export default Object.freeze({
     blink: 2
   },
   utils: {
-    forever: -1
+    forever: -1,
+    config: 3,
   }
 })

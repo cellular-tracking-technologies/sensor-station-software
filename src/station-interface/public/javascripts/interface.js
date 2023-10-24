@@ -1,7 +1,10 @@
 let beeps = [];
+let blu_beeps = [];
 let tags = new Set();
 let nodes = {};
 let beep_hist = {};
+let beep_channels = [];
+const blu_stats = {};
 
 const DATE_FMT = 'YYYY-MM-DD HH:mm:ss';
 let socket;
@@ -201,6 +204,124 @@ const initialize_controls = function () {
       }
     });
   });
+  document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let radio_id = e.target.getAttribute('value');
+      let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' on?');
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio On'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu',
+          data: {
+            type: 'blu_on',
+            channel: radio_id,
+            scan: 1,
+            rx_blink: 1,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let radio_id = e.target.getAttribute('value');
+      let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' off?');
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Off'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu',
+          data: {
+            type: 'blu_off',
+            channel: radio_id,
+            scan: 0,
+            rx_blink: 0,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="toggle_radio_led_on"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let radio_id = e.target.getAttribute('value');
+      let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' LED On?');
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED On'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu_led',
+          data: {
+            type: 'led_on',
+            channel: radio_id,
+            scan: 1,
+            rx_blink: 1,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="toggle_radio_led_off"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let radio_id = e.target.getAttribute('value');
+      let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' LED Off?');
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED Off'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu_led',
+          data: {
+            type: 'led_off',
+            channel: radio_id,
+            scan: 1,
+            rx_blink: 0,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="reboot_blu_radio"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let radio_id = e.target.getAttribute('value');
+      let res = window.confirm('Are you sure you want to reboot Radio ' + radio_id+'?');
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Reboot Radio'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'reboot_blu_radio',
+          data: {
+            type: 'reboot_blu_radio',
+            channel: radio_id,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="radio_polling"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let radio_id = e.target.getAttribute('value');
+      let res = window.prompt('Enter polling interval in milliseconds (ms) for Radio ' + radio_id+
+      '.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
+      res = Number(res)
+      console.log('polling res', res, typeof res)
+      if (isNaN(res) === true) {
+        window.alert('Invalid Input, please enter an integer (number with no decimals).')
+        // res = 10000
+
+      } else {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Change Polling Interval'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'change_poll',
+          data: {
+            type: 'change_poll',
+            poll_interval: res,
+            channel: radio_id,
+          }
+        }));
+      }
+    });
+  });
   document.querySelector('#clear').addEventListener('click', (evt) => {
     clear();
   });
@@ -302,11 +423,21 @@ const initialize_controls = function () {
 };
 
 const format_beep = function (beep) {
+  // console.log('format beep', beep)
   if (beep.data) {
-    let tag_id, rssi, node_id, tag_at;
+    let tag_id, rssi, node_id, tag_at, blu_channel, data_type;
     let beep_at = moment(new Date(beep.received_at)).utc();
     tag_at = beep_at;
     if (beep.protocol) {
+      if (beep.meta.data_type == 'blu_tag') {
+        // console.log('blu tag is being formatted')
+        // blu_channel = beep.blu_channel;
+        blu_channel = beep.channel;
+        tag_id = beep.id;
+        rssi = beep.rssi;
+        tag_at = beep_at;
+        data_type = beep.meta.data_type
+      }
       // new protocol
       if (beep.meta.data_type == 'node_coded_id') {
         node_id = beep.meta.source.id;
@@ -325,11 +456,19 @@ const format_beep = function (beep) {
         tag_at = moment(new Date(beep.data.time * 1000)).utc();
       }
     }
-
+    // console.log('wtf is beep data', beep.data)
+    // console.log('blu channel', blu_channel)
     if (beep.data.tag) {
       tag_id = beep.data.tag.id;
       rssi = beep.rssi;
     }
+    // if (beep.data.blu_tag){
+    //   tag_id = beep.data.tag.id;
+    //   rssi = beep.rssi;
+    //   channel = null;
+    //   blu_channel = beep.blu_channel;
+    //   data_type = beep.meta.data_type;
+    // }
     if (beep.data.node_tag) {
       tag_id = beep.data.node_tag.tag_id;
       rssi = beep.data.node_beep.tag_rssi;
@@ -342,9 +481,13 @@ const format_beep = function (beep) {
       node_id: node_id,
       rssi: rssi,
       channel: beep.channel,
+      blu_channel: blu_channel,
       received_at: beep_at,
-      tag_at: tag_at
+      tag_at: tag_at,
+      data_type: data_type,
     }
+
+    // console.log('format beep data', data)
     return data
   }
 }
@@ -390,6 +533,7 @@ const format_node_health = function (msg) {
 
 
 const handle_beep = function (beep) {
+  // console.log('handle beep beep', beep)
   if (beep.protocol) {
     switch (beep.meta.data_type) {
       case 'coded_id':
@@ -402,6 +546,9 @@ const handle_beep = function (beep) {
         break;
       case 'telemetry':
         handle_tag_beep(format_beep(beep));
+        break;
+      case 'blu_tag':
+        handle_blu_beep(format_beep(beep));
         break;
       default:
         break;
@@ -417,7 +564,103 @@ const handle_beep = function (beep) {
     }
   }
 };
+
+const handle_blu_beep = function(beep) {
+  let tag_id = beep.tag_id;
+  // console.log('handle blu tag', beep)
+  document.querySelector('#blu-receiver').style.display = 'block'
+  let BLU_TABLE = document.querySelector('#blu-radio_' + beep.blu_channel);
+  // console.log('blu table', BLU_TABLE)
+
+  let tr = document.createElement('tr');
+  tr.style.border = "2px solid #22dd22"; // all blu beeps are validated so green outline
+  let td = document.createElement('td');
+  td.textContent = beep.tag_at.format(DATE_FMT);
+  // console.log('blu beep date', td.textContent)
+  tr.appendChild(td);
+  let alias = localStorage.getItem(tag_id);
+  if (alias) {
+    tr.appendChild(createElement(alias));
+  } else {
+    tr.appendChild(createElement(tag_id));
+  }
+  tr.appendChild(createElement(beep.rssi));
+  tr.appendChild(createElement(beep.node_id));
+  // console.log('blu tr', tr)
+  // console.log('blu table', BLU_TABLE)
+
+  // remove last beep record if table exceeds max row count
+  // if (BLU_TABLE.children.length > MAX_ROW_COUNT) {
+  // if (BLU_TABLE.children.length > 1000) {
+  //   BLU_TABLE.removeChild(BLU_TABLE.lastElementChild)
+  // }
+  BLU_TABLE.insertBefore(tr, BLU_TABLE.firstChild.nextSibling);
+  // console.log('blu table 2', BLU_TABLE)
+  // console.log('blu table beep', beep)
+
+  blu_beeps.push(beep);
+  // console.log('blu table beeps', blu_beeps)
+
+  let beep_count = beep_hist[tag_id];
+  // console.log('beep count', beep_count)
+  if (tags.has(tag_id)) {
+    beep_hist[tag_id] += 1;
+    document.querySelector('#cnt_' + tag_id).textContent = beep_hist[tag_id];
+  } else {
+    beep_hist[tag_id] = 1;
+    tags.add(tag_id);
+    let TAG_TABLE = document.querySelector('#tags');
+    tr = document.createElement('tr');
+    td = createElement(tag_id);
+    tr.appendChild(td);
+    td = document.createElement('td');
+    td.setAttribute('id', 'cnt_' + tag_id);
+    td.textContent = beep_hist[tag_id];
+    tr.appendChild(td);
+    let input = document.createElement('input');
+    input.setAttribute('type', 'text');
+    input.setAttribute('class', 'form-input');
+    let alias = localStorage.getItem(tag_id);
+    if (alias) {
+      input.setAttribute('value', alias);
+    }
+    td = document.createElement('td');
+    td.appendChild(input);
+    tr.appendChild(td);
+    td = document.createElement('td');
+    let button = document.createElement('button');
+    button.setAttribute('class', 'btn btn-sm btn-primary tag-alias');
+    button.textContent = 'Update';
+    button.setAttribute('value', tag_id);
+    button.addEventListener('click', (evt) => {
+      let tag_id = evt.target.getAttribute('value');
+      let alias = evt.target.parentElement.previousSibling.firstChild.value;
+      localStorage.setItem(tag_id, alias);
+    });
+    td.appendChild(button);
+    tr.appendChild(td);
+
+    button = document.createElement('button');
+    button.setAttribute('class', 'btn btn-sm btn-danger');
+    button.textContent = 'Remove';
+    button.addEventListener('click', (evt) => {
+      x = evt;
+      let row = evt.target.parentElement.parentElement;
+      let tag_id = row.firstChild.firstChild.textContent
+      tags.delete(tag_id);
+      row.remove();
+    });
+    td = document.createElement('td');
+    td.appendChild(button);
+    tr.appendChild(td);
+
+    TAG_TABLE.appendChild(tr);
+    //TAG_TABLE.insertBefore(tr, TAG_TABLE.firstChild.nextSibling);
+  }
+}
+
 let DONGLES_ENABLED = false;
+// let BLU_ENABLED = false;
 let MAX_ROW_COUNT = 1000;
 
 const clip_beep_tables = function () {
@@ -434,8 +677,10 @@ const clip_beep_tables = function () {
 }
 
 const handle_tag_beep = function (beep) {
+  // console.log('handle tag beep', beep)
   let validated = false;
   let tag_id = beep.tag_id;
+
   if (tag_id.length > 8) {
     tag_id = tag_id.slice(0, 8);
     validated = true;
@@ -446,7 +691,8 @@ const handle_tag_beep = function (beep) {
       document.querySelector('#dongles').style.display = 'block'
     }
   }
-  let BEEP_TABLE = document.querySelector('#radio_' + beep.channel);
+
+  let BEEP_TABLE = document.querySelector('#radio_' + beep.channel); // creates table for individual beeps
   let tr = document.createElement('tr');
   if (validated == true) {
     tr.style.border = "2px solid #22dd22";
@@ -468,8 +714,10 @@ const handle_tag_beep = function (beep) {
   if (BEEP_TABLE.children.length > MAX_ROW_COUNT) {
     BEEP_TABLE.removeChild(BEEP_TABLE.lastElementChild)
   }
+  // console.log('regular radio', BEEP_TABLE)
   BEEP_TABLE.insertBefore(tr, BEEP_TABLE.firstChild.nextSibling);
   beeps.push(beep);
+  // console.log('regular beeps', beeps)
   let beep_count = beep_hist[tag_id];
   if (tags.has(tag_id)) {
     beep_hist[tag_id] += 1;
@@ -525,8 +773,8 @@ const handle_tag_beep = function (beep) {
     TAG_TABLE.appendChild(tr);
     //TAG_TABLE.insertBefore(tr, TAG_TABLE.firstChild.nextSibling);
   }
-
 };
+
 const createElement = function (text) {
   let td = document.createElement('td');
   td.textContent = text;
@@ -534,14 +782,18 @@ const createElement = function (text) {
 };
 
 const handle_stats = function (stats) {
+  console.log('handle stats', stats)
   let record;
   let reports = {};
   let received_at, old_received_at;
   let n = 0;
   let channel_stats = {}
+  if (stats.channels){
 
+  
   Object.keys(stats.channels).forEach(function (channel) {
     let channel_data = stats.channels[channel];
+    console.log('handle stats channel data', channel_data)
     Object.keys(channel_data.nodes.health).forEach(function (node_id) {
       record = channel_data.nodes.health[node_id];
       received_at = moment(record.Time);
@@ -557,7 +809,7 @@ const handle_stats = function (stats) {
       }
     });
     n = 0;
-    let beeps, node_beeps, telemetry_beeps;
+    let beeps, node_beeps, telemetry_beeps, blu_beeps;
     Object.keys(channel_data.beeps).forEach(function (tag_id) {
       n += channel_data.beeps[tag_id];
     });
@@ -572,29 +824,88 @@ const handle_stats = function (stats) {
       n += channel_data.telemetry[tag_id];
     });
     telemetry_beeps = n;
+    n = 0;
+    Object.keys(channel_data.blu_beeps).forEach(function (tag_id) {
+      n += channel_data.blu_beeps[tag_id];
+    });
+    blu_beeps = n;
+    // console.log('handle channel stats blu beeps', blu_beeps)
+    // n = 0;
+    // Object.keys(channel_data.blu_dropped).forEach(function (tag_id)) {
+
     channel_stats[channel] = {
       beeps: beeps,
       node_beeps: node_beeps,
-      telemetry_beeps: telemetry_beeps
+      telemetry_beeps: telemetry_beeps,
+      blu_beeps: blu_beeps,
+      // blu_dropped: blu_dropped,
     };
+    
   });
+};
   nodes = reports;
+  console.log('handle stats channel stats', channel_stats)
+
   render_nodes(reports);
   render_channel_stats(channel_stats);
+  render_blu_stats(channel_stats);
 };
+
+const handle_blu_stats = function(stats) {
+
+  const { channel, blu_dropped } = stats
+  const key = channel.toString()
+  if(Object.keys(blu_stats).includes(key)) {
+    // if channel exists within blu stats object, add blu_dropped to existing value
+    blu_stats[key] += blu_dropped
+  } else {
+    // if channel does not exist, channel is added to object and its value is blu_dropped
+    blu_stats[key] = blu_dropped
+  }
+  
+  console.log('blu channel stats', blu_stats)
+  render_dropped_detections(blu_stats);
+
+}
 
 const render_channel_stats = function (channel_stats) {
   let beep_info, node_beep_info, telemetry_beep_info;
+  //blu_beep_info;
   Object.keys(channel_stats).forEach(function (channel) {
     beep_info = `#beep_count_${channel}`;
     node_beep_info = `#node_beep_count_${channel}`;
     telemetry_beep_info = `#telemetry_beep_count_${channel}`;
     let stats = channel_stats[channel];
+    console.log('render channel stats', stats)
     document.querySelector(beep_info).textContent = stats.beeps;
     document.querySelector(node_beep_info).textContent = stats.node_beeps;
     document.querySelector(telemetry_beep_info).textContent = stats.telemetry_beeps;
   });
 };
+
+const render_blu_stats = function (channel_stats) {
+  let blu_beep_info;
+    Object.keys(channel_stats).forEach(function (channel) {
+      blu_beep_info = `#blu_beep_count_${channel}`;
+      let stats = channel_stats[channel];
+      console.log('blu stats', blu_beep_info, stats)
+  if (stats.blu_beeps){
+      document.querySelector(blu_beep_info).textContent = stats.blu_beeps
+    };
+  });
+};
+
+
+const render_dropped_detections = function (blu_stats) {
+  let blu_stat_info;
+
+  Object.keys(blu_stats).forEach(function (channel) {
+    blu_stat_info = `#blu_dropped_count_${channel}`;
+    let stats_blu = blu_stats[channel];
+    console.log('render dropped detections', stats_blu)
+    document.querySelector(blu_stat_info).textContent = stats_blu;
+  })
+}
 
 const render_nodes = function (reports) {
   let NODE_TABLE = document.querySelector('#node-history');
@@ -755,13 +1066,22 @@ const initialize_websocket = function () {
     pollRadioFirmware();
   });
   socket.onmessage = function (msg) {
+    // console.log('message', msg);
     let data = JSON.parse(msg.data);
+    // console.log('data', data)
     let tr, td;
     switch (data.msg_type) {
       case ('beep'):
         handle_beep(data);
         break;
-
+      case ('blu'):
+        // console.log('blu tag')
+        handle_beep(data);
+        // handle_ble(data);
+        break;
+      case ('blu_stats'):
+        console.log('blu stats event')
+        handle_blu_stats(data);
       case ('stats'):
         handle_stats(data);
         break;
@@ -844,6 +1164,7 @@ const get_config = function () {
       let i = 0;
       let radio_id, value;
       contents.radios.forEach(function (radio) {
+        // console.log('radio', radio)
         i++;
         radio_id = "#config_radio_" + i;
         switch (radio.config[0]) {
@@ -975,15 +1296,147 @@ const build_radio_component = function (n) {
   return wrapper
 };
 
-const build_version_element = function(opts) {
-	let tr = document.createElement('tr')
-	let th = document.createElement('th')
-	th.textContent = opts.name
-	tr.appendChild(th)
-	let td = document.createElement('td')
-	td.textContent = opts.version
-	tr.appendChild(td)
-	return tr
+const build_blu_component = function (n) {
+  let wrapper = document.createElement('div')
+
+  let h2 = document.createElement('h2')
+  h2.setAttribute('style', 'text-align: center; color: #007FFF')
+  h2.textContent = 'Blu Radio ' + n
+  wrapper.appendChild(h2)
+  const version_label = document.createElement('span')
+  version_label.textContent = 'version:'
+  const firmware_version = document.createElement('span')
+  firmware_version.setAttribute('id', `radio-firmware-version-${n}`)
+  const firmware = document.createElement('div')
+  firmware.appendChild(version_label)
+  firmware.appendChild(firmware_version)
+  wrapper.appendChild(firmware)
+  let h5 = document.createElement('h5')
+  let span = document.createElement('span')
+  span.setAttribute('style', 'padding-right:5px;')
+  span.textContent = 'Current Mode:'
+  h5.appendChild(span)
+  span = document.createElement('span')
+  span.setAttribute('id', `config_radio_${n}`)
+  h5.appendChild(span)
+  wrapper.appendChild(h5)
+  let table = document.createElement('table')
+  table.setAttribute('class', 'table table-sm table-bordered table-dark')
+  table.setAttribute('id', `radio_stats_${n}`)
+  let row = build_row({ n: n, header: 'Beeps', id: `blu_beep_count_${n}` })
+  table.appendChild(row)
+  row = build_row({ n: n, header: 'Dropped Detections', id: `blu_dropped_count_${n}` })
+  table.appendChild(row)
+  row = build_row({ n: n, header: 'Nodes', id: `node_beep_count_${n}` })
+  table.appendChild(row)
+  row = build_row({ n: n, header: 'Telemetry', id: `telemetry_beep_count_${n}` })
+  table.appendChild(row)
+  wrapper.appendChild(table)
+  let div = document.createElement('div')
+  div.setAttribute('style', 'overflow:scroll; height:400px;')
+  table = document.createElement('table')
+  table.setAttribute('class', 'table table-sm table-bordered table-dark radio')
+  table.setAttribute('id', `blu-radio_${n}`)
+  tr = document.createElement('tr')
+  tr.setAttribute('class', 'table-primary')
+  tr.setAttribute('style', 'color:#111;')
+  th = document.createElement('th')
+  th.textContent = 'Time'
+  tr.appendChild(th)
+  th = document.createElement('th')
+  th.textContent = 'Tag ID'
+  tr.appendChild(th)
+  th = document.createElement('th')
+  th.textContent = 'RSSI'
+  tr.appendChild(th)
+  th = document.createElement('th')
+  th.textContent = 'Node'
+  tr.appendChild(th)
+  table.appendChild(tr)
+  div.appendChild(table)
+  wrapper.appendChild(div)
+
+  div = document.createElement('div')
+  div.setAttribute('class', 'row')
+
+  let col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  // let button = document.createElement('input')
+  // button.setAttribute('class', 'form-check-input')
+  // button.setAttribute('type', 'checkbox')
+  // button.setAttribute('role', 'switch')
+  // button.setAttribute('id', 'flexSwitchCheckChecked')
+  let button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'toggle_radio_on')
+  button.setAttribute('value', n)
+  button.textContent = 'Radio On'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'toggle_radio_off')
+  button.setAttribute('value', n)
+  button.textContent = 'Radio Off'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'toggle_radio_led_on')
+  button.setAttribute('value', n)
+  button.textContent = 'Radio LED On'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'toggle_radio_led_off')
+  button.setAttribute('value', n)
+  button.textContent = 'Radio LED Off'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'reboot_blu_radio')
+  button.setAttribute('value', n)
+  button.textContent = 'Reboot Radio'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+  wrapper.appendChild(div)
+
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'radio_polling')
+  button.setAttribute('value', n)
+  button.textContent = 'Change Polling Interval'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+  wrapper.appendChild(div)
+
+  return wrapper
+}
+const build_version_element = function (opts) {
+  let tr = document.createElement('tr')
+  let th = document.createElement('th')
+  th.textContent = opts.name
+  tr.appendChild(th)
+  let td = document.createElement('td')
+  td.textContent = opts.version
+  tr.appendChild(td)
+  return tr
 }
 
 const initialize_software_versions = function () {
@@ -992,22 +1445,22 @@ const initialize_software_versions = function () {
     .then((json) => {
       let table = document.querySelector('#meta')
       let tr
-			if (json.packages) {
-				json.packages.forEach((version) => {
-					tr = build_version_element({
-						name: version.name,
+      if (json.packages) {
+        json.packages.forEach((version) => {
+          tr = build_version_element({
+            name: version.name,
             version: version.version
-					})
-					table.appendChild(tr)
-				})
-			} 
-			if (json.version) {
-				tr = build_version_element({
-					name: 'System',
-					version: json.version
-				})
+          })
+          table.appendChild(tr)
+        })
+      }
+      if (json.version) {
+        tr = build_version_element({
+          name: 'System',
+          version: json.version
+        })
         table.appendChild(tr)
-			}
+      }
     })
     .catch((err) => {
       console.error('error getting software version')
@@ -1099,7 +1552,7 @@ const initialize_reboot = function () {
     })
 }
 
-const build_sg_tag_file_upload = function() {
+const build_sg_tag_file_upload = function () {
 
 }
 
@@ -1127,59 +1580,66 @@ const init_sg = () => {
           'file-extension': file_ext
         }
       }).then(res => res.json())
-      .then(json => {
-        if (json.res == true) {
-          alert('Tag database upload complete')
-        } else {
-          alert('invalid response for tag database upload')
-        }
-      }).catch((err) => {
-        console.error(err)
-        alert('An error occured attempting to upload the SG tag file database')
-      })
+        .then(json => {
+          if (json.res == true) {
+            alert('Tag database upload complete')
+          } else {
+            alert('invalid response for tag database upload')
+          }
+        }).catch((err) => {
+          console.error(err)
+          alert('An error occured attempting to upload the SG tag file database')
+        })
     }
   })
 }
 
-; (function () {
-  document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
-  render_gateway()
-  initialize_reboot()
-  setInterval(render_gateway, 5000)
-  let component, col
-  let max_row_count = localStorage.getItem('max-row-count')
-  if (max_row_count) {
-    MAX_ROW_COUNT = max_row_count
-  } else {
-    localStorage.setItem('max-row-count', MAX_ROW_COUNT)
-  }
-  initialize_software_versions()
-  for (let i = 1; i <= 5; i++) {
-    component = build_radio_component(i)
-    col = document.createElement('div')
-    col.classList.add('col-lg')
-    col.appendChild(component)
-    document.querySelector('#main-radios').appendChild(col)
-  }
-  for (let i = 6; i <= 12; i++) {
-    component = build_radio_component(i)
-    col = document.createElement('div')
-    col.classList.add('col-lg')
-    col.appendChild(component)
-    document.querySelector('#extra-radios').appendChild(col)
-  }
-  initialize_websocket();
-  initialize_controls();
-  get_config();
-  render_tag_hist();
-  RAW_LOG = document.querySelector('#raw_log');
-  updateChrony();
-  setInterval(updateChrony, 30000);
-  init_sg()
-  $.ajax({
-    url: '/sg-deployment',
-    success: function (contents) {
-      document.querySelector('#sg-deployment').value = contents;
+  ; (function () {
+    document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
+    render_gateway()
+    initialize_reboot()
+    setInterval(render_gateway, 5000)
+    let component, col
+    let max_row_count = localStorage.getItem('max-row-count')
+    if (max_row_count) {
+      MAX_ROW_COUNT = max_row_count
+    } else {
+      localStorage.setItem('max-row-count', MAX_ROW_COUNT)
     }
-  });
-})();
+    initialize_software_versions()
+    for (let i = 1; i <= 5; i++) {
+      component = build_radio_component(i)
+      col = document.createElement('div')
+      col.classList.add('col-lg')
+      col.appendChild(component)
+      document.querySelector('#main-radios').appendChild(col)
+    }
+    for (let i = 6; i <= 12; i++) {
+      component = build_radio_component(i)
+      col = document.createElement('div')
+      col.classList.add('col-lg')
+      col.appendChild(component)
+      document.querySelector('#extra-radios').appendChild(col)
+    }
+    for (let i = 1; i <= 4; i++) {
+      component = build_blu_component(i)
+      col = document.createElement('div')
+      col.classList.add('col-lg')
+      col.appendChild(component)
+      document.querySelector('#blu-radios').appendChild(col)
+    }
+    initialize_websocket();
+    initialize_controls();
+    get_config();
+    render_tag_hist();
+    RAW_LOG = document.querySelector('#raw_log');
+    updateChrony();
+    setInterval(updateChrony, 30000);
+    init_sg()
+    $.ajax({
+      url: '/sg-deployment',
+      success: function (contents) {
+        document.querySelector('#sg-deployment').value = contents;
+      }
+    });
+  })();

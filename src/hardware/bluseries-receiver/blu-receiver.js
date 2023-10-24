@@ -14,6 +14,7 @@ class BluReceiverTask {
 class BluReceiver extends EventEmitter {
   #data
   constructor(opts) {
+    console.log('blu receiver opts', opts)
     super()
     this.#data = {
       io: new BluReceiverIo({ path: opts.path }),

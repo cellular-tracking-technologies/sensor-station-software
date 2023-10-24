@@ -6,6 +6,7 @@ import { GpsFormatter } from './gps-formatter.js'
 import { NodeHealthFormatter } from './node-health-formatter.js'
 import { TelemetryFormatter } from './telemetry-formatter.js'
 import { BeepStatManager } from './beep-stat-manager.js'
+import { BluFormatter } from './blu-formatter.js'
 import moment from 'moment'
 
 /**
@@ -64,6 +65,13 @@ class DataManager {
         formatter: new TelemetryFormatter({
           date_format: this.date_format
         })
+      }),
+      blu: new Logger({
+        fileuri: this.file_manager.getFileUri('ble'), // getting same raw data as radio beeps and using conditionals
+        suffix: 'ble', // try ble suffix and if that doesn't work, switch to raw-data
+        formatter: new BluFormatter({
+          date_format: this.date_format
+        })
       })
     }
   }
@@ -96,6 +104,12 @@ class DataManager {
     if (beep.meta) {
       // expect new protocol
       switch (beep.meta.data_type) {
+        case 'blu_tag': {
+          record = this.loggers.blu.addRecord(beep)
+          this.stats.addBluBeep(record)
+          // this.stats.getDroppedDetections()
+          break
+        }
         case 'coded_id': {
           record = this.loggers.beep.addRecord(beep)
           this.stats.addBeep(record)
@@ -145,6 +159,17 @@ class DataManager {
    */
   handleGps(record) {
     this.loggers.gps.addRecord(record)
+  }
+
+    /**
+   * 
+   * @param {*} beep - BLU beep
+   */
+  handleBluBeep(beep){
+    let record
+      record = this.loggers.blu.addRecord(beep)
+      this.stats.addBluBeep(record)
+    // }
   }
 
   /**

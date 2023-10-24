@@ -17,16 +17,25 @@ SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
   driver.on('complete', (job) => {
     switch (job.task) {
       case BluReceiverTask.VERSION:
-        console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
+        console.log(`BluReceiverTask.VERSION ${JSON.stringify(job.data.version)}`)
         break
       case BluReceiverTask.DETECTIONS:
+        console.timeEnd('detect')
+        console.log(`detections, ${job.data.length}`)
+        console.log('job data', JSON.stringify(job.data))
         console.log(`BluReceiverTask.DETECTIONS ${job.data.length}`)
+
         break
+        // console.log(JSON.stringify(job))
       case BluReceiverTask.DFU:
         console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
         break
       case BluReceiverTask.REBOOT:
         console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
+        console.log('BluReceiverTask.REBOOT', job)
+        
+        console.log('Blu Receiver ', job.radio_channel, 'is rebooting', job.task, job.data)
+
         break
       case BluReceiverTask.LEDS:
         console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
@@ -93,8 +102,23 @@ SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
     }
   })
 
-  setTimeout(() => {
-    driver.schedule({ task: BluReceiverTask.DETECTIONS, radio_channel: 1 })
+  for(let i=0;i++;i <=4){
+    console.log('radio channel', i)
+    console.log(`BluReceiverTask.VERSION ${JSON.stringify(job.data.version)}`)
+    driver.schedule({
+      task: BluReceiverTask.REBOOT,
+      radio_channel: i,
+      // data,
+    })
+  }
+    
+  setInterval(() => {
+    for(let i=0;i++;i <=4){
+      console.log('radio channel', i)
+
+      driver.schedule({ task: BluReceiverTask.DETECTIONS, radio_channel: i })
+      driver.schedule({ task: BluReceiverTask.STATS, radio_channel: i})
+    }
   }, 10000)
 
   // driver.schedule({
