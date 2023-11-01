@@ -24,12 +24,15 @@ class BluReceiver extends EventEmitter {
     }
 
     this.#data.io.on('open', () => {
+      console.log('blu radio is opening')
       this.#data.connected = true
       this.run_schedule()
     })
     this.#data.io.on('close', () => {
+      console.log('blu radio is closing')
+
       this.#data.connected = false
-      process.exit()
+      process.exit(0)
     })
   }
   /**
@@ -72,6 +75,7 @@ class BluReceiver extends EventEmitter {
             }
           })
         } catch (e) {
+          console.log('get version error', e)
           this.finalize({
             task: BluReceiverTask.VERSION,
             radio_channel: job.radio_channel,
@@ -114,7 +118,7 @@ class BluReceiver extends EventEmitter {
 
         try {
           const data = await this.#data.io.dfu(job.radio_channel, job.data.file)
-
+          console.log('blu receiver dfu data', data)
           this.finalize({
             task: BluReceiverTask.DFU,
             radio_channel: job.radio_channel,

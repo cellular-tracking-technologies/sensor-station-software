@@ -3,6 +3,7 @@
 // import fs from 'fs'
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
+import fs from 'fs'
 import moment from 'moment'
 import EventEmitter from 'events'
 
@@ -10,14 +11,11 @@ import EventEmitter from 'events'
 // class BluStation {
 class BluStation extends BluReceiver {
   constructor(opts) {
-    // console.log('BluStation opts', opts)
     super({
       path: opts.path
     })
     this.data_manager = opts.data_manager
     this.broadcast = opts.broadcast
-    // this.blu_radios = [1, 2, 3, 4]
-    this.open_blu = []
     this.buffer_interval
     this.blu_radios = {}
     this.beeps
@@ -29,7 +27,6 @@ class BluStation extends BluReceiver {
    * @param {Number} radio_channel 
    */
   getBluVersion(radio_channel) {
-    console.log('get blu version radio channel', radio_channel)
     this.schedule({
       task: BluReceiverTask.VERSION,
       radio_channel: radio_channel,
@@ -41,18 +38,25 @@ class BluStation extends BluReceiver {
    * 
    * @param {Number} radio_channel 
    */
-  rebootBluReceiver(radio_channel) {
+  rebootBluReceiver(radio_channel, poll_interval) {
+    this.stopDetections(radio_channel)
     this.schedule({
       task: BluReceiverTask.REBOOT,
       radio_channel: radio_channel
     })
-    this.setBluConfig(radio_channel,
-      {
-        scan: 1,
-        rx_blink: 1,
-      })
-    // this.setLogoFlash(radio_channel,
-    //   { led_state: 0, blink_rate: 0, blink_count: 0 })
+
+    setTimeout(() => {
+      this.setBluConfig(radio_channel,
+        {
+          scan: 1,
+          rx_blink: 1,
+        })
+      this.getDetections(radio_channel, poll_interval)
+      this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
+      this.getBluVersion(radio_channel)
+      }, 10000)
+    // restart radio with poll interval of 10s
+    
   }
 
   /**
@@ -78,7 +82,6 @@ class BluStation extends BluReceiver {
    * @returns BLE tag detections
    */
   getDetections(radio_channel, buffer_interval) {
-    console.log('getting detections on radio', radio_channel, 'at', buffer_interval)
     const key = radio_channel.toString()
     this.beeps = setInterval(() => {
       this.schedule({
@@ -87,7 +90,6 @@ class BluStation extends BluReceiver {
       })
     }, buffer_interval)
     this.getDroppedDetections(radio_channel, buffer_interval)
-    // console.log('this detections dropped', this.blu_radios.dropped)
     if(Object.keys(this.blu_radios).includes(key)) {
       // if channel exists within detections object, do nothing
       this.blu_radios[key] = { polling: this.beeps, dropped: this.dropped, }
@@ -96,30 +98,21 @@ class BluStation extends BluReceiver {
       // if channel does not exist, channel is added to object and its value as key and the setInterval as value
       this.blu_radios[key] = { polling: this.beeps, dropped: this.dropped, }
     }
-
-    // this.blu_radios.radio_channel = radio_channel
-    console.log('this detections', this.blu_radios)
-    // return this.blu_radios.polling
     return this.blu_radios[key].polling
   }
 
-  startDetections() {
-
-  }
   /**
    * @param {Number} radio_channel 
    */
   stopDetections(radio_channel) {
     const key = radio_channel.toString()
-    console.log('stop detections key', key, this.blu_radios[key])
-    // console.log('stop detections radio channel', this.blu_radios.radio_channel, 'and ', radio_channel)
+    
     if(Object.keys(this.blu_radios).includes(key)) {
       clearInterval(this.blu_radios[key].polling)
       clearInterval(this.blu_radios[key].dropped)
       this.setBluConfig(Number(key), { scan: 0, rx_blink: 0,})
       this.setLogoFlash(Number(key), {led_state: 0, blink_rate: 0,  blink_count: 0,})
     }
-    
   }
   /**
  * 
@@ -151,17 +144,7 @@ class BluStation extends BluReceiver {
    * @returns 
    */
   setBluConfig(radio_channel, opts) {
-    this.setLogoFlash(radio_channel, { led_state: 0, blink_rate: null, blink_count: null })
     console.log('getbluconfigf opts', opts)
-    if (opts.scan == true || null) {
-      console.log('Radio', radio_channel, 'is on')
-      this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
-      this.open_blu.push(radio_channel)
-      // console.log('open blu radios', this.open_blu)
-    } else {
-      console.log('Radio', radio_channel, 'is off')
-      this.setLogoFlash(radio_channel, { led_state: 0, blink_rate: null, blink_count: null, })
-    }
 
     if (opts.rx_blink == true) {
       console.log('Radio', radio_channel, 'LED is on')
@@ -193,28 +176,7 @@ class BluStation extends BluReceiver {
     });
   }
 
-  async startUpFlashIcon() {
-    // startUpFlashIcon() {
-
-    this.setLogoFlash(1, { led_state: 0, blink_rate: 500, blink_count: 6, })
-    this.setLogoFlash(2, { led_state: 0, blink_rate: 500, blink_count: 6, })
-    this.setLogoFlash(3, { led_state: 0, blink_rate: 500, blink_count: 6, })
-    this.setLogoFlash(4, { led_state: 0, blink_rate: 500, blink_count: 6, })
-
-    // this.setLogoFlash(1, { led_state: 1, blink_rate: null, blink_count: null, }, 1000)
-    // this.setLogoFlash(2, { led_state: 1, blink_rate: null, blink_count: null, }, 1000)
-    // this.setLogoFlash(3, { led_state: 1, blink_rate: null, blink_count: null, }, 1000)
-    // this.setLogoFlash(4, { led_state: 1, blink_rate: null, blink_count: null, }, 1000)
-
-    // this.setLogoFlash(1, { led_state: 2, blink_rate: 500, blink_count: 6, })
-    // this.setLogoFlash(2, { led_state: 2, blink_rate: 500, blink_count: 6, })
-    // this.setLogoFlash(3, { led_state: 2, blink_rate: 500, blink_count: 6, })
-    // this.setLogoFlash(4, { led_state: 2, blink_rate: 500, blink_count: 6, })
-
-    // this.setLogoFlash(1, { led_state: 0, blink_rate: 500, blink_count: 6, })
-    // this.setLogoFlash(2, { led_state: 0, blink_rate: 500, blink_count: 6, })
-    // this.setLogoFlash(3, { led_state: 0, blink_rate: 500, blink_count: 6, })
-    // this.setLogoFlash(4, { led_state: 0, blink_rate: 500, blink_count: 6, })
+  async startUpFlashLogo() {
 
     await this.delay(1000)
     this.setLogoFlash(1, { led_state: 1, blink_rate: null, blink_count: null, })
@@ -226,23 +188,13 @@ class BluStation extends BluReceiver {
     this.setLogoFlash(4, { led_state: 1, blink_rate: null, blink_count: null, })
     await this.delay(1000)
 
-    // turn off led
-    this.setLogoFlash(1, { led_state: 0, blink_rate: null, blink_count: null, })
-    this.setLogoFlash(2, { led_state: 0, blink_rate: null, blink_count: null, })
-    this.setLogoFlash(3, { led_state: 0, blink_rate: null, blink_count: null, })
-    this.setLogoFlash(4, { led_state: 0, blink_rate: null, blink_count: null, })
-
+    setTimeout(() => {
     // blink logo 3 times
-    this.setLogoFlash(1, { led_state: 2, blink_rate: 500, blink_count: 6, })
-    this.setLogoFlash(2, { led_state: 2, blink_rate: 500, blink_count: 6, })
-    this.setLogoFlash(3, { led_state: 2, blink_rate: 500, blink_count: 6, })
-    this.setLogoFlash(4, { led_state: 2, blink_rate: 500, blink_count: 6, })
-
-    //   // turn off led
-    //   this.setLogoFlash(1, { led_state: 0, blink_rate: null, blink_count: null, })
-    //   this.setLogoFlash(2, { led_state: 0, blink_rate: null, blink_count: null, })
-    //   this.setLogoFlash(3, { led_state: 0, blink_rate: null, blink_count: null, })
-    //   this.setLogoFlash(4, { led_state: 0, blink_rate: null, blink_count: null, })
+    this.setLogoFlash(1, { led_state: 2, blink_rate: 100, blink_count: 6, })
+    this.setLogoFlash(2, { led_state: 2, blink_rate: 100, blink_count: 6, })
+    this.setLogoFlash(3, { led_state: 2, blink_rate: 100, blink_count: 6, })
+    this.setLogoFlash(4, { led_state: 2, blink_rate: 100, blink_count: 6, })
+   }, 10000)
   }
 
   /**
@@ -254,9 +206,13 @@ class BluStation extends BluReceiver {
   }
 
   radioOn(radio_channel, buffer_interval) {
-    this.setLogoFlash(radio_channel, { led_state: 1, blink_rate: null, blink_count: null, })
-    this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1,})
-    this.getDetections(radio_channel, buffer_interval)
+    setTimeout(() => {
+      this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1,})
+      this.getDetections(radio_channel, buffer_interval)
+      this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
+
+    }, 10000)
+    console.log('radio ', radio_channel, 'is on at', buffer_interval, 'poll rate')
   }
 
   radioOff(radio_channel) {
@@ -265,7 +221,42 @@ class BluStation extends BluReceiver {
     this.stopDetections(radio_channel)
     let key = radio_channel.toString()
     this.blu_radios[key] = null
+    this.on('close', function() {
+      return console.log(`exiting the code ${0}`)
+    })
+    this.on('SIGNIT', function() {
+      console.log( "\nGracefully shutting down from SIGINT (Ctrl-C)" )
+    this.exit(0)
+    })
     console.log('active blu radios', this.blu_radios)
+  }
+
+  updateBluFirmware(radio_channel, firmware_file) {
+    console.log('update firmware', firmware_file)
+    this.schedule({
+      task: BluReceiverTask.DFU,
+      radio_channel,
+      data: {
+        // channel: radio_channel,
+        file: firmware_file,
+      }
+    })
+    this.stopDetections(radio_channel)
+    this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100,  blink_count: 10,})
+    setTimeout(() => {
+      this.rebootBluReceiver(radio_channel, 10000)
+    }, 60000)
+    this.getBluVersion(radio_channel)
+  }
+
+  updateConfig(config_obj) {
+    fs.writeFileSync('./src/station-radio-interface/server/default-config.js',
+    'export default' + JSON.stringify(config_obj),
+    { encoding: 'utf8', flag: 'w', },
+    err => {
+      if (err) throw err;
+      console.log('blu default config file updated')
+    })
   }
 }
 

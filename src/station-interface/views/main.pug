@@ -35,6 +35,7 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
                 tr(class="table-primary", style="color:#111") 
                   th Tag ID
                   th Count
+                  th Beep Rate (Beeps/s)
                   th Alias
                   th 
                   th 
@@ -271,6 +272,24 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
               button(class="btn btn-danger btn-block" name="delete-data" value="sg-rotated") Delete Data Not Uploaded
             div(class="col-sm")
               button(class="btn btn-danger btn-block" name="delete-data" value="sg-uploaded") Delete Data Already Uploaded
+
+      div(class="col-sm")
+        div(style="border: 1px solid white;padding:5px;")
+          h3(style="text-align:center;") Bl&umacr; Series Tag Data
+          div(style="text-align:center;")
+            a(class="btn btn-primary", href="/ctt-data-current") Download Current Data
+            div(style="height:5px;")
+          div(class="row")
+            div(class="col-sm")
+              a(class="btn btn-block btn-primary", href="/ctt-data-rotated") Download Data Not Uploaded
+            div(class="col-sm")
+              a(class="btn btn-block btn-primary", href="/ctt-data-uploaded") Download Data Already Uploaded
+          div(style="height:5px;")
+          div(class="row")
+            div(class="col-sm")
+              button(class="btn btn-danger btn-block" name="delete-data" value="ctt-rotated") Delete Data Not Uploaded
+            div(class="col-sm")
+              button(class="btn btn-danger btn-block" name="delete-data" value="ctt-uploaded") Delete Data Already Uploaded
 
     hr
     h2(style="text-align:center;") Nanotag Data
