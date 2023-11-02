@@ -130,7 +130,7 @@ class BluStation extends BluReceiver {
  * @param {Number} blink_rate Blink per ms
  * @param {Number} blink_count Number of blinks before turning off
  */
-  setLogoFlash(radio_channel, opts) {
+  async setLogoFlash(radio_channel, opts) {
     // setTimeout(() => {
     console.log('set logo flash radio channel', radio_channel, 'opts', opts)
     this.schedule({
@@ -152,7 +152,7 @@ class BluStation extends BluReceiver {
    * @param {Boolean} opts.rx_blink Sets radio LED to blink if tag is detected
    * @returns 
    */
-  setBluConfig(radio_channel, opts) {
+  async setBluConfig(radio_channel, opts) {
     console.log('getbluconfigf opts', opts)
 
     if (opts.rx_blink == true) {
@@ -218,13 +218,13 @@ class BluStation extends BluReceiver {
    *  @param {Number} radio_channel // Radio Channel to turn on
    *  @param {Number} poll_interval // Time in ms between emptying ring buffer
    */
-  radioOn(radio_channel, poll_interval) {
-    setTimeout(() => {
-      this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1,})
-      this.getDetections(radio_channel, poll_interval)
-      this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
+  async radioOn(radio_channel, poll_interval) {
+    // setTimeout(() => {
+      await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1,})
+      await this.getDetections(radio_channel, poll_interval)
+      await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
 
-    }, 10000)
+    // }, 10000)
     console.log('radio ', radio_channel, 'is on at', poll_interval, 'poll rate')
   }
 
@@ -273,7 +273,7 @@ class BluStation extends BluReceiver {
     }, 20000)
   }
 
-  updateConfig(config_obj) {
+  async updateConfig(config_obj) {
     fs.writeFileSync('./src/station-radio-interface/server/default-config.js',
     'export default' + JSON.stringify(config_obj),
     { encoding: 'utf8', flag: 'w', },

@@ -206,52 +206,89 @@ const initialize_controls = function () {
       }
     });
   });
+
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-      let radio_id = e.target.getAttribute('value');
-      let res = window.prompt(`Turning on Radio ${radio_id} and setting polling interval as:`);
-      // if (res) {
-        res = Number(res)
-        console.log('polling res', res, typeof res)
-        if (isNaN(res) === true || res === 0) {
-          window.alert('Invalid Input, please enter an integer (number with no decimals).')
-        // } else if (res === 0) {
-        //   window.alert('Invalid Input, please enter an integer (number with no decimals).')
-        } else {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio On'
-        socket.send(JSON.stringify({
-          msg_type: 'cmd',
-          cmd: 'toggle_blu',
-          data: {
-            type: 'blu_on',
-            channel: radio_id,
-            poll_interval: res,
-            scan: 1,
-            rx_blink: 1,
-          }
-        }));
+    let res = window.prompt(`Turning on all Blu Radios and setting polling interval as:`);
+    res = Number(res)
+    socket.send(JSON.stringify({
+      msg_type: 'cmd',
+      cmd: 'toggle_blu',
+      data: {
+        type: 'blu_on',
+        // channel: radio_id,
+        poll_interval: res,
+        scan: 1,
+        rx_blink: 1,
       }
-    });
-  });
+    }));
+  })
+})
+
+  // document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
+  //   console.log('blu btn', btn)
+  //   btn.addEventListener('click', function (e) {
+  //     let radio_id = e.target.getAttribute('value');
+  //     let res = window.prompt(`Turning on Radio ${radio_id} and setting polling interval as:`);
+  //     // if (res) {
+  //       res = Number(res)
+  //       console.log('polling res', res, typeof res)
+  //       if (isNaN(res) === true || res === 0) {
+  //         window.alert('Invalid Input, please enter an integer (number with no decimals).')
+  //       // } else if (res === 0) {
+  //       //   window.alert('Invalid Input, please enter an integer (number with no decimals).')
+  //       } else {
+  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio On'
+  //       socket.send(JSON.stringify({
+  //         msg_type: 'cmd',
+  //         cmd: 'toggle_blu',
+  //         data: {
+  //           type: 'blu_on',
+  //           // channel: radio_id,
+  //           poll_interval: res,
+  //           scan: 1,
+  //           rx_blink: 1,
+  //         }
+  //       }));
+  //     }
+  //   });
+  // });
   document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-      let radio_id = e.target.getAttribute('value');
-      let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' off?');
+      let res = window.confirm('Are you sure you want to turn all Bl&umarc; Series Radios off?');
       if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Off'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'toggle_blu',
           data: {
             type: 'blu_off',
-            channel: radio_id,
-            scan: 0,
-            rx_blink: 0,
+            // channel: radio_id,
+            // scan: 0,
+            // rx_blink: 0,
           }
         }));
       }
-    });
-  });
+    })
+  })
+  // document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
+  //   btn.addEventListener('click', function (e) {
+  //     let radio_id = e.target.getAttribute('value');
+  //     let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' off?');
+  //     if (res) {
+  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Off'
+  //       socket.send(JSON.stringify({
+  //         msg_type: 'cmd',
+  //         cmd: 'toggle_blu',
+  //         data: {
+  //           type: 'blu_off',
+  //           channel: radio_id,
+  //           scan: 0,
+  //           rx_blink: 0,
+  //         }
+  //       }));
+  //     }
+  //   });
+  // });
   document.querySelectorAll('button[name="toggle_radio_led_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       let radio_id = e.target.getAttribute('value');
@@ -293,7 +330,7 @@ const initialize_controls = function () {
   document.querySelectorAll('button[name="reboot_blu_radio"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       let radio_id = e.target.getAttribute('value');
-      let res = window.confirm('Are you sure you want to reboot Radio ' + radio_id+'?');
+      let res = window.confirm('Are you sure you want to reboot Radio ' + radio_id + '?');
       if (res) {
         document.querySelector(`#config_radio_${radio_id}`).textContent = 'Reboot Radio'
         socket.send(JSON.stringify({
@@ -310,8 +347,8 @@ const initialize_controls = function () {
   document.querySelectorAll('button[name="radio_polling"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       let radio_id = e.target.getAttribute('value');
-      let res = window.prompt('Enter polling interval in milliseconds (ms) for Radio ' + radio_id+
-      '.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
+      let res = window.prompt('Enter polling interval in milliseconds (ms) for Radio ' + radio_id +
+        '.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
       res = Number(res)
       poll_interval = res ? res : 10000
       console.log('polling res', res, typeof res)
@@ -592,7 +629,7 @@ const handle_beep = function (beep) {
   }
 };
 
-const handle_blu_beep = function(beep) {
+const handle_blu_beep = function (beep) {
   let tag_id = beep.tag_id.toUpperCase();
   // console.log('handle blu tag', beep)
   document.querySelector('#blu-receiver').style.display = 'block'
@@ -633,7 +670,7 @@ const handle_blu_beep = function(beep) {
   if (tags.has(tag_id)) {
     beep_hist[tag_id] += 1;
     document.querySelector('#cnt_' + tag_id).textContent = beep_hist[tag_id];
-    document.querySelector('#rate_' + tag_id).textContent = (beep_hist[tag_id]/(document.timeline.currentTime/1000)).toFixed(2)
+    document.querySelector('#rate_' + tag_id).textContent = (beep_hist[tag_id] / (document.timeline.currentTime / 1000)).toFixed(2)
   } else {
     beep_hist[tag_id] = 1;
     tags.add(tag_id);
@@ -648,7 +685,7 @@ const handle_blu_beep = function(beep) {
 
     td = document.createElement('td');
     td.setAttribute('id', 'rate_' + tag_id);
-    td.textContent = (beep_hist[tag_id]/(document.timeline.currentTime/1000)).toFixed(2);
+    td.textContent = (beep_hist[tag_id] / (document.timeline.currentTime / 1000)).toFixed(2);
     tr.appendChild(td);
 
     let input = document.createElement('input');
@@ -756,7 +793,7 @@ const handle_tag_beep = function (beep) {
   if (tags.has(tag_id)) {
     beep_hist[tag_id] += 1;
     document.querySelector('#cnt_' + tag_id).textContent = beep_hist[tag_id];
-    document.querySelector('#rate_' + tag_id).textContent = (beep_hist[tag_id]/(document.timeline.currentTime/1000)).toFixed(2);
+    document.querySelector('#rate_' + tag_id).textContent = (beep_hist[tag_id] / (document.timeline.currentTime / 1000)).toFixed(2);
 
   } else {
     beep_hist[tag_id] = 1;
@@ -772,7 +809,7 @@ const handle_tag_beep = function (beep) {
 
     td = document.createElement('td');
     td.setAttribute('id', 'rate_' + tag_id);
-    td.textContent = (beep_hist[tag_id]/(document.timeline.currentTime/1000)).toFixed(2);
+    td.textContent = (beep_hist[tag_id] / (document.timeline.currentTime / 1000)).toFixed(2);
     tr.appendChild(td);
 
     let input = document.createElement('input');
@@ -830,61 +867,61 @@ const handle_stats = function (stats) {
   let received_at, old_received_at;
   let n = 0;
   let channel_stats = {}
-  if (stats.channels){
+  if (stats.channels) {
 
-  
-  Object.keys(stats.channels).forEach(function (channel) {
-    let channel_data = stats.channels[channel];
-    console.log('handle stats channel data', channel_data)
-    Object.keys(channel_data.nodes.health).forEach(function (node_id) {
-      record = channel_data.nodes.health[node_id];
-      received_at = moment(record.Time);
-      if (reports[node_id]) {
-        old_received_at = moment(reports[node_id].Time);
-        if (received_at > old_received_at) {
-          // this is newer - use this instead
+
+    Object.keys(stats.channels).forEach(function (channel) {
+      let channel_data = stats.channels[channel];
+      console.log('handle stats channel data', channel_data)
+      Object.keys(channel_data.nodes.health).forEach(function (node_id) {
+        record = channel_data.nodes.health[node_id];
+        received_at = moment(record.Time);
+        if (reports[node_id]) {
+          old_received_at = moment(reports[node_id].Time);
+          if (received_at > old_received_at) {
+            // this is newer - use this instead
+            reports[node_id] = record;
+          }
+        } else {
+          // new node id - use this report
           reports[node_id] = record;
         }
-      } else {
-        // new node id - use this report
-        reports[node_id] = record;
-      }
-    });
-    n = 0;
-    let beeps, node_beeps, telemetry_beeps, blu_beeps;
-    Object.keys(channel_data.beeps).forEach(function (tag_id) {
-      n += channel_data.beeps[tag_id];
-    });
-    beeps = n;
-    n = 0;
-    Object.keys(channel_data.nodes.beeps).forEach(function (tag_id) {
-      n += channel_data.nodes.beeps[tag_id];
-    });
-    node_beeps = n;
-    n = 0;
-    Object.keys(channel_data.telemetry).forEach(function (tag_id) {
-      n += channel_data.telemetry[tag_id];
-    });
-    telemetry_beeps = n;
-    n = 0;
-    Object.keys(channel_data.blu_beeps).forEach(function (tag_id) {
-      n += channel_data.blu_beeps[tag_id];
-    });
-    blu_beeps = n;
-    // console.log('handle channel stats blu beeps', blu_beeps)
-    // n = 0;
-    // Object.keys(channel_data.blu_dropped).forEach(function (tag_id)) {
+      });
+      n = 0;
+      let beeps, node_beeps, telemetry_beeps, blu_beeps;
+      Object.keys(channel_data.beeps).forEach(function (tag_id) {
+        n += channel_data.beeps[tag_id];
+      });
+      beeps = n;
+      n = 0;
+      Object.keys(channel_data.nodes.beeps).forEach(function (tag_id) {
+        n += channel_data.nodes.beeps[tag_id];
+      });
+      node_beeps = n;
+      n = 0;
+      Object.keys(channel_data.telemetry).forEach(function (tag_id) {
+        n += channel_data.telemetry[tag_id];
+      });
+      telemetry_beeps = n;
+      n = 0;
+      Object.keys(channel_data.blu_beeps).forEach(function (tag_id) {
+        n += channel_data.blu_beeps[tag_id];
+      });
+      blu_beeps = n;
+      // console.log('handle channel stats blu beeps', blu_beeps)
+      // n = 0;
+      // Object.keys(channel_data.blu_dropped).forEach(function (tag_id)) {
 
-    channel_stats[channel] = {
-      beeps: beeps,
-      node_beeps: node_beeps,
-      telemetry_beeps: telemetry_beeps,
-      blu_beeps: blu_beeps,
-      // blu_dropped: blu_dropped,
-    };
-    
-  });
-};
+      channel_stats[channel] = {
+        beeps: beeps,
+        node_beeps: node_beeps,
+        telemetry_beeps: telemetry_beeps,
+        blu_beeps: blu_beeps,
+        // blu_dropped: blu_dropped,
+      };
+
+    });
+  };
   nodes = reports;
   console.log('handle stats channel stats', channel_stats)
 
@@ -893,17 +930,17 @@ const handle_stats = function (stats) {
   render_blu_stats(channel_stats);
 };
 
-const handle_blu_stats = function(stats) {
+const handle_blu_stats = function (stats) {
   const { channel, blu_dropped } = stats
   const key = channel.toString()
-  if(Object.keys(blu_stats).includes(key)) {
+  if (Object.keys(blu_stats).includes(key)) {
     // if channel exists within blu stats object, add blu_dropped to existing value
     blu_stats[key] += blu_dropped
   } else {
     // if channel does not exist, channel is added to object and its value is blu_dropped
     blu_stats[key] = blu_dropped
   }
-  
+
   console.log('blu channel stats', blu_stats)
   render_dropped_detections(blu_stats);
 
@@ -918,7 +955,7 @@ const handle_poll = function (data) {
 
 const render_poll_interval = function (data) {
   // const { channel, poll_interval } = data
-  poll_interval = data.poll_interval 
+  poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.channel}`
   document.querySelector(poll_interval_info).textContent = poll_interval;
 }
@@ -941,21 +978,21 @@ const render_channel_stats = function (channel_stats) {
 
 const render_blu_stats = function (channel_stats) {
   if (channel_stats) {
-  // console.log('render blu stats channel stats', channel_stats)
-  let blu_beep_info, blu_node_beep_info, blu_telemetry_beep_info;
+    // console.log('render blu stats channel stats', channel_stats)
+    let blu_beep_info, blu_node_beep_info, blu_telemetry_beep_info;
     Object.keys(channel_stats).forEach(function (channel) {
       blu_beep_info = `#blu_beep_count_${channel}`;
       // blu_node_beep_info = `#blu_node_beep_count_${channel}`;
       // blu_telemetry_beep_info = `#blu_telemetry_beep_count_${channel}`;
       let stats = channel_stats[channel];
       console.log('blu stats', blu_beep_info, stats)
-  if (stats.blu_beeps){
-      document.querySelector(blu_beep_info).textContent = stats.blu_beeps
-      // document.querySelector(blu_node_beep_info).textContent = stats.node_beeps;
-      // document.querySelector(blu_telemetry_beep_info).textContent = stats.telemetry_beeps;
-    };
-  });
-}
+      if (stats.blu_beeps) {
+        document.querySelector(blu_beep_info).textContent = stats.blu_beeps
+        // document.querySelector(blu_node_beep_info).textContent = stats.node_beeps;
+        // document.querySelector(blu_telemetry_beep_info).textContent = stats.telemetry_beeps;
+      };
+    });
+  }
 };
 
 
@@ -1154,7 +1191,7 @@ const initialize_websocket = function () {
         handle_blu_stats(data);
         break;
       case ('poll_interval'):
-        // console.log('blu radio poll interval', data.poll_interval)
+        console.log('blu radio poll interval', data.poll_interval)
         handle_poll(data)
         break;
       case ('stats'):
@@ -1211,7 +1248,7 @@ const initialize_websocket = function () {
           document.querySelector(`#radio-firmware-version-${channel}`).textContent = firmware
         })
         break
-      case('blu-firmware'):
+      case ('blu-firmware'):
         console.log('setting blu firmware', data)
         Object.keys(data.firmware).forEach((channel) => {
           const firmware = data.firmware[channel]
@@ -1413,7 +1450,7 @@ const build_blu_component = function (n) {
   // table.appendChild(row)
   // row = build_row({ n: n, header: 'Telemetry', id: `blu_telemetry_beep_count_${n}` })
   // table.appendChild(row)
-  row = build_row({header: 'Poll Interval (ms)', id: `poll_interval_${n}`})
+  row = build_row({ header: 'Poll Interval (ms)', id: `poll_interval_${n}` })
   table.appendChild(row)
   wrapper.appendChild(table)
   let div = document.createElement('div')
@@ -1443,30 +1480,25 @@ const build_blu_component = function (n) {
   div = document.createElement('div')
   div.setAttribute('class', 'row')
 
-  let col_sm = document.createElement('div')
-  col_sm.setAttribute('class', 'col-sm')
-  // let button = document.createElement('input')
-  // button.setAttribute('class', 'form-check-input')
-  // button.setAttribute('type', 'checkbox')
-  // button.setAttribute('role', 'switch')
-  // button.setAttribute('id', 'flexSwitchCheckChecked')
-  let button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  button.setAttribute('name', 'toggle_radio_on')
-  button.setAttribute('value', n)
-  button.textContent = 'Radio On'
-  col_sm.appendChild(button)
-  div.appendChild(col_sm)
+  // let col_sm = document.createElement('div')
+  // col_sm.setAttribute('class', 'col-sm')
+  // let button = document.createElement('button')
+  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  // button.setAttribute('name', 'toggle_radio_on')
+  // button.setAttribute('value', n)
+  // button.textContent = 'Radio On'
+  // col_sm.appendChild(button)
+  // div.appendChild(col_sm)
 
-  col_sm = document.createElement('div')
-  col_sm.setAttribute('class', 'col-sm')
-  button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  button.setAttribute('name', 'toggle_radio_off')
-  button.setAttribute('value', n)
-  button.textContent = 'Radio Off'
-  col_sm.appendChild(button)
-  div.appendChild(col_sm)
+  // col_sm = document.createElement('div')
+  // col_sm.setAttribute('class', 'col-sm')
+  // button = document.createElement('button')
+  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  // button.setAttribute('name', 'toggle_radio_off')
+  // button.setAttribute('value', n)
+  // button.textContent = 'Radio Off'
+  // col_sm.appendChild(button)
+  // div.appendChild(col_sm)
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')

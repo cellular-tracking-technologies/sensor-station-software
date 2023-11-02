@@ -187,13 +187,33 @@ class BaseStation {
           break
         case ('toggle_blu'):
           console.log('blu radio button clicked', cmd)
-          let blu_channel = Number(cmd.data.channel)
+
+          // let blu_channel = Number(cmd.data.channel)
           if (cmd.data.type === 'blu_on') {
-            this.blu_reader.radioOn(blu_channel, cmd.data.poll_interval)
+            console.log('turning blu radio on')
+              
+
+            const radios_on = Object.keys(this.blu_radios).map(radio => {
+              // console.log('radios on radio', radio)
+              // setTimeout(() => {
+              this.config.default_config.blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
+              this.blu_reader.updateConfig(this.config.default_config)
+              this.blu_reader.radioOn(Number(radio), cmd.data.poll_interval)
+
+              // }, 5000)
+            })
+            console.log('radios on', radios_on)
+            Promise.all(radios_on).then((values) => {
+              console.log('promise radios', values)
+
+            })
           } else if (cmd.data.type === "blu_off") {
-            this.blu_reader.radioOff(blu_channel)
+            console.log('turning blu radio off')
+
+            Object.keys(this.blu_radios).forEach((radio) => {
+              this.blu_reader.radioOff(radio)
+            })
           }
-          console.log('turning blu radio on/off')
           break
         case ('toggle_blu_led'):
           console.log('blu radio button clicked', cmd)
@@ -570,7 +590,7 @@ class BaseStation {
           this.broadcast(JSON.stringify(this.blu_fw))
           break
         case BluReceiverTask.DETECTIONS:
-          // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
+          console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
 
           if (job.data.length) {
             console.log('Radio', job.radio_channel, 'has', job.data.length, 'detections')
@@ -647,7 +667,7 @@ class BaseStation {
       this.blu_reader.radioOff(2)
       this.blu_reader.radioOff(3)
       this.blu_reader.radioOff(4)
-      process.exit(0)
+      // process.exit(0)
     })
       process.on('SIGINT', () => {
         this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
