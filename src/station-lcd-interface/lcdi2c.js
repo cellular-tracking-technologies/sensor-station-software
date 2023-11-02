@@ -30,6 +30,7 @@ let LCD = class LCD {
             CMD: 0,
 
             backlight: 0x08,
+            // backlight: 0x04,
             RW: 0x20 // not used
         };
 

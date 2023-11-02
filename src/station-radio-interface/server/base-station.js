@@ -18,6 +18,7 @@ import heartbeats from 'heartbeats'
 import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
+import process from 'node:process'
 
 /**
  * manager class for controlling / reading radios
@@ -57,12 +58,13 @@ class BaseStation {
     this.heartbeat = heartbeats.createHeart(1000)
     this.server_api = new ServerApi()
     this.radio_fw = {}
+    this.blu_fw = {}
     // this.blu_radios = [1, 2, 3, 4]
     this.poll_interval
     this.poll_data
 
-    // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.1.0+0.bin')
-    this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
+    // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
+    this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
 
     console.log('firmware', this.firmware)
     // console.log('station config blu radios', this.config.default_config.blu_radios)
@@ -229,7 +231,7 @@ class BaseStation {
           let poll_key = cmd.data.channel.toString()
 
           if (Object.keys(this.config.default_config.blu_radios).includes(poll_key.toString())) {
-           
+
             console.log('changing polling interval on Radio', cmd)
             this.poll_interval = Number(cmd.data.poll_interval)
 
@@ -364,6 +366,14 @@ class BaseStation {
       .map((channel) => ({
         channel: channel,
         version: this.radio_fw[channel],
+      }))
+  }
+
+  getBluFirmware() {
+    return Object.keys(this.blu_fw)
+      .map((channel) => ({
+        channel: channel,
+        version: this.blu_fw[channel],
       }))
   }
 
@@ -549,6 +559,15 @@ class BaseStation {
       switch (job.task) {
         case BluReceiverTask.VERSION:
           console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
+          this.stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
+          this.blu_fw = {
+            msg_type: 'blu-firmware',
+            firmware: {
+              [job.radio_channel]: job.data.version,
+              }
+            }
+          console.log('this.blu_fw', this.blu_fw)
+          this.broadcast(JSON.stringify(this.blu_fw))
           break
         case BluReceiverTask.DETECTIONS:
           // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
@@ -574,21 +593,36 @@ class BaseStation {
           break
         // console.log(JSON.stringify(job))
         case BluReceiverTask.DFU:
+          // dfu download completed and then triggers reboot
           console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
+          this.blu_reader.schedule({ task: BluReceiverTask.REBOOT, radio_channel: job.radio_channel }) // wait 20 s
+          this.stationLog(`BluReceiver Radio ${job.radio_channel} updated to version ${job.data.version}`)
+
+          // // this.blu_reader.rebootBluReceiver(job.radio_channel, 10000)
+          setTimeout(() => {
+            // this.blu_reader.rebootBluReceiver(job.radio_channel, 10000)
+            this.blu_reader.getBluVersion(job.radio_channel)
+            // this.stationLog(`BluReceiver Radio ${job.radio_channel} updated to version ${job.data.version}`)
+          }, 20000)
+
           break
         case BluReceiverTask.REBOOT:
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
+          this.stationLog(`BluReceiver Radio ${job.radio_channel} is rebooting`)
+
           // this.setLogoFlash(radio_channel, 
           //   { led_state: 2, blink_rate: 1000, blink_count: -1 })
 
           console.log('Blu Receiver is rebooting!', job.radio_channel)
-
           break
         case BluReceiverTask.LEDS:
           console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.CONFIG:
           console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
+          // would like to get config data object to log changes to radio/led on/off
+          this.stationLog(`BluReceiver Radio ${job.radio_channel} config has changed.`)
+
           break
         case BluReceiverTask.STATS:
           if (job.data.det_dropped !== null) {
@@ -606,30 +640,43 @@ class BaseStation {
           break
       }
     })
-    this.blu_reader.on('close', (job) => {
-      console.log('blu radio is closed', job)
+    this.blu_reader.on('close', () => {
+      stationLog('blu radio is closing')
+      console.log('blu radio is closed')
+      this.blu_reader.radioOff(1)
+      this.blu_reader.radioOff(2)
+      this.blu_reader.radioOff(3)
+      this.blu_reader.radioOff(4)
+      process.exit(0)
     })
-    process.on('SIGNIT', () => {
-      console.log( "\nGracefully shutting down from SIGINT (Ctrl-C)" )
-      setTimeout(() => {
-
-        Object.keys(this.blu_radios).forEach((radio) => {
-          this.blu_reader.stopDetections(radio)
-          this.blu_reader.radioOff(radio)
-        })
-        process.exit(0)
-      }, 10000)
-    })
+      process.on('SIGINT', () => {
+        this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
+          Object.keys(this.blu_radios).forEach((radio) => {
+            this.blu_reader.radioOff(radio)
+          })
+        setTimeout(() => {
+          process.exit(0)
+        }, 10000)
+      })
 
     this.blu_reader.startUpFlashLogo()
 
-    setTimeout(() => {
-      Object.keys(this.blu_radios).forEach((radio) => {
+    this.blu_reader.getBluVersion(1)
+    this.blu_reader.getBluVersion(2)
+    this.blu_reader.getBluVersion(3)
+    this.blu_reader.getBluVersion(4)
+
+    // this.blu_reader.updateBluFirmware(4, this.firmware)
+
+    Object.keys(this.blu_radios).forEach((radio) => {
+      setTimeout(() => {
         let key = Number(radio)
-        this.blu_reader.getBluVersion(radio) // outputs timeout error still
+        // this.blu_reader.getBluVersion(radio) // outputs timeout error still
         this.blu_reader.radioOn(key, this.blu_radios[key].values.current)
-      })
-    }, 10000)
+
+      }, 10000)
+    })
   }
 
 } // end of base station class

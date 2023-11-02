@@ -1211,6 +1211,13 @@ const initialize_websocket = function () {
           document.querySelector(`#radio-firmware-version-${channel}`).textContent = firmware
         })
         break
+      case('blu-firmware'):
+        console.log('setting blu firmware', data)
+        Object.keys(data.firmware).forEach((channel) => {
+          const firmware = data.firmware[channel]
+          document.querySelector(`#blu-firmware-version-${channel}`).textContent = firmware
+        })
+        break
       default:
         console.log('WTF dunno', data);
 
@@ -1379,9 +1386,9 @@ const build_blu_component = function (n) {
   h2.textContent = 'Blu Radio ' + n
   wrapper.appendChild(h2)
   const version_label = document.createElement('span')
-  version_label.textContent = 'version:'
+  version_label.textContent = 'version: '
   const firmware_version = document.createElement('span')
-  firmware_version.setAttribute('id', `radio-firmware-version-${n}`)
+  firmware_version.setAttribute('id', `blu-firmware-version-${n}`)
   const firmware = document.createElement('div')
   firmware.appendChild(version_label)
   firmware.appendChild(firmware_version)

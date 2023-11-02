@@ -4,6 +4,7 @@
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import fs from 'fs'
+import process from 'node:process'
 import moment from 'moment'
 import EventEmitter from 'events'
 
@@ -27,11 +28,14 @@ class BluStation extends BluReceiver {
    * @param {Number} radio_channel 
    */
   getBluVersion(radio_channel) {
-    this.schedule({
-      task: BluReceiverTask.VERSION,
-      radio_channel: radio_channel,
-      // data
-    })
+    
+    setTimeout(() => {
+      this.schedule({
+        task: BluReceiverTask.VERSION,
+        radio_channel: radio_channel,
+        // data
+      })
+    }, 10000)
   }
 
   /**
@@ -39,6 +43,10 @@ class BluStation extends BluReceiver {
    * @param {Number} radio_channel 
    */
   rebootBluReceiver(radio_channel, poll_interval) {
+    setTimeout(() => {
+      this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 100, blink_count: 10 })
+    }, 5000)
+
     this.stopDetections(radio_channel)
     this.schedule({
       task: BluReceiverTask.REBOOT,
@@ -97,6 +105,7 @@ class BluStation extends BluReceiver {
     } else {
       // if channel does not exist, channel is added to object and its value as key and the setInterval as value
       this.blu_radios[key] = { polling: this.beeps, dropped: this.dropped, }
+
     }
     return this.blu_radios[key].polling
   }
@@ -205,30 +214,41 @@ class BluStation extends BluReceiver {
 
   }
 
-  radioOn(radio_channel, buffer_interval) {
+  /**
+   *  @param {Number} radio_channel // Radio Channel to turn on
+   *  @param {Number} poll_interval // Time in ms between emptying ring buffer
+   */
+  radioOn(radio_channel, poll_interval) {
     setTimeout(() => {
       this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1,})
-      this.getDetections(radio_channel, buffer_interval)
+      this.getDetections(radio_channel, poll_interval)
       this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
 
     }, 10000)
-    console.log('radio ', radio_channel, 'is on at', buffer_interval, 'poll rate')
+    console.log('radio ', radio_channel, 'is on at', poll_interval, 'poll rate')
   }
 
+  /**
+   * 
+   * @param {*} radio_channel Radio Channel to turn off 
+   */
   radioOff(radio_channel) {
     this.setLogoFlash(radio_channel, { led_state: 0, blink_rate: null, blink_count: null, })
     this.setBluConfig(radio_channel, { scan: 0, rx_blink: 0,})
     this.stopDetections(radio_channel)
     let key = radio_channel.toString()
-    this.blu_radios[key] = null
-    this.on('close', function() {
-      return console.log(`exiting the code ${0}`)
-    })
-    this.on('SIGNIT', function() {
-      console.log( "\nGracefully shutting down from SIGINT (Ctrl-C)" )
-    this.exit(0)
-    })
+    clearInterval(this.blu_radios[key]) // changes timers _destroyed key to true
+    // this.blu_radios[key]._destroyed = true // changes timers _destroyed key to true
+    // this.blu_radios[key] = null // sets polling and dropped detection timers as null
+    // this.on('close', function() {
+    //   return console.log(`exiting the code ${0}`)
+    // })
+    // process.on('SIGNIT', function() {
+    //   console.log( "\nGracefully shutting down from SIGINT (Ctrl-C)" )
+    //   process.exit(0)
+    // })
     console.log('active blu radios', this.blu_radios)
+    // process.exit(0)
   }
 
   updateBluFirmware(radio_channel, firmware_file) {
@@ -242,11 +262,15 @@ class BluStation extends BluReceiver {
       }
     })
     this.stopDetections(radio_channel)
-    this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100,  blink_count: 10,})
-    setTimeout(() => {
+    this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100,  blink_count: 1000,})
       this.rebootBluReceiver(radio_channel, 10000)
-    }, 60000)
-    this.getBluVersion(radio_channel)
+      // this.schedule({
+      //   task: BluReceiverTask.REBOOT,
+      //   radio_channel: radio_channel
+      // })
+    setTimeout(() => {
+      this.getBluVersion(radio_channel)
+    }, 20000)
   }
 
   updateConfig(config_obj) {
