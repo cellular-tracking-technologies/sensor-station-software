@@ -19,6 +19,7 @@ import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
 import process from 'node:process'
+// import '../../hardware/bluseries-receiver/driver/bin'
 
 /**
  * manager class for controlling / reading radios
@@ -63,8 +64,11 @@ class BaseStation {
     this.poll_interval
     this.poll_data
 
-    // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
-    this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
+    // this.old_firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
+    // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
+    // this.firmware = fs.readFileSync('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
+    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
+    // this.firmware = './blu_adapter_v2.0.0+0.bin'
 
     console.log('firmware', this.firmware)
     // console.log('station config blu radios', this.config.default_config.blu_radios)
@@ -611,16 +615,18 @@ class BaseStation {
         // console.log(JSON.stringify(job))
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
+          // this.blu_reader.getBluVersion(job.radio_channel)
           console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
-          this.blu_reader.schedule({ task: BluReceiverTask.REBOOT, radio_channel: job.radio_channel }) // wait 20 s
-          this.stationLog(`BluReceiver Radio ${job.radio_channel} updated to version ${job.data.version}`)
+          this.blu_reader.schedule({ task: BluReceiverTask.REBOOT, radio_channel: job.radio_channel })
 
           // // this.blu_reader.rebootBluReceiver(job.radio_channel, 10000)
           setTimeout(() => {
             // this.blu_reader.rebootBluReceiver(job.radio_channel, 10000)
             this.blu_reader.getBluVersion(job.radio_channel)
+            this.stationLog(`BluReceiver Radio ${job.radio_channel} updated to version ${job.data.version}`)
+
             // this.stationLog(`BluReceiver Radio ${job.radio_channel} updated to version ${job.data.version}`)
-          }, 20000)
+          }, 30000)
 
           break
         case BluReceiverTask.REBOOT:
@@ -657,15 +663,15 @@ class BaseStation {
           break
       }
     })
-    this.blu_reader.on('close', () => {
-      stationLog('blu radio is closing')
-      console.log('blu radio is closed')
-      this.blu_reader.radioOff(1)
-      this.blu_reader.radioOff(2)
-      this.blu_reader.radioOff(3)
-      this.blu_reader.radioOff(4)
-      // process.exit(0)
-    })
+    // this.blu_reader.on('close', () => {
+    //   stationLog('blu radio is closing')
+    //   console.log('blu radio is closed')
+    //   this.blu_reader.radioOff(1)
+    //   this.blu_reader.radioOff(2)
+    //   this.blu_reader.radioOff(3)
+    //   this.blu_reader.radioOff(4)
+    //   // process.exit(0)
+    // })
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
@@ -679,7 +685,7 @@ class BaseStation {
       })
       setTimeout(() => {
         process.exit(0)
-      }, 10000)
+      }, 5000)
     })
 
     // this.blu_reader.startUpFlashLogo()

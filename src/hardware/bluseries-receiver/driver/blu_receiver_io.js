@@ -50,7 +50,7 @@ class BluReceiverIo extends EventEmitter {
        */
       setTimeout(() => {
         this.emit('open')
-      }, 1000)
+      }, 1500)
     })
     this.#data.usb.on('close', (data) => {
       this.emit('close')

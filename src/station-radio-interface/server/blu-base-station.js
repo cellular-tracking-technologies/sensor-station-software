@@ -30,14 +30,14 @@ class BluStation extends BluReceiver {
   async getBluVersion(radio_channel) {
     try {
     // setTimeout(() => {
-      this.schedule({
+      return this.schedule({
         task: BluReceiverTask.VERSION,
         radio_channel: radio_channel,
         // data
       })
     // }, 10000)
     } catch (e) {
-      console.error(e)
+      console.error('GET VERSION ERROR', e)
     }
   }
 
@@ -54,14 +54,14 @@ class BluStation extends BluReceiver {
     })
 
     // setTimeout(() => {
-      this.setBluConfig(radio_channel,
-        {
-          scan: 1,
-          rx_blink: 1,
-        })
+      // this.setBluConfig(radio_channel,
+      //   {
+      //     scan: 1,
+      //     rx_blink: 1,
+      //   })
       await this.getDetections(radio_channel, poll_interval)
       // await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
-      await this.getBluVersion(radio_channel)
+      // await this.getBluVersion(radio_channel)
       // }, 10000)
     // restart radio with poll interval of 10s
     
@@ -116,17 +116,10 @@ class BluStation extends BluReceiver {
    */
   async stopDetections(radio_channel) {
     const key = radio_channel.toString()
-    
-    const stop_det = Object.keys(this.blu_radios).map(key => {
-      this.setBluConfig(Number(key), { scan: 0, rx_blink: 0,})
-      this.setLogoFlash(Number(key), {led_state: 0, blink_rate: 0,  blink_count: 0,})
-      clearInterval(this.blu_radios[key].polling)
-      clearInterval(this.blu_radios[key].dropped)
-    })
-    Promise.all(stop_det).then((values) => {
-      console.log(values)
-      return values
-    })
+    this.setBluConfig(Number(key), { scan: 0, rx_blink: 0,})
+    this.setLogoFlash(Number(key), {led_state: 0, blink_rate: 0,  blink_count: 0,})
+    clearInterval(this.blu_radios[key].polling)
+    clearInterval(this.blu_radios[key].dropped)
   }
 
   /**
@@ -138,7 +131,7 @@ class BluStation extends BluReceiver {
  */
   async setLogoFlash(radio_channel, opts) {
     // setTimeout(() => {
-    console.log('set logo flash radio channel', radio_channel, 'opts', opts)
+    // console.log('set logo flash radio channel', radio_channel, 'opts', opts)
     return this.schedule({
       task: BluReceiverTask.LEDS,
       radio_channel: radio_channel,
@@ -252,24 +245,27 @@ class BluStation extends BluReceiver {
 
   async updateBluFirmware(radio_channel, firmware_file) {
     console.log('update firmware', firmware_file)
+    await this.getBluVersion(radio_channel)
     this.schedule({
       task: BluReceiverTask.DFU,
       radio_channel,
       data: {
         // channel: radio_channel,
-        file: firmware_file,
+        // file: fs.readFileSync('/lib/ctt/sensor-station-software/src/station-radio-interface/server/blu_adapter_v2.0.0+0.bin')
+        file: fs.readFileSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
       }
     })
     await this.stopDetections(radio_channel)
-    this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100,  blink_count: 1000,})
-    await this.rebootBluReceiver(radio_channel, 10000)
-      // this.schedule({
-      //   task: BluReceiverTask.REBOOT,
-      //   radio_channel: radio_channel
-      // })
-    setTimeout(() => {
-      this.getBluVersion(radio_channel)
-    }, 20000)
+    // this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100,  blink_count: 1000,})
+    // await this.rebootBluReceiver(radio_channel, 10000)
+    //   // this.schedule({
+    //   //   task: BluReceiverTask.REBOOT,
+    //   //   radio_channel: radio_channel
+    //   // })
+    // setTimeout(() => {
+      // await this.getBluVersion(radio_channel)
+      // await this.rebootBluReceiver(radio_channel, 10000)
+    // }, 20000)
   }
 
   async updateConfig(config_obj) {
