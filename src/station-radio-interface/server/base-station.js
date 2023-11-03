@@ -191,16 +191,12 @@ class BaseStation {
           // let blu_channel = Number(cmd.data.channel)
           if (cmd.data.type === 'blu_on') {
             console.log('turning blu radio on')
-              
+
 
             const radios_on = Object.keys(this.blu_radios).map(radio => {
-              // console.log('radios on radio', radio)
-              // setTimeout(() => {
               this.config.default_config.blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
               this.blu_reader.updateConfig(this.config.default_config)
               this.blu_reader.radioOn(Number(radio), cmd.data.poll_interval)
-
-              // }, 5000)
             })
             console.log('radios on', radios_on)
             Promise.all(radios_on).then((values) => {
@@ -208,10 +204,11 @@ class BaseStation {
 
             })
           } else if (cmd.data.type === "blu_off") {
-            console.log('turning blu radio off')
-
-            Object.keys(this.blu_radios).forEach((radio) => {
+            const radios_off = Object.keys(this.blu_radios).map(radio => {
               this.blu_reader.radioOff(radio)
+            })
+            Promise.all(radios_off).then((values) => {
+              console.log('turning blu radio off', values)
             })
           }
           break
@@ -584,13 +581,13 @@ class BaseStation {
             msg_type: 'blu-firmware',
             firmware: {
               [job.radio_channel]: job.data.version,
-              }
             }
+          }
           console.log('this.blu_fw', this.blu_fw)
           this.broadcast(JSON.stringify(this.blu_fw))
           break
         case BluReceiverTask.DETECTIONS:
-          console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
+          // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
 
           if (job.data.length) {
             console.log('Radio', job.radio_channel, 'has', job.data.length, 'detections')
@@ -669,16 +666,21 @@ class BaseStation {
       this.blu_reader.radioOff(4)
       // process.exit(0)
     })
-      process.on('SIGINT', () => {
-        this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
-          Object.keys(this.blu_radios).forEach((radio) => {
-            this.blu_reader.radioOff(radio)
-          })
-        setTimeout(() => {
-          process.exit(0)
-        }, 10000)
+    process.on('SIGINT', () => {
+      this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
+      
+      const radios_exit = Object.keys(this.blu_radios).map(radio => {
+        // this.blu_reader.setLogoFlash(radio, { scan: 0, rx_blink: 0,})
+        this.blu_reader.radioOff(radio)
       })
+      Promise.all(radios_exit).then((values) => {
+        console.log(values)
+      })
+      setTimeout(() => {
+        process.exit(0)
+      }, 10000)
+    })
 
     this.blu_reader.startUpFlashLogo()
 
@@ -689,13 +691,18 @@ class BaseStation {
 
     // this.blu_reader.updateBluFirmware(4, this.firmware)
 
-    Object.keys(this.blu_radios).forEach((radio) => {
-      setTimeout(() => {
+    const radios_start = Object.keys(this.blu_radios).map((radio) => {
+      // setTimeout(() => {
         let key = Number(radio)
         // this.blu_reader.getBluVersion(radio) // outputs timeout error still
         this.blu_reader.radioOn(key, this.blu_radios[key].values.current)
 
-      }, 10000)
+      // }, 10000)
+    })
+    Promise.all(radios_start).then((values) => {
+      console.log('radios started')
+    }).catch((e) => {
+      console.error(e)
     })
   }
 
