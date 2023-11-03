@@ -682,24 +682,26 @@ class BaseStation {
       }, 10000)
     })
 
-    this.blu_reader.startUpFlashLogo()
+    // this.blu_reader.startUpFlashLogo()
 
     this.blu_reader.getBluVersion(1)
     this.blu_reader.getBluVersion(2)
     this.blu_reader.getBluVersion(3)
     this.blu_reader.getBluVersion(4)
 
-    // this.blu_reader.updateBluFirmware(4, this.firmware)
+    // why does this break the regular logo flashing?
 
-    const radios_start = Object.keys(this.blu_radios).map((radio) => {
+    // this.blu_reader.updateBluFirmware(4, this.firmware) 
+
+    const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       // setTimeout(() => {
         let key = Number(radio)
         // this.blu_reader.getBluVersion(radio) // outputs timeout error still
         this.blu_reader.radioOn(key, this.blu_radios[key].values.current)
+        // this.blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
 
       // }, 10000)
-    })
-    Promise.all(radios_start).then((values) => {
+    })).then((values) => {
       console.log('radios started')
     }).catch((e) => {
       console.error(e)

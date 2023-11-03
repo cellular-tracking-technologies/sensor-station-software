@@ -27,15 +27,18 @@ class BluStation extends BluReceiver {
    * 
    * @param {Number} radio_channel 
    */
-  getBluVersion(radio_channel) {
-    
-    setTimeout(() => {
+  async getBluVersion(radio_channel) {
+    try {
+    // setTimeout(() => {
       this.schedule({
         task: BluReceiverTask.VERSION,
         radio_channel: radio_channel,
         // data
       })
-    }, 10000)
+    // }, 10000)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   /**
@@ -43,26 +46,23 @@ class BluStation extends BluReceiver {
    * @param {Number} radio_channel 
    */
   async rebootBluReceiver(radio_channel, poll_interval) {
-    // setTimeout(() => {
-    this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 100, blink_count: 10 })
-    // }, 5000)
-
+    await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 100, blink_count: 10 })
     await this.stopDetections(radio_channel)
     this.schedule({
       task: BluReceiverTask.REBOOT,
       radio_channel: radio_channel
     })
 
-    setTimeout(() => {
+    // setTimeout(() => {
       this.setBluConfig(radio_channel,
         {
           scan: 1,
           rx_blink: 1,
         })
-      this.getDetections(radio_channel, poll_interval)
-      this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
-      this.getBluVersion(radio_channel)
-      }, 10000)
+      await this.getDetections(radio_channel, poll_interval)
+      // await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
+      await this.getBluVersion(radio_channel)
+      // }, 10000)
     // restart radio with poll interval of 10s
     
   }
@@ -72,7 +72,7 @@ class BluStation extends BluReceiver {
    * @param {Number} radio_channel 
    * @returns Dropped Detections
    */
-  getDroppedDetections(radio_channel, buffer_interval) {
+  async getDroppedDetections(radio_channel, buffer_interval) {
     // console.log('BluReceiverTask.STATS', job.task)
     this.dropped = setInterval(() => {
       this.schedule({
@@ -90,6 +90,8 @@ class BluStation extends BluReceiver {
    * @returns BLE tag detections
    */
   async getDetections(radio_channel, buffer_interval) {
+    // await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
+
     const key = radio_channel.toString()
     this.beeps = setInterval(() => {
       this.schedule({
@@ -101,13 +103,10 @@ class BluStation extends BluReceiver {
     if(Object.keys(this.blu_radios).includes(key)) {
       // if channel exists within detections object, do nothing
       this.blu_radios[key] = { polling: this.beeps, dropped: this.dropped, }
-
     } else {
       // if channel does not exist, channel is added to object and its value as key and the setInterval as value
       this.blu_radios[key] = { polling: this.beeps, dropped: this.dropped, }
-
     }
-    this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
 
     return this.blu_radios[key].polling
   }
@@ -129,6 +128,7 @@ class BluStation extends BluReceiver {
       return values
     })
   }
+
   /**
  * 
  * @param {Number} radio_channel Radio Channel
@@ -136,10 +136,10 @@ class BluStation extends BluReceiver {
  * @param {Number} blink_rate Blink per ms
  * @param {Number} blink_count Number of blinks before turning off
  */
-  setLogoFlash(radio_channel, opts) {
+  async setLogoFlash(radio_channel, opts) {
     // setTimeout(() => {
     console.log('set logo flash radio channel', radio_channel, 'opts', opts)
-    this.schedule({
+    return this.schedule({
       task: BluReceiverTask.LEDS,
       radio_channel: radio_channel,
       data: {
@@ -151,6 +151,7 @@ class BluStation extends BluReceiver {
     })
     // }, timeout ? timeout : 0)
   }
+
   /**
    * 
    * @param {Number} radio_channel 
@@ -193,40 +194,23 @@ class BluStation extends BluReceiver {
 
   async startUpFlashLogo() {
 
-    await this.delay(1000)
-    this.setLogoFlash(1, { led_state: 1, blink_rate: null, blink_count: null, })
-    await this.delay(1000)
-    this.setLogoFlash(2, { led_state: 1, blink_rate: null, blink_count: null, })
-    await this.delay(1000)
-    this.setLogoFlash(3, { led_state: 1, blink_rate: null, blink_count: null, })
-    await this.delay(1000)
-    this.setLogoFlash(4, { led_state: 1, blink_rate: null, blink_count: null, })
-    await this.delay(1000)
-
-    // setTimeout(() => {
     let blu_leds = [1,2,3,4]
-    const logo_flash = blu_leds.map((led) => {
-      this.setLogoFlash(led, { led_state: 2, blink_rate: 100, blink_count: 6, })
-    })
-
-    Promise.all(logo_flash).then((value) => {
-      console.log('logo leds are flashing')
+    const logo_start = await Promise.all(blu_leds.map((led) => {
+      this.delay(1000)
+      this.setLogoFlash(led, { led_state: 1, blink_rate: null, blink_count: null, })
+    })).then((value) =>{
+      console.log('logo led is turning on', value)
     }).catch((e) => {
       console.error(e)
     })
-    // blink logo 3 times
-    this.setLogoFlash(2, { led_state: 2, blink_rate: 100, blink_count: 6, })
-    this.setLogoFlash(3, { led_state: 2, blink_rate: 100, blink_count: 6, })
-    this.setLogoFlash(4, { led_state: 2, blink_rate: 100, blink_count: 6, })
-  //  }, 5000)
-  }
 
-  /**
-   * 
-   * @param  {...any} msgs 
-   */
-  stationLog(...msgs) {
-
+    const logo_flash = await Promise.all(blu_leds.map((led) => {
+      this.setLogoFlash(led, { led_state: 2, blink_rate: 100, blink_count: 6, })
+    })).then((value) => {
+      console.log('logo leds are flashing', value)
+    }).catch((e) => {
+      console.error(e)
+    })
   }
 
   /**
@@ -237,7 +221,7 @@ class BluStation extends BluReceiver {
     // setTimeout(() => {
       await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1,})
       await this.getDetections(radio_channel, poll_interval)
-      // this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
+      await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
 
     // }, 10000)
     console.log('radio ', radio_channel, 'is on at', poll_interval, 'poll rate')
