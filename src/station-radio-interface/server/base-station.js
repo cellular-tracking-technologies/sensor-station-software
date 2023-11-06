@@ -64,14 +64,11 @@ class BaseStation {
     // this.blu_radios = [1, 2, 3, 4]
     this.poll_interval
     this.poll_data
-
-    // this.old_firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
-    // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
-    // this.firmware = fs.readFileSync('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
-    // this.firmware = './blu_adapter_v2.0.0+0.bin'
     this.open_radios = []
-
+    this.blu_receiver
+    this.blu_path
+    console.log('constructor this blu path', this.blu_path)
     console.log('firmware', this.firmware)
     // console.log('station config blu radios', this.config.default_config.blu_radios)
   }
@@ -111,21 +108,35 @@ class BaseStation {
     this.log_filename = `sensor-station-${this.station_id}.log`
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
-    // declare blu_reader class here to use it in websocket
-    SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
-      console.log('instantiating receiver', port)
-      const { comName: path } = port
-      console.log(path)
-      // return path
-    }).catch((err) => {
-      console.log(err)
-    })
+    // await this.getBluPath()
+    // console.log('init blu path', this.blu_path2)
 
-    console.log('this blu path', this.blu_path)
+    // declare blu_reader class here to use it in websocket
+    // SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
+    //   console.log('instantiating receiver', port)
+    //   const { comName: path } = port
+    //   console.log(path)
+    //   // return path
+    // }).catch((err) => {
+    //   console.log(err)
+    // })
+
+    // this.blu_path = await this.getBluPath()
+    // console.log('this blu path', this.blu_path)
+
+    const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
+    dir_watch.on('add', path => {
+      console.log('path', path)
+      this.open_radios.push(path.substring(17))
+      this.blu_receiver = this.open_radios.filter((radio) => !radio.includes('0:1.2.'))
+      // console.log('open radios', this.open_radios)
+      console.log('filtered open radios', this.blu_receiver[0])
+      // return this.blu_receiver[0]
+
+    
     this.blu_reader = new BluStation({
-      // path: this.blu_path,
-      // path: path,
-      path: '/dev/ttyUSB4',
+      // path: '/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7:1.0-port0',
+      path: this.blu_receiver[0],
       data_manager: this.data_manager,
       broadcast: this.broadcast,
     })
@@ -137,8 +148,39 @@ class BaseStation {
     this.startRadios()
 
     this.startBluRadios()
+  })
   }
 
+  async getBluPath() {
+    try {
+      let bpath
+      const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
+      dir_watch.on('add', path => {
+        console.log('path', path)
+        this.open_radios.push(path.substring(17))
+        this.blu_receiver = this.open_radios.filter((radio) => !radio.includes('0:1.2.'))
+        // console.log('open radios', this.open_radios)
+        console.log('filtered open radios', this.blu_receiver[0])
+        bpath = this.blu_receiver[0]
+        return this.blu_receiver[0]
+      })
+      console.log('bpath', dir_watch)
+      return this.blu_receiver[0]
+
+    } catch (e) {
+      console.error(e)
+    }
+    // return bpath
+    // dir_watch.on('unlink', path => {
+    //   console.log('unlinked path', path)
+    //     const index = this.blu_receiver.indexOf(path.substring(17))
+    //     if (index > -1) {
+    //       this.blu_receiver.splice(index, 1)
+    //     }
+    //     console.log('unlinked open radios', this.blu_receiver)
+    //     return this.blu_receiver[0]
+    // })
+  }
   /**
    * 
    * @param {Object} opts 
@@ -167,20 +209,7 @@ class BaseStation {
       port: this.config.data.http.websocket_port,
     })
     this.sensor_socket_server.on('open', (event) => {
-      // this.sensor_socket_server.send('server is open first message')
-      // event.msg = "server is open first message"
-      // this.broadcast(event)
-      // console.log('opening event', event)
 
-      // Object.keys(this.config.default_config.blu_radios).forEach((radio) => {
-      //   let current_poll = {
-      //     channel: radio,
-      //     poll_interval: this.config.default_config.blu_radios[radio].values.default,
-      //     msg_type: 'cmd',
-      //     cmd: 'default_poll'
-      //   }
-      //   this.broadcast(JSON.stringify(current_poll))
-      // })
     })
     this.sensor_socket_server.on('cmd', (cmd) => {
       switch (cmd.cmd) {
@@ -566,33 +595,6 @@ class BaseStation {
 
   startBluRadios() {
     console.log('blu receiver on')
-    const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
-
-    dir_watch.on('add', path => {
-      console.log(path)
-      this.open_radios.push(path.substring(17))
-      console.log('open radios', this.open_radios)
-    })
-    dir_watch.on('unlink', path => {
-      console.log('unlinked path', path)
-        const index = this.open_radios.indexOf(path.substring(17))
-        if (index > -1) {
-          this.open_radios.splice(index, 1)
-        }
-        console.log('unlinked open radios', this.open_radios)
-        return this.open_radios
-    })
-
-    // SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
-    //   console.log('instantiating receiver', port)
-    //   const { comName: path } = port
-    //   console.log(path)
-
-    //   let blu_reader = new BluStation({
-    //     path: path,
-    //     data_manager: this.data_manager,
-    //     broadcast: this.broadcast,
-    //   })
 
     this.blu_reader.on('complete', (job) => {
       // console.log('blu reader job', job)

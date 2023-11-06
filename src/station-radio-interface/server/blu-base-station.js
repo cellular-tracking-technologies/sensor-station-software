@@ -239,7 +239,7 @@ class BluStation extends BluReceiver {
     //   console.log( "\nGracefully shutting down from SIGINT (Ctrl-C)" )
     //   process.exit(0)
     // })
-    console.log('active blu radios', this.blu_radios)
+    // console.log('active blu radios', this.blu_radios)
     // process.exit(0)
   }
 
