@@ -110,17 +110,19 @@ class BaseStation {
 
     const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
     dir_watch.on('add', path => {
-      console.log('path', path)
-      this.open_radios.push(path.substring(17))
-      this.blu_receiver = this.open_radios.filter((radio) => !radio.includes('0:1.2.'))
-      // console.log('open radios', this.open_radios)
-      console.log('filtered open radios', this.blu_receiver[0])
+      let watched_dir = dir_watch.getWatched()
+      this.blu_path = Object.values(watched_dir)[1].filter((path) => !path.includes('0:1.2.'))[0]
+      if(this.blu_path) {
+        this.blu_receiver = '/dev/serial/by-path/'+this.blu_path
+      } else {
+        this.blu_receiver = undefined
+      }
 
       this.blu_reader = new BluStation({
-        // path: '/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7:1.0-port0',
-        path: this.blu_receiver[0],
-        data_manager: this.data_manager,
-        broadcast: this.broadcast,
+        // path: this.blu_receiver[0],
+        path: this.blu_receiver,
+        // data_manager: this.data_manager,
+        // broadcast: this.broadcast,
       })
 
       this.gps_client.start()

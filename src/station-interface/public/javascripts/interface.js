@@ -1480,26 +1480,6 @@ const build_blu_component = function (n) {
   div = document.createElement('div')
   div.setAttribute('class', 'row')
 
-  // let col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // let button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_on')
-  // button.setAttribute('value', n)
-  // button.textContent = 'Radio On'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_off')
-  // button.setAttribute('value', n)
-  // button.textContent = 'Radio Off'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
