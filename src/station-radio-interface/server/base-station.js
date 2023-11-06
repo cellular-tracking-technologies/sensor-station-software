@@ -68,6 +68,7 @@ class BaseStation {
     this.open_radios = []
     this.blu_receiver
     this.blu_path
+    this.watched_dir
     console.log('constructor this blu path', this.blu_path)
     console.log('firmware', this.firmware)
     // console.log('station config blu radios', this.config.default_config.blu_radios)
@@ -119,7 +120,6 @@ class BaseStation {
       }
 
       this.blu_reader = new BluStation({
-        // path: this.blu_receiver[0],
         path: this.blu_receiver,
         // data_manager: this.data_manager,
         // broadcast: this.broadcast,
