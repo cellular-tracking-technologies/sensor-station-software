@@ -19,6 +19,7 @@ import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
 import process from 'node:process'
+import chokidar from 'chokidar'
 // import '../../hardware/bluseries-receiver/driver/bin'
 
 /**
@@ -69,6 +70,7 @@ class BaseStation {
     // this.firmware = fs.readFileSync('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
     // this.firmware = './blu_adapter_v2.0.0+0.bin'
+    this.open_radios = []
 
     console.log('firmware', this.firmware)
     // console.log('station config blu radios', this.config.default_config.blu_radios)
@@ -123,7 +125,7 @@ class BaseStation {
     this.blu_reader = new BluStation({
       // path: this.blu_path,
       // path: path,
-      path: '/dev/ttyUSB0',
+      path: '/dev/ttyUSB4',
       data_manager: this.data_manager,
       broadcast: this.broadcast,
     })
@@ -564,6 +566,23 @@ class BaseStation {
 
   startBluRadios() {
     console.log('blu receiver on')
+    const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
+
+    dir_watch.on('add', path => {
+      console.log(path)
+      this.open_radios.push(path.substring(17))
+      console.log('open radios', this.open_radios)
+    })
+    dir_watch.on('unlink', path => {
+      console.log('unlinked path', path)
+        const index = this.open_radios.indexOf(path.substring(17))
+        if (index > -1) {
+          this.open_radios.splice(index, 1)
+        }
+        console.log('unlinked open radios', this.open_radios)
+        return this.open_radios
+    })
+
     // SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
     //   console.log('instantiating receiver', port)
     //   const { comName: path } = port
