@@ -108,22 +108,6 @@ class BaseStation {
     this.log_filename = `sensor-station-${this.station_id}.log`
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
-    // await this.getBluPath()
-    // console.log('init blu path', this.blu_path2)
-
-    // declare blu_reader class here to use it in websocket
-    // SerialClient.find_port({ manufacturer: "FTDI" }).then((port) => {
-    //   console.log('instantiating receiver', port)
-    //   const { comName: path } = port
-    //   console.log(path)
-    //   // return path
-    // }).catch((err) => {
-    //   console.log(err)
-    // })
-
-    // this.blu_path = await this.getBluPath()
-    // console.log('this blu path', this.blu_path)
-
     const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
     dir_watch.on('add', path => {
       console.log('path', path)
@@ -131,56 +115,43 @@ class BaseStation {
       this.blu_receiver = this.open_radios.filter((radio) => !radio.includes('0:1.2.'))
       // console.log('open radios', this.open_radios)
       console.log('filtered open radios', this.blu_receiver[0])
-      // return this.blu_receiver[0]
 
-    
-    this.blu_reader = new BluStation({
-      // path: '/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7:1.0-port0',
-      path: this.blu_receiver[0],
-      data_manager: this.data_manager,
-      broadcast: this.broadcast,
+      this.blu_reader = new BluStation({
+        // path: '/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7:1.0-port0',
+        path: this.blu_receiver[0],
+        data_manager: this.data_manager,
+        broadcast: this.broadcast,
+      })
+
+      this.gps_client.start()
+      this.stationLog('initializing base station')
+      this.startWebsocketServer()
+      this.startTimers()
+      this.startRadios()
+
+      this.startBluRadios()
     })
 
-    this.gps_client.start()
-    this.stationLog('initializing base station')
-    this.startWebsocketServer()
-    this.startTimers()
-    this.startRadios()
-
-    this.startBluRadios()
-  })
-  }
-
-  async getBluPath() {
-    try {
-      let bpath
-      const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
-      dir_watch.on('add', path => {
-        console.log('path', path)
-        this.open_radios.push(path.substring(17))
-        this.blu_receiver = this.open_radios.filter((radio) => !radio.includes('0:1.2.'))
-        // console.log('open radios', this.open_radios)
-        console.log('filtered open radios', this.blu_receiver[0])
-        bpath = this.blu_receiver[0]
-        return this.blu_receiver[0]
-      })
-      console.log('bpath', dir_watch)
-      return this.blu_receiver[0]
-
-    } catch (e) {
-      console.error(e)
-    }
-    // return bpath
     // dir_watch.on('unlink', path => {
     //   console.log('unlinked path', path)
-    //     const index = this.blu_receiver.indexOf(path.substring(17))
-    //     if (index > -1) {
-    //       this.blu_receiver.splice(index, 1)
-    //     }
-    //     console.log('unlinked open radios', this.blu_receiver)
-    //     return this.blu_receiver[0]
-    // })
+    //   const index = this.blu_receiver.indexOf(path.substring(17))
+    //   if (index > -1) {
+    //     this.blu_receiver.splice(index, 1)
+    //   }
+    //   console.log('unlinked open radios', this.blu_receiver)
+    //   const receiver_exit = Object.keys(this.blu_radios).map(radio => {
+    //     // this.blu_reader.setLogoFlash(radio, { scan: 0, rx_blink: 0,})
+    //     this.blu_reader.radioOff(radio)
+    //   })
+    //   Promise.all(receiver_exit).then((values) => {
+    //     console.log(values)
+    //   })
+    //   setTimeout(() => {
+    //     process.exit(0)
+    //   }, 5000)
+    // }) // end of chokidar filewatch
   }
+
   /**
    * 
    * @param {Object} opts 
@@ -696,7 +667,7 @@ class BaseStation {
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      
+
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
         // this.blu_reader.setLogoFlash(radio, { scan: 0, rx_blink: 0,})
         this.blu_reader.radioOff(radio)
@@ -722,10 +693,10 @@ class BaseStation {
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       // setTimeout(() => {
-        let key = Number(radio)
-        // this.blu_reader.getBluVersion(radio) // outputs timeout error still
-        this.blu_reader.radioOn(key, this.blu_radios[key].values.current)
-        // this.blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
+      let key = Number(radio)
+      // this.blu_reader.getBluVersion(radio) // outputs timeout error still
+      this.blu_reader.radioOn(key, this.blu_radios[key].values.current)
+      // this.blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
 
       // }, 10000)
     })).then((values) => {
