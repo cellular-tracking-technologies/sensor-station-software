@@ -126,11 +126,8 @@ class BaseStation {
           // data_manager: this.data_manager,
           // broadcast: this.broadcast,
         })
-        this.gps_client.start()
-        this.stationLog('initializing base station')
-        this.startWebsocketServer()
-        this.startTimers()
-        this.startRadios(this.open_radios)
+
+        // this.startRadios(this.open_radios)
         this.startBluRadios()
       })
       .on('unlink', path => {
@@ -143,10 +140,14 @@ class BaseStation {
       })
       .on('add', path => {
         console.log('adding path', path)
+        console.log('add open radios', this.open_radios)
         // console.log(dir_watch.getWatched())
         this.startRadios(path)
       })
-
+      this.gps_client.start()
+      this.stationLog('initializing base station')
+      this.startWebsocketServer()
+      this.startTimers()
   }
 
   /**
