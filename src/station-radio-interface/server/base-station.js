@@ -107,10 +107,6 @@ class BaseStation {
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
     const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
-      .on('add', path => {
-        console.log('adding path', path)
-        console.log(dir_watch.getWatched())
-      })
       .on('ready', () => {
         // find way to put all of this in function
         let watched_dir = dir_watch.getWatched()
@@ -136,6 +132,19 @@ class BaseStation {
         this.startTimers()
         this.startRadios(this.open_radios)
         this.startBluRadios()
+      })
+      .on('unlink', path => {
+        let watched_dir = dir_watch.getWatched()
+        console.log('unlink watched directory', watched_dir)
+        // watched_dir.forEach((path) => {
+
+        // })
+        console.log('file', path, 'has been removed')
+      })
+      .on('add', path => {
+        console.log('adding path', path)
+        // console.log(dir_watch.getWatched())
+        this.startRadios(path)
       })
 
   }
@@ -506,7 +515,7 @@ class BaseStation {
    * start the radio receivers
    */
   startRadios(open_radios) {
-    console.log('starting radio receivers')
+    console.log('starting radio receivers', open_radios)
     this.stationLog('starting radio receivers')
     this.config.data.radios.forEach((radio) => {
       if (radio.path && open_radios.includes(radio.path.substring(20))) {
@@ -514,7 +523,8 @@ class BaseStation {
         let beep_reader = new RadioReceiver({
           baud_rate: 115200,
           port_uri: radio.path,
-          channel: radio.channel
+          channel: radio.channel,
+          restart_on_close: false,
         })
         beep_reader.on('beep', (beep) => {
           // console.log('beep', beep)
@@ -534,7 +544,7 @@ class BaseStation {
           this.stationLog(`writing message to radio ${msg.channel}: ${msg.msg}`)
         })
         beep_reader.on('error', (err) => {
-          console.log('reader error', err)
+          console.log('reader error', err, radio.channel)
           console.error(err)
           // error on the radio - probably a path error
           beep_reader.stopPollingFirmware()
@@ -542,6 +552,8 @@ class BaseStation {
         })
         beep_reader.on('close', (info) => {
           this.stationLog(`radio closed ${radio.channel}`)
+          beep_reader.destroy()
+          console.log(`radio closed ${radio.channel}`)
           if (info.port_uri in Object.keys(this.active_radios)) {
           }
         })

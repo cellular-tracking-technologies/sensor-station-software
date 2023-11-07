@@ -15,12 +15,14 @@ class RadioReceiver extends EventEmitter {
    * @param {*} opts 
    */
   constructor(opts) {
+    console.log('radio receiver opts', opts)
     super()
     this.port_uri = opts.port_uri
     this.baud_rate = opts.baud_rate
     this.channel = opts.channel
     this.restart_ms = opts.restart_ms | 15000
-    this.restart_on_close = opts.restart_on_close | true
+    // this.restart_on_close = opts.restart_on_close | true
+    this.restart_on_close = opts.restart_on_close
     this.serialport
     this.parser
     // poll firmware every 10 minutes
@@ -30,6 +32,7 @@ class RadioReceiver extends EventEmitter {
     this.current_command = null
     this.delay = 0.25
     this.fw_version = null
+    this.destroyed_port
 
     this.preset_commands = {
       node: "preset:node3",
@@ -40,6 +43,17 @@ class RadioReceiver extends EventEmitter {
     // console.log('build serial interface port', this.port_uri)
 
     this.pollFirmware = this.pollFirmware.bind(this)
+  }
+
+  destroy() {
+    console.log('radio', this.channel, 'is destroyed')
+    // this.cancel()
+
+    delete this.port_uri
+    // delete new RadioReceiver()
+    delete this.parser
+    this.stopPollingFirmware()
+    this.destroyed_port = true
   }
 
   pollFirmware() {
@@ -127,6 +141,13 @@ class RadioReceiver extends EventEmitter {
       self.buildSerialInterface()
     }, delay)
   }
+
+    /**
+   * cancel the radio
+   */
+    cancel(){
+      clearTimeout(this.timeoutId)
+    }
 
   /**
    * establish radio interface connection
