@@ -67,7 +67,7 @@ class BaseStation {
     // this.old_firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
     // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
     // this.firmware = fs.readFileSync('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
-    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
+    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
     // this.firmware = './blu_adapter_v2.0.0+0.bin'
 
     console.log('firmware', this.firmware)

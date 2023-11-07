@@ -250,9 +250,10 @@ class BluStation extends BluReceiver {
       task: BluReceiverTask.DFU,
       radio_channel,
       data: {
+        file: fs.readFileSync(firmware_file)
         // channel: radio_channel,
         // file: fs.readFileSync('/lib/ctt/sensor-station-software/src/station-radio-interface/server/blu_adapter_v2.0.0+0.bin')
-        file: fs.readFileSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
+        // file: fs.readFileSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
       }
     })
     await this.stopDetections(radio_channel)
