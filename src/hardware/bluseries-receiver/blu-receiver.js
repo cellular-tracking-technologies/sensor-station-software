@@ -126,7 +126,7 @@ class BluReceiver extends EventEmitter {
           this.finalize({
             task: BluReceiverTask.DFU,
             radio_channel: job.radio_channel,
-            error,
+            error: e,
             data: {}
           })
 
