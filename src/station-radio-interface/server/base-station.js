@@ -64,8 +64,8 @@ class BaseStation {
     // this.blu_radios = [1, 2, 3, 4]
     this.poll_interval
     this.poll_data
-    // this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
-    this.firmware = './src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
+    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
+    // this.firmware = './src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
     this.open_radios = []
     this.blu_receiver
     this.blu_path
@@ -195,8 +195,6 @@ class BaseStation {
           // let blu_channel = Number(cmd.data.channel)
           if (cmd.data.type === 'blu_on') {
             console.log('turning blu radio on')
-
-
             const radios_on = Object.keys(this.blu_radios).map(radio => {
               this.config.default_config.blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
               this.blu_reader.updateConfig(this.config.default_config)
@@ -275,7 +273,12 @@ class BaseStation {
           break
         case ('update-blu-firmware'):
           console.log('updating blu series receiver firmware', cmd)
-          this.blu_reader.updateBluFirmware(Number(cmd.data.channel), this.firmware)
+          let radio_num = Number(cmd.data.channel)
+          let poll_interval = this.config.default_config.blu_radios[radio_num].values.current
+          console.log('update firmware poll interval', poll_interval)
+          this.blu_reader.updateBluFirmware(radio_num, this.firmware, poll_interval)
+          // this.blu_reader.rebootBluReceiver(radio_num, this.config.default_config.blu_radios[radio_num].values.current)
+          // this.blu_reader.getBluVersion(radio_num)
           break
         case ('stats'):
           let stats = this.data_manager.stats.stats
@@ -572,64 +575,54 @@ class BaseStation {
       // console.log('blu reader job', job)
       switch (job.task) {
         case BluReceiverTask.VERSION:
-          console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
-          this.stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
-          this.blu_fw = {
-            msg_type: 'blu-firmware',
-            firmware: {
-              [job.radio_channel]: job.data.version,
+          try {
+
+            console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
+            this.stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
+            this.blu_fw = {
+              msg_type: 'blu-firmware',
+              firmware: {
+                [job.radio_channel]: job.data.version,
+              }
             }
+            console.log('this.blu_fw', this.blu_fw)
+            this.broadcast(JSON.stringify(this.blu_fw))
+          } catch (e) {
+            console.error('basestation getBluVersion error:', e)
           }
-          console.log('this.blu_fw', this.blu_fw)
-          this.broadcast(JSON.stringify(this.blu_fw))
           break
         case BluReceiverTask.DETECTIONS:
           // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
 
-          if (job.data.length) {
+          try {
             console.log('Radio', job.radio_channel, 'has', job.data.length, 'detections')
+            job.data.forEach((beep) => {
+              beep.data = { id: beep.id }
+              beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
+              this.data_manager.handleBluBeep(beep)
+              beep.msg_type = "blu"
+              beep.protocol = "1.0.0"
+              beep.received_at = moment(new Date(beep.time)).utc()
+              beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
+              this.broadcast(JSON.stringify(beep))
+              // console.log('string beep', JSON.stringify(beep))
+            })
+          } catch (e) {
+            console.error('base station get detections error:', e)
           }
-          job.data.forEach((beep) => {
-            beep.data = { id: beep.id }
-            beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
-            this.data_manager.handleBluBeep(beep)
-            beep.msg_type = "blu"
-            beep.protocol = "1.0.0"
-            beep.received_at = moment(new Date(beep.time)).utc()
-            // beep.blu_channel = beep.channel
-            // beep.channel = undefined
-            // console.log('blu beep', beep)
-            beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
-
-            this.broadcast(JSON.stringify(beep))
-            // console.log('string beep', JSON.stringify(beep))
-          })
           break
         // console.log(JSON.stringify(job))
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
-          // this.blu_reader.getBluVersion(job.radio_channel)
           console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
-          this.blu_reader.schedule({ task: BluReceiverTask.REBOOT, radio_channel: job.radio_channel })
-
-          // // this.blu_reader.rebootBluReceiver(job.radio_channel, 10000)
-          setTimeout(() => {
-            // this.blu_reader.rebootBluReceiver(job.radio_channel, 10000)
-            this.blu_reader.getBluVersion(job.radio_channel)
-            this.stationLog(`BluReceiver Radio ${job.radio_channel} updated to version ${job.data.version}`)
-
-            // this.stationLog(`BluReceiver Radio ${job.radio_channel} updated to version ${job.data.version}`)
-          }, 30000)
-
+          this.blu_reader.getBluVersion(job.radio_channel)
           break
         case BluReceiverTask.REBOOT:
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
           this.stationLog(`BluReceiver Radio ${job.radio_channel} is rebooting`)
-
-          // this.setLogoFlash(radio_channel, 
-          //   { led_state: 2, blink_rate: 1000, blink_count: -1 })
-
           console.log('Blu Receiver is rebooting!', job.radio_channel)
+          // this.config.default_config.blu_radios[job.radio_channel].values.current = this.blu_radios[job.radio_channel].values.default
+
           break
         case BluReceiverTask.LEDS:
           console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
@@ -641,7 +634,7 @@ class BaseStation {
 
           break
         case BluReceiverTask.STATS:
-          if (job.data.det_dropped !== null) {
+          try {
             console.log('Radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
             let blu_stats = {
               channel: job.radio_channel,
@@ -650,6 +643,8 @@ class BaseStation {
             }
             // this.broadcast(JSON.stringify(job.data.det_dropped))
             this.broadcast(JSON.stringify(blu_stats))
+          } catch (e) {
+            console.log('base station stats error:', e)
           }
           break
         default:
@@ -665,32 +660,18 @@ class BaseStation {
     //   this.blu_reader.radioOff(4)
     //   // process.exit(0)
     // })
-    process.on('SIGINT', () => {
-      this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
 
-      const radios_exit = Object.keys(this.blu_radios).map(radio => {
-        // this.blu_reader.setLogoFlash(radio, { scan: 0, rx_blink: 0,})
-        this.blu_reader.radioOff(radio)
-      })
-      Promise.all(radios_exit).then((values) => {
-        console.log(values)
-      })
-      setTimeout(() => {
-        process.exit(0)
-      }, 5000)
-    })
-
-    // this.blu_reader.startUpFlashLogo()
-
-    this.blu_reader.getBluVersion(1)
-    this.blu_reader.getBluVersion(2)
-    this.blu_reader.getBluVersion(3)
-    this.blu_reader.getBluVersion(4)
 
     // why does this break the regular logo flashing?
+    // this.blu_reader.startUpFlashLogo()
 
-    // this.blu_reader.updateBluFirmware(4, this.firmware) 
+    // get versions are on a timer so version number can be loaded to interface
+    setInterval(() => {
+      this.blu_reader.getBluVersion(1)
+      this.blu_reader.getBluVersion(2)
+      this.blu_reader.getBluVersion(3)
+      this.blu_reader.getBluVersion(4)
+    }, 60000)
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       // setTimeout(() => {

@@ -380,6 +380,7 @@ const initialize_controls = function () {
           data: {
             type: 'update-firmware',
             channel: radio_id,
+            poll_interval: 10000,
           }
         }));
       }
