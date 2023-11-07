@@ -64,14 +64,11 @@ class BaseStation {
     // this.blu_radios = [1, 2, 3, 4]
     this.poll_interval
     this.poll_data
-    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
+    // this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
+    this.firmware = './src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
     this.open_radios = []
     this.blu_receiver
     this.blu_path
-    this.watched_dir
-    console.log('constructor this blu path', this.blu_path)
-    console.log('firmware', this.firmware)
-    // console.log('station config blu radios', this.config.default_config.blu_radios)
   }
 
   /**
@@ -115,26 +112,32 @@ class BaseStation {
         console.log(dir_watch.getWatched())
       })
       .on('ready', () => {
+        // find way to put all of this in function
         let watched_dir = dir_watch.getWatched()
-        this.blu_path = Object.values(watched_dir)[1].filter((path) => !path.includes('0:1.2.'))[0]
+        this.blu_path = Object.values(watched_dir)[1].filter((path) => !path.includes('0:1.2.') && path.includes('-port0'))[0]
+        console.log('blu path', this.blu_path)
         if (this.blu_path) {
           this.blu_receiver = '/dev/serial/by-path/' + this.blu_path
         } else {
           this.blu_receiver = undefined
         }
 
+        this.open_radios = Object.values(watched_dir)[1].filter((path) => !path.includes('-port0'))
+        console.log('open radios', this.open_radios)
+
         this.blu_reader = new BluStation({
           path: this.blu_receiver,
           // data_manager: this.data_manager,
           // broadcast: this.broadcast,
         })
-        this.startBluRadios()
-      })
         this.gps_client.start()
         this.stationLog('initializing base station')
         this.startWebsocketServer()
         this.startTimers()
-        this.startRadios()
+        this.startRadios(this.open_radios)
+        this.startBluRadios()
+      })
+
   }
 
   /**
@@ -502,12 +505,12 @@ class BaseStation {
   /**
    * start the radio receivers
    */
-  startRadios() {
+  startRadios(open_radios) {
     console.log('starting radio receivers')
     this.stationLog('starting radio receivers')
     this.config.data.radios.forEach((radio) => {
-      // console.log('radio path', radio)
-      if (radio.path) {
+      if (radio.path && open_radios.includes(radio.path.substring(20))) {
+
         let beep_reader = new RadioReceiver({
           baud_rate: 115200,
           port_uri: radio.path,

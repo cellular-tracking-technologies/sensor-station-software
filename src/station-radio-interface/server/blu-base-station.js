@@ -246,25 +246,23 @@ class BluStation extends BluReceiver {
   async updateBluFirmware(radio_channel, firmware_file) {
     console.log('update firmware', firmware_file)
     await this.getBluVersion(radio_channel)
+    await this.stopDetections(radio_channel)
+    this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100,  blink_count: -1,})
     this.schedule({
       task: BluReceiverTask.DFU,
       radio_channel,
       data: {
+        file: firmware_file,
         // channel: radio_channel,
         // file: fs.readFileSync('/lib/ctt/sensor-station-software/src/station-radio-interface/server/blu_adapter_v2.0.0+0.bin')
-        file: fs.readFileSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
+        // file: fs.readFileSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
       }
     })
-    await this.stopDetections(radio_channel)
-    // this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100,  blink_count: 1000,})
-    // await this.rebootBluReceiver(radio_channel, 10000)
-    //   // this.schedule({
-    //   //   task: BluReceiverTask.REBOOT,
-    //   //   radio_channel: radio_channel
-    //   // })
+    
+    await this.rebootBluReceiver(radio_channel, 10000)
     // setTimeout(() => {
-      // await this.getBluVersion(radio_channel)
-      // await this.rebootBluReceiver(radio_channel, 10000)
+    //   await this.getBluVersion(radio_channel)
+    //   await this.rebootBluReceiver(radio_channel, 10000)
     // }, 20000)
   }
 
