@@ -110,48 +110,31 @@ class BaseStation {
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
     const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
-    dir_watch.on('add', path => {
-      let watched_dir = dir_watch.getWatched()
-      this.blu_path = Object.values(watched_dir)[1].filter((path) => !path.includes('0:1.2.'))[0]
-      if(this.blu_path) {
-        this.blu_receiver = '/dev/serial/by-path/'+this.blu_path
-      } else {
-        this.blu_receiver = undefined
-      }
-
-      this.blu_reader = new BluStation({
-        path: this.blu_receiver,
-        // data_manager: this.data_manager,
-        // broadcast: this.broadcast,
+      .on('add', path => {
+        console.log('adding path', path)
+        console.log(dir_watch.getWatched())
       })
+      .on('ready', () => {
+        let watched_dir = dir_watch.getWatched()
+        this.blu_path = Object.values(watched_dir)[1].filter((path) => !path.includes('0:1.2.'))[0]
+        if (this.blu_path) {
+          this.blu_receiver = '/dev/serial/by-path/' + this.blu_path
+        } else {
+          this.blu_receiver = undefined
+        }
 
-      this.gps_client.start()
-      this.stationLog('initializing base station')
-      this.startWebsocketServer()
-      this.startTimers()
-      this.startRadios()
-
-      this.startBluRadios()
-    })
-
-    // dir_watch.on('unlink', path => {
-    //   console.log('unlinked path', path)
-    //   const index = this.blu_receiver.indexOf(path.substring(17))
-    //   if (index > -1) {
-    //     this.blu_receiver.splice(index, 1)
-    //   }
-    //   console.log('unlinked open radios', this.blu_receiver)
-    //   const receiver_exit = Object.keys(this.blu_radios).map(radio => {
-    //     // this.blu_reader.setLogoFlash(radio, { scan: 0, rx_blink: 0,})
-    //     this.blu_reader.radioOff(radio)
-    //   })
-    //   Promise.all(receiver_exit).then((values) => {
-    //     console.log(values)
-    //   })
-    //   setTimeout(() => {
-    //     process.exit(0)
-    //   }, 5000)
-    // }) // end of chokidar filewatch
+        this.blu_reader = new BluStation({
+          path: this.blu_receiver,
+          // data_manager: this.data_manager,
+          // broadcast: this.broadcast,
+        })
+        this.startBluRadios()
+      })
+        this.gps_client.start()
+        this.stationLog('initializing base station')
+        this.startWebsocketServer()
+        this.startTimers()
+        this.startRadios()
   }
 
   /**
