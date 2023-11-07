@@ -64,11 +64,15 @@ class BaseStation {
     // this.blu_radios = [1, 2, 3, 4]
     this.poll_interval
     this.poll_data
-    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
-    // this.firmware = './src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin'
-    this.open_radios = []
-    this.blu_receiver
-    this.blu_path
+
+    // this.old_firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
+    // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
+    // this.firmware = fs.readFileSync('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
+    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+    // this.firmware = './blu_adapter_v2.0.0+0.bin'
+
+    console.log('firmware', this.firmware)
+    // console.log('station config blu radios', this.config.default_config.blu_radios)
   }
 
   /**

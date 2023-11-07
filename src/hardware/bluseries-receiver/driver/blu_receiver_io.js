@@ -178,22 +178,44 @@ class BluReceiverIo extends EventEmitter {
 
           /** Device has no more detections when it responds with an empty data object */
           if (Object.keys(o.data).length === 0) {
-            resolve({ error: e, data: detections })
+            resolve({ error, data: detections })
             return true
           } else {
 
             /** parse tag id, payload, and rssi here */
-            let payload_hex = Buffer.from(o.data.detection, 'base64').toString("hex")
-            detections.push({
+            let payload = Buffer.from(o.data.detection, 'base64')
+
+            let detection = {
               channel: o.channel,
               time: new Date(Date.now() - (o.data.current_tick_ms - o.data.detect_tick_ms)),
               rssi: o.data.rssi,
-              id: payload_hex.substring(8, 16),
-              sync: payload_hex.substring(16, 20),
-              product: payload_hex.substring(20, 21),
-              revision: payload_hex.substring(21, 22),
-              payload: payload_hex.substring(22, payload_hex.length - 6)
-            })
+              id: payload.toString("hex", 0, 4),
+              sync: payload.readUInt16LE(4),
+              product: payload.readUInt8(6),
+              revision: payload.readUInt8(7),
+              payload: {
+                parsed: {},
+                raw: ""
+              }
+            }
+
+            if (payload.length > 8) {
+              detection.payload.raw = payload.toString("hex", 8)
+
+              switch (detection.revision) {
+                case 0:
+                  detection.payload.parsed = {
+                    solar: payload.readUInt16LE(8) / 1000,
+                    temp: payload.readUInt16LE(10) / 100
+                  }
+                  break
+                default:
+                  break
+              }
+            }
+
+            detections.push(detection)
+
             return false
           }
 
@@ -258,6 +280,7 @@ class BluReceiverIo extends EventEmitter {
     this.handler = (result) => {
       if (on_event(result) === true) {
         clearTimeout(timeout)
+        /** remove event listener */
         this.#data.usb.off(eventType, this.handler);
         return
       } else {
@@ -265,6 +288,7 @@ class BluReceiverIo extends EventEmitter {
           clearTimeout(timeout)
           timeout = setTimeout(() => {
             on_event(null, 'timeout')
+            /** remove event listener */
             this.#data.usb.off(eventType, this.handler);
           }, timing.timeout)
         }
@@ -274,6 +298,7 @@ class BluReceiverIo extends EventEmitter {
 
     timeout = setTimeout(() => {
       on_event(null, 'timeout')
+      /** remove event listener */
       this.#data.usb.off(eventType, this.handler);
     }, timing.timeout)
   };
