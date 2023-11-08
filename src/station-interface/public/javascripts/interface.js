@@ -7,6 +7,8 @@ let beep_channels = [];
 const blu_stats = {};
 // let poll_interval = 10000;
 let poll_interval;
+let umacr = '\u016B';
+
 
 const DATE_FMT = 'YYYY-MM-DD HH:mm:ss';
 let socket;
@@ -209,7 +211,7 @@ const initialize_controls = function () {
 
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-    let res = window.prompt(`Turning on all Blu Radios and setting polling interval as:`);
+    let res = window.prompt(`Turning on all Bl${umacr} Radios and setting polling interval as:`);
     res = Number(res)
     socket.send(JSON.stringify({
       msg_type: 'cmd',
@@ -255,7 +257,7 @@ const initialize_controls = function () {
   // });
   document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-      let res = window.confirm('Are you sure you want to turn all Bl&umarc; Series Radios off?');
+      let res = window.confirm(`Are you sure you want to turn all Bl${umacr} Series Radios off?`);
       if (res) {
         socket.send(JSON.stringify({
           msg_type: 'cmd',
@@ -1421,7 +1423,7 @@ const build_blu_component = function (n) {
 
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-align: center; color: #007FFF')
-  h2.textContent = 'Blu Radio ' + n
+  h2.textContent = `Bl${umacr} Radio ` + n
   wrapper.appendChild(h2)
   const version_label = document.createElement('span')
   version_label.textContent = 'version: '
@@ -1530,7 +1532,7 @@ const build_blu_component = function (n) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'update_blu_firmware')
   button.setAttribute('value', n)
-  button.textContent = `Update Blu Radio Firmware`
+  button.textContent = `Update Bl${umacr} Radio Firmware`
   // button.textContent = 'Change Polling Interval  (Default is 10000 ms)'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
