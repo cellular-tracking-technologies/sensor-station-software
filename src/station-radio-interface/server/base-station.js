@@ -61,18 +61,9 @@ class BaseStation {
     this.server_api = new ServerApi()
     this.radio_fw = {}
     this.blu_fw = {}
-    // this.blu_radios = [1, 2, 3, 4]
     this.poll_interval
     this.poll_data
-
-    // this.old_firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v1.2.0+0.bin')
-    // this.firmware = Buffer.from('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
-    // this.firmware = fs.readFileSync('../../hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin')
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
-    // this.firmware = './blu_adapter_v2.0.0+0.bin'
-
-    console.log('firmware', this.firmware)
-    // console.log('station config blu radios', this.config.default_config.blu_radios)
   }
 
   /**
@@ -112,8 +103,10 @@ class BaseStation {
 
     const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
       .on('ready', () => {
+      // .on('add', () => {
         // find way to put all of this in function
         let watched_dir = dir_watch.getWatched()
+        console.log('watched directory', watched_dir)
         this.blu_path = Object.values(watched_dir)[1].filter((path) => !path.includes('0:1.2.') && path.includes('-port0'))[0]
         console.log('blu path', this.blu_path)
         if (this.blu_path) {
@@ -131,23 +124,15 @@ class BaseStation {
           // broadcast: this.broadcast,
         })
 
-        // this.startRadios(this.open_radios)
+        this.startRadios(this.open_radios)
         this.startBluRadios()
       })
       .on('unlink', path => {
         let watched_dir = dir_watch.getWatched()
         console.log('unlink watched directory', watched_dir)
-        // watched_dir.forEach((path) => {
-
-        // })
         console.log('file', path, 'has been removed')
       })
-      .on('add', path => {
-        console.log('adding path', path)
-        console.log('add open radios', this.open_radios)
-        // console.log(dir_watch.getWatched())
-        this.startRadios(path)
-      })
+
       this.gps_client.start()
       this.stationLog('initializing base station')
       this.startWebsocketServer()
@@ -589,7 +574,7 @@ class BaseStation {
                 [job.radio_channel]: job.data.version,
               }
             }
-            console.log('this.blu_fw', this.blu_fw)
+            // console.log('this.blu_fw', this.blu_fw)
             this.broadcast(JSON.stringify(this.blu_fw))
           } catch (e) {
             console.error('basestation getBluVersion error:', e)
@@ -608,15 +593,8 @@ class BaseStation {
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
               beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
-              // let { service, family, vcc, temp, broadcast_id } = bluParser(Buffer.from(beep.payload.raw, 'hex'))
-              // beep.service = service
-              // beep.family = family
-              // beep.vcc = vcc
-              // beep.temp = temp
-              // beep.broadcast_id = broadcast_id
-              
               this.broadcast(JSON.stringify(beep))
-              console.log('blu beep', beep)
+              // console.log('blu beep', beep)
             })
           } catch (e) {
             console.error('base station get detections error:', e)
@@ -673,6 +651,7 @@ class BaseStation {
     // })
 
 
+
     // why does this break the regular logo flashing?
     // this.blu_reader.startUpFlashLogo()
 
@@ -703,13 +682,15 @@ class BaseStation {
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
       
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
-        // this.blu_reader.setLogoFlash(radio, { scan: 0, rx_blink: 0,})
         this.blu_reader.radioOff(radio)
       })
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
+      
       setTimeout(() => {
+        this.blu_reader = null
+        delete this.blu_reader
         process.exit(0)
       }, 5000)
     })

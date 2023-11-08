@@ -32,7 +32,7 @@ class BluReceiver extends EventEmitter {
       console.log('blu radio is closing')
 
       this.#data.connected = false
-      process.exit(0)
+      // process.exit(0)
     })
   }
   /**

@@ -27,7 +27,7 @@ class SerialClient extends EventEmitter {
       this.emit('close', { port: this.port.path, })
     })
     this.port.on('error', (err) => { 
-      console.log(`port error ${err}`)
+      console.log(`port error on ${this.port.path} ${err}`)
     })
     // this.port.on('data', (buffer) => {
     //   console.log('rx <-- ', buffer.toString('hex'))
