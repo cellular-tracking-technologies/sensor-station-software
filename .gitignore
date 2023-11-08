@@ -1,3 +1,4 @@
 node_modules/*
 lib/*
 *.swp
+src/station-radio-interface/server/data/blu-parser.js

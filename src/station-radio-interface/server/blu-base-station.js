@@ -29,13 +29,10 @@ class BluStation extends BluReceiver {
    */
   async getBluVersion(radio_channel) {
     try {
-      // setTimeout(() => {
       return this.schedule({
         task: BluReceiverTask.VERSION,
         radio_channel: radio_channel,
-        // data
       })
-      // }, 10000)
     } catch (e) {
       console.error('GET VERSION ERROR', e)
     }
@@ -246,7 +243,14 @@ class BluStation extends BluReceiver {
         }
       })
       await this.rebootBluReceiver(radio_channel, poll_interval)
-      await this.getBluVersion(radio_channel)
+      setTimeout(() => {
+        this.schedule({
+          task: BluReceiverTask.VERSION,
+          radio_channel,
+        })
+      }, 20000)
+      await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1})
+      // await this.getBluVersion(radio_channel)
     } catch (e) {
       console.error('Update firmware error', e)
     }

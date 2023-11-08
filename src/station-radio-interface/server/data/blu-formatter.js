@@ -1,5 +1,5 @@
 import moment from 'moment'
-
+// import bluParser from './blu-parser.js'
 /**
  * file formatter for BLE data
  */
@@ -18,8 +18,15 @@ class BluFormatter {
       'Sync',
       'Product',
       'Revision',
-      'Payload',
+      // 'Service',
+      // 'Family',
+      // 'Id',
+      'VCC',
+      'Temp',
+      'Raw Payload',
       'NodeId',
+      // 'Broadcast Id',
+      // 'Payload Id',
     ]
     this.date_format = opts.date_format
   }
@@ -29,8 +36,10 @@ class BluFormatter {
    * @param {object} record - GPS record received from GPSD
    */
   formatRecord(record) {
+    console.log('blu formatter record', record)
+    let fields, channel, recorded_at, product, tag_rssi, id, sync, revision, raw_payload, solar, temp
+    // let { service, family, vcc, temp, broadcast_id, id: payload_id } = bluParser(Buffer.from(record.payload.raw, 'hex'))
 
-    let fields, channel, recorded_at, tag_rssi, id, sync, product, revision, payload
     let node_id = ''
 
     channel = record.channel
@@ -40,7 +49,10 @@ class BluFormatter {
     sync = record.sync
     product = record.product
     revision = record.revision
-    payload = record.payload
+    solar = record.payload.parsed.solar
+    temp = record.payload.parsed.temp
+    raw_payload = record.payload.raw.toString()
+
 
     fields = [
 
@@ -51,8 +63,14 @@ class BluFormatter {
       sync,
       product,
       revision,
-      payload,
+      // service,
+      // family,
+      solar,
+      temp,
+      raw_payload,
       node_id,
+      // broadcast_id,
+      // payload_id
     ]
 
     return fields

@@ -3,7 +3,7 @@ import { BluStation } from './blu-base-station.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import SerialClient from '../../hardware/bluseries-receiver/driver/serial_client.js'
-
+import bluParser from './data/blu-parser.js'
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
@@ -608,8 +608,15 @@ class BaseStation {
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
               beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
+              // let { service, family, vcc, temp, broadcast_id } = bluParser(Buffer.from(beep.payload.raw, 'hex'))
+              // beep.service = service
+              // beep.family = family
+              // beep.vcc = vcc
+              // beep.temp = temp
+              // beep.broadcast_id = broadcast_id
+              
               this.broadcast(JSON.stringify(beep))
-              // console.log('string beep', JSON.stringify(beep))
+              console.log('blu beep', beep)
             })
           } catch (e) {
             console.error('base station get detections error:', e)
@@ -619,7 +626,7 @@ class BaseStation {
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
           console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
-          this.blu_reader.getBluVersion(job.radio_channel)
+          // this.blu_reader.getBluVersion(job.radio_channel)
           break
         case BluReceiverTask.REBOOT:
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
@@ -675,7 +682,7 @@ class BaseStation {
       this.blu_reader.getBluVersion(2)
       this.blu_reader.getBluVersion(3)
       this.blu_reader.getBluVersion(4)
-    }, 60000)
+    }, 10000)
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       // setTimeout(() => {
@@ -689,6 +696,22 @@ class BaseStation {
       console.log('radios started')
     }).catch((e) => {
       console.error(e)
+    })
+
+    process.on('SIGINT', () => {
+      this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
+      
+      const radios_exit = Object.keys(this.blu_radios).map(radio => {
+        // this.blu_reader.setLogoFlash(radio, { scan: 0, rx_blink: 0,})
+        this.blu_reader.radioOff(radio)
+      })
+      Promise.all(radios_exit).then((values) => {
+        console.log(values)
+      })
+      setTimeout(() => {
+        process.exit(0)
+      }, 5000)
     })
   }
 
