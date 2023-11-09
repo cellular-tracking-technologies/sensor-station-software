@@ -39,6 +39,7 @@ class BaseStation {
     })
 
     this.blu_radios = this.config.default_config.blu_radios
+    this.blu_dir = []
     // console.log('this blu radios', this.config.default_config.blu_radios)
     this.active_radios = {}
     this.station_leds = new StationLeds()
@@ -102,31 +103,54 @@ class BaseStation {
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
     const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
-      .on('ready', () => {
-      // .on('add', () => {
-        // find way to put all of this in function
-        let watched_dir = dir_watch.getWatched()
-        console.log('watched directory', watched_dir)
-        this.blu_path = Object.values(watched_dir)[1].filter((path) => !path.includes('0:1.2.') && path.includes('-port0'))[0]
-        console.log('blu path', this.blu_path)
-        if (this.blu_path) {
-          this.blu_receiver = '/dev/serial/by-path/' + this.blu_path
-        } else {
-          this.blu_receiver = undefined
+      .on('add', path => {
+        console.log('chokidar path', path)
+        if(!path.includes('0:1.2.') && path.includes('-port0')) {
+          // let blu_fp = '/dev/serial/by-path/' + path
+          let blu_fp = path
+          this.blu_reader = new BluStation({
+            path: path,
+            // path: this.blu_receiver,
+            // data_manager: this.data_manager,
+            // broadcast: this.broadcast,
+          })
+          this.startBluRadios(path)
+          // this.blu_dir.push(blu_fp)
+        } else if(!path.includes('-port0')) {
+          console.log('regular radio path', path)
+          this.startRadios(path)
         }
-
-        this.open_radios = Object.values(watched_dir)[1].filter((path) => !path.includes('-port0'))
-        console.log('open radios', this.open_radios)
-
-        this.blu_reader = new BluStation({
-          path: this.blu_receiver,
-          // data_manager: this.data_manager,
-          // broadcast: this.broadcast,
-        })
-
-        this.startRadios(this.open_radios)
-        this.startBluRadios()
       })
+
+      // .on('ready', () => {
+      //   let watched_dir = dir_watch.getWatched()
+      //   console.log('watched directory', watched_dir)
+      //   Object.values(watched_dir)[1].map((blu_path) => {
+      //     console.log('blu dir path', blu_path)
+      //     if(!blu_path.includes('0:1.2.') && blu_path.includes('-port0')) {
+      //       let blu_fp = '/dev/serial/by-path/' + blu_path
+      //       this.blu_dir.push(blu_fp)
+      //     } else {
+
+      //     }
+      //   })
+      //   console.log('blu receiver dir', this.blu_dir)
+      //   this.open_radios = Object.values(watched_dir)[1].filter((path) => !path.includes('-port0'))
+      //   console.log('open radios', this.open_radios)
+
+      //   this.blu_dir.forEach((blu_receiver) => {
+      //     this.blu_reader = new BluStation({
+      //       path: blu_receiver,
+      //       // path: this.blu_receiver,
+      //       // data_manager: this.data_manager,
+      //       // broadcast: this.broadcast,
+      //     })
+      //     return this.blu_reader
+      //   })
+
+      //   this.startRadios(this.open_radios)
+      //   this.startBluRadios()
+      // })
       .on('unlink', path => {
         let watched_dir = dir_watch.getWatched()
         console.log('unlink watched directory', watched_dir)
@@ -507,11 +531,18 @@ class BaseStation {
   /**
    * start the radio receivers
    */
-  startRadios(open_radios) {
-    console.log('starting radio receivers', open_radios)
+  startRadios(path) {
+    console.log('starting radio receivers', path)
+    let radio_path = path.substring(17)
+    console.log('passed path', radio_path)
     this.stationLog('starting radio receivers')
-    this.config.data.radios.forEach((radio) => {
-      if (radio.path && open_radios.includes(radio.path.substring(20))) {
+    // this.config.data.radios.forEach((radio) => {
+    let radio_index = this.config.data.radios.findIndex(radio => radio.path === radio_path)
+    let radio = this.config.data.radios[radio_index]
+      // if(this.config.data.radios.find((radio => radio.path === radio_path))) {
+      // console.log('radio array', this.config.data.radios)
+      // if (this.config.data.radios.includes(radio_path)) {
+        // console.log('radio path', radio.path)
 
         let beep_reader = new RadioReceiver({
           baud_rate: 115200,
@@ -553,8 +584,8 @@ class BaseStation {
         beep_reader.start(1000)
         this.active_radios[radio.channel] = beep_reader
 
-      } // end of if(radio.path)
-    }) // end of config.data.radios for loop      
+      // } // end of if(radio.path)
+    // }) // end of config.data.radios for loop      
   } // end of startRadios()
 
   startBluRadios() {
