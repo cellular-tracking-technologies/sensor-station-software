@@ -47,10 +47,8 @@ class RadioReceiver extends EventEmitter {
 
   destroy() {
     console.log('radio', this.channel, 'is destroyed')
-    // this.cancel()
-
+    this.cancel()
     delete this.port_uri
-    // delete new RadioReceiver()
     delete this.parser
     this.stopPollingFirmware()
     this.destroyed_port = true

@@ -265,6 +265,15 @@ class BluStation extends BluReceiver {
         console.log('blu default config file updated')
       })
   }
+
+  destroy(radio) {
+    console.log('blu radio', radio, 'is destroyed')
+    // clearInterval(this.blu_reader.blu_radios[radio])
+    clearInterval(radio.polling)
+    clearInterval(radio.dropped)
+    radio.polling.destroyed = true
+    radio.dropped.destroyed = true
+  }
 }
 
 export { BluStation }

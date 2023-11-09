@@ -114,6 +114,7 @@ class BaseStation {
             // data_manager: this.data_manager,
             // broadcast: this.broadcast,
           })
+          // console.log('blu reader', this.blu_reader.path)
           this.startBluRadios(path)
           // this.blu_dir.push(blu_fp)
         } else if(!path.includes('-port0')) {
@@ -121,40 +122,24 @@ class BaseStation {
           this.startRadios(path)
         }
       })
-
-      // .on('ready', () => {
-      //   let watched_dir = dir_watch.getWatched()
-      //   console.log('watched directory', watched_dir)
-      //   Object.values(watched_dir)[1].map((blu_path) => {
-      //     console.log('blu dir path', blu_path)
-      //     if(!blu_path.includes('0:1.2.') && blu_path.includes('-port0')) {
-      //       let blu_fp = '/dev/serial/by-path/' + blu_path
-      //       this.blu_dir.push(blu_fp)
-      //     } else {
-
-      //     }
-      //   })
-      //   console.log('blu receiver dir', this.blu_dir)
-      //   this.open_radios = Object.values(watched_dir)[1].filter((path) => !path.includes('-port0'))
-      //   console.log('open radios', this.open_radios)
-
-      //   this.blu_dir.forEach((blu_receiver) => {
-      //     this.blu_reader = new BluStation({
-      //       path: blu_receiver,
-      //       // path: this.blu_receiver,
-      //       // data_manager: this.data_manager,
-      //       // broadcast: this.broadcast,
-      //     })
-      //     return this.blu_reader
-      //   })
-
-      //   this.startRadios(this.open_radios)
-      //   this.startBluRadios()
-      // })
       .on('unlink', path => {
-        let watched_dir = dir_watch.getWatched()
-        console.log('unlink watched directory', watched_dir)
+        // let watched_dir = dir_watch.getWatched()
+        // console.log('unlink watched directory', watched_dir)
         console.log('file', path, 'has been removed')
+        console.log('blu reader', this.blu_reader)
+        // clearInterval(this.blu_radios[key]) // changes timers _destroyed key to true
+        Object.keys(this.blu_reader.blu_radios).forEach((radio) => {
+          console.log('unlink blu reader class radio before', radio, this.blu_reader.blu_radios[radio])
+          // clearInterval(this.blu_reader.blu_radios[radio])
+
+          this.blu_reader.destroy(this.blu_reader.blu_radios[radio])
+          console.log('unlink blu reader class radio after', radio, this.blu_reader.blu_radios[radio])
+
+        })
+        this.blu_reader = null
+        delete this.blu_reader
+        console.log('blu reader', this.blu_reader)
+
       })
 
       this.gps_client.start()
@@ -687,12 +672,12 @@ class BaseStation {
     // this.blu_reader.startUpFlashLogo()
 
     // get versions are on a timer so version number can be loaded to interface
-    setInterval(() => {
-      this.blu_reader.getBluVersion(1)
-      this.blu_reader.getBluVersion(2)
-      this.blu_reader.getBluVersion(3)
-      this.blu_reader.getBluVersion(4)
-    }, 10000)
+    // setInterval(() => {
+    //   this.blu_reader.getBluVersion(1)
+    //   this.blu_reader.getBluVersion(2)
+    //   this.blu_reader.getBluVersion(3)
+    //   this.blu_reader.getBluVersion(4)
+    // }, 10000)
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       // setTimeout(() => {
