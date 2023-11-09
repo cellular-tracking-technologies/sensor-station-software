@@ -40,7 +40,6 @@ class BaseStation {
 
     this.blu_radios = this.config.default_config.blu_radios
     this.blu_dir = []
-    // console.log('this blu radios', this.config.default_config.blu_radios)
     this.active_radios = {}
     this.station_leds = new StationLeds()
     this.gps_client = new GpsClient({
@@ -102,50 +101,11 @@ class BaseStation {
     this.log_filename = `sensor-station-${this.station_id}.log`
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
-    const dir_watch = chokidar.watch('../../../../../../dev/serial/by-path')
-      .on('add', path => {
-        console.log('chokidar path', path)
-        if(!path.includes('0:1.2.') && path.includes('-port0')) {
-          // let blu_fp = '/dev/serial/by-path/' + path
-          let blu_fp = path
-          this.blu_reader = new BluStation({
-            path: path,
-            // path: this.blu_receiver,
-            // data_manager: this.data_manager,
-            // broadcast: this.broadcast,
-          })
-          // console.log('blu reader', this.blu_reader.path)
-          this.startBluRadios(path)
-          // this.blu_dir.push(blu_fp)
-        } else if(!path.includes('-port0')) {
-          console.log('regular radio path', path)
-          this.startRadios(path)
-        }
-      })
-      .on('unlink', path => {
-        // let watched_dir = dir_watch.getWatched()
-        // console.log('unlink watched directory', watched_dir)
-        console.log('file', path, 'has been removed')
-        console.log('blu reader', this.blu_reader)
-        // clearInterval(this.blu_radios[key]) // changes timers _destroyed key to true
-        Object.keys(this.blu_reader.blu_radios).forEach((radio) => {
-          console.log('unlink blu reader class radio before', radio, this.blu_reader.blu_radios[radio])
-          // clearInterval(this.blu_reader.blu_radios[radio])
-
-          this.blu_reader.destroy(this.blu_reader.blu_radios[radio])
-          console.log('unlink blu reader class radio after', radio, this.blu_reader.blu_radios[radio])
-
-        })
-        this.blu_reader = null
-        delete this.blu_reader
-        console.log('blu reader', this.blu_reader)
-
-      })
-
-      this.gps_client.start()
-      this.stationLog('initializing base station')
-      this.startWebsocketServer()
-      this.startTimers()
+    this.gps_client.start()
+    this.stationLog('initializing base station')
+    this.startWebsocketServer()
+    this.startTimers()
+    this.directoryWatcher()
   }
 
   /**
@@ -514,63 +474,81 @@ class BaseStation {
   }
 
   /**
+ * file watcher using chokidar
+ */
+  directoryWatcher() {
+    chokidar.watch('../../../../../../dev/serial/by-path')
+      .on('add', path => {
+        console.log('chokidar path', path)
+        if (!path.includes('0:1.2.') && path.includes('-port0')) {
+          this.blu_reader = new BluStation({
+            path: path,
+          })
+          this.startBluRadios(path)
+        } else if (!path.includes('-port0')) {
+          this.startRadios(path)
+        }
+      })
+      .on('unlink', path => {
+        console.log('file', path, 'has been removed')
+        console.log('blu reader', this.blu_reader)
+        Object.keys(this.blu_reader.blu_radios).forEach((radio) => {
+          console.log('unlink blu reader class radio before', radio, this.blu_reader.blu_radios[radio])
+          this.blu_reader.destroy(this.blu_reader.blu_radios[radio])
+          console.log('unlink blu reader class radio after', radio, this.blu_reader.blu_radios[radio])
+        })
+        this.blu_reader = null
+        delete this.blu_reader
+        console.log('blu reader', this.blu_reader)
+      })
+  }
+
+  /**
    * start the radio receivers
    */
   startRadios(path) {
-    console.log('starting radio receivers', path)
     let radio_path = path.substring(17)
-    console.log('passed path', radio_path)
     this.stationLog('starting radio receivers')
-    // this.config.data.radios.forEach((radio) => {
     let radio_index = this.config.data.radios.findIndex(radio => radio.path === radio_path)
     let radio = this.config.data.radios[radio_index]
-      // if(this.config.data.radios.find((radio => radio.path === radio_path))) {
-      // console.log('radio array', this.config.data.radios)
-      // if (this.config.data.radios.includes(radio_path)) {
-        // console.log('radio path', radio.path)
-
-        let beep_reader = new RadioReceiver({
-          baud_rate: 115200,
-          port_uri: radio.path,
-          channel: radio.channel,
-          restart_on_close: false,
-        })
-        beep_reader.on('beep', (beep) => {
-          // console.log('beep', beep)
-          this.data_manager.handleRadioBeep(beep)
-          beep.msg_type = 'beep'
-          this.broadcast(JSON.stringify(beep))
-        })
-        beep_reader.on('radio-fw', (fw_version) => {
-          this.radio_fw[radio.channel] = fw_version
-        })
-        beep_reader.on('open', (info) => {
-          this.stationLog('opened radio on port', radio.channel)
-          // this.active_radios[info.port_uri] = info
-          beep_reader.issueCommands(radio.config)
-        })
-        beep_reader.on('write', (msg) => {
-          this.stationLog(`writing message to radio ${msg.channel}: ${msg.msg}`)
-        })
-        beep_reader.on('error', (err) => {
-          console.log('reader error', err, radio.channel)
-          console.error(err)
-          // error on the radio - probably a path error
-          beep_reader.stopPollingFirmware()
-          this.stationLog(`radio error on channel ${radio.channel}  ${err}`)
-        })
-        beep_reader.on('close', (info) => {
-          this.stationLog(`radio closed ${radio.channel}`)
-          beep_reader.destroy()
-          console.log(`radio closed ${radio.channel}`)
-          if (info.port_uri in Object.keys(this.active_radios)) {
-          }
-        })
-        beep_reader.start(1000)
-        this.active_radios[radio.channel] = beep_reader
-
-      // } // end of if(radio.path)
-    // }) // end of config.data.radios for loop      
+    let beep_reader = new RadioReceiver({
+      baud_rate: 115200,
+      port_uri: radio.path,
+      channel: radio.channel,
+      restart_on_close: false,
+    })
+    beep_reader.on('beep', (beep) => {
+      this.data_manager.handleRadioBeep(beep)
+      beep.msg_type = 'beep'
+      this.broadcast(JSON.stringify(beep))
+    })
+    beep_reader.on('radio-fw', (fw_version) => {
+      this.radio_fw[radio.channel] = fw_version
+    })
+    beep_reader.on('open', (info) => {
+      this.stationLog('opened radio on port', radio.channel)
+      // this.active_radios[info.port_uri] = info
+      beep_reader.issueCommands(radio.config)
+    })
+    beep_reader.on('write', (msg) => {
+      this.stationLog(`writing message to radio ${msg.channel}: ${msg.msg}`)
+    })
+    beep_reader.on('error', (err) => {
+      console.log('reader error', err, radio.channel)
+      console.error(err)
+      // error on the radio - probably a path error
+      beep_reader.stopPollingFirmware()
+      this.stationLog(`radio error on channel ${radio.channel}  ${err}`)
+    })
+    beep_reader.on('close', (info) => {
+      this.stationLog(`radio closed ${radio.channel}`)
+      beep_reader.destroy()
+      console.log(`radio closed ${radio.channel}`)
+      if (info.port_uri in Object.keys(this.active_radios)) {
+      }
+    })
+    beep_reader.start(1000)
+    this.active_radios[radio.channel] = beep_reader
   } // end of startRadios()
 
   startBluRadios() {
@@ -581,7 +559,6 @@ class BaseStation {
       switch (job.task) {
         case BluReceiverTask.VERSION:
           try {
-
             console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
             this.stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
             this.blu_fw = {
@@ -590,7 +567,6 @@ class BaseStation {
                 [job.radio_channel]: job.data.version,
               }
             }
-            // console.log('this.blu_fw', this.blu_fw)
             this.broadcast(JSON.stringify(this.blu_fw))
           } catch (e) {
             console.error('basestation getBluVersion error:', e)
@@ -610,7 +586,6 @@ class BaseStation {
               beep.received_at = moment(new Date(beep.time)).utc()
               beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
               this.broadcast(JSON.stringify(beep))
-              // console.log('blu beep', beep)
             })
           } catch (e) {
             console.error('base station get detections error:', e)
@@ -626,8 +601,6 @@ class BaseStation {
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
           this.stationLog(`BluReceiver Radio ${job.radio_channel} is rebooting`)
           console.log('Blu Receiver is rebooting!', job.radio_channel)
-          // this.config.default_config.blu_radios[job.radio_channel].values.current = this.blu_radios[job.radio_channel].values.default
-
           break
         case BluReceiverTask.LEDS:
           console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
@@ -680,13 +653,10 @@ class BaseStation {
     // }, 10000)
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
-      // setTimeout(() => {
       let key = Number(radio)
       // this.blu_reader.getBluVersion(radio) // outputs timeout error still
       this.blu_reader.radioOn(key, this.blu_radios[key].values.current)
       // this.blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
-
-      // }, 10000)
     })).then((values) => {
       console.log('radios started')
     }).catch((e) => {
@@ -696,14 +666,14 @@ class BaseStation {
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      
+
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
         this.blu_reader.radioOff(radio)
       })
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
-      
+
       setTimeout(() => {
         this.blu_reader = null
         delete this.blu_reader
