@@ -20,6 +20,7 @@ import _ from 'lodash'
 import moment from 'moment'
 import process from 'node:process'
 import chokidar from 'chokidar'
+import blu_config from '../../../system/radios/blu-radio-map.js'
 // import '../../hardware/bluseries-receiver/driver/bin'
 
 /**
@@ -40,6 +41,9 @@ class BaseStation {
 
     this.blu_radios = this.config.default_config.blu_radios
     this.blu_dir = []
+    this.blu_config = blu_config
+    // console.log('blu config', this.blu_config)
+    this.blu_receiver = []
     this.active_radios = {}
     this.station_leds = new StationLeds()
     this.gps_client = new GpsClient({
@@ -481,10 +485,19 @@ class BaseStation {
       .on('add', path => {
         console.log('chokidar path', path)
         if (!path.includes('0:1.2.') && path.includes('-port0')) {
+          let blu_radio = this.findBluPath(path)
+          console.log('directory watcher blu radio', blu_radio)
           this.blu_reader = new BluStation({
-            path: path,
+            path: blu_radio.path,
+            channel: blu_radio.channel,
           })
-          this.startBluRadios(path)
+          // this.blu_receiver.push(
+          //   {
+          //     [this.blu_reader.channel]: this.blu_reader,
+          //   })
+          // console.log('blu receivers', this.blu_receiver)
+          this.startBluRadios()
+
         } else if (!path.includes('-port0')) {
           this.startRadios(path)
         }
@@ -503,14 +516,40 @@ class BaseStation {
       })
   }
 
+/**
+ * 
+ * @param {String} path radio path from /dev/serial/by-path/ directory 
+ * @returns 
+ */
+  findRadioPath(path) {
+    let radio_path = path.substring(17)
+    let radio_index = this.config.data.radios.findIndex(radio => radio.path === radio_path)
+    let radio = this.config.data.radios[radio_index]
+    return radio
+  }
+
+  /**
+ * 
+ * @param {String} path radio path from /dev/serial/by-path/ directory 
+ * @returns 
+ */
+  findBluPath(path) {
+    let radio_path = path.substring(17)
+    // console.log('find blu path path', radio_path)
+    let radio_index = this.blu_config.findIndex(radio => radio.path === radio_path)
+    // console.log('find blu path radio index', radio_index)
+    let radio = this.blu_config[radio_index]
+    // console.log('find blu path radio', radio)
+    return radio
+  }
+
   /**
    * start the radio receivers
    */
   startRadios(path) {
-    let radio_path = path.substring(17)
+    
     this.stationLog('starting radio receivers')
-    let radio_index = this.config.data.radios.findIndex(radio => radio.path === radio_path)
-    let radio = this.config.data.radios[radio_index]
+    let radio = this.findRadioPath(path)
     let beep_reader = new RadioReceiver({
       baud_rate: 115200,
       port_uri: radio.path,
@@ -553,7 +592,7 @@ class BaseStation {
 
   startBluRadios() {
     console.log('blu receiver on')
-
+    // this.blu_reader = blu_reader
     this.blu_reader.on('complete', (job) => {
       // console.log('blu reader job', job)
       switch (job.task) {
@@ -665,7 +704,7 @@ class BaseStation {
 
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_reader.channel)
 
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
         this.blu_reader.radioOff(radio)

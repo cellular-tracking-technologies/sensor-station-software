@@ -15,6 +15,7 @@ class BluStation extends BluReceiver {
     super({
       path: opts.path
     })
+    this.channel = opts.channel
     this.data_manager = opts.data_manager
     this.broadcast = opts.broadcast
     this.buffer_interval
