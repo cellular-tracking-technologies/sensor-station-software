@@ -491,7 +491,7 @@ const initialize_controls = function () {
 const format_beep = function (beep) {
   // console.log('format beep', beep)
   if (beep.data) {
-    let tag_id, rssi, node_id, tag_at, blu_channel, data_type;
+    let tag_id, rssi, node_id, tag_at, blu_channel, data_type, port;
     let beep_at = moment(new Date(beep.received_at)).utc();
     tag_at = beep_at;
     if (beep.protocol) {
@@ -503,6 +503,7 @@ const format_beep = function (beep) {
         rssi = beep.rssi;
         tag_at = beep_at;
         data_type = beep.meta.data_type
+        port = beep.port
       }
       // new protocol
       if (beep.meta.data_type == 'node_coded_id') {
@@ -551,6 +552,7 @@ const format_beep = function (beep) {
       received_at: beep_at,
       tag_at: tag_at,
       data_type: data_type,
+      port: port ?? null,
     }
 
     // console.log('format beep data', data)
@@ -633,9 +635,12 @@ const handle_beep = function (beep) {
 };
 
 const handle_blu_beep = function (beep) {
+  console.log('handle blu beep', beep)
   let tag_id = beep.tag_id.toUpperCase();
   // console.log('handle blu tag', beep)
-  document.querySelector('#blu-receiver').style.display = 'block'
+  // h2.textContent = `Bl${umacr} Radio ` + n
+  let BLU_PORT = document.querySelector('#blu-receiver').style.display = 'block'
+  BLU_PORT.textContent = `Bl${umacr} Series Receiver Port ${beep.port}`
   let BLU_TABLE = document.querySelector('#blu-radio_' + beep.blu_channel);
   // console.log('blu table', BLU_TABLE)
 
@@ -1175,7 +1180,7 @@ const initialize_websocket = function () {
   socket.onmessage = function (msg) {
     // console.log('message', msg);
     let data = JSON.parse(msg.data);
-    console.log('data', data)
+    // console.log('data', data)
     let tr, td;
     switch (data.msg_type) {
       case ('beep'):
@@ -1418,6 +1423,14 @@ const build_radio_component = function (n) {
   return wrapper
 };
 
+const build_blu_receiver = function () {
+  let wrapper = document.createElement('div')
+
+  let h2 = document.createElement('h2')
+  h2.setAttribute('style', 'text-aslign: center; color: #007FFF')
+  h2.textContent = `Bl${umacr} Receiver on USB Port ` + n
+}
+
 const build_blu_component = function (n) {
   let wrapper = document.createElement('div')
 
@@ -1540,6 +1553,7 @@ const build_blu_component = function (n) {
 
   return wrapper
 }
+
 const build_version_element = function (opts) {
   let tr = document.createElement('tr')
   let th = document.createElement('th')
@@ -1733,16 +1747,18 @@ const init_sg = () => {
       col.appendChild(component)
       document.querySelector('#extra-radios').appendChild(col)
     }
+    // component = build_blu_receiver()
+    // col = document.createElement('div')
+    // col.classList.add('col-lg')
+    // col.appendChild(component)
+    // document.querySelector('#blu-receiver').appendChild(col)
+
     for (let i = 1; i <= 4; i++) {
       component = build_blu_component(i)
       col = document.createElement('div')
       col.classList.add('col-lg')
       col.appendChild(component)
       document.querySelector('#blu-radios').appendChild(col)
-      // document.querySelector(`#poll_interval_${i}`).textContent = poll_interval ? poll_interval : 10000;
-      // document.querySelector(`#poll_interval_${i}`).textContent = poll_interval;
-
-
     }
     initialize_websocket();
     initialize_controls();

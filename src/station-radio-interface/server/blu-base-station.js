@@ -4,10 +4,6 @@
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import fs from 'fs'
-import process from 'node:process'
-import moment from 'moment'
-import EventEmitter from 'events'
-
 
 // class BluStation {
 class BluStation extends BluReceiver {
@@ -15,7 +11,7 @@ class BluStation extends BluReceiver {
     super({
       path: opts.path
     })
-    this.channel = opts.channel
+    this.port = opts.port
     this.data_manager = opts.data_manager
     this.broadcast = opts.broadcast
     this.buffer_interval
