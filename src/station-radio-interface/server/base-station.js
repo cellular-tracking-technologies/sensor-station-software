@@ -485,38 +485,11 @@ class BaseStation {
         console.log('chokidar path', path)
         if (!path.includes('0:1.2.') && path.includes('-port0')) {
           let blu_radio = this.findBluPath(path)
-          // console.log('directory watcher blu radio', blu_radio)
-          // let blu_stations = new BluStations()
-          // blu_stations.newBluStation({
-          //   path: blu_radio.path, 
-          //   port: blu_radio.channel,
-          // })
-          // console.log('blu station array', blu_stations)
           this.blu_reader = new BluStation({
             path: blu_radio.path,
             port: blu_radio.channel,
           })
           this.startBluRadios()
-          // this.blu_receiver.push(this.blu_reader)
-          // this.blu_receiver.forEach((receiver) => {
-          //   this.startBluRadios(receiver)
-          // })
-          // blu_stations.blu_stations.forEach((receiver) => {
-          //   this.startBluRadios(receiver)
-          // })
-          // const stations_start = blu_stations.blu_stations.map(receiver => {
-          //   console.log('stations start receiver', receiver)
-          //   this.startBluRadios(receiver)
-          //   })
-          // Promise.all(stations_start).then((values) => {
-          //   console.log(values)
-          // }).catch((e) => {
-          //   console.error('start blu radios error', e)
-          // })
-          // console.log('blu receivers', this.blu_receiver)
-          // this.blu_receiver.forEach((radio) => {
-          //   this.startBluRadios(radio)
-          // })
         } else if (!path.includes('-port0')) {
           this.startRadios(path)
         }
@@ -695,30 +668,30 @@ class BaseStation {
     // this.blu_reader.on('close', () => {
     //   stationLog('blu radio is closing')
     //   console.log('blu radio is closed')
-    //   this.blu_reader.radioOff(1)
-    //   this.blu_reader.radioOff(2)
-    //   this.blu_reader.radioOff(3)
-    //   this.blu_reader.radioOff(4)
+    //   blu_reader.radioOff(1)
+    //   blu_reader.radioOff(2)
+    //   blu_reader.radioOff(3)
+    //   blu_reader.radioOff(4)
     //   // process.exit(0)
     // })
 
 
 
     // why does this break the regular logo flashing?
-    // this.blu_reader.startUpFlashLogo()
+    // blu_reader.startUpFlashLogo()
 
     // get versions are on a timer so version number can be loaded to interface
     // setInterval(() => {
-    //   this.blu_reader.getBluVersion(1)
-    //   this.blu_reader.getBluVersion(2)
-    //   this.blu_reader.getBluVersion(3)
-    //   this.blu_reader.getBluVersion(4)
+    //   blu_reader.getBluVersion(1)
+    //   blu_reader.getBluVersion(2)
+    //   blu_reader.getBluVersion(3)
+    //   blu_reader.getBluVersion(4)
     // }, 10000)
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       let key = Number(radio)
       // this.blu_reader.getBluVersion(radio) // outputs timeout error still
-      this.blu_reader.radioOn(key, this.blu_radios[key].values.current)
+      blu_reader.radioOn(key, this.blu_radios[key].values.current)
       // this.blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
     })).then((values) => {
       console.log('radios started')
@@ -726,44 +699,16 @@ class BaseStation {
       console.error(e)
     })
 
-    // const receivers_start = this.blu_receiver.map((receiver) => {
-    //   const radios_start = Object.keys(receiver.blu_radios).map(radio => {
-    //     console.log('radios start receiver', receiver)
-    //     receiver.radioOn(radio, this.blu_radios[radio].values.current)
-    //     })
-    //   Promise.all(radios_start).then((values) => {
-    //     console.log(values)
-    //   })
-    // })
-
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_reader.port)
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_reader.port)
 
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
-        // this.blu_reader.radioOff(radio)
         blu_reader.radioOff(radio)
       })
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
-
-      // const receivers_exit = this.blu_receiver.map((receiver) => {
-      //   const radios_exit = Object.keys(receiver.blu_radios).map(radio => {
-      //   receiver.radioOff(radio)
-      //   })
-      //   Promise.all(radios_exit).then((values) => {
-      //     console.log(values)
-      //   }).catch((e) => {
-      //   console.error('receivers exit error', error)
-      // })
-      // })
-      // Promise.all(receivers_exit).then((values) => {
-      //   console.log(values)
-      // }).catch((e) => {
-      //   console.error('receivers exit error', error)
-      // })
 
       setTimeout(() => {
         blu_reader = null
