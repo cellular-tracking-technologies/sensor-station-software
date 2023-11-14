@@ -273,4 +273,20 @@ class BluStation extends BluReceiver {
   }
 }
 
-export { BluStation }
+class BluStations {
+  constructor() {
+    this.blu_stations = []
+  }
+
+  newBluStation(path, port){
+    let b = new BluStation(path, port)
+    this.blu_stations.push(b)
+    return b
+  }
+
+  get allBluStations() {
+    return this.blu_stations
+  }
+}
+
+export { BluStation, BluStations }

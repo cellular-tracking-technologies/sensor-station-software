@@ -1,5 +1,5 @@
 import { RadioReceiver } from './radio-receiver.js'
-import { BluStation } from './blu-base-station.js'
+import { BluStation, BluStations } from './blu-base-station.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import SerialClient from '../../hardware/bluseries-receiver/driver/serial_client.js'
@@ -486,16 +486,34 @@ class BaseStation {
         if (!path.includes('0:1.2.') && path.includes('-port0')) {
           let blu_radio = this.findBluPath(path)
           // console.log('directory watcher blu radio', blu_radio)
+          // let blu_stations = new BluStations()
+          // blu_stations.newBluStation({
+          //   path: blu_radio.path, 
+          //   port: blu_radio.channel,
+          // })
+          // console.log('blu station array', blu_stations)
           this.blu_reader = new BluStation({
             path: blu_radio.path,
             port: blu_radio.channel,
           })
-          this.blu_receiver.push(this.blu_reader)
-          this.blu_receiver.forEach((receiver) => {
-            this.startBluRadios(receiver)
-          })
-
-          console.log('blu receivers', this.blu_receiver)
+          this.startBluRadios()
+          // this.blu_receiver.push(this.blu_reader)
+          // this.blu_receiver.forEach((receiver) => {
+          //   this.startBluRadios(receiver)
+          // })
+          // blu_stations.blu_stations.forEach((receiver) => {
+          //   this.startBluRadios(receiver)
+          // })
+          // const stations_start = blu_stations.blu_stations.map(receiver => {
+          //   console.log('stations start receiver', receiver)
+          //   this.startBluRadios(receiver)
+          //   })
+          // Promise.all(stations_start).then((values) => {
+          //   console.log(values)
+          // }).catch((e) => {
+          //   console.error('start blu radios error', e)
+          // })
+          // console.log('blu receivers', this.blu_receiver)
           // this.blu_receiver.forEach((radio) => {
           //   this.startBluRadios(radio)
           // })
@@ -591,11 +609,13 @@ class BaseStation {
     this.active_radios[radio.channel] = beep_reader
   } // end of startRadios()
 
-  startBluRadios(blu_reader) {
-    console.log('blu receiver on', blu_reader)
-    this.blu_reader = blu_reader
-    console.log('start blu radios blu receiver', this.blu_receiver)
-    this.blu_reader.on('complete', (job) => {
+  startBluRadios() {
+    // this.blu_reader = blu_reader
+    console.log('start blu radios blu receiver', this.blu_reader)
+    // this.blu_receiver.forEach((blu_reader) => {
+      let blu_reader = this.blu_reader
+    // this.blu_reader.on('complete', (job) => {
+    blu_reader.on('complete', (job) => {
       // console.log('blu reader job', job)
       switch (job.task) {
         case BluReceiverTask.VERSION:
@@ -616,7 +636,8 @@ class BaseStation {
         case BluReceiverTask.DETECTIONS:
           // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
           try {
-            console.log('Port', this.blu_reader.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
+            // console.log('Port', this.blu_reader.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
+            console.log('Port', blu_reader.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
             job.data.forEach((beep) => {
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
@@ -705,33 +726,53 @@ class BaseStation {
       console.error(e)
     })
 
+    // const receivers_start = this.blu_receiver.map((receiver) => {
+    //   const radios_start = Object.keys(receiver.blu_radios).map(radio => {
+    //     console.log('radios start receiver', receiver)
+    //     receiver.radioOn(radio, this.blu_radios[radio].values.current)
+    //     })
+    //   Promise.all(radios_start).then((values) => {
+    //     console.log(values)
+    //   })
+    // })
+
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_reader.port)
+      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_reader.port)
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_reader.port)
 
-      // const radios_exit = Object.keys(this.blu_radios).map(radio => {
-      //   this.blu_reader.radioOff(radio)
-      // })
-      // Promise.all(radios_exit).then((values) => {
-      //   console.log(values)
-      // })
-
-      const receivers_exit = this.blu_receiver.map((receiver) => {
-        const radios_exit = Object.keys(receiver.blu_radios).map(radio => {
-        receiver.radioOff(radio)
-        })
-        Promise.all(radios_exit).then((values) => {
-          console.log(values)
-        })
+      const radios_exit = Object.keys(this.blu_radios).map(radio => {
+        // this.blu_reader.radioOff(radio)
+        blu_reader.radioOff(radio)
+      })
+      Promise.all(radios_exit).then((values) => {
+        console.log(values)
       })
 
+      // const receivers_exit = this.blu_receiver.map((receiver) => {
+      //   const radios_exit = Object.keys(receiver.blu_radios).map(radio => {
+      //   receiver.radioOff(radio)
+      //   })
+      //   Promise.all(radios_exit).then((values) => {
+      //     console.log(values)
+      //   }).catch((e) => {
+      //   console.error('receivers exit error', error)
+      // })
+      // })
+      // Promise.all(receivers_exit).then((values) => {
+      //   console.log(values)
+      // }).catch((e) => {
+      //   console.error('receivers exit error', error)
+      // })
+
       setTimeout(() => {
-        this.blu_reader = null
-        delete this.blu_reader
+        blu_reader = null
+        // delete blu_reader
         process.exit(0)
       }, 5000)
     })
-  }
+  // }) // end of forEach blu_receiver
+  } // end of startBluRadios
 
 } // end of base station class
 
