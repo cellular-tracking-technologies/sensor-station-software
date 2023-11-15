@@ -264,12 +264,16 @@ class BluStation extends BluReceiver {
   }
 
   destroy(radio) {
-    console.log('blu radio', radio, 'is destroyed')
+    // console.log('blu radio', radio, 'is destroyed')
     // clearInterval(this.blu_reader.blu_radios[radio])
     clearInterval(radio.polling)
     clearInterval(radio.dropped)
     radio.polling.destroyed = true
     radio.dropped.destroyed = true
+  }
+
+  destroy_receiver() {
+    delete this
   }
 }
 
