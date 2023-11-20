@@ -609,9 +609,7 @@ class BaseStation {
     console.log('start blu radios blu receiver', this.blu_receiver[br_index])
     // let blu_reader = blu_reader
     // blu_reader.on('complete', (job) => {
-    setTimeout(() => {
-      console.log('waiting for receiver to boot up')
-    }, 10000)
+
     this.blu_receiver[br_index].on('complete', (job) => {
       // console.log('blu reader job', job)
       switch (job.task) {
