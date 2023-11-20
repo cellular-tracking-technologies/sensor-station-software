@@ -495,7 +495,7 @@ class BaseStation {
           // blu_reader.destroy_receiver()
           // blu_reader = undefined
           // console.log('blu reader after destruction', blu_reader)
-          
+
         } else if (!path.includes('-port0')) {
           this.startRadios(path)
         }
@@ -504,31 +504,34 @@ class BaseStation {
         console.log('file', path, 'has been removed')
         let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path)
         console.log('unlink index', unlink_index)
-          console.log('unlink blu reader', this.blu_receiver[unlink_index].port)
-          Object.keys(this.blu_receiver[unlink_index].blu_radios).forEach((radio) => {
-            this.blu_receiver[unlink_index].destroy(this.blu_receiver[unlink_index].blu_radios[radio])
+        console.log('unlink blu reader', this.blu_receiver[unlink_index].port)
+        Object.keys(this.blu_receiver[unlink_index].blu_radios).forEach((radio) => {
+          this.blu_receiver[unlink_index].destroy(this.blu_receiver[unlink_index].blu_radios[radio])
+        })
 
-          })
+        this.blu_receiver[unlink_index].destroy_receiver()
+        console.log('blu receiver array before undefined', this.blu_receiver)
+        // this.blu_receiver[unlink_index] = undefined
+        console.log('blu receiver array after undefined', this.blu_receiver)
+        // this.blu_receiver = this.blu_receiver.filter((receiver) => {
+        //   // return receiver !== undefined
+        //   return !receiver[unlink_index]
+        // })
 
-          this.blu_receiver[unlink_index].destroy_receiver()
-          console.log('blu receiver array before undefined', this.blu_receiver)
-          this.blu_receiver[unlink_index] = undefined
-          console.log('blu receiver array after undefined', this.blu_receiver)
-          this.blu_receiver = this.blu_receiver.filter((receiver) => {
-            return receiver !== undefined
-          })
-          console.log('blu receiver array after unlink', this.blu_receiver)
-          // this.blu_receiver.forEach((blu_reader) => {
-          //   this.startBluRadios(blu_reader.path)
-          // })
-    })
+        this.blu_receiver.splice(unlink_index, 1); // 2nd parameter means remove one item only
+
+        console.log('blu receiver array after unlink', this.blu_receiver)
+        // this.blu_receiver.forEach((blu_reader) => {
+        //   this.startBluRadios(blu_reader.path)
+        // })
+      })
   }
 
-/**
- * 
- * @param {String} path radio path from /dev/serial/by-path/ directory 
- * @returns 
- */
+  /**
+   * 
+   * @param {String} path radio path from /dev/serial/by-path/ directory 
+   * @returns 
+   */
   findRadioPath(path) {
     let radio_path = path.substring(17)
     let radio_index = this.config.data.radios.findIndex(radio => radio.path === radio_path)
@@ -555,7 +558,7 @@ class BaseStation {
    * start the radio receivers
    */
   startRadios(path) {
-    
+
     this.stationLog('starting radio receivers')
     let radio = this.findRadioPath(path)
     let beep_reader = new RadioReceiver({
@@ -603,8 +606,8 @@ class BaseStation {
     console.log('start blu radios path', path)
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === path)
     // this.blu_receiver.forEach((blu_reader) => {
-      console.log('start blu radios blu receiver', this.blu_receiver[br_index])
-      // let blu_reader = blu_reader
+    console.log('start blu radios blu receiver', this.blu_receiver[br_index])
+    // let blu_reader = blu_reader
     // blu_reader.on('complete', (job) => {
     setTimeout(() => {
       console.log('waiting for receiver to boot up')
@@ -720,7 +723,7 @@ class BaseStation {
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       let key = Number(radio)
-        this.blu_receiver[br_index].radioOn(key, this.blu_radios[key].values.current)
+      this.blu_receiver[br_index].radioOn(key, this.blu_radios[key].values.current)
       // blu_reader.getBluVersion(radio) // outputs timeout error still
       // blu_reader.radioOn(key, this.blu_radios[key].values.current)
       // blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
@@ -743,7 +746,7 @@ class BaseStation {
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
-        this.blu_receiver[br_index].destroy_receiver()
+      this.blu_receiver[br_index].destroy_receiver()
 
       setTimeout(() => {
         // blu_reader.destroy_receiver()
