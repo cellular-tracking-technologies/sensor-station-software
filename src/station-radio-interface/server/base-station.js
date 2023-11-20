@@ -3,7 +3,6 @@ import { BluStation, BluStations } from './blu-base-station.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import SerialClient from '../../hardware/bluseries-receiver/driver/serial_client.js'
-import bluParser from './data/blu-parser.js'
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
@@ -491,10 +490,11 @@ class BaseStation {
           })
           blu_reader.path = path
           this.blu_receiver.push(blu_reader)
-          this.startBluRadios(blu_reader)
-          blu_reader.destroy_receiver()
-          blu_reader = undefined
-          console.log('blu reader after destruction', blu_reader)
+          console.log('blu receiver', this.blu_receiver)
+          this.startBluRadios(path)
+          // blu_reader.destroy_receiver()
+          // blu_reader = undefined
+          // console.log('blu reader after destruction', blu_reader)
           
         } else if (!path.includes('-port0')) {
           this.startRadios(path)
@@ -604,13 +604,15 @@ class BaseStation {
     this.active_radios[radio.channel] = beep_reader
   } // end of startRadios()
 
-  startBluRadios(blu_reader) {
+  startBluRadios(path) {
     // blu_reader = blu_reader
-    // console.log('start blu radios blu receiver', blu_reader)
+    console.log('start blu radios path', path)
+    let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === path)
     // this.blu_receiver.forEach((blu_reader) => {
+      console.log('start blu radios blu receiver', this.blu_receiver[br_index])
       // let blu_reader = blu_reader
     // blu_reader.on('complete', (job) => {
-    blu_reader.on('complete', (job) => {
+    this.blu_receiver[br_index].on('complete', (job) => {
       // console.log('blu reader job', job)
       switch (job.task) {
         case BluReceiverTask.VERSION:
@@ -632,7 +634,7 @@ class BaseStation {
           // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
           try {
             // console.log('Port', blu_reader.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
-            console.log('Port', blu_reader.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
+            console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
             job.data.forEach((beep) => {
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
@@ -641,7 +643,8 @@ class BaseStation {
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
               beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
-              beep.port = blu_reader.port
+              // beep.port = blu_reader.port
+              beep.port = this.blu_receiver[br_index].port
               // console.log('blu beep', beep)
               this.broadcast(JSON.stringify(beep))
             })
@@ -686,17 +689,17 @@ class BaseStation {
           break
       }
     })
-    blu_reader.on('close', () => {
-      stationLog('blu radio is closing')
-      console.log('blu radio is closed')
-      blu_reader.radioOff(1)
-      blu_reader.radioOff(2)
-      blu_reader.radioOff(3)
-      blu_reader.radioOff(4)
-      blu_reader.destroy_receiver()
-      blu_reader = undefined
-      // process.exit(0)
-    })
+    // blu_reader.on('close', () => {
+    //   stationLog('blu radio is closing')
+    //   console.log('blu radio is closed')
+    //   blu_reader.radioOff(1)
+    //   blu_reader.radioOff(2)
+    //   blu_reader.radioOff(3)
+    //   blu_reader.radioOff(4)
+    //   blu_reader.destroy_receiver()
+    //   blu_reader = undefined
+    //   // process.exit(0)
+    // })
 
 
 
@@ -704,17 +707,24 @@ class BaseStation {
     // blu_reader.startUpFlashLogo()
 
     // get versions are on a timer so version number can be loaded to interface
-    setInterval(() => {
-      blu_reader.getBluVersion(1)
-      blu_reader.getBluVersion(2)
-      blu_reader.getBluVersion(3)
-      blu_reader.getBluVersion(4)
-    }, 60000)
+    // setInterval(() => {
+    //   blu_reader.getBluVersion(1)
+    //   blu_reader.getBluVersion(2)
+    //   blu_reader.getBluVersion(3)
+    //   blu_reader.getBluVersion(4)
+    // }, 60000)
 
+        setInterval(() => {
+      this.blu_receiver[br_index].getBluVersion(1)
+      this.blu_receiver[br_index].getBluVersion(2)
+      this.blu_receiver[br_index].getBluVersion(3)
+      this.blu_receiver[br_index].getBluVersion(4)
+    }, 60000)
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       let key = Number(radio)
+      this.blu_receiver[br_index].radioOn(key, this.blu_radios[key].values.current)
       // blu_reader.getBluVersion(radio) // outputs timeout error still
-      blu_reader.radioOn(key, this.blu_radios[key].values.current)
+      // blu_reader.radioOn(key, this.blu_radios[key].values.current)
       // blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
     })).then((values) => {
       console.log('radios started')
@@ -724,23 +734,26 @@ class BaseStation {
 
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_reader.port)
+      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_reader.port)
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
 
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
-        blu_reader.radioOff(radio)
+        // blu_reader.radioOff(radio)
+        this.blu_receiver[br_index].radioOff(radio)
       })
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
+        this.blu_receiver[br_index].destroy_receiver()
 
       setTimeout(() => {
-        blu_reader.destroy_receiver()
+        // blu_reader.destroy_receiver()
         // blu_reader = null
         // delete blu_reader
         process.exit(0)
       }, 5000)
     })
-  // }) // end of forEach blu_receiver
+    // }) // end of forEach blu_receiver
   } // end of startBluRadios
 
 } // end of base station class
