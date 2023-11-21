@@ -246,7 +246,7 @@ class BluStation extends BluReceiver {
           radio_channel,
         })
       }, 20000)
-      await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1})
+      await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
       // await this.getBluVersion(radio_channel)
     } catch (e) {
       console.error('Update firmware error', e)
@@ -273,6 +273,11 @@ class BluStation extends BluReceiver {
   }
 
   destroy_receiver() {
+    console.log('destroy receiver', this)
+    delete this.port
+    delete this.path
+    delete this.polling
+    delete this.dropped
     delete this
   }
 }
@@ -282,7 +287,7 @@ class BluStations {
     this.blu_stations = []
   }
 
-  newBluStation(path, port){
+  newBluStation(path, port) {
     let b = new BluStation(path, port)
     this.blu_stations.push(b)
     return b
