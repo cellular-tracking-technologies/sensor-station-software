@@ -273,12 +273,14 @@ class BluStation extends BluReceiver {
   }
 
   destroy_receiver() {
-    console.log('destroy receiver', this)
-    delete this.port
-    delete this.path
+
     delete this.polling
     delete this.dropped
-    delete this
+    delete this.blu_radios
+    // delete this.port
+    delete this.path
+    delete this.beeps
+    // console.log('destroy receiver', this)
   }
 }
 
