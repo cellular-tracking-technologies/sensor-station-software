@@ -498,6 +498,7 @@ class BaseStation {
       })
       .on('unlink', path => {
         console.log('unlink path', path)
+
         let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
         // this.stopBluRadios(path)
         this.blu_receiver[unlink_index].emit('close')
@@ -582,16 +583,16 @@ class BaseStation {
   // startBluRadios(path) {
   startBluRadios(path) {
     let blu_radio = this.findBluPath(path)
-    this.blu_reader = new BluStation({
+    let blu_reader = new BluStation({
       path: blu_radio.path,
       port: blu_radio.channel,
     })
 
-    this.blu_reader.path = blu_radio.path
-    this.blu_receiver.push(this.blu_reader)
+    blu_reader.path = blu_radio.path
+    this.blu_receiver.push(blu_reader)
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
 
-    console.log('start blu radios blu reader by index', br_index, this.blu_receiver[br_index])
+    // console.log('start blu radios blu reader by index', br_index, blu_reader)
     this.blu_receiver[br_index].on('complete', (job) => {
 
       switch (job.task) {
@@ -614,7 +615,7 @@ class BaseStation {
           // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
           try {
             console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
-            // console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
+            // console.log('Port', blu_reader.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
             job.data.forEach((beep) => {
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
@@ -629,7 +630,7 @@ class BaseStation {
               this.broadcast(JSON.stringify(beep))
             })
           } catch (e) {
-            console.error('base station get detections error:', e)
+            console.error('base station get detections error on Port', this.blu_receiver[br_index].port, 'Radio', job.radio_channel, e)
           }
           break
         // console.log(JSON.stringify(job))
@@ -662,7 +663,7 @@ class BaseStation {
             // this.broadcast(JSON.stringify(job.data.det_dropped))
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
-            console.log('base station stats error:', e)
+            console.log('base station stats error:', 'receiver', this.blu_receiver[br_index].port, 'radio', job.radio_channel, e)
           }
           break
         default:
@@ -697,24 +698,29 @@ class BaseStation {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
       // console.log('blu receiver array on shut down', this.blu_receiver)
       // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
-      this.blu_receiver.forEach((receiver) => {
-        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", receiver.port)
+      // this.blu_receiver.forEach((receiver) => {
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
+      // blu_reader.destroy_receiver()
 
-        const radios_exit = Object.keys(this.blu_radios).map(radio => {
-          // this.blu_receiver[br_index].radioOff(radio)
-          receiver.radioOff(radio)
-        })
-        Promise.all(radios_exit).then((values) => {
-          console.log(values)
-        })
-        receiver.destroy_receiver()
-        // this.blu_receiver[br_index].destroy_receiver()
+      const radios_exit = Object.keys(this.blu_radios).map(radio => {
+        // this.blu_receiver[br_index].radioOff(radio)
+        this.blu_receiver[br_index].radioOff(radio)
+        console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
       })
+      Promise.all(radios_exit).then((values) => {
+        console.log(values)
+      })
+
+      this.blu_receiver[br_index].destroy_receiver()
+      // })
 
       setTimeout(() => {
         // blu_reader.destroy_receiver()
         // blu_reader = null
         // delete blu_reader
+
+        console.log('Closed blu reader', this.blu_receiver[br_index])
+
         process.exit(0)
       }, 5000)
     })
