@@ -150,12 +150,12 @@ class BluStation extends BluReceiver {
    * @returns 
    */
   async setBluConfig(radio_channel, opts) {
-    console.log('getbluconfigf opts', opts)
+    // console.log('getbluconfigf opts', opts)
 
     if (opts.rx_blink == true) {
-      console.log('Radio', radio_channel, 'LED is on')
+      // console.log('Radio', radio_channel, 'LED is on')
     } else {
-      console.log('Radio', radio_channel, 'LED is off')
+      // console.log('Radio', radio_channel, 'LED is off')
     }
     return this.schedule({
       task: BluReceiverTask.CONFIG,
@@ -276,11 +276,11 @@ class BluStation extends BluReceiver {
 
     delete this.polling
     delete this.dropped
-    delete this.blu_radios
-    // delete this.port
+    // delete this.blu_radios
+    delete this.port
     delete this.path
     delete this.beeps
-    // console.log('destroy receiver', this)
+    delete this
   }
 }
 

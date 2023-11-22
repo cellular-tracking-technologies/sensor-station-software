@@ -500,9 +500,10 @@ class BaseStation {
         console.log('unlink path', path)
 
         let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
-        // this.stopBluRadios(path)
-        this.blu_receiver[unlink_index].emit('close')
-        console.log('unlink index', unlink_index, 'unlink element', this.blu_receiver[unlink_index])
+        this.stopBluRadios(path.substring(17))
+        this.blu_receiver[unlink_index].destroy_receiver()
+        // this.blu_receiver[unlink_index].emit('close')
+        // console.log('unlink index', unlink_index, 'unlink element', this.blu_receiver[unlink_index])
       })
   }
 
@@ -696,14 +697,14 @@ class BaseStation {
 
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      // console.log('blu receiver array on shut down', this.blu_receiver)
-      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
-      // this.blu_receiver.forEach((receiver) => {
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
       // blu_reader.destroy_receiver()
-
+      //   this.blu_receiver.forEach((receiver) => {
+      //     console.log('sigint blu receiver array', receiver)
+      //     this.stopBluRadios(receiver.path)
+      //   })
+      // })
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
-        // this.blu_receiver[br_index].radioOff(radio)
         this.blu_receiver[br_index].radioOff(radio)
         console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
       })
@@ -711,44 +712,49 @@ class BaseStation {
         console.log(values)
       })
 
-      this.blu_receiver[br_index].destroy_receiver()
+      // const radios_destroy = this.blu_receiver.map(receiver => {
+      // receiver.destroy_receiver()
+      //   // receiver = undefined
+      // })
+      // Promise.all(radios_destroy).then((values) => {
+      //   console.log('receivers destroyed values', values)
+      // }).catch((e) => {
+      //   console.error('Receiver destroyed error', e)
       // })
 
       setTimeout(() => {
-        // blu_reader.destroy_receiver()
-        // blu_reader = null
-        // delete blu_reader
-
-        console.log('Closed blu reader', this.blu_receiver[br_index])
-
+        // this.blu_receiver = []
+        console.log('Closed blu readers', this.blu_receiver)
         process.exit(0)
-      }, 5000)
+      }, 7000)
     })
     // }) // end of forEach
   } // end of startBluRadios
 
   stopBluRadios(path) {
-    console.log('stop blu radios path', path)
-    let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === path.substring(17))
-    // this.blu_receiver.forEach((receiver) => {
+    if (path !== undefined) {
+      console.log('stop blu radios path', path)
+      // let blu_radio = this.findBluPath(path)
+      let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === path)
 
-    this.blu_receiver[br_index].on('close', () => {
-      // receiver.on('close', () => {
       this.stationLog('blu radio is closing')
-      console.log('blu radio is closed')
-      // receiver.radioOff(1)
-      // receiver.radioOff(2)
-      // receiver.radioOff(3)
-      // receiver.radioOff(4)
-      // receiver.destroy_receiver()
-      this.blu_receiver[br_index].radioOff(2)
-      this.blu_receiver[br_index].radioOff(3)
-      this.blu_receiver[br_index].radioOff(1)
-      this.blu_receiver[br_index].radioOff(4)
+      console.log('blu receiver', this.blu_receiver[br_index], 'is closing')
+      const radios_exit = Object.keys(this.blu_radios).map(radio => {
+        this.blu_receiver[br_index].radioOff(radio)
+        console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
+      })
+      Promise.all(radios_exit).then((values) => {
+        console.log(values)
+      })
       // this.blu_receiver[br_index].destroy_receiver()
-    })
-    console.log('blu reader close', this.blu_receiver[br_index])
 
+      setTimeout(() => {
+        console.log('Closed blu readers', this.blu_receiver)
+      }, 5000)
+      // })
+    } else {
+      console.log('no path to clear')
+    }
   }
 
 } // end of base station class
