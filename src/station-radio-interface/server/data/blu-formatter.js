@@ -10,6 +10,7 @@ class BluFormatter {
    */
   constructor(opts) {
     this.header = [
+      'UsbPort',
       'RadioId',
       // 'BluRadioId',
       'Time',
@@ -37,9 +38,10 @@ class BluFormatter {
    */
   formatRecord(record) {
     // console.log('blu formatter record', record)
-    let fields, channel, recorded_at, product, tag_rssi, id, sync, revision, raw_payload, solar, temp
+    let fields, usb_port, channel, recorded_at, product, tag_rssi, id, sync, revision, raw_payload, solar, temp
     let node_id = ''
 
+    usb_port = record.port
     channel = record.channel
     recorded_at = moment(new Date(record.time)).utc()
     tag_rssi = record.rssi
@@ -52,6 +54,7 @@ class BluFormatter {
     raw_payload = record.payload.raw.toString()
 
     fields = [
+      usb_port,
       channel,
       recorded_at.format(this.date_format),
       tag_rssi,

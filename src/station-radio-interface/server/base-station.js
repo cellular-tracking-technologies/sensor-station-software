@@ -158,8 +158,10 @@ class BaseStation {
             console.log('turning blu radio on')
             const radios_on = Object.keys(this.blu_radios).map(radio => {
               this.config.default_config.blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
-              this.blu_reader.updateConfig(this.config.default_config)
-              this.blu_reader.radioOn(Number(radio), cmd.data.poll_interval)
+              // this.blu_reader.updateConfig(this.config.default_config)
+              // this.blu_reader.radioOn(Number(radio), cmd.data.poll_interval)
+              this.blu_receiver[br_index].updateConfig(this.config.default_config)
+              this.blu_receiver[br_index].radioOn(Number(radio), cmd.data.poll_interval)
             })
             console.log('radios on', radios_on)
             Promise.all(radios_on).then((values) => {
@@ -168,7 +170,8 @@ class BaseStation {
             })
           } else if (cmd.data.type === "blu_off") {
             const radios_off = Object.keys(this.blu_radios).map(radio => {
-              this.blu_reader.radioOff(radio)
+              // this.blu_reader.radioOff(radio)
+              this.blu_receiver[br_index].radioOff(radio)
             })
             Promise.all(radios_off).then((values) => {
               console.log('turning blu radio off', values)
@@ -620,14 +623,12 @@ class BaseStation {
             job.data.forEach((beep) => {
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
-              this.data_manager.handleBluBeep(beep)
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
               beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
               beep.port = this.blu_receiver[br_index].port
-              // beep.port = this.blu_receiver[br_index].port
-              // console.log('blu beep', beep)
+              this.data_manager.handleBluBeep(beep)
               this.broadcast(JSON.stringify(beep))
             })
           } catch (e) {
@@ -676,17 +677,15 @@ class BaseStation {
     // blu_reader.startUpFlashLogo()
 
     // get versions are on a timer so version number can be loaded to interface
-    // setInterval(() => {
-    //   blu_reader.getBluVersion(1)
-    //   blu_reader.getBluVersion(2)
-    //   blu_reader.getBluVersion(3)
-    //   blu_reader.getBluVersion(4)
-    // }, 60000)
+    setInterval(() => {
+      this.blu_receiver[br_index].getBluVersion(1)
+      this.blu_receiver[br_index].getBluVersion(2)
+      this.blu_receiver[br_index].getBluVersion(3)
+      this.blu_receiver[br_index].getBluVersion(4)
+    }, 60000)
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       let key = Number(radio)
-      // this.blu_receiver[br_index].radioOn(key, this.blu_radios[key].values.current)
-      // blu_reader.getBluVersion(radio) // outputs timeout error still
       this.blu_receiver[br_index].radioOn(key, this.blu_radios[key].values.current)
       // blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
     })).then((values) => {
