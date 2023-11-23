@@ -211,21 +211,21 @@ const initialize_controls = function () {
 
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-    let res = window.prompt(`Turning on all Bl${umacr} Radios and setting polling interval as:`);
-    res = Number(res)
-    socket.send(JSON.stringify({
-      msg_type: 'cmd',
-      cmd: 'toggle_blu',
-      data: {
-        type: 'blu_on',
-        // channel: radio_id,
-        poll_interval: res,
-        scan: 1,
-        rx_blink: 1,
-      }
-    }));
+      let res = window.prompt(`Turning on all Bl${umacr} Radios and setting polling interval as:`);
+      res = Number(res)
+      socket.send(JSON.stringify({
+        msg_type: 'cmd',
+        cmd: 'toggle_blu',
+        data: {
+          type: 'blu_on',
+          // channel: radio_id,
+          poll_interval: res,
+          scan: 1,
+          rx_blink: 1,
+        }
+      }));
+    })
   })
-})
 
   // document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
   //   console.log('blu btn', btn)
@@ -640,37 +640,39 @@ const handle_blu_beep = function (beep) {
   // console.log('handle blu tag', beep)
   // h2.textContent = `Bl${umacr} Radio ` + n
   let BLU_PORT = document.querySelector('#blu-receiver').style.display = 'block'
-  BLU_PORT.textContent = `Bl${umacr} Series Receiver Port ${beep.port}`
-  let BLU_TABLE = document.querySelector('#blu-radio_' + beep.blu_channel);
-  // console.log('blu table', BLU_TABLE)
+  // BLU_PORT.textContent = `Bl${umacr} Series Receiver Port ${beep.port}`
+  for (i = 1; i <= 4; i++) {
+    let BLU_TABLE = document.querySelector('#blu-radio_' + beep.blu_channel);
+    // console.log('blu table', BLU_TABLE)
 
-  let tr = document.createElement('tr');
-  tr.style.border = "2px solid #22dd22"; // all blu beeps are validated so green outline
-  let td = document.createElement('td');
-  td.textContent = beep.tag_at.format(DATE_FMT);
-  // console.log('blu beep date', td.textContent)
-  tr.appendChild(td);
-  let alias = localStorage.getItem(tag_id);
-  if (alias) {
-    tr.appendChild(createElement(alias));
-  } else {
-    tr.appendChild(createElement(tag_id));
-  }
-  tr.appendChild(createElement(beep.rssi));
-  tr.appendChild(createElement(beep.node_id));
-  // console.log('blu tr', tr)
-  // console.log('blu table', BLU_TABLE)
+    let tr = document.createElement('tr');
+    tr.style.border = "2px solid #22dd22"; // all blu beeps are validated so green outline
+    let td = document.createElement('td');
+    td.textContent = beep.tag_at.format(DATE_FMT);
+    // console.log('blu beep date', td.textContent)
+    tr.appendChild(td);
+    let alias = localStorage.getItem(tag_id);
+    if (alias) {
+      tr.appendChild(createElement(alias));
+    } else {
+      tr.appendChild(createElement(tag_id));
+    }
+    tr.appendChild(createElement(beep.rssi));
+    tr.appendChild(createElement(beep.node_id));
+    // console.log('blu tr', tr)
+    // console.log('blu table', BLU_TABLE)
 
-  // remove last beep record if table exceeds max row count
-  // if (BLU_TABLE.children.length > MAX_ROW_COUNT) {
-  // if (BLU_TABLE.children.length > 1000) {
-  //   BLU_TABLE.removeChild(BLU_TABLE.lastElementChild)
-  // }
-  BLU_TABLE.insertBefore(tr, BLU_TABLE.firstChild.nextSibling);
-  // console.log('blu table 2', BLU_TABLE)
-  // console.log('blu table beep', beep)
+    // remove last beep record if table exceeds max row count
+    // if (BLU_TABLE.children.length > MAX_ROW_COUNT) {
+    // if (BLU_TABLE.children.length > 1000) {
+    //   BLU_TABLE.removeChild(BLU_TABLE.lastElementChild)
+    // }
+    BLU_TABLE.insertBefore(tr, BLU_TABLE.firstChild.nextSibling);
+    // console.log('blu table 2', BLU_TABLE)
+    // console.log('blu table beep', beep)
 
-  blu_beeps.push(beep);
+    blu_beeps.push(beep);
+  } // end of blu port for loop
   // console.log('blu table beeps', blu_beeps)
 
   let beep_count = beep_hist[tag_id];
@@ -1423,12 +1425,13 @@ const build_radio_component = function (n) {
   return wrapper
 };
 
-const build_blu_receiver = function () {
+const build_blu_receiver = function (port) {
   let wrapper = document.createElement('div')
 
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-aslign: center; color: #007FFF')
-  h2.textContent = `Bl${umacr} Receiver on USB Port ` + n
+  h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
+  return wrapper
 }
 
 const build_blu_component = function (n) {
@@ -1725,7 +1728,7 @@ const init_sg = () => {
     render_gateway()
     initialize_reboot()
     setInterval(render_gateway, 5000)
-    let component, col
+    let component, col, row
     let max_row_count = localStorage.getItem('max-row-count')
     if (max_row_count) {
       MAX_ROW_COUNT = max_row_count
@@ -1747,19 +1750,23 @@ const init_sg = () => {
       col.appendChild(component)
       document.querySelector('#extra-radios').appendChild(col)
     }
-    // component = build_blu_receiver()
-    // col = document.createElement('div')
-    // col.classList.add('col-lg')
-    // col.appendChild(component)
-    // document.querySelector('#blu-receiver').appendChild(col)
 
-    for (let i = 1; i <= 4; i++) {
-      component = build_blu_component(i)
-      col = document.createElement('div')
-      col.classList.add('col-lg')
-      col.appendChild(component)
-      document.querySelector('#blu-radios').appendChild(col)
+    for (let i = 1; i <= 6; i++) {
+      component = build_blu_receiver()
+      row = document.createElement('div')
+      row.classList.add('row')
+      row.appendChild(component)
+      document.querySelector('#blu-receiver').appendChild(col)
+      // for (let j = 1; j <= 4; j++) {
+      //   component = build_blu_component(j)
+      //   col = document.createElement('div')
+      //   col.classList.add('col-lg')
+      //   col.appendChild(component)
+      //   document.querySelector('#blu-radios').appendChild(col)
+      // }
     }
+
+
     initialize_websocket();
     initialize_controls();
     get_config();
