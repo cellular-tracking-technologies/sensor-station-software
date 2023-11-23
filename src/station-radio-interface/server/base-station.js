@@ -698,12 +698,7 @@ class BaseStation {
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
-      // blu_reader.destroy_receiver()
-      //   this.blu_receiver.forEach((receiver) => {
-      //     console.log('sigint blu receiver array', receiver)
-      //     this.stopBluRadios(receiver.path)
-      //   })
-      // })
+
       const radios_exit = Object.keys(this.blu_radios).map(radio => {
         this.blu_receiver[br_index].radioOff(radio)
         console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
@@ -711,16 +706,6 @@ class BaseStation {
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
-
-      // const radios_destroy = this.blu_receiver.map(receiver => {
-      // receiver.destroy_receiver()
-      //   // receiver = undefined
-      // })
-      // Promise.all(radios_destroy).then((values) => {
-      //   console.log('receivers destroyed values', values)
-      // }).catch((e) => {
-      //   console.error('Receiver destroyed error', e)
-      // })
 
       setTimeout(() => {
         // this.blu_receiver = []
