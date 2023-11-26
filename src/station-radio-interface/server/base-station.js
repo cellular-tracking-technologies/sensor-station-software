@@ -596,6 +596,10 @@ class BaseStation {
     this.blu_receiver.push(blu_reader)
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
 
+    setTimeout(() => {
+
+    }, 2000)
+
     // console.log('start blu radios blu reader by index', br_index, blu_reader)
     this.blu_receiver[br_index].on('complete', (job) => {
 
@@ -706,6 +710,9 @@ class BaseStation {
         console.log(values)
       })
 
+      this.blu_receiver.forEach((receiver) => {
+        receiver.destroy_receiver()
+      })
       setTimeout(() => {
         // this.blu_receiver = []
         console.log('Closed blu readers', this.blu_receiver)
