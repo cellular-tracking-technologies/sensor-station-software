@@ -7,8 +7,29 @@ class BeepStatManager {
    */
   constructor() {
     this.stats = {
-      channels: {}
+      channels: {},
+      blu_ports: {
+        "1": { channels: {}, },
+        "2": { channels: {}, },
+        "3": { channels: {}, },
+        "4": { channels: {}, },
+        "5": { channels: {}, },
+        "6": { channels: {}, },
+      },
     }
+  }
+
+  /**
+   * 
+   */
+  addBluStatChannel(port, channel) {
+    let blu_channel_data = {
+      blu_beeps: {},
+      blu_dropped: {},
+    }
+    this.stats.blu_ports[port].channels[channel] = blu_channel_data
+    console.log('add blu stat channel blu data', blu_channel_data)
+    return blu_channel_data
   }
 
   /**
@@ -47,25 +68,32 @@ class BeepStatManager {
     }
   }
 
-    /**
-   * 
-   * @param {*} record - beep data
-   *  
-   *  get in memory stat document for a given record by channel id - create the entry if does not exist
-   */
-    getBluChannel(record) {
-      // console.log('get blu channel record', record)
-      // if (Object.keys(this.stats.channels).includes(record.BluRadioId.toString())) {
-      //   return this.stats.channels[record.BluRadioId]
-      // } else {
-      //   return this.addStatChannel(record.BluRadioId)
-      // }
-      if (Object.keys(this.stats.channels).includes(record.RadioId.toString())) {
-        return this.stats.channels[record.RadioId]
-      } else {
-        return this.addStatChannel(record.RadioId)
-      }
+  /**
+ * 
+ * @param {*} record - beep data
+ *  
+ *  get in memory stat document for a given record by channel id - create the entry if does not exist
+ */
+  getBluChannel(record) {
+    // Object.keys(this.stats.blu_ports).forEach((port) => {
+    console.log('get blu channel port', record.UsbPort)
+
+    // if (port.includes(record.RadioId.toString())) {
+    if (Object.keys(this.stats.blu_ports[record.UsbPort]).includes(record.RadioId)) {
+      console.log('get blu channel port and radio id', this.stats.blu_ports[record.UsbPort].channels[record.RadioId])
+
+      return this.stats.blu_ports[record.UsbPort].channels[record.RadioId]
+    } else {
+      return this.addBluStatChannel(record.UsbPort, record.RadioId)
     }
+    // })
+    // console.log('get blu channel stats', JSON.stringify(this.stats.blu_ports))
+    // if (Object.keys(this.stats.blu_ports).includes(record.RadioId.toString())) {
+    //   return this.stats.channels[record.RadioId]
+    // } else {
+    //   return this.addStatChannel(record.RadioId)
+    // }
+  }
 
   /**
    * 
@@ -74,6 +102,7 @@ class BeepStatManager {
    *  bump tag stats for beep
    */
   addBeep(record) {
+    // console.log('regular beep record', record)
     let channel = this.getChannel(record)
 
     let beep_stats
@@ -105,14 +134,16 @@ class BeepStatManager {
       channel.telemetry[hardware_id] = 1
     }
   }
-/**
- * 
- * @param {Object} record 
- */
+  /**
+   * 
+   * @param {Object} record 
+   */
   addBluBeep(record) {
-    // console.log('add blu beep record', record)
+    console.log('add blu beep record', record)
+    console.log('add blu beep stats', JSON.stringify(this.stats.blu_ports))
+
     let channel = this.getBluChannel(record)
-    // console.log('add blu beep channel', channel)
+    console.log('add blu beep channel', channel)
     let blu_stats
     if (record.NodeId.length > 0) {
       // from a node
@@ -127,13 +158,14 @@ class BeepStatManager {
     }
   }
 
+  /**
+   * @param {Object} stats
+   */
   getDroppedDetections(stats) {
     let channel = this.getBluChannel(stats)
     console.log('get dropped detections channel', channel)
     let blu_dropped
     blu_dropped = channel.blu_dropped + blu_dropped
-
-
   }
   /**
    * 
