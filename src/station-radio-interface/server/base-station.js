@@ -67,6 +67,7 @@ class BaseStation {
     this.poll_interval
     this.poll_data
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+
   }
 
   /**
