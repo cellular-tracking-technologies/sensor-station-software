@@ -1769,6 +1769,7 @@ const init_sg = () => {
         col.classList.add('col-lg')
         col.appendChild(component)
         document.querySelector('#blu-radios').appendChild(col)
+        document.querySelector('#blu-port').appendChild(component)
       }
     }
 
