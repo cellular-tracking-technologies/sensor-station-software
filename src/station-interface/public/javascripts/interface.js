@@ -1761,6 +1761,7 @@ const init_sg = () => {
       row.classList.add('row')
       row.appendChild(component)
       // document.querySelector(`blu-port_${i}`)
+      document.querySelector('#blu-port').appendChild(row)
 
       for (let j = 1; j <= 4; j++) {
         component = build_blu_component(j)
@@ -1772,7 +1773,6 @@ const init_sg = () => {
         document.querySelector('#blu-port').appendChild(col)
 
       }
-      document.querySelector('#blu-port').appendChild(row)
 
     }
 
