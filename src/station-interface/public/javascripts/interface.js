@@ -1760,7 +1760,6 @@ const init_sg = () => {
       row = document.createElement('div')
       row.classList.add('row')
       row.appendChild(component)
-      document.querySelector('#blu-port').appendChild(row)
       // document.querySelector(`blu-port_${i}`)
 
       for (let j = 1; j <= 4; j++) {
@@ -1769,8 +1768,12 @@ const init_sg = () => {
         col.classList.add('col-lg')
         col.appendChild(component)
         document.querySelector('#blu-radios').appendChild(col)
-        document.querySelector('#blu-port').appendChild(component)
+        // document.querySelector('#blu-port').appendChild(component)
+        document.querySelector('#blu-port').appendChild(col)
+
       }
+      document.querySelector('#blu-port').appendChild(row)
+
     }
 
 
