@@ -641,9 +641,9 @@ const handle_blu_beep = function (beep) {
   // console.log('handle blu tag', beep)
   // h2.textContent = `Bl${umacr} Radio ` + n
   let BLU_PORT = document.querySelector('#blu-port_' + port)
-  BLU_PORT.textContent = `Bl${umacr} Series Receiver Port ${port}`
+  // BLU_PORT.textContent = `Bl${umacr} Series Receiver Port ${port}`
   // for (i = 1; i <= 4; i++) {
-  let BLU_TABLE = document.querySelector('#blu-radio_' + beep.blu_channel);
+  let BLU_TABLE = document.querySelector('#blu-radio_' + port + '-' + beep.blu_channel);
   // console.log('blu table', BLU_TABLE)
 
   let tr = document.createElement('tr');
