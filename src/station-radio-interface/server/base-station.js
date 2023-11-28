@@ -662,15 +662,17 @@ class BaseStation {
         case BluReceiverTask.STATS:
           try {
             // console.log('Radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
+            this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_dropped = job.data.det_dropped
+
             let blu_stats = {
               port: this.blu_receiver[br_index].port,
               channel: job.radio_channel,
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
-              msg_type: "blu_dropped",
+              msg_type: "blu_stats",
             }
             console.log('base station blu stats', blu_stats)
             // this.broadcast(JSON.stringify(job.data.det_dropped))
-            this.broadcast(JSON.stringify(blu_stats))
+            // this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
             console.log('base station stats error:', 'receiver', this.blu_receiver[br_index].port, 'radio', job.radio_channel, e)
           }
