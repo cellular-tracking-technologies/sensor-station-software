@@ -942,17 +942,31 @@ const handle_stats = function (stats) {
 };
 
 const handle_blu_stats = function (stats) {
-  const { channel, blu_dropped } = stats
-  const key = channel.toString()
-  if (Object.keys(blu_stats).includes(key)) {
-    // if channel exists within blu stats object, add blu_dropped to existing value
-    blu_stats[key] += blu_dropped
+  console.log('handle blu stats', stats)
+  console.log('blu channel stats before', blu_stats)
+  const { port, channel, blu_dropped } = stats
+  const port_key = port.toString()
+  const channel_key = channel.toString()
+
+  if (Object.keys(blu_stats).includes(port_key)) {
+    // if port exists within blu stats object, add blu_dropped to existing value
+    if (Object.keys(blu_stats[port_key].channels).includes(channel_key)) {
+      // if channel exists within blu stats object, add blu_dropped to existing value
+      blu_stats[port_key].channels[channel_key] += blu_dropped
+    } else {
+      // if channel does not exist, channel is added to object and its value is blu_dropped
+      blu_stats[port_key].channels[channel_key] = blu_dropped
+    }
   } else {
-    // if channel does not exist, channel is added to object and its value is blu_dropped
-    blu_stats[key] = blu_dropped
+    console.log('adding port key to blu stats', port_key)
+    console.log('object character port key', blu_stats[port_key])
+    blu_stats[port_key] = { channels: {}, }
+    // blu_stats[port_key].channels = {}
+    blu_stats[port_key].channels[channel_key] = blu_dropped
+
   }
 
-  console.log('blu channel stats', blu_stats)
+  console.log('blu channel stats after', blu_stats)
   render_dropped_detections(blu_stats);
 
 }
@@ -967,7 +981,7 @@ const handle_poll = function (data) {
 const render_poll_interval = function (data) {
   // const { channel, poll_interval } = data
   poll_interval = data.poll_interval
-  let poll_interval_info = `#poll_interval_${data.channel}`
+  let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
   document.querySelector(poll_interval_info).textContent = poll_interval;
 }
 
@@ -989,7 +1003,7 @@ const render_channel_stats = function (channel_stats) {
 
 const render_blu_stats = function (channel_stats) {
   if (channel_stats) {
-    // console.log('render blu stats channel stats', channel_stats)
+    console.log('render blu stats channel stats', channel_stats)
     let blu_beep_info, blu_node_beep_info, blu_telemetry_beep_info;
     Object.keys(channel_stats).forEach(function (channel) {
       blu_beep_info = `#blu_beep_count_${channel}`;
@@ -1008,13 +1022,23 @@ const render_blu_stats = function (channel_stats) {
 
 
 const render_dropped_detections = function (blu_stats) {
+  console.log('render dropped detections blu stats', blu_stats)
   let blu_stat_info;
 
-  Object.keys(blu_stats).forEach(function (channel) {
-    blu_stat_info = `#blu_dropped_count_${channel}`;
-    let stats_blu = blu_stats[channel];
-    console.log('render dropped detections', stats_blu)
-    document.querySelector(blu_stat_info).textContent = stats_blu;
+  Object.keys(blu_stats).forEach((port) => {
+    console.log('render dropped detections port', port)
+    Object.keys(blu_stats[port].channels).forEach((channel) => {
+      console.log('render dropped detections channel', channel)
+      if (channel > 0) {
+
+        blu_stat_info = `#blu_dropped_count_${port}-${channel}`;
+        console.log('render dropped detections port and channel', port, channel)
+
+        let stats_blu = blu_stats[Number(port)].channels[Number(channel)];
+        console.log('render dropped detections', stats_blu)
+        document.querySelector(blu_stat_info).textContent = stats_blu;
+      }
+    })
   })
 }
 
@@ -1198,7 +1222,7 @@ const initialize_websocket = function () {
         // handle_ble(data);
         break;
       case ('blu_stats'):
-        console.log('blu stats event')
+        console.log('blu stats event', data)
         handle_blu_stats(data);
         break;
       case ('poll_interval'):
@@ -1438,17 +1462,17 @@ const build_blu_receiver = function (port) {
   return wrapper
 }
 
-const build_blu_component = function (n) {
+const build_blu_component = function (port, radio) {
   let wrapper = document.createElement('div')
 
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-align: center; color: #007FFF')
-  h2.textContent = `Bl${umacr} Radio ` + n
+  h2.textContent = `Bl${umacr} Radio ` + radio
   wrapper.appendChild(h2)
   const version_label = document.createElement('span')
   version_label.textContent = 'version: '
   const firmware_version = document.createElement('span')
-  firmware_version.setAttribute('id', `blu-firmware-version-${n}`)
+  firmware_version.setAttribute('id', `blu-firmware-version-${port}-${radio}`)
   const firmware = document.createElement('div')
   firmware.appendChild(version_label)
   firmware.appendChild(firmware_version)
@@ -1459,28 +1483,28 @@ const build_blu_component = function (n) {
   // span.textContent = 'Current Mode:'
   // h5.appendChild(span)
   span = document.createElement('span')
-  span.setAttribute('id', `config_radio_${n}`)
+  span.setAttribute('id', `config_radio_${port}-${radio}`)
   h5.appendChild(span)
   wrapper.appendChild(h5)
   let table = document.createElement('table')
   table.setAttribute('class', 'table table-sm table-bordered table-dark')
-  table.setAttribute('id', `radio_stats_${n}`)
-  let row = build_row({ n: n, header: 'Beeps', id: `blu_beep_count_${n}` })
+  table.setAttribute('id', `radio_stats_${port}-${radio}`)
+  let row = build_row({ n: radio, header: 'Beeps', id: `blu_beep_count_${port}-${radio}` })
   table.appendChild(row)
-  row = build_row({ n: n, header: 'Dropped Detections', id: `blu_dropped_count_${n}` })
+  row = build_row({ n: radio, header: 'Dropped Detections', id: `blu_dropped_count_${port}-${radio}` })
   table.appendChild(row)
   // row = build_row({ n: n, header: 'Nodes', id: `blu_node_beep_count_${n}` })
   // table.appendChild(row)
   // row = build_row({ n: n, header: 'Telemetry', id: `blu_telemetry_beep_count_${n}` })
   // table.appendChild(row)
-  row = build_row({ header: 'Poll Interval (ms)', id: `poll_interval_${n}` })
+  row = build_row({ header: 'Poll Interval (ms)', id: `poll_interval_${port}-${radio}` })
   table.appendChild(row)
   wrapper.appendChild(table)
   let div = document.createElement('div')
   div.setAttribute('style', 'overflow:scroll; height:400px;')
   table = document.createElement('table')
   table.setAttribute('class', 'table table-sm table-bordered table-dark radio')
-  table.setAttribute('id', `blu-radio_${n}`)
+  table.setAttribute('id', `blu-radio_${port}-${radio}`)
   tr = document.createElement('tr')
   tr.setAttribute('class', 'table-primary')
   tr.setAttribute('style', 'color:#111;')
@@ -1508,7 +1532,7 @@ const build_blu_component = function (n) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_on')
-  button.setAttribute('value', n)
+  button.setAttribute('value', radio)
   button.textContent = 'Radio LED On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1518,7 +1542,7 @@ const build_blu_component = function (n) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_off')
-  button.setAttribute('value', n)
+  button.setAttribute('value', radio)
   button.textContent = 'Radio LED Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1528,7 +1552,7 @@ const build_blu_component = function (n) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'reboot_blu_radio')
-  button.setAttribute('value', n)
+  button.setAttribute('value', radio)
   button.textContent = 'Reboot Radio'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1539,7 +1563,7 @@ const build_blu_component = function (n) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'radio_polling')
-  button.setAttribute('value', n)
+  button.setAttribute('value', radio)
   button.textContent = `Change Polling Interval`
   // button.textContent = 'Change Polling Interval  (Default is 10000 ms)'
   col_sm.appendChild(button)
@@ -1551,7 +1575,7 @@ const build_blu_component = function (n) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'update_blu_firmware')
-  button.setAttribute('value', n)
+  button.setAttribute('value', radio)
   button.textContent = `Update Bl${umacr} Radio Firmware`
   // button.textContent = 'Change Polling Interval  (Default is 10000 ms)'
   col_sm.appendChild(button)
@@ -1764,7 +1788,7 @@ const init_sg = () => {
       document.querySelector('#blu-port').appendChild(row)
 
       for (let j = 1; j <= 4; j++) {
-        component = build_blu_component(j)
+        component = build_blu_component(i, j)
         col = document.createElement('div')
         col.classList.add('col-lg')
         col.appendChild(component)

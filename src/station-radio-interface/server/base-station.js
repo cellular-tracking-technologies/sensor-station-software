@@ -663,10 +663,12 @@ class BaseStation {
           try {
             // console.log('Radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
             let blu_stats = {
+              port: this.blu_receiver[br_index].port,
               channel: job.radio_channel,
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
               msg_type: "blu_stats",
             }
+            console.log('base station blu stats', blu_stats)
             // this.broadcast(JSON.stringify(job.data.det_dropped))
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {

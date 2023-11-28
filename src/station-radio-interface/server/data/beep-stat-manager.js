@@ -139,7 +139,7 @@ class BeepStatManager {
    * @param {Object} record 
    */
   addBluBeep(record) {
-    console.log('add blu beep record', record)
+    // console.log('add blu beep record', record)
     console.log('add blu beep stats', JSON.stringify(this.stats.blu_ports))
 
     let channel = this.getBluChannel(record)
@@ -156,6 +156,7 @@ class BeepStatManager {
     } else {
       blu_stats[record.TagId] = 1
     }
+    console.log('add blu beep blu stats', blu_stats)
   }
 
   /**
