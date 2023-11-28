@@ -8,13 +8,13 @@ class BeepStatManager {
   constructor() {
     this.stats = {
       channels: {},
-      blu_ports: {
-        "1": { channels: {}, },
-        "2": { channels: {}, },
-        "3": { channels: {}, },
-        "4": { channels: {}, },
-        "5": { channels: {}, },
-        "6": { channels: {}, },
+      blu_ports: { // redo this without defined port numbers
+        // "1": { channels: {}, },
+        // "2": { channels: {}, },
+        // "3": { channels: {}, },
+        // "4": { channels: {}, },
+        // "5": { channels: {}, },
+        // "6": { channels: {}, },
       },
     }
   }
@@ -77,14 +77,19 @@ class BeepStatManager {
   getBluChannel(record) {
     // Object.keys(this.stats.blu_ports).forEach((port) => {
     console.log('get blu channel port', record.UsbPort)
+    let port = record.UsbPort.toString()
+    let channel = record.RadioId.toString()
+    if (Object.keys(this.stats.blu_ports).includes(port)) {
 
-    // if (port.includes(record.RadioId.toString())) {
-    if (Object.keys(this.stats.blu_ports[record.UsbPort]).includes(record.RadioId)) {
-      console.log('get blu channel port and radio id', this.stats.blu_ports[record.UsbPort].channels[record.RadioId])
+      if (Object.keys(this.stats.blu_ports[port]).includes(channel)) {
+        console.log('get blu channel port and radio id', this.stats.blu_ports[port])
+        return this.stats.blu_ports[port].channels[channel]
 
-      return this.stats.blu_ports[record.UsbPort].channels[record.RadioId]
+      } else {
+        return this.addBluStatChannel(record.UsbPort, record.RadioId)
+      }
     } else {
-      return this.addBluStatChannel(record.UsbPort, record.RadioId)
+      this.stats.blu_ports[port] = { channels: {}, }
     }
     // })
     // console.log('get blu channel stats', JSON.stringify(this.stats.blu_ports))
@@ -140,7 +145,7 @@ class BeepStatManager {
    */
   addBluBeep(record) {
     // console.log('add blu beep record', record)
-    console.log('add blu beep stats', JSON.stringify(this.stats.blu_ports))
+    console.log('add blu beep stats', this.stats.blu_ports)
 
     let channel = this.getBluChannel(record)
     console.log('add blu beep channel', channel)
