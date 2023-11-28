@@ -666,7 +666,7 @@ class BaseStation {
               port: this.blu_receiver[br_index].port,
               channel: job.radio_channel,
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
-              msg_type: "blu_stats",
+              msg_type: "blu_dropped",
             }
             console.log('base station blu stats', blu_stats)
             // this.broadcast(JSON.stringify(job.data.det_dropped))

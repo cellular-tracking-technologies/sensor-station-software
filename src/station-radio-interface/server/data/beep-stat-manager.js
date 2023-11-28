@@ -145,7 +145,7 @@ class BeepStatManager {
    */
   addBluBeep(record) {
     // console.log('add blu beep record', record)
-    console.log('add blu beep stats', this.stats.blu_ports)
+    console.log('add blu beep stats', JSON.stringify(this.stats.blu_ports))
 
     let channel = this.getBluChannel(record)
     console.log('add blu beep channel', channel)

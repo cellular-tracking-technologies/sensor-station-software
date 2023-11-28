@@ -880,7 +880,6 @@ const handle_stats = function (stats) {
   let channel_stats = {}
   if (stats.channels) {
 
-
     Object.keys(stats.channels).forEach(function (channel) {
       let channel_data = stats.channels[channel];
       console.log('handle stats channel data', channel_data)
@@ -914,15 +913,29 @@ const handle_stats = function (stats) {
         n += channel_data.telemetry[tag_id];
       });
       telemetry_beeps = n;
-      n = 0;
-      Object.keys(channel_data.blu_beeps).forEach(function (tag_id) {
-        n += channel_data.blu_beeps[tag_id];
-      });
-      blu_beeps = n;
-      // console.log('handle channel stats blu beeps', blu_beeps)
       // n = 0;
-      // Object.keys(channel_data.blu_dropped).forEach(function (tag_id)) {
+      // Object.keys(channel_data.blu_beeps).forEach(function (tag_id) {
+      //   n += channel_data.blu_beeps[tag_id];
+      // });
+      // blu_beeps = n;
+      n = 0;
+      console.log('handle stats blu beeps port', stats.blu_ports)
+      Object.keys(stats.blu_ports).forEach((port) => {
+        console.log('handle stats blu beeps port', port, stats.blu_ports[port])
 
+        Object.keys(stats.blu_ports[port].channels).forEach((channel) => {
+          console.log('handle stats blu beeps channel', channel)
+          Object.keys(stats.blu_ports[port].channels[channel].blu_beeps).forEach((tag_id) => {
+            console.log('handle stats blu beeps tag id', tag_id)
+            // n += stats.blu_ports[port].channels[channel].blu_beeps[tag_id]
+            n += stats.blu_ports[port].channels[channel].blu_beeps[tag_id]
+            console.log('handle stats blu beeps n', n)
+          })
+        })
+      })
+
+      blu_beeps = n;
+      console.log('handle stats blu beeps', blu_beeps)
       channel_stats[channel] = {
         beeps: beeps,
         node_beeps: node_beeps,
@@ -941,8 +954,8 @@ const handle_stats = function (stats) {
   render_blu_stats(channel_stats);
 };
 
-const handle_blu_stats = function (stats) {
-  console.log('handle blu stats', stats)
+const handle_blu_dropped = function (stats) {
+  console.log('handle blu dropped', stats)
   console.log('blu channel stats before', blu_stats)
   const { port, channel, blu_dropped } = stats
   const port_key = port.toString()
@@ -1221,15 +1234,16 @@ const initialize_websocket = function () {
         handle_poll(data);
         // handle_ble(data);
         break;
-      case ('blu_stats'):
+      case ('blu_dropped'):
         console.log('blu stats event', data)
-        handle_blu_stats(data);
+        handle_blu_dropped(data);
         break;
       case ('poll_interval'):
         console.log('blu radio poll interval', data.poll_interval)
         handle_poll(data)
         break;
       case ('stats'):
+        console.log('handle stats data', data)
         handle_stats(data);
         break;
       case ('about'):
