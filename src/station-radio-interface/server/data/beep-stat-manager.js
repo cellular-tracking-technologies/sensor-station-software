@@ -28,7 +28,7 @@ class BeepStatManager {
       blu_dropped: {},
     }
     this.stats.blu_ports[port].channels[channel] = blu_channel_data
-    console.log('add blu stat channel blu data', blu_channel_data)
+    // console.log('add blu stat channel blu data', blu_channel_data)
     return blu_channel_data
   }
 
@@ -76,13 +76,13 @@ class BeepStatManager {
  */
   getBluChannel(record) {
     // Object.keys(this.stats.blu_ports).forEach((port) => {
-    console.log('get blu channel port', record.UsbPort)
+    // console.log('get blu channel port', record.UsbPort)
     let port = record.UsbPort.toString()
     let channel = record.RadioId.toString()
     if (Object.keys(this.stats.blu_ports).includes(port)) {
 
       if (Object.keys(this.stats.blu_ports[port]).includes(channel)) {
-        console.log('get blu channel port and radio id', this.stats.blu_ports[port])
+        // console.log('get blu channel port and radio id', this.stats.blu_ports[port])
         return this.stats.blu_ports[port].channels[channel]
 
       } else {
@@ -145,10 +145,10 @@ class BeepStatManager {
    */
   addBluBeep(record) {
     // console.log('add blu beep record', record)
-    console.log('add blu beep stats', JSON.stringify(this.stats.blu_ports))
+    // console.log('add blu beep stats', JSON.stringify(this.stats.blu_ports))
 
     let channel = this.getBluChannel(record)
-    console.log('add blu beep channel', channel)
+    // console.log('add blu beep channel', channel)
     let blu_stats
     if (record.NodeId.length > 0) {
       // from a node
@@ -161,7 +161,7 @@ class BeepStatManager {
     } else {
       blu_stats[record.TagId] = 1
     }
-    console.log('add blu beep blu stats', blu_stats)
+    // console.log('add blu beep blu stats', blu_stats)
   }
 
   /**
@@ -169,7 +169,7 @@ class BeepStatManager {
    */
   getDroppedDetections(stats) {
     let channel = this.getBluChannel(stats)
-    console.log('get dropped detections channel', channel)
+    // console.log('get dropped detections channel', channel)
     let blu_dropped
     blu_dropped = channel.blu_dropped + blu_dropped
   }

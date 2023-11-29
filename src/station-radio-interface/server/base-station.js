@@ -612,7 +612,11 @@ class BaseStation {
             this.blu_fw = {
               msg_type: 'blu-firmware',
               firmware: {
-                [job.radio_channel]: job.data.version,
+                [this.blu_receiver[br_index].port]: {
+                  channels: {
+                    [job.radio_channel]: job.data.version,
+                  }
+                }
               }
             }
             this.broadcast(JSON.stringify(this.blu_fw))
@@ -636,6 +640,8 @@ class BaseStation {
               this.data_manager.handleBluBeep(beep)
               this.broadcast(JSON.stringify(beep))
             })
+            this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_beeps = job.data.length
+
           } catch (e) {
             console.error('base station get detections error on Port', this.blu_receiver[br_index].port, 'Radio', job.radio_channel, e)
           }
@@ -661,7 +667,7 @@ class BaseStation {
           break
         case BluReceiverTask.STATS:
           try {
-            // console.log('Radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
+            console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
             this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_dropped = job.data.det_dropped
 
             let blu_stats = {
@@ -691,7 +697,7 @@ class BaseStation {
       this.blu_receiver[br_index].getBluVersion(2)
       this.blu_receiver[br_index].getBluVersion(3)
       this.blu_receiver[br_index].getBluVersion(4)
-    }, 60000)
+    }, 10000)
 
     const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
       let key = Number(radio)

@@ -637,7 +637,41 @@ const handle_beep = function (beep) {
 const handle_blu_beep = function (beep) {
   console.log('handle blu beep', beep)
   let tag_id = beep.tag_id.toUpperCase();
-  let port = beep.port
+  let port = beep.port.toString()
+  let channel = beep.channel.toString()
+  console.log('handle blu beep port', port, 'channel', channel)
+
+  if (Object.keys(blu_stats).includes(port)) {
+    console.log('handle blu beep existing port', blu_stats)
+    // if port exists within blu stats object, add blu_dropped to existing value
+    if (Object.keys(blu_stats[port].channels).includes(channel)) {
+      // if channel exists within blu stats object, add blu_dropped to existing value
+      // blu_stats[port].channels[channel].blu_beeps += n
+      // blu_stats[port].channels[channel].blu_dropped += d
+      console.log('handle blu beep existing channel', blu_stats)
+    } else {
+      // if channel does not exist, channel is added to object and its value is blu_dropped
+      blu_stats[port].channels[channel] = { blu_beeps: 0, blu_dropped: 0, }
+      console.log('handle blu beep adding new channel to object', blu_stats)
+      // blu_stats[port].channels[channel].blu_dropped = d
+    }
+  } else { // blu_stats port conditional
+
+    // add empty port and channels objects to blu_stats object
+    blu_stats = {
+      [port]: {
+        channels: {
+          [channel]: {
+            blu_beeps: 0,
+            blu_dropped: 0,
+          }
+        },
+      }
+    }
+
+    console.log('handle blu beep adding port to object', blu_stats)
+  } // blu_stats end conditional
+
   // console.log('handle blu tag', beep)
   // h2.textContent = `Bl${umacr} Radio ` + n
   let BLU_PORT = document.querySelector('#blu-port_' + port)
@@ -956,72 +990,33 @@ const handle_stats = function (stats) {
 
 const handle_blu_stats = function (data) {
   console.log('handle blu stats incoming data', data)
-  console.log('blu channel stats before', blu_stats)
+  console.log('handle blu stats object before manipulation', blu_stats)
   // channels = {}
-  let n = 0;
-  let d = 0;
+  let beeps;
+  let dropped;
 
   // console.log('handle stats blu beeps port', stats)
   Object.keys(data).forEach((port) => {
-    console.log('handle stats blu beeps port', port)
+    console.log('handle blu stats blu beeps port', port)
 
     Object.keys(data[port].channels).forEach((channel) => {
-      console.log('handle stats blu beeps channel', channel)
-      d += data[port].channels[channel].blu_dropped
+      console.log('handle blu stats channel', channel)
+      console.log('handle blu stats port', port, 'channel', channel, 'blu stats', blu_stats, 'original data', data)
+      blu_stats[port].channels[channel].blu_dropped += data[port].channels[channel].blu_dropped
       // n += stats[port].channels[channel].blu_beeps
-      console.log('handle stats blu beeps port', port, 'channel', channel, 'blu beeps', n, 'blu dropped', d)
-      Object.keys(data[port].channels[channel].blu_beeps).forEach((tag_id) => {
-        console.log('handle stats blu beeps tag id', tag_id)
-        n += data[port].channels[channel].blu_beeps[tag_id]
+      // Object.keys(data[port].channels[channel].blu_beeps).forEach((tag_id) => {
+      // console.log('handle blu stats tag id', tag_id)
+      // beeps = data[port].channels[channel].blu_beeps
+      blu_stats[port].channels[channel].blu_beeps += data[port].channels[channel].blu_beeps
+      // blu_stats[port].channels[channel].blu_beeps += 5
 
-
-
-
-        console.log('handle blu stats count', n)
-        if (Object.keys(blu_stats).includes(port)) {
-          console.log('handle blu stats port key', port)
-          // if port exists within blu stats object, add blu_dropped to existing value
-          if (Object.keys(blu_stats[port].channels).includes(channel)) {
-            // if channel exists within blu stats object, add blu_dropped to existing value
-            blu_stats[port].channels[channel].blu_beeps += n
-            blu_stats[port].channels[channel].blu_dropped += d
-            console.log('handle stats blu stats beeps adding beeps to existing object', blu_stats)
-          } else {
-            // if channel does not exist, channel is added to object and its value is blu_dropped
-            blu_stats[port].channels[channel] = { blu_beeps: n, blu_dropped: d, }
-            // blu_stats[port].channels[channel].blu_dropped = d
-          }
-          console.log('handle stats blu stats beeps adding new channel to object', blu_stats)
-        } else { // blu_stats port conditional
-          // add empty port and channels objects to blu_stats object
-          blu_stats = {
-            [port]: {
-              channels: {},
-            }
-          }
-          blu_stats[port].channels[channel] = {
-            blu_beeps: 0,
-            blu_dropped: 0,
-          }
-          console.log('handle stats blu beeps adding port to object', blu_stats)
-        } // blu_stats end conditional
-        console.log('handle stats blu beeps end of forEach', blu_stats)
-        render_blu_stats(blu_stats)
-        render_dropped_detections(blu_stats);
-      }) // end of tag id loop
+      // console.log('handle blu stats count', n)
+      console.log('handle blu stats adding end of forEach', blu_stats)
+      render_blu_stats(blu_stats)
+      render_dropped_detections(blu_stats);
+      // }) // end of tag id loop
     }) // end of channel loop
   }) // end of port loop
-
-
-  // const { port, channel, blu_beeps, blu_dropped } = stats
-  // const port_key = port.toString()
-  // const channel_key = channel.toString()
-
-
-
-  // console.log('blu channel stats after', blu_stats)
-
-
 }
 
 const handle_poll = function (data) {
