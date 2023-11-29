@@ -1282,10 +1282,10 @@ const initialize_websocket = function () {
         handle_poll(data);
         // handle_ble(data);
         break;
-      // case ('blu_stats'):
-      //   console.log('blu stats event', data)
-      //   handle_blu_stats(data);
-      //   break;
+      case ('blu_stats'):
+        console.log('blu stats event', data)
+        handle_blu_stats(data);
+        break;
       case ('poll_interval'):
         console.log('blu radio poll interval', data.poll_interval)
         handle_poll(data)
@@ -1293,8 +1293,11 @@ const initialize_websocket = function () {
       case ('stats'):
         console.log('handle stats data', data)
         handle_stats(data);
-        handle_blu_stats(data.blu_ports)
+        // handle_blu_stats(data.blu_ports)
         break;
+      // case ('blu_stats'):
+      //   console.log('blu stats socket message', data)
+      //   handle_blu_stats(data.blu_ports);
       case ('about'):
         let about = data;
         document.querySelector('#station-id').textContent = about.station_id;

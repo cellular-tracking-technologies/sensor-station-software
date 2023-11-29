@@ -9,6 +9,7 @@ class BeepStatManager {
     this.stats = {
       channels: {},
       blu_ports: { // redo this without defined port numbers
+        msg_type: 'blu_stats',
         // "1": { channels: {}, },
         // "2": { channels: {}, },
         // "3": { channels: {}, },
@@ -26,6 +27,7 @@ class BeepStatManager {
     let blu_channel_data = {
       blu_beeps: {},
       blu_dropped: {},
+      // msg_type: 'blu_stats',
     }
     this.stats.blu_ports[port].channels[channel] = blu_channel_data
     // console.log('add blu stat channel blu data', blu_channel_data)
