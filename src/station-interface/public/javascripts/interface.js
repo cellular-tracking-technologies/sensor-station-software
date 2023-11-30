@@ -992,31 +992,58 @@ const handle_blu_stats = function (data) {
   console.log('handle blu stats incoming data', data)
   console.log('handle blu stats object before manipulation', blu_stats)
   // channels = {}
-  let beeps;
-  let dropped;
+  let beeps = 0;
+  let dropped = 0;
 
   // console.log('handle stats blu beeps port', stats)
   Object.keys(data).forEach((port) => {
+
     console.log('handle blu stats blu beeps port', port)
 
-    Object.keys(data[port].channels).forEach((channel) => {
+    Object.keys(data[port.toString()].channels).forEach((channel) => {
+
       console.log('handle blu stats channel', channel)
       console.log('handle blu stats port', port, 'channel', channel, 'blu stats', blu_stats, 'original data', data)
-      blu_stats[port].channels[channel].blu_dropped += data[port].channels[channel].blu_dropped
-      // n += stats[port].channels[channel].blu_beeps
+
+      // blu_stats[port].channels[channel].blu_dropped += data[port].channels[channel].blu_dropped
+      dropped += data[port.toString()].channels[channel.toString()].blu_dropped
+      console.log('handle blu stats adding data dropped port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_dropped)
+
+
       // Object.keys(data[port].channels[channel].blu_beeps).forEach((tag_id) => {
       // console.log('handle blu stats tag id', tag_id)
       // beeps = data[port].channels[channel].blu_beeps
-      blu_stats[port].channels[channel].blu_beeps += data[port].channels[channel].blu_beeps
+
+      // blu_stats[port].channels[channel].blu_beeps += data[port].channels[channel].blu_beeps
+      beeps += data[port.toString()].channels[channel.toString()].blu_beeps
+      console.log('handle blu stats adding data beeps port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_beeps)
+
+      // console.log('handle blu stats beep sum', beeps)
+
+      // console.log('handle blu stats adding data beeps', data[port].channels[channel].blu_beeps, 'to', blu_stats[port].channels[channel].blu_beeps)
+
       // blu_stats[port].channels[channel].blu_beeps += 5
 
       // console.log('handle blu stats count', n)
-      console.log('handle blu stats adding end of forEach', blu_stats)
-      render_blu_stats(blu_stats)
-      render_dropped_detections(blu_stats);
+
+
       // }) // end of tag id loop
+      console.log('handle blu stats adding end of forEach', blu_stats)
+      blu_stats[port.toString()].channels[channel.toString()].blu_beeps = beeps
+      console.log('handle blu stats beep sum', 'port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_beeps)
+
+      render_blu_stats(blu_stats)
+
+
+      blu_stats[port].channels[channel].blu_dropped = dropped
+      render_dropped_detections(blu_stats);
+
+      beeps = 0
+      dropped = 0
     }) // end of channel loop
+
   }) // end of port loop
+
 }
 
 const handle_poll = function (data) {
