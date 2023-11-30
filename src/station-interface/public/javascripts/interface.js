@@ -209,186 +209,7 @@ const initialize_controls = function () {
     });
   });
 
-  // Blu Buttons
-  document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      let res = window.prompt(`Turning on all Bl${umacr} Radios and setting polling interval as:`);
-      res = Number(res)
-      socket.send(JSON.stringify({
-        msg_type: 'cmd',
-        cmd: 'toggle_blu',
-        data: {
-          type: 'blu_on',
-          // channel: radio_id,
-          poll_interval: res,
-          scan: 1,
-          rx_blink: 1,
-        }
-      }));
-    })
-  })
 
-  // document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
-  //   console.log('blu btn', btn)
-  //   btn.addEventListener('click', function (e) {
-  //     let radio_id = e.target.getAttribute('value');
-  //     let res = window.prompt(`Turning on Radio ${radio_id} and setting polling interval as:`);
-  //     // if (res) {
-  //       res = Number(res)
-  //       console.log('polling res', res, typeof res)
-  //       if (isNaN(res) === true || res === 0) {
-  //         window.alert('Invalid Input, please enter an integer (number with no decimals).')
-  //       // } else if (res === 0) {
-  //       //   window.alert('Invalid Input, please enter an integer (number with no decimals).')
-  //       } else {
-  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio On'
-  //       socket.send(JSON.stringify({
-  //         msg_type: 'cmd',
-  //         cmd: 'toggle_blu',
-  //         data: {
-  //           type: 'blu_on',
-  //           // channel: radio_id,
-  //           poll_interval: res,
-  //           scan: 1,
-  //           rx_blink: 1,
-  //         }
-  //       }));
-  //     }
-  //   });
-  // });
-  document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      let res = window.confirm(`Are you sure you want to turn all Bl${umacr} Series Radios off?`);
-      if (res) {
-        socket.send(JSON.stringify({
-          msg_type: 'cmd',
-          cmd: 'toggle_blu',
-          data: {
-            type: 'blu_off',
-            // channel: radio_id,
-            // scan: 0,
-            // rx_blink: 0,
-          }
-        }));
-      }
-    })
-  })
-  // document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
-  //   btn.addEventListener('click', function (e) {
-  //     let radio_id = e.target.getAttribute('value');
-  //     let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' off?');
-  //     if (res) {
-  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Off'
-  //       socket.send(JSON.stringify({
-  //         msg_type: 'cmd',
-  //         cmd: 'toggle_blu',
-  //         data: {
-  //           type: 'blu_off',
-  //           channel: radio_id,
-  //           scan: 0,
-  //           rx_blink: 0,
-  //         }
-  //       }));
-  //     }
-  //   });
-  // });
-  document.querySelectorAll('button[name="toggle_radio_led_on"]').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      let radio_id = e.target.getAttribute('value');
-      let res = window.confirm('Are you sure you want to switch Blu Series Radio ' + radio_id + ' LED On?');
-      if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED On'
-        socket.send(JSON.stringify({
-          msg_type: 'cmd',
-          cmd: 'toggle_blu_led',
-          data: {
-            type: 'led_on',
-            channel: radio_id,
-            scan: 1,
-            rx_blink: 1,
-          }
-        }));
-      }
-    });
-  });
-  document.querySelectorAll('button[name="toggle_radio_led_off"]').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      let radio_id = e.target.getAttribute('value');
-      let res = window.confirm('Are you sure you want to switch Blu Series Radio ' + radio_id + ' LED Off?');
-      if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED Off'
-        socket.send(JSON.stringify({
-          msg_type: 'cmd',
-          cmd: 'toggle_blu_led',
-          data: {
-            type: 'led_off',
-            channel: radio_id,
-            scan: 1,
-            rx_blink: 0,
-          }
-        }));
-      }
-    });
-  });
-  document.querySelectorAll('button[name="reboot_blu_radio"]').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      let radio_id = e.target.getAttribute('value');
-      let res = window.confirm('Are you sure you want to reboot Radio ' + radio_id + '?');
-      if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Reboot Radio'
-        socket.send(JSON.stringify({
-          msg_type: 'cmd',
-          cmd: 'reboot_blu_radio',
-          data: {
-            type: 'reboot_blu_radio',
-            channel: radio_id,
-          }
-        }));
-      }
-    });
-  });
-  document.querySelectorAll('button[name="radio_polling"]').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      let radio_id = e.target.getAttribute('value');
-      let res = window.prompt('Enter polling interval in milliseconds (ms) for Radio ' + radio_id +
-        '.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
-      res = Number(res)
-      poll_interval = res ? res : 10000
-      console.log('polling res', res, typeof res)
-      if (isNaN(res) === true || res === 0) {
-        window.alert('Invalid Input, please enter an integer (number with no decimals).')
-      } else {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
-        socket.send(JSON.stringify({
-          msg_type: 'cmd',
-          cmd: 'change_poll',
-          data: {
-            type: 'change_poll',
-            poll_interval: res,
-            channel: radio_id,
-          }
-        }));
-      }
-    });
-  });
-  document.querySelectorAll('button[name="update_blu_firmware"]').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
-      let radio_id = e.target.getAttribute('value');
-      let res = window.confirm('Are you sure you want to update Blu Series Radio ' + radio_id + '?');
-      if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Updated to Latest Firmware'
-        socket.send(JSON.stringify({
-          msg_type: 'cmd',
-          cmd: 'update-blu-firmware',
-          data: {
-            type: 'update-firmware',
-            channel: radio_id,
-            poll_interval: 10000,
-          }
-        }));
-      }
-    });
-  });
   document.querySelector('#clear').addEventListener('click', (evt) => {
     clear();
   });
@@ -488,6 +309,208 @@ const initialize_controls = function () {
     });
   });
 };
+
+const initialize_blu_controls = function () {
+  // Blu Buttons
+  document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let res = window.prompt(`Turning on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`);
+      res = Number(res)
+      socket.send(JSON.stringify({
+        msg_type: 'cmd',
+        cmd: 'toggle_blu',
+        data: {
+          type: 'blu_on',
+          // channel: radio_id,
+          port: port,
+          poll_interval: res,
+          scan: 1,
+          rx_blink: 1,
+        }
+      }));
+    })
+  })
+
+  // document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
+  //   console.log('blu btn', btn)
+  //   btn.addEventListener('click', function (e) {
+  //     let radio_id = e.target.getAttribute('value');
+  //     let res = window.prompt(`Turning on Radio ${radio_id} and setting polling interval as:`);
+  //     // if (res) {
+  //       res = Number(res)
+  //       console.log('polling res', res, typeof res)
+  //       if (isNaN(res) === true || res === 0) {
+  //         window.alert('Invalid Input, please enter an integer (number with no decimals).')
+  //       // } else if (res === 0) {
+  //       //   window.alert('Invalid Input, please enter an integer (number with no decimals).')
+  //       } else {
+  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio On'
+  //       socket.send(JSON.stringify({
+  //         msg_type: 'cmd',
+  //         cmd: 'toggle_blu',
+  //         data: {
+  //           type: 'blu_on',
+  //           // channel: radio_id,
+  //           poll_interval: res,
+  //           scan: 1,
+  //           rx_blink: 1,
+  //         }
+  //       }));
+  //     }
+  //   });
+  // });
+  document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let port = e.target.getAttribute('value')
+
+      let res = window.confirm(`Are you sure you want to turn all Bl${umacr} Series Radios off on USB Port ${port}?`);
+      if (res) {
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu',
+          data: {
+            type: 'blu_off',
+            // channel: radio_id,
+            port: port,
+
+            scan: 0,
+            rx_blink: 0,
+          }
+        }));
+      }
+    })
+  })
+  // document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
+  //   btn.addEventListener('click', function (e) {
+  //     let radio_id = e.target.getAttribute('value');
+  //     let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' off?');
+  //     if (res) {
+  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Off'
+  //       socket.send(JSON.stringify({
+  //         msg_type: 'cmd',
+  //         cmd: 'toggle_blu',
+  //         data: {
+  //           type: 'blu_off',
+  //           channel: radio_id,
+  //           scan: 0,
+  //           rx_blink: 0,
+  //         }
+  //       }));
+  //     }
+  //   });
+  // });
+  document.querySelectorAll('button[name="toggle_radio_led_on"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      console.log('blu button radio on event', e)
+      // let radio_id = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value');
+      let res = window.confirm(`Are you sure you want to switch Blu Series Radios on USB Port ${port} LED On?`);
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED On'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu_led',
+          data: {
+            type: 'led_on',
+            // channel: radio_id,
+            port: port,
+            scan: 1,
+            rx_blink: 1,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="toggle_radio_led_off"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      // let radio_id = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value')
+      let res = window.confirm(`Are you sure you want to switch Blu Series Radio ${radio_id} on USB Port ${port} LED Off?`);
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED Off'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu_led',
+          data: {
+            type: 'led_off',
+            // channel: radio_id,
+            port: port,
+            scan: 1,
+            rx_blink: 0,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="reboot_blu_radio"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      // let radio_id = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value')
+
+      let res = window.confirm(`Are you sure you want to reboot Radio radio_id on USB Port ${port}?`);
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Reboot Radio'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'reboot_blu_radio',
+          data: {
+            type: 'reboot_blu_radio',
+            // channel: radio_id,
+            port: port,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="radio_polling"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      // let radio_id = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value')
+
+      let res = window.prompt('Enter polling interval in milliseconds (ms) for Radio ' + radio_id +
+        '.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
+      res = Number(res)
+      poll_interval = res ? res : 10000
+      console.log('polling res', res, typeof res)
+      if (isNaN(res) === true || res === 0) {
+        window.alert('Invalid Input, please enter an integer (number with no decimals).')
+      } else {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'change_poll',
+          data: {
+            type: 'change_poll',
+            poll_interval: res,
+            port: port,
+            // channel: radio_id,
+          }
+        }));
+      }
+    });
+  });
+  document.querySelectorAll('button[name="update_blu_firmware"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      // let radio_id = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value')
+
+      let res = window.confirm('Are you sure you want to update Blu Series Radio ' + radio_id + '?');
+      if (res) {
+        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Updated to Latest Firmware'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'update-blu-firmware',
+          data: {
+            type: 'update-firmware',
+            // channel: radio_id,
+            port: port,
+            poll_interval: 10000,
+          }
+        }));
+      }
+    });
+  });
+}
 
 const format_beep = function (beep) {
   // console.log('format beep', beep)
@@ -1906,6 +1929,7 @@ const init_sg = () => {
 
     initialize_websocket();
     initialize_controls();
+    initialize_blu_controls();
     get_config();
     render_tag_hist();
     RAW_LOG = document.querySelector('#raw_log');
