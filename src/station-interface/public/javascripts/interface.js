@@ -994,56 +994,37 @@ const handle_blu_stats = function (data) {
   // channels = {}
   let beeps = 0;
   let dropped = 0;
+  let port_key;
+  let channel_key;
 
   // console.log('handle stats blu beeps port', stats)
   Object.keys(data).forEach((port) => {
-
+    port_key = port.toString()
     console.log('handle blu stats blu beeps port', port)
 
     Object.keys(data[port.toString()].channels).forEach((channel) => {
+      channel_key = channel.toString()
 
-      console.log('handle blu stats channel', channel)
-      console.log('handle blu stats port', port, 'channel', channel, 'blu stats', blu_stats, 'original data', data)
-
-      // blu_stats[port].channels[channel].blu_dropped += data[port].channels[channel].blu_dropped
-      dropped += data[port.toString()].channels[channel.toString()].blu_dropped
-      console.log('handle blu stats adding data dropped port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_dropped)
-
-
-      // Object.keys(data[port].channels[channel].blu_beeps).forEach((tag_id) => {
-      // console.log('handle blu stats tag id', tag_id)
-      // beeps = data[port].channels[channel].blu_beeps
-
-      // blu_stats[port].channels[channel].blu_beeps += data[port].channels[channel].blu_beeps
-      beeps += data[port.toString()].channels[channel.toString()].blu_beeps
-      console.log('handle blu stats adding data beeps port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_beeps)
-
-      // console.log('handle blu stats beep sum', beeps)
-
-      // console.log('handle blu stats adding data beeps', data[port].channels[channel].blu_beeps, 'to', blu_stats[port].channels[channel].blu_beeps)
-
-      // blu_stats[port].channels[channel].blu_beeps += 5
-
-      // console.log('handle blu stats count', n)
-
-
-      // }) // end of tag id loop
       console.log('handle blu stats adding end of forEach', blu_stats)
-      blu_stats[port.toString()].channels[channel.toString()].blu_beeps = beeps
-      console.log('handle blu stats beep sum', 'port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_beeps)
-
+      blu_stats[port_key].channels[channel_key.toString()].blu_beeps += data[port_key].channels[channel_key].blu_beeps
+      console.log('handle blu stats radio channels length', Object.keys(blu_stats[port_key].channels).length)
+      console.log('handle blu stats beep sum', 'port', port_key, 'channel', channel_key, blu_stats[port_key].channels[channel_key].blu_beeps)
       render_blu_stats(blu_stats)
 
 
-      blu_stats[port].channels[channel].blu_dropped = dropped
+      blu_stats[port_key].channels[channel_key].blu_dropped += data[port_key].channels[channel_key].blu_dropped
       render_dropped_detections(blu_stats);
 
-      beeps = 0
-      dropped = 0
+      // // blu_stats[port].channels[channel].blu_dropped += data[port].channels[channel].blu_dropped
+      // dropped += data[port.toString()].channels[channel.toString()].blu_dropped
+      // console.log('handle blu stats adding data dropped port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_dropped)
+
+      // // blu_stats[port.toString()].channels[channel.toString()].blu_beeps += data[port.toString()].channels[channel.toString()].blu_beeps
+      // beeps += data[port.toString()].channels[channel.toString()].blu_beeps
+      // console.log('handle blu stats adding data beeps port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_beeps)
+
     }) // end of channel loop
-
   }) // end of port loop
-
 }
 
 const handle_poll = function (data) {
@@ -1320,11 +1301,8 @@ const initialize_websocket = function () {
       case ('stats'):
         console.log('handle stats data', data)
         handle_stats(data);
-        // handle_blu_stats(data.blu_ports)
+        handle_blu_stats(data.blu_ports)
         break;
-      // case ('blu_stats'):
-      //   console.log('blu stats socket message', data)
-      //   handle_blu_stats(data.blu_ports);
       case ('about'):
         let about = data;
         document.querySelector('#station-id').textContent = about.station_id;

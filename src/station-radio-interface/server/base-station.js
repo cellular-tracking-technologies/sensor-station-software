@@ -671,7 +671,7 @@ class BaseStation {
             this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_dropped = job.data.det_dropped
             console.log('base station blu stats summary', this.data_manager.stats.stats.blu_ports)
             // this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].msg_type = 'blu_stats'
-            this.broadcast(JSON.stringify(this.data_manager.stats.stats.blu_ports))
+            // this.broadcast(JSON.stringify(this.data_manager.stats.stats.blu_ports))
             let blu_stats = {
               port: this.blu_receiver[br_index].port,
               channel: job.radio_channel,
