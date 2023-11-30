@@ -640,8 +640,14 @@ class BaseStation {
               this.data_manager.handleBluBeep(beep)
               this.broadcast(JSON.stringify(beep))
             })
-            this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_beeps = job.data.length
-
+            // this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_beeps = job.data.length
+            let blu_sum = {
+              port: this.blu_receiver[br_index].port,
+              channel: job.radio_channel,
+              blu_beeps: job.data.length == null ? 0 : job.data.length,
+              msg_type: "blu_stats",
+            }
+            this.broadcast(JSON.stringify(blu_sum))
           } catch (e) {
             console.error('base station get detections error on Port', this.blu_receiver[br_index].port, 'Radio', job.radio_channel, e)
           }
@@ -669,7 +675,6 @@ class BaseStation {
           try {
             console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
             this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_dropped = job.data.det_dropped
-            console.log('base station blu stats summary', this.data_manager.stats.stats.blu_ports)
             // this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].msg_type = 'blu_stats'
             // this.broadcast(JSON.stringify(this.data_manager.stats.stats.blu_ports))
             let blu_stats = {
