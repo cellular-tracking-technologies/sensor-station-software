@@ -1533,81 +1533,6 @@ const build_blu_receiver = function (port) {
   h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
   wrapper.appendChild(h2)
 
-  // let div = document.createElement('div')
-  // div.setAttribute('class', 'row')
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_on')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Radios On'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_off')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Radios Off'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_led_on')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Radio LED On'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_led_off')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Radio LED Off'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'reboot_blu_radio')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Reboot Radio'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-  // wrapper.appendChild(div)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'radio_polling')
-  // button.setAttribute('value', port)
-  // button.textContent = `Change Polling Interval`
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-  // wrapper.appendChild(div)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'update_blu_firmware')
-  // button.setAttribute('value', port)
-  // button.textContent = `Update Bl${umacr} Radio Firmware`
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-  // wrapper.appendChild(div)
-
   return wrapper
 }
 
@@ -1675,59 +1600,6 @@ const build_blu_component = function (port, radio) {
 
   div = document.createElement('div')
   div.setAttribute('class', 'row')
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_led_on')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Radio LED On'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'toggle_radio_led_off')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Radio LED Off'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'reboot_blu_radio')
-  // button.setAttribute('value', port)
-  // button.textContent = 'Reboot Radio'
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-  // wrapper.appendChild(div)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'radio_polling')
-  // button.setAttribute('value', port)
-  // button.textContent = `Change Polling Interval`
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-  // wrapper.appendChild(div)
-
-  // col_sm = document.createElement('div')
-  // col_sm.setAttribute('class', 'col-sm')
-  // button = document.createElement('button')
-  // button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-  // button.setAttribute('name', 'update_blu_firmware')
-  // button.setAttribute('value', port)
-  // button.textContent = `Update Bl${umacr} Radio Firmware`
-  // col_sm.appendChild(button)
-  // div.appendChild(col_sm)
-  // wrapper.appendChild(div)
 
   return wrapper
 }
@@ -2016,7 +1888,6 @@ const init_sg = () => {
       row = document.createElement('div')
       row.classList.add('row')
       row.appendChild(component)
-      // document.querySelector(`blu-port_${i}`)
       document.querySelector('#blu-port').appendChild(row)
 
       for (let j = 1; j <= 4; j++) {
@@ -2025,7 +1896,6 @@ const init_sg = () => {
         col.classList.add('col-lg')
         col.appendChild(component)
         document.querySelector('#blu-radios').appendChild(col)
-        // document.querySelector('#blu-port').appendChild(component)
         document.querySelector('#blu-port').appendChild(col)
       }
 
