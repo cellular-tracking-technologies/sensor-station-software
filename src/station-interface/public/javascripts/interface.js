@@ -997,7 +997,6 @@ const handle_blu_stats = function (data) {
   let port_key;
   let channel_key;
 
-  // console.log('handle stats blu beeps port', stats)
   Object.keys(data).forEach((port) => {
     port_key = port.toString()
     console.log('handle blu stats blu beeps port', port)
@@ -1007,24 +1006,53 @@ const handle_blu_stats = function (data) {
 
       console.log('handle blu stats adding end of forEach', blu_stats)
       blu_stats[port_key].channels[channel_key.toString()].blu_beeps += data[port_key].channels[channel_key].blu_beeps
-      console.log('handle blu stats radio channels length', Object.keys(blu_stats[port_key].channels).length)
-      console.log('handle blu stats beep sum', 'port', port_key, 'channel', channel_key, blu_stats[port_key].channels[channel_key].blu_beeps)
       render_blu_stats(blu_stats)
 
-
-      blu_stats[port_key].channels[channel_key].blu_dropped += data[port_key].channels[channel_key].blu_dropped
-      render_dropped_detections(blu_stats);
-
-      // // blu_stats[port].channels[channel].blu_dropped += data[port].channels[channel].blu_dropped
-      // dropped += data[port.toString()].channels[channel.toString()].blu_dropped
-      // console.log('handle blu stats adding data dropped port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_dropped)
-
-      // // blu_stats[port.toString()].channels[channel.toString()].blu_beeps += data[port.toString()].channels[channel.toString()].blu_beeps
-      // beeps += data[port.toString()].channels[channel.toString()].blu_beeps
-      // console.log('handle blu stats adding data beeps port', port, 'channel', channel, blu_stats[port.toString()].channels[channel.toString()].blu_beeps)
+      // blu_stats[port_key].channels[channel_key].blu_dropped += data[port_key].channels[channel_key].blu_dropped
+      // render_dropped_detections(blu_stats);
 
     }) // end of channel loop
   }) // end of port loop
+}
+
+const handle_blu_dropped = function (data) {
+  console.log('handle blu dropped data', data)
+  let port_key = data.port.toString()
+  let channel_key = data.channel.toString()
+  let dropped = data.blu_dropped
+  console.log('handle blu dropped, dropped beeps', dropped)
+  if (Object.keys(blu_stats).includes(port_key)) {
+    console.log('handle blu dropped existing port', blu_stats)
+    // if port exists within blu stats object, add blu_dropped to existing value
+    if (Object.keys(blu_stats[port_key].channels).includes(channel_key)) {
+      console.log('handle blu dropped existing channel', blu_stats)
+      blu_stats[port_key].channels[channel_key].blu_dropped += dropped
+    } else {
+      // if channel does not exist, channel is added to object and its value is blu_dropped
+      blu_stats[port_key].channels[channel_key].blu_dropped = dropped
+      console.log('handle blu dropped adding new channel to object', blu_stats)
+      // blu_stats[port].channels[channel].blu_dropped = d
+    }
+  } else { // blu_stats port conditional
+
+    // add empty port and channels objects to blu_stats object
+    blu_stats = {
+      [port_key]: {
+        channels: {
+          [channel_key]: {
+            blu_beeps: 0,
+            blu_dropped: 0,
+          }
+        },
+      }
+    }
+
+    console.log('handle blu dropped adding port to object', blu_stats)
+  } // blu_stats end conditional
+  console.log('handle blu dropped blu stats after functions', blu_stats)
+
+  render_dropped_detections(blu_stats);
+
 }
 
 const handle_poll = function (data) {
@@ -1290,9 +1318,9 @@ const initialize_websocket = function () {
         handle_poll(data);
         // handle_ble(data);
         break;
-      case ('blu_stats'):
+      case ('blu_dropped'):
         console.log('blu stats event', data)
-        handle_blu_stats(data);
+        handle_blu_dropped(data);
         break;
       case ('poll_interval'):
         console.log('blu radio poll interval', data.poll_interval)
