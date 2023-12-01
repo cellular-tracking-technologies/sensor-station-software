@@ -156,7 +156,7 @@ class BeepStatManager {
       // from a node
       blu_stats = channel.nodes.blu_beeps
     } else {
-      blu_stats = channel.blu_beeps
+      blu_stats = channel.blu_beeps ? channel.blu_beeps : 0
     }
     if (Object.keys(blu_stats).includes(record.TagId)) {
       blu_stats[record.TagId] += 1

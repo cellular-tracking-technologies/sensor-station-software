@@ -107,7 +107,7 @@ class DataManager {
         case 'blu_tag': {
           record = this.loggers.blu.addRecord(beep)
           // console.log('blu record', record)
-          this.stats.addBluBeep(record)
+          // this.stats.addBluBeep(record)
           // this.stats.getDroppedDetections()
           break
         }
@@ -169,7 +169,7 @@ class DataManager {
   handleBluBeep(beep) {
     let record
     record = this.loggers.blu.addRecord(beep)
-    this.stats.addBluBeep(record)
+    // this.stats.addBluBeep(record)
     // }
   }
 

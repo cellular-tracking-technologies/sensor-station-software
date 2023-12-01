@@ -674,7 +674,7 @@ class BaseStation {
         case BluReceiverTask.STATS:
           try {
             console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.det_dropped, 'detections dropped')
-            this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_dropped = job.data.det_dropped
+            // this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].blu_dropped = job.data.det_dropped
             // this.data_manager.stats.stats.blu_ports[this.blu_receiver[br_index].port].channels[job.radio_channel].msg_type = 'blu_stats'
             // this.broadcast(JSON.stringify(this.data_manager.stats.stats.blu_ports))
             let blu_stats = {
