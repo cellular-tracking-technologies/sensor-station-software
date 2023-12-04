@@ -157,7 +157,11 @@ class BaseStation {
           // let blu_channel = Number(cmd.data.channel)
           if (cmd.data.type === 'blu_on') {
             console.log('turning blu radio on')
-            const radios_on = Object.keys(this.blu_radios).map(radio => {
+            let br_index = this.blu_receiver.findIndex(receiver => receiver.port === Number(cmd.data.port))
+            // let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
+
+            console.log('turn radios on blu receiver', this.blu_receiver[br_index])
+            const radios_on = Object.keys(this.blu_receiver[br_index].blu_radios).map(radio => {
               this.config.default_config.blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
               // this.blu_reader.updateConfig(this.config.default_config)
               // this.blu_reader.radioOn(Number(radio), cmd.data.poll_interval)

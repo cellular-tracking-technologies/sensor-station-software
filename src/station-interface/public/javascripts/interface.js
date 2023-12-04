@@ -314,6 +314,8 @@ const initialize_blu_controls = function () {
   // Blu Buttons
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
+      let port = e.target.getAttribute('value')
+
       let res = window.prompt(`Turning on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`);
       res = Number(res)
       socket.send(JSON.stringify({
