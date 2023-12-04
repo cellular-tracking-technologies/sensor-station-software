@@ -318,18 +318,22 @@ const initialize_blu_controls = function () {
 
       let res = window.prompt(`Turning on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`);
       res = Number(res)
-      socket.send(JSON.stringify({
-        msg_type: 'cmd',
-        cmd: 'toggle_blu',
-        data: {
-          type: 'blu_on',
-          // channel: radio_id,
-          port: port,
-          poll_interval: res,
-          scan: 1,
-          rx_blink: 1,
-        }
-      }));
+      if (isNaN(res) === true || res === 0) {
+        window.alert('Invalid Input, please enter an integer (number with no decimals).')
+      } else {
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'toggle_blu',
+          data: {
+            type: 'blu_on',
+            // channel: radio_id,
+            port: port,
+            poll_interval: res,
+            scan: 1,
+            rx_blink: 1,
+          }
+        }));
+      }
     })
   })
 
