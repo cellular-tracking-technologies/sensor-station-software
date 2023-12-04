@@ -412,7 +412,7 @@ const initialize_blu_controls = function () {
       let port = e.target.getAttribute('value');
       let res = window.confirm(`Are you sure you want to switch Blu Series Radios on USB Port ${port} LED On?`);
       if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED On'
+        document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED On'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'toggle_blu_led',
@@ -433,7 +433,7 @@ const initialize_blu_controls = function () {
       let port = e.target.getAttribute('value')
       let res = window.confirm(`Are you sure you want to switch Blu Series Radio ${radio_id} on USB Port ${port} LED Off?`);
       if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio LED Off'
+        document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED Off'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'toggle_blu_led',
@@ -455,7 +455,7 @@ const initialize_blu_controls = function () {
 
       let res = window.confirm(`Are you sure you want to reboot Radio radio_id on USB Port ${port}?`);
       if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Reboot Radio'
+        document.querySelector(`#config_radio_${port}`).textContent = 'Reboot Radio'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'reboot_blu_radio',
@@ -473,15 +473,15 @@ const initialize_blu_controls = function () {
       // let radio_id = e.target.getAttribute('value');
       let port = e.target.getAttribute('value')
 
-      let res = window.prompt('Enter polling interval in milliseconds (ms) for Radio ' + radio_id +
-        '.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
+      let res = window.prompt('Enter polling interval in milliseconds (ms) for USB Port ' + port +
+        ' radios.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
       res = Number(res)
       poll_interval = res ? res : 10000
       console.log('polling res', res, typeof res)
       if (isNaN(res) === true || res === 0) {
         window.alert('Invalid Input, please enter an integer (number with no decimals).')
       } else {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
+        document.querySelector(`#config_radio_${port}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'change_poll',
@@ -1588,7 +1588,7 @@ const build_blu_component = function (port, radio) {
   // span.textContent = 'Current Mode:'
   // h5.appendChild(span)
   span = document.createElement('span')
-  span.setAttribute('id', `config_radio_${port}-${radio}`)
+  span.setAttribute('id', `config_radio_${port}`)
   h5.appendChild(span)
   wrapper.appendChild(h5)
   let table = document.createElement('table')

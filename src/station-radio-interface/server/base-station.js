@@ -219,29 +219,35 @@ class BaseStation {
           }, 10000)
           break
         case ('change_poll'):
-          let poll_key = cmd.data.channel.toString()
+          console.log('change poll interval', cmd)
+          let br_index = this.blu_receiver.findIndex(receiver => receiver.port === Number(cmd.data.port))
+          console.log('change poll blu receiver', this.blu_receiver[br_index])
+          let port_key = cmd.data.port.toString()
+          console.log('change poll port key', port_key)
+          // Object.keys(this.config.default_config.blu_receivers[this.blu_receiver[br_index].port_key].blu_radios).forEach((radio) => {
 
-          if (Object.keys(this.config.default_config.blu_radios).includes(poll_key.toString())) {
+          console.log('changing polling interval on Radio', cmd)
+          this.poll_interval = Number(cmd.data.poll_interval)
 
-            console.log('changing polling interval on Radio', cmd)
-            this.poll_interval = Number(cmd.data.poll_interval)
-
-            // set current poll interval in default-config
-            this.config.default_config.blu_radios[poll_key].values.current = Number(this.poll_interval)
-            console.log('radio', poll_key, 'is polling at', this.blu_radios[poll_key].values.current, 'poll interval')
+          // set current poll interval in default-config
+          Object.keys(this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).forEach((radio) => {
+            console.log('change poll radio', radio)
+            // radio.values.current = Number(this.poll_interval)
+            this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[radio].values.current = this.poll_interval
+            console.log('radio', radio, 'is polling at', this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[radio].values.current, 'poll interval')
             this.poll_data = {
-              channel: cmd.data.channel,
+              port: cmd.data.port,
               poll_interval: this.poll_interval,
               msg_type: 'poll_interval',
             }
-            this.blu_reader.updateConfig(this.config.default_config)
+            this.blu_receiver[br_index].updateConfig(this.config.default_config)
 
             this.broadcast(JSON.stringify(this.poll_data))
             console.log('poll interval', this.poll_interval, typeof this.poll_interval)
-            this.blu_reader.stopDetections(Number(cmd.data.channel))
-            this.blu_reader.setBluConfig(Number(cmd.data.channel), { scan: 1, rx_blink: 1, })
-            this.blu_reader.getDetections(Number(cmd.data.channel), this.poll_interval)
-          }
+            this.blu_receiver[br_index].stopDetections(Number(cmd.data.port))
+            this.blu_receiver[br_index].setBluConfig(Number(cmd.data.port), { scan: 1, rx_blink: 1, })
+            this.blu_receiver[br_index].getDetections(Number(cmd.data.port), this.poll_interval)
+          })
           break
         case ('update-blu-firmware'):
           console.log('updating blu series receiver firmware', cmd)
