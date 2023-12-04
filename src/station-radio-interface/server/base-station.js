@@ -251,10 +251,15 @@ class BaseStation {
           break
         case ('update-blu-firmware'):
           console.log('updating blu series receiver firmware', cmd)
-          let radio_num = Number(cmd.data.channel)
-          let poll_interval = this.config.default_config.blu_radios[radio_num].values.current
+          let port_num = Number(cmd.data.port)
+          let br_index1 = this.blu_receiver.findIndex(receiver => receiver.port === port_num)
+          // let radio_num = Number(cmd.data.channel)
+          console.log('update blu firmware default poll interval', this.config.default_config.blu_receivers[this.blu_receiver[br_index1].port].blu_radios["1"].values.current)
+          let poll_interval = this.config.default_config.blu_receivers[this.blu_receiver[br_index1].port].blu_radios["1"].values.current
           console.log('update firmware poll interval', poll_interval)
-          this.blu_reader.updateBluFirmware(radio_num, this.firmware, poll_interval)
+          Object.keys(this.blu_receiver[br_index1].blu_radios).forEach((radio) => {
+            this.blu_receiver[br_index1].updateBluFirmware(Number(radio), this.firmware, poll_interval)
+          })
           // blu_reader.rebootBluReceiver(radio_num, this.config.default_config.blu_radios[radio_num].values.current)
           // blu_reader.getBluVersion(radio_num)
           break

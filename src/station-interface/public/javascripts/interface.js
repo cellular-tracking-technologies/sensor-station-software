@@ -500,9 +500,9 @@ const initialize_blu_controls = function () {
       // let radio_id = e.target.getAttribute('value');
       let port = e.target.getAttribute('value')
 
-      let res = window.confirm('Are you sure you want to update Blu Series Radio ' + radio_id + '?');
+      let res = window.confirm('Are you sure you want to update Blu Series Radios on USB Port ' + port + '?');
       if (res) {
-        document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Updated to Latest Firmware'
+        document.querySelector(`#config_radio_${port}`).textContent = 'Radio Updated to Latest Firmware'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'update-blu-firmware',
