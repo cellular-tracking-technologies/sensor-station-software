@@ -37,7 +37,8 @@ class BaseStation {
       radio_map_filepath: opts.radio_map_filepath
     })
 
-    this.blu_radios = this.config.default_config.blu_radios
+    // this.blu_radios = this.config.default_config.blu_radios
+    this.blu_receivers = this.config.default_config.blu_receivers
     this.blu_dir = []
     this.blu_config = blu_config
     // console.log('blu config', this.blu_config)
@@ -162,7 +163,7 @@ class BaseStation {
 
             console.log('turn radios on blu receiver', this.blu_receiver[br_index])
             const radios_on = Object.keys(this.blu_receiver[br_index].blu_radios).map(radio => {
-              this.config.default_config.blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
+              this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
               // this.blu_reader.updateConfig(this.config.default_config)
               // this.blu_reader.radioOn(Number(radio), cmd.data.poll_interval)
               this.blu_receiver[br_index].updateConfig(this.config.default_config)
@@ -174,7 +175,9 @@ class BaseStation {
 
             })
           } else if (cmd.data.type === "blu_off") {
-            const radios_off = Object.keys(this.blu_radios).map(radio => {
+            let br_index = this.blu_receiver.findIndex(receiver => receiver.port === Number(cmd.data.port))
+
+            const radios_off = Object.keys(this.blu_receiver[br_index].blu_radios).map(radio => {
               // this.blu_reader.radioOff(radio)
               this.blu_receiver[br_index].radioOff(radio)
             })
@@ -592,15 +595,16 @@ class BaseStation {
   // startBluRadios(path) {
   startBluRadios(path) {
     let blu_radio = this.findBluPath(path)
+    console.log(' start blu radios blu radio', blu_radio)
     let blu_reader = new BluStation({
       path: blu_radio.path,
       port: blu_radio.channel,
     })
-
+    console.log('blu reader', blu_reader)
     blu_reader.path = blu_radio.path
     this.blu_receiver.push(blu_reader)
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
-
+    console.log('blu receiver', this.blu_receiver[br_index])
     setTimeout(() => {
 
     }, 2000)
@@ -639,7 +643,7 @@ class BaseStation {
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
-              beep.poll_interval = this.config.default_config.blu_radios[beep.channel].values.current
+              beep.poll_interval = this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[beep.channel].values.current
               beep.port = this.blu_receiver[br_index].port
               this.data_manager.handleBluBeep(beep)
               this.broadcast(JSON.stringify(beep))
@@ -710,9 +714,11 @@ class BaseStation {
       this.blu_receiver[br_index].getBluVersion(4)
     }, 10000)
 
-    const radios_start = Promise.all(Object.keys(this.blu_radios).map((radio) => {
-      let key = Number(radio)
-      this.blu_receiver[br_index].radioOn(key, this.blu_radios[key].values.current)
+    const radios_start = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
+      console.log('radios start radio', radio)
+      let radio_key = radio.toString()
+      let port_key = this.blu_receiver[br_index].port.toString()
+      this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
       // blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
     })).then((values) => {
       console.log('radios started')
@@ -724,17 +730,18 @@ class BaseStation {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
 
-      const radios_exit = Object.keys(this.blu_radios).map(radio => {
+      const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
         this.blu_receiver[br_index].radioOff(radio)
         console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
-      })
+      }))
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
 
-      this.blu_receiver.forEach((receiver) => {
-        receiver.destroy_receiver()
-      })
+      // uncomment to destroy each receiver, need to find way to do this after turning off all radios in receiver
+      // this.blu_receiver.forEach((receiver) => {
+      //   receiver.destroy_receiver()
+      // })
       setTimeout(() => {
         // this.blu_receiver = []
         console.log('Closed blu readers', this.blu_receiver)
