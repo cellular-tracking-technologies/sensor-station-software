@@ -5,6 +5,7 @@ let nodes = {};
 let beep_hist = {};
 let beep_channels = [];
 let blu_stats = {};
+let blu_ports = []
 // let poll_interval = 10000;
 let poll_interval;
 let umacr = '\u016B';
@@ -670,13 +671,16 @@ const handle_blu_beep = function (beep) {
   let port = beep.port.toString()
   let channel = beep.channel.toString()
   console.log('handle blu beep port', port, 'channel', channel)
+  blu_ports.push(beep.port)
+  blu_ports.forEach((port) => {
 
-  if (BLU_ENABLED == false) {
-    if (beep.port) {
-      BLU_ENABLED = true
-      document.querySelector(`#blu-receiver-${beep.port}`).style.display = 'block'
-    }
-  }
+    // if (BLU_ENABLED == false) {
+    // if (port) {
+    // BLU_ENABLED = true
+    document.querySelector(`#blu-receiver-${port}`).style.display = 'inline'
+    //   }
+    // }
+  })
 
   build_blu_stats(port, channel)
 
@@ -1568,10 +1572,10 @@ const build_blu_receiver = function (port) {
   let wrapper = document.createElement('div')
   // let wrapper = document.querySelector('#blu-receiver')
   // let wrapper = document.querySelector(`#blu-port-${port}`)
+  wrapper.setAttribute('style', 'display:none')
 
   wrapper.setAttribute('class', 'container')
   wrapper.setAttribute('id', `blu-receiver-${port}`)
-  wrapper.setAttribute('style', 'display:none')
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-aslign: center; color: #007FFF')
   h2.setAttribute('id', `blu-port-${port}`)
@@ -1963,7 +1967,6 @@ const init_sg = () => {
       }
 
       build_blu_buttons(i)
-
     }
 
     initialize_websocket();
