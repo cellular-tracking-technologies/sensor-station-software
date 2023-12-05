@@ -671,12 +671,12 @@ const handle_blu_beep = function (beep) {
   let channel = beep.channel.toString()
   console.log('handle blu beep port', port, 'channel', channel)
 
-  // if (BLU_ENABLED == false) {
-  //   if (beep.port) {
-  //     BLU_ENABLED = true
-  //     document.querySelector(`#blu-port-${beep.port}`).style.display = 'block'
-  //   }
-  // }
+  if (BLU_ENABLED == false) {
+    if (beep.port) {
+      BLU_ENABLED = true
+      document.querySelector(`#blu-receiver-${beep.port}`).style.display = 'block'
+    }
+  }
 
   build_blu_stats(port, channel)
 
@@ -1571,6 +1571,7 @@ const build_blu_receiver = function (port) {
 
   wrapper.setAttribute('class', 'container')
   wrapper.setAttribute('id', `blu-receiver-${port}`)
+  wrapper.setAttribute('style', 'display:none')
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-aslign: center; color: #007FFF')
   h2.setAttribute('id', `blu-port-${port}`)
