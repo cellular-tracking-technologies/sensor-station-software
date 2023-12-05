@@ -1064,6 +1064,7 @@ const render_poll_interval = function (data) {
   // const { channel, poll_interval } = data
   poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
+  console.log('render poll interval', poll_interval_info)
   document.querySelector(poll_interval_info).textContent = poll_interval;
 }
 
@@ -1324,7 +1325,7 @@ const initialize_websocket = function () {
         handle_blu_dropped(data);
         break;
       case ('poll_interval'):
-        console.log('blu radio poll interval', data.poll_interval)
+        console.log('blu radio poll interval', data)
         handle_poll(data)
         break;
       case ('stats'):
