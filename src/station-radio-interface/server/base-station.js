@@ -188,13 +188,22 @@ class BaseStation {
           break
         case ('toggle_blu_led'):
           console.log('blu radio button clicked', cmd)
+          let ledon_index = this.blu_receiver.findIndex(receiver => receiver.port === Number(cmd.data.port))
+          const leds_on = Object.keys(this.blu_receiver[ledon_index].blu_radios).map(radio => {
+            this.blu_receiver[ledon_index].setBluConfig(Number(radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
+          })
+          Promise.all(leds_on).then((values) => {
+            console.log('turning radio leds on', values)
+          }).catch((e) => {
+            console.log('cannot turn radio leds on', e)
+          })
           // blu_channel = Number(cmd.data.channel)
-          this.blu_reader.setBluConfig(
-            Number(cmd.data.channel),
-            {
-              scan: cmd.data.scan,
-              rx_blink: cmd.data.rx_blink,
-            })
+          // this.blu_reader.setBluConfig(
+          //   Number(cmd.data.channel),
+          //   {
+          //     scan: cmd.data.scan,
+          //     rx_blink: cmd.data.rx_blink,
+          //   })
           console.log('turning blu led on/off')
           break
         case ('reboot_blu_radio'):

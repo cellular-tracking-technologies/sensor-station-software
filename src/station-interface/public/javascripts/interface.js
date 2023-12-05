@@ -431,7 +431,7 @@ const initialize_blu_controls = function () {
     btn.addEventListener('click', function (e) {
       // let radio_id = e.target.getAttribute('value');
       let port = e.target.getAttribute('value')
-      let res = window.confirm(`Are you sure you want to switch Blu Series Radio ${radio_id} on USB Port ${port} LED Off?`);
+      let res = window.confirm(`Are you sure you want to switch Blu Series Radio LEDs on USB Port ${port} Off?`);
       if (res) {
         document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED Off'
         socket.send(JSON.stringify({
