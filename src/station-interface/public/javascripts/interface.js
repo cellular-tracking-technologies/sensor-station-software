@@ -1570,8 +1570,6 @@ const build_radio_component = function (n) {
 
 const build_blu_receiver = function (port) {
   let wrapper = document.createElement('div')
-  // let wrapper = document.querySelector('#blu-receiver')
-  // let wrapper = document.querySelector(`#blu-port-${port}`)
   wrapper.setAttribute('style', 'display:none')
 
   wrapper.setAttribute('class', 'container')
