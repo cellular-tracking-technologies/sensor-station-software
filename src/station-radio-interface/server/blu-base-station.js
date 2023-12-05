@@ -277,6 +277,7 @@ class BluStation extends BluReceiver {
     delete this.polling
     delete this.dropped
     // delete this.blu_radios
+    this.destroyed_port = this.port
     delete this.port
     delete this.path
     delete this.beeps

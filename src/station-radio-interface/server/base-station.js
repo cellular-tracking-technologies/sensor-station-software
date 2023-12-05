@@ -726,7 +726,7 @@ class BaseStation {
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
               msg_type: "blu_dropped",
             }
-            console.log('Port', this.blu_receiver[br_index].port, 'radio', blu_stats.blu_dropped, 'has', job.data.det_dropped, 'detections dropped')
+            console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
 
             // console.log('base station blu stats', blu_stats)
             // this.broadcast(JSON.stringify(job.data.det_dropped))
@@ -765,15 +765,24 @@ class BaseStation {
 
     process.on('SIGINT', () => {
       this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
 
-      const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
-        this.blu_receiver[br_index].radioOff(radio)
-        console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
-      }))
-      Promise.all(radios_exit).then((values) => {
-        console.log(values)
-      })
+      if (this.blu_receiver[br_index].port) {
+
+
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
+        const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
+          this.blu_receiver[br_index].radioOff(radio)
+          console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
+        }))
+        Promise.all(radios_exit).then((values) => {
+          console.log(values)
+        }).catch((e) => {
+          console.error('no port to closed in destroyed blu receiver', e)
+        })
+      } else {
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index])
+
+      }
 
       // uncomment to destroy each receiver, need to find way to do this after turning off all radios in receiver
       // this.blu_receiver.forEach((receiver) => {
@@ -782,6 +791,9 @@ class BaseStation {
       setTimeout(() => {
         // this.blu_receiver = []
         console.log('Closed blu readers', this.blu_receiver)
+        // this.blu_receiver.forEach((receiver) => {
+        //   console.log('Closed blu readers', JSON.stringify(receiver.blu_radios))
+        // })
         process.exit(0)
       }, 7000)
     })
@@ -796,13 +808,20 @@ class BaseStation {
 
       this.stationLog('blu radio is closing')
       console.log('blu receiver', this.blu_receiver[br_index], 'is closing')
-      const radios_exit = Object.keys(this.blu_radios).map(radio => {
+      const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
         this.blu_receiver[br_index].radioOff(radio)
         console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
-      })
+      }))
       Promise.all(radios_exit).then((values) => {
         console.log(values)
       })
+      // const radios_exit = Object.keys(this.blu_radios).map(radio => {
+      //   this.blu_receiver[br_index].radioOff(radio)
+      //   console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
+      // })
+      // Promise.all(radios_exit).then((values) => {
+      //   console.log(values)
+      // })
       // this.blu_receiver[br_index].destroy_receiver()
 
       setTimeout(() => {
