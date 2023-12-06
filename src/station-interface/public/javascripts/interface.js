@@ -518,6 +518,36 @@ const initialize_blu_controls = function () {
       }
     });
   });
+
+  document.querySelectorAll('#main-radio-switch').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      console.log('display main radio switch clicked', document.querySelector('#mainRadiosSwitch'))
+      if (document.querySelector('#main-radios').style.display !== 'none') {
+        document.querySelector('#main-radios').style.display = 'none'
+
+      } else {
+        document.querySelector('#main-radios').style.display = 'block'
+
+      }
+    })
+  })
+
+  document.querySelectorAll('#dongle-radio-switch').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      console.log('display dongle radio switch clicked', document.querySelector('#dongleRadiosSwitch'))
+      // if (document.querySelector('#dongles').style.display !== 'none') {
+
+      if (document.querySelector('#dongles').style.display !== 'none') {
+        document.querySelector('#dongles').style.display = 'none'
+
+      } else {
+        document.querySelector('#dongles').style.display = 'block'
+
+      }
+      // }
+    })
+  })
+
   document.querySelectorAll('#blu-receiver-switch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       console.log('display blu radio switch clicked', document.querySelector('#blu-switch'))
@@ -528,20 +558,6 @@ const initialize_blu_controls = function () {
         document.querySelector('#blu-receiver').style.display = 'block'
 
       }
-      // if (document.querySelector('#blu-switch').input.checked === 'checked') {
-      //   console.log('display radios on', document.querySelector('#blu-switch').input)
-      //   document.querySelector('#blu-receiver').style.display = 'none'
-      //   document.querySelector('#blu-switch').input = 'unchecked'
-      // } else if (document.querySelector('#blu-switch').input === 'unchecked') {
-      //   console.log('display radios off', document.querySelector('#blu-switch').input)
-      //   document.querySelector('#blu-receiver').style.display = 'block'
-      //   document.querySelector('#blu-switch').input = 'checked'
-      //   console.log('blu switch clicked', e, btn)
-      //   // document.querySelector('#blu-switch').input.value = ''
-      //   console.log('display radios', document.querySelector('#blu-switch').input)
-
-
-      // }
     })
   })
 }
@@ -864,6 +880,8 @@ const handle_tag_beep = function (beep) {
     if (beep.channel > 5) {
       DONGLES_ENABLED = true
       document.querySelector('#dongles').style.display = 'block'
+      document.querySelector('#dongleRadioSwitch').style.display = 'block'
+      document.querySelector('#dongleRadioLabel').style.display = 'block'
     }
   }
 
