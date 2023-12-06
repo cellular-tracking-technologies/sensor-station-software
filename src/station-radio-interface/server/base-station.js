@@ -546,6 +546,12 @@ class BaseStation {
         console.log('unlink path', path)
 
         let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
+        let unlink_receiver = {
+          msg_type: "unlink_port",
+          port: this.blu_receiver[unlink_index].port,
+        }
+        this.broadcast(JSON.stringify(unlink_receiver))
+
         this.stopBluRadios(path.substring(17))
         this.blu_receiver[unlink_index].destroy_receiver()
         // this.blu_receiver[unlink_index].emit('close')

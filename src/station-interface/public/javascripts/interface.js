@@ -6,6 +6,7 @@ let beep_hist = {};
 let beep_channels = [];
 let blu_stats = {};
 let blu_ports = []
+let unlink_port
 // let poll_interval = 10000;
 let poll_interval;
 let umacr = '\u016B';
@@ -671,16 +672,34 @@ const handle_blu_beep = function (beep) {
   let port = beep.port.toString()
   let channel = beep.channel.toString()
   console.log('handle blu beep port', port, 'channel', channel)
-  blu_ports.push(beep.port)
+  if (blu_ports.includes(port)) {
+    // console.log('blu ports, port is present', port)
+  } else {
+    // console.log('blu ports adding unique port', port)
+    blu_ports.push(port)
+  }
+
+  console.log('blu ports', blu_ports)
   blu_ports.forEach((port) => {
 
     // if (BLU_ENABLED == false) {
     // if (port) {
     // BLU_ENABLED = true
-    document.querySelector(`#blu-receiver-${port}`).style.display = 'inline'
+    document.querySelector(`#blu-receiver-${port}`).style.display = 'block'
+
     //   }
     // }
   })
+
+  if (unlink_port > 0) {
+    console.log('handle blu beep unlink port', unlink_port)
+    document.querySelector(`#blu-receiver-${unlink_port}`).style.display = 'none'
+    let unlink_index = blu_ports.findIndex(port => port === unlink_port.toString())
+    blu_ports.splice(unlink_index, 1)
+    console.log('handle blu beep unlink blu ports', blu_ports)
+    unlink_port = null
+    console.log('handle blu beep unlink port after null', unlink_port)
+  }
 
   build_blu_stats(port, channel)
 
@@ -1341,6 +1360,10 @@ const initialize_websocket = function () {
         console.log('blu radio poll interval', data)
         handle_poll(data)
         break;
+      case ('unlink_port'):
+        console.log('unlink port', data)
+        unlink_port = data.port
+        break;
       case ('stats'):
         console.log('handle stats data', data)
         handle_stats(data);
@@ -1574,9 +1597,26 @@ const build_blu_receiver = function (port) {
 
   wrapper.setAttribute('class', 'container')
   wrapper.setAttribute('id', `blu-receiver-${port}`)
+  let div = document.createElement('div')
+  div.setAttribute('class', `blu-receiver-switch-${port}`)
+  div.setAttribute('id', `blu-receiver-switch-${port}`)
+  let input = document.createElement('input')
+  input.setAttribute('class', 'form-check-input')
+  input.setAttribute('type', 'checkbox')
+  input.setAttribute('role', 'switch')
+  input.setAttribute('id', `blu-receiver-switch-${port}-input`)
+  // input.setAttribute('')
+  let label = document.createElement('label')
+  label.setAttribute('class', 'form-check-label')
+  label.setAttribute('style', 'top:1.2rem; width:1.85rem; height:1.85rem;')
+  label.setAttribute('for', `blu-receiver-switch-${port}-input`)
+  div.appendChild(input)
+  div.appendChild(label)
   let h2 = document.createElement('h2')
-  h2.setAttribute('style', 'text-aslign: center; color: #007FFF')
+  h2.setAttribute('style', 'text-align: center; color: #007FFF')
   h2.setAttribute('id', `blu-port-${port}`)
+  wrapper.appendChild(div)
+
   // h2.setAttribute('style', 'display:none')
 
   h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
