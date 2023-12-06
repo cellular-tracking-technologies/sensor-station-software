@@ -518,6 +518,32 @@ const initialize_blu_controls = function () {
       }
     });
   });
+  document.querySelectorAll('#blu-receiver-switch').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      console.log('display blu radio switch clicked', document.querySelector('#blu-switch'))
+      if (document.querySelector('#blu-receiver').style.display !== 'none') {
+        document.querySelector('#blu-receiver').style.display = 'none'
+
+      } else {
+        document.querySelector('#blu-receiver').style.display = 'block'
+
+      }
+      // if (document.querySelector('#blu-switch').input.checked === 'checked') {
+      //   console.log('display radios on', document.querySelector('#blu-switch').input)
+      //   document.querySelector('#blu-receiver').style.display = 'none'
+      //   document.querySelector('#blu-switch').input = 'unchecked'
+      // } else if (document.querySelector('#blu-switch').input === 'unchecked') {
+      //   console.log('display radios off', document.querySelector('#blu-switch').input)
+      //   document.querySelector('#blu-receiver').style.display = 'block'
+      //   document.querySelector('#blu-switch').input = 'checked'
+      //   console.log('blu switch clicked', e, btn)
+      //   // document.querySelector('#blu-switch').input.value = ''
+      //   console.log('display radios', document.querySelector('#blu-switch').input)
+
+
+      // }
+    })
+  })
 }
 
 const format_beep = function (beep) {
@@ -1597,25 +1623,25 @@ const build_blu_receiver = function (port) {
 
   wrapper.setAttribute('class', 'container')
   wrapper.setAttribute('id', `blu-receiver-${port}`)
-  let div = document.createElement('div')
-  div.setAttribute('class', `blu-receiver-switch-${port}`)
-  div.setAttribute('id', `blu-receiver-switch-${port}`)
-  let input = document.createElement('input')
-  input.setAttribute('class', 'form-check-input')
-  input.setAttribute('type', 'checkbox')
-  input.setAttribute('role', 'switch')
-  input.setAttribute('id', `blu-receiver-switch-${port}-input`)
-  // input.setAttribute('')
-  let label = document.createElement('label')
-  label.setAttribute('class', 'form-check-label')
-  label.setAttribute('style', 'top:1.2rem; width:1.85rem; height:1.85rem;')
-  label.setAttribute('for', `blu-receiver-switch-${port}-input`)
-  div.appendChild(input)
-  div.appendChild(label)
+  // let div = document.createElement('div')
+  // div.setAttribute('class', `blu-receiver-switch-${port}`)
+  // div.setAttribute('id', `blu-receiver-switch-${port}`)
+  // let input = document.createElement('input')
+  // input.setAttribute('class', 'form-check-input')
+  // input.setAttribute('type', 'checkbox')
+  // input.setAttribute('role', 'switch')
+  // input.setAttribute('id', `blu-receiver-switch-${port}-input`)
+  // // input.setAttribute('')
+  // let label = document.createElement('label')
+  // label.setAttribute('class', 'form-check-label')
+  // label.setAttribute('style', 'top:1.2rem; width:1.85rem; height:1.85rem;')
+  // label.setAttribute('for', `blu-receiver-switch-${port}-input`)
+  // div.appendChild(input)
+  // div.appendChild(label)
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-align: center; color: #007FFF')
   h2.setAttribute('id', `blu-port-${port}`)
-  wrapper.appendChild(div)
+  // wrapper.appendChild(div)
 
   // h2.setAttribute('style', 'display:none')
 
@@ -1718,7 +1744,6 @@ const build_blu_buttons = function (port) {
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
 
-
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
@@ -1730,7 +1755,6 @@ const build_blu_buttons = function (port) {
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
 
-
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
@@ -1741,7 +1765,6 @@ const build_blu_buttons = function (port) {
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
-
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
