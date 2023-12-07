@@ -563,7 +563,7 @@ const initialize_blu_controls = function () {
         document.querySelector('#main-radios').style.display = 'none'
 
       } else {
-        document.querySelector('#main-radios').style.display = 'block'
+        document.querySelector('#main-radios').style.display = ''
 
       }
     })
@@ -578,7 +578,7 @@ const initialize_blu_controls = function () {
         document.querySelector('#dongles').style.display = 'none'
 
       } else {
-        document.querySelector('#dongles').style.display = 'block'
+        document.querySelector('#dongles').style.display = ''
 
       }
       // }
