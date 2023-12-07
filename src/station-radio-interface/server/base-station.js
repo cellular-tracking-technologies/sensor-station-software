@@ -814,11 +814,21 @@ class BaseStation {
     }
   }
 
+  /**
+   * 
+   * @param {String} port 
+   * @returns 
+   */
   findBluPort(port) {
     let index = this.blu_receiver.findIndex(receiver => receiver.port === Number(port))
     return index
   }
 
+  /**
+   * 
+   * @param {String} path 
+   * @returns 
+   */
   findBluPath(path) {
     let index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17) || receiver.path === path)
     return index
