@@ -474,7 +474,7 @@ const initialize_blu_controls = function () {
       let port = e.target.getAttribute('value')
       let res = window.confirm(`Are you sure you want to switch Blu Series Radio LEDs on USB Port ${port} Off?`);
       if (res) {
-        document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED Off'
+        document.querySelector(`#config_radio_${port}`).textContent = 'Radio LEDs Off'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'toggle_blu_led',
@@ -1832,7 +1832,7 @@ const build_blu_buttons = function (port) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_on')
   button.setAttribute('value', port)
-  button.textContent = 'Radio LED On'
+  button.textContent = 'Radio LEDs On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
@@ -1843,7 +1843,7 @@ const build_blu_buttons = function (port) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_off')
   button.setAttribute('value', port)
-  button.textContent = 'Radio LED Off'
+  button.textContent = 'Radio LEDs Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
@@ -1854,7 +1854,7 @@ const build_blu_buttons = function (port) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'reboot_blu_radio')
   button.setAttribute('value', port)
-  button.textContent = 'Reboot Radio'
+  button.textContent = 'Reboot Radios'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
