@@ -9,6 +9,7 @@ let blu_ports = []
 let unlink_port
 // let poll_interval = 10000;
 let poll_interval;
+let filter
 let umacr = '\u016B';
 
 
@@ -310,6 +311,37 @@ const initialize_controls = function () {
       }
     });
   });
+
+  let tag_filter = document.getElementById("tag-filter")
+  tag_filter.addEventListener('input', (e) => {
+    let input, table, tr, td, i, txtValue
+    input = document.getElementById('tag-filter-input')
+    console.log('tag filter input', input)
+    filter = input.value.toUpperCase()
+    // table = document.getElementsByClassName('table table-sm table-bordered table-dark radio')
+    Object.values(document.getElementsByClassName('table table-sm table-bordered table-dark radio')).forEach((table) => {
+      console.log('tag filter tables', table)
+
+      tr = table.getElementsByTagName('tr')
+      console.log('tag filter tr', tr)
+
+      for (i = 0; i < tr.length; i++) {
+        td = tr[i].getElementsByTagName('td')[1]
+        console.log('tag filter td', td)
+        if (td) {
+          txtValue = td.textContent || td.innterText
+          console.log('tag filter txtValue', txtValue)
+
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = ""
+          } else {
+            tr[i].style.display = "none"
+          }
+        }
+      }
+    })
+  }) //end of get tables forEach loop
+
 };
 
 const initialize_blu_controls = function () {
@@ -409,7 +441,7 @@ const initialize_blu_controls = function () {
   // });
   document.querySelectorAll('button[name="toggle_radio_led_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-      console.log('blu button radio on event', e)
+      // console.log('blu button radio on event', e)
       // let radio_id = e.target.getAttribute('value');
       let port = e.target.getAttribute('value');
       let res = window.confirm(`Are you sure you want to switch Blu Series Radios on USB Port ${port} LED On?`);
@@ -479,7 +511,7 @@ const initialize_blu_controls = function () {
         ' radios.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
       res = Number(res)
       poll_interval = res ? res : 10000
-      console.log('polling res', res, typeof res)
+      // console.log('polling res', res, typeof res)
       if (isNaN(res) === true || res === 0) {
         window.alert('Invalid Input, please enter an integer (number with no decimals).')
       } else {
@@ -709,11 +741,11 @@ const handle_beep = function (beep) {
 };
 
 const handle_blu_beep = function (beep) {
-  console.log('handle blu beep', beep)
+  // console.log('handle blu beep', beep)
   let tag_id = beep.tag_id.toUpperCase();
   let port = beep.port.toString()
   let channel = beep.channel.toString()
-  console.log('handle blu beep port', port, 'channel', channel)
+  // console.log('handle blu beep port', port, 'channel', channel)
   if (blu_ports.includes(port)) {
     // console.log('blu ports, port is present', port)
   } else {
@@ -721,7 +753,7 @@ const handle_blu_beep = function (beep) {
     blu_ports.push(port)
   }
 
-  console.log('blu ports', blu_ports)
+  // console.log('blu ports', blu_ports)
   blu_ports.forEach((port) => {
 
     // if (BLU_ENABLED == false) {
@@ -745,12 +777,6 @@ const handle_blu_beep = function (beep) {
 
   build_blu_stats(port, channel)
 
-  // console.log('handle blu tag', beep)
-  // h2.textContent = `Bl${umacr} Radio ` + n
-  // let BLU_PORT = document.querySelector('#blu-port_' + port)
-  // BLU_PORT.setAttribute('display', 'block')
-  // // BLU_PORT.textContent = `Bl${umacr} Series Receiver Port ${port}`
-  // // for (i = 1; i <= 4; i++) {
   let BLU_TABLE = document.querySelector('#blu-radio_' + port + '-' + beep.blu_channel);
   // // console.log('blu table', BLU_TABLE)
   // BLU_PORT.appendChild(BlU_TABLE)
@@ -767,6 +793,13 @@ const handle_blu_beep = function (beep) {
   } else {
     tr.appendChild(createElement(tag_id));
   }
+
+  if (tag_id === filter) {
+    tr.style.display = ""
+  } else {
+    tr.style.display = "none"
+  }
+
   tr.appendChild(createElement(beep.rssi));
   tr.appendChild(createElement(beep.node_id));
   // console.log('blu tr', tr)
@@ -887,20 +920,30 @@ const handle_tag_beep = function (beep) {
 
   let BEEP_TABLE = document.querySelector('#radio_' + beep.channel); // creates table for individual beeps
   let tr = document.createElement('tr');
+
   if (validated == true) {
     tr.style.border = "2px solid #22dd22";
   } else {
     tr.style.border = "2px solid red";
   }
+
   let td = document.createElement('td');
   td.textContent = beep.tag_at.format(DATE_FMT);
   tr.appendChild(td);
   let alias = localStorage.getItem(tag_id);
+
   if (alias) {
     tr.appendChild(createElement(alias));
   } else {
     tr.appendChild(createElement(tag_id));
   }
+
+  if (tag_id === filter) {
+    tr.style.display = ""
+  } else {
+    tr.style.display = "none"
+  }
+
   tr.appendChild(createElement(beep.rssi));
   tr.appendChild(createElement(beep.node_id));
   // remove last beep record if table exceeds max row count
@@ -983,7 +1026,7 @@ const createElement = function (text) {
 };
 
 const handle_stats = function (stats) {
-  console.log('handle stats', stats)
+  // console.log('handle stats', stats)
   let record;
   let reports = {};
   let received_at, old_received_at;
@@ -994,7 +1037,7 @@ const handle_stats = function (stats) {
 
     Object.keys(stats.channels).forEach(function (channel) {
       let channel_data = stats.channels[channel];
-      console.log('handle stats channel data', channel_data)
+      // console.log('handle stats channel data', channel_data)
       Object.keys(channel_data.nodes.health).forEach(function (node_id) {
         record = channel_data.nodes.health[node_id];
         received_at = moment(record.Time);
@@ -1058,7 +1101,7 @@ const handle_stats = function (stats) {
     });
   };
   nodes = reports;
-  console.log('handle stats channel stats', channel_stats)
+  // console.log('handle stats channel stats', channel_stats)
 
   render_nodes(reports);
   render_channel_stats(channel_stats);
@@ -1066,17 +1109,17 @@ const handle_stats = function (stats) {
 };
 
 const build_blu_stats = function (port, channel) {
-  console.log('build blu stats object', blu_stats)
+  // console.log('build blu stats object', blu_stats)
   if (Object.keys(blu_stats).includes(port)) {
-    console.log('build blu stats existing port', blu_stats, 'port', port)
+    // console.log('build blu stats existing port', blu_stats, 'port', port)
     // if port exists within blu stats object, add blu_dropped to existing value
     if (Object.keys(blu_stats[port].channels).includes(channel)) {
       // if channel exists within blu stats object, add blu_dropped to existing value
-      console.log('build blu stats existing channel', blu_stats, 'port', port, 'channel', channel)
+      // console.log('build blu stats existing channel', blu_stats, 'port', port, 'channel', channel)
     } else {
       // if channel does not exist, channel is added to object and its value is blu_dropped
       blu_stats[port].channels[channel] = { blu_beeps: 0, blu_dropped: 0, }
-      console.log('build blu stats adding new channel to object', blu_stats, 'port', port, 'channel', channel)
+      // console.log('build blu stats adding new channel to object', blu_stats, 'port', port, 'channel', channel)
       // blu_stats[port].channels[channel].blu_dropped = d
     }
   } else { // blu_stats port conditional
@@ -1095,44 +1138,44 @@ const build_blu_stats = function (port, channel) {
     //   },
     // }
 
-    console.log('build blu stats adding port to object', blu_stats)
+    // console.log('build blu stats adding port to object', blu_stats)
   } // blu_stats end conditional
 }
 
 const handle_blu_stats = function (data) {
-  console.log('handle blu stats incoming data', data)
-  console.log('handle blu stats object before manipulation', blu_stats)
+  // console.log('handle blu stats incoming data', data)
+  // console.log('handle blu stats object before manipulation', blu_stats)
 
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
   let blu_beeps = data.blu_beeps
-  console.log('handle blu stats variables for addition', blu_beeps, blu_stats[port_key].channels[channel_key].blu_beeps)
+  // console.log('handle blu stats variables for addition', blu_beeps, blu_stats[port_key].channels[channel_key].blu_beeps)
   blu_stats[port_key].channels[channel_key].blu_beeps += blu_beeps
-  console.log('handle blu stats after addition', blu_stats)
+  // console.log('handle blu stats after addition', blu_stats)
   render_blu_stats(blu_stats)
 
 }
 
 const handle_blu_dropped = function (data) {
-  console.log('handle blu dropped data', data)
+  // console.log('handle blu dropped data', data)
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
   // let blu_beeps = 0
   let dropped = data.blu_dropped ?? 0
-  console.log('handle blu dropped, dropped beeps', dropped)
+  // console.log('handle blu dropped, dropped beeps', dropped)
 
   blu_stats[port_key].channels[channel_key].blu_dropped += dropped
 
-  console.log('handle blu dropped blu stats after functions', blu_stats)
+  // console.log('handle blu dropped blu stats after functions', blu_stats)
 
   render_dropped_detections(blu_stats);
 
 }
 
 const handle_poll = function (data) {
-  console.log('handle poll', data)
+  // console.log('handle poll', data)
   poll_interval = data.poll_interval
-  console.log('handle poll after button click', poll_interval)
+  // console.log('handle poll after button click', poll_interval)
   render_poll_interval(data)
 }
 
@@ -1140,12 +1183,12 @@ const render_poll_interval = function (data) {
   // const { channel, poll_interval } = data
   poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
-  console.log('render poll interval', poll_interval_info)
+  // console.log('render poll interval', poll_interval_info)
   document.querySelector(poll_interval_info).textContent = poll_interval;
 }
 
 const render_channel_stats = function (channel_stats) {
-  console.log('render channel stats1', channel_stats)
+  // console.log('render channel stats1', channel_stats)
   let beep_info, node_beep_info, telemetry_beep_info;
   //blu_beep_info;
   Object.keys(channel_stats).forEach(function (channel) {
@@ -1153,7 +1196,7 @@ const render_channel_stats = function (channel_stats) {
     node_beep_info = `#node_beep_count_${channel}`;
     telemetry_beep_info = `#telemetry_beep_count_${channel}`;
     let stats = channel_stats[channel];
-    console.log('render channel stats2', stats)
+    // console.log('render channel stats2', stats)
     document.querySelector(beep_info).textContent = stats.beeps;
     document.querySelector(node_beep_info).textContent = stats.node_beeps;
     document.querySelector(telemetry_beep_info).textContent = stats.telemetry_beeps;
@@ -1162,15 +1205,15 @@ const render_channel_stats = function (channel_stats) {
 
 const render_blu_stats = function (blu_stats) {
   if (blu_stats) {
-    console.log('render blu stats channel stats', blu_stats)
+    // console.log('render blu stats channel stats', blu_stats)
     let blu_beep_info, blu_node_beep_info, blu_telemetry_beep_info;
     Object.keys(blu_stats).forEach((port) => {
-      console.log('render blu stats port', port)
+      // console.log('render blu stats port', port)
       Object.keys(blu_stats[port].channels).forEach((channel) => {
         if (channel > 0) {
           blu_beep_info = `#blu_beep_count_${port}-${channel}`
           let stats = blu_stats[Number(port)].channels[Number(channel)].blu_beeps;
-          console.log('blu stats', blu_beep_info, stats)
+          // console.log('blu stats', blu_beep_info, stats)
           // if (stats.blu_beeps) {
           document.querySelector(blu_beep_info).textContent = stats
           // }
@@ -1194,20 +1237,20 @@ const render_blu_stats = function (blu_stats) {
 
 
 const render_dropped_detections = function (blu_stats) {
-  console.log('render dropped detections blu stats', blu_stats)
+  // console.log('render dropped detections blu stats', blu_stats)
   let blu_stat_info;
 
   Object.keys(blu_stats).forEach((port) => {
-    console.log('render dropped detections port', port)
+    // console.log('render dropped detections port', port)
     Object.keys(blu_stats[port].channels).forEach((channel) => {
-      console.log('render dropped detections channel', channel)
+      // console.log('render dropped detections channel', channel)
       if (channel > 0) {
 
         blu_stat_info = `#blu_dropped_count_${port}-${channel}`;
-        console.log('render dropped detections port and channel', port, channel)
+        // console.log('render dropped detections port and channel', port, channel)
 
         let stats_blu = blu_stats[Number(port)].channels[Number(channel)].blu_dropped;
-        console.log('render dropped detections', stats_blu)
+        // console.log('render dropped detections', stats_blu)
         document.querySelector(blu_stat_info).textContent = stats_blu;
       }
     })
@@ -1394,22 +1437,22 @@ const initialize_websocket = function () {
         // handle_ble(data);
         break;
       case ('blu_stats'):
-        console.log('blu stats event', data)
+        // console.log('blu stats event', data)
         handle_blu_stats(data);
       case ('blu_dropped'):
-        console.log('blu dropped event', data)
+        // console.log('blu dropped event', data)
         handle_blu_dropped(data);
         break;
       case ('poll_interval'):
-        console.log('blu radio poll interval', data)
+        // console.log('blu radio poll interval', data)
         handle_poll(data)
         break;
       case ('unlink_port'):
-        console.log('unlink port', data)
+        // console.log('unlink port', data)
         unlink_port = data.port
         break;
       case ('stats'):
-        console.log('handle stats data', data)
+        // console.log('handle stats data', data)
         handle_stats(data);
         // handle_blu_stats(data.blu_ports)
         break;
@@ -1458,16 +1501,16 @@ const initialize_websocket = function () {
         document.querySelector('#raw_log').value += data.data
         break
       case ('radio-firmware'):
-        console.log('setting radio firwmare', data)
+        // console.log('setting radio firwmare', data)
         Object.keys(data.firmware).forEach((channel) => {
           const firmware = data.firmware[channel]
           document.querySelector(`#radio-firmware-version-${channel}`).textContent = firmware
         })
         break
       case ('blu-firmware'):
-        console.log('setting blu firmware', data)
+        // console.log('setting blu firmware', data)
         Object.keys(data.firmware).forEach((port) => {
-          console.log('blu firmware port', port)
+          // console.log('blu firmware port', port)
 
           Object.keys(data.firmware[port].channels).forEach((channel) => {
             const firmware = data.firmware[port].channels[channel]
