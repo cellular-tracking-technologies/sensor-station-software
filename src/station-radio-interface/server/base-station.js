@@ -689,7 +689,7 @@ class BaseStation {
         // console.log(JSON.stringify(job))
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
-          console.log(`BluReceiverTask.DFU ${JSON.stringify(job)}`)
+          console.log(this.blu_receiver[br_index].port, `BluReceiverTask.DFU ${JSON.stringify(job)}`)
           // blu_reader.getBluVersion(job.radio_channel)
           break
         case BluReceiverTask.REBOOT:
@@ -716,8 +716,6 @@ class BaseStation {
             }
             console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
 
-            // console.log('base station blu stats', blu_stats)
-            // this.broadcast(JSON.stringify(job.data.det_dropped))
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
             console.log('base station stats error:', 'receiver', this.blu_receiver[br_index].port, 'radio', job.radio_channel, e)
@@ -744,7 +742,6 @@ class BaseStation {
       let radio_key = radio.toString()
       let port_key = this.blu_receiver[br_index].port.toString()
       this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
-      // blu_reader.setLogoFlash(key, { led_state: 2, blink_rate: 1000, blink_count: -1})
     })).then((values) => {
       console.log('radios started')
     }).catch((e) => {
@@ -787,7 +784,6 @@ class BaseStation {
   stopBluRadios(path) {
     if (path !== undefined) {
       console.log('stop blu radios path', path)
-      // let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === path)
       let br_index = this.findBluPath(path)
 
       this.stationLog('blu radio is closing')

@@ -240,6 +240,7 @@ class BluStation extends BluReceiver {
         }
       })
       await this.rebootBluReceiver(radio_channel, poll_interval)
+      console.log('update blu firmware poll interval', poll_interval)
       setTimeout(() => {
         this.schedule({
           task: BluReceiverTask.VERSION,
