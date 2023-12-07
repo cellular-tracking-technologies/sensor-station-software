@@ -21,8 +21,8 @@ class RadioReceiver extends EventEmitter {
     this.baud_rate = opts.baud_rate
     this.channel = opts.channel
     this.restart_ms = opts.restart_ms | 15000
-    this.restart_on_close = opts.restart_on_close | true
-    // this.restart_on_close = opts.restart_on_close
+    // this.restart_on_close = opts.restart_on_close | true
+    this.restart_on_close = opts.restart_on_close
     this.serialport
     this.parser
     // poll firmware every 10 minutes
@@ -140,12 +140,12 @@ class RadioReceiver extends EventEmitter {
     }, delay)
   }
 
-    /**
-   * cancel the radio
-   */
-    cancel(){
-      clearTimeout(this.timeoutId)
-    }
+  /**
+ * cancel the radio
+ */
+  cancel() {
+    clearTimeout(this.timeoutId)
+  }
 
   /**
    * establish radio interface connection

@@ -65,7 +65,7 @@ class BaseStation {
     this.poll_interval
     this.poll_data
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
-
+    this.dongle_port
   }
 
   /**
@@ -529,19 +529,30 @@ class BaseStation {
         }
       })
       .on('unlink', path => {
-        console.log('unlink path', path)
+        if (!path.includes('0:1.2.') && path.includes('-port0')) {
 
-        let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
-        let unlink_receiver = {
-          msg_type: "unlink_port",
-          port: this.blu_receiver[unlink_index].port,
+          console.log('unlink path', path)
+
+          let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
+          let unlink_receiver = {
+            msg_type: "unlink_port",
+            port: this.blu_receiver[unlink_index].port,
+          }
+          this.broadcast(JSON.stringify(unlink_receiver))
+
+          this.stopBluRadios(path.substring(17))
+          this.blu_receiver[unlink_index].destroy_receiver()
+          // this.blu_receiver[unlink_index].emit('close')
+          // console.log('unlink index', unlink_index, 'unlink element', this.blu_receiver[unlink_index])
+        } else if (!path.includes('-port0')) {
+          console.log('dongle radio removed from usb port')
+          let unlink_dongle = {
+            msg_type: "unlink_dongle",
+            path: path.substring(17),
+            port: this.dongle_port,
+          }
+          this.broadcast(JSON.stringify(unlink_dongle))
         }
-        this.broadcast(JSON.stringify(unlink_receiver))
-
-        this.stopBluRadios(path.substring(17))
-        this.blu_receiver[unlink_index].destroy_receiver()
-        // this.blu_receiver[unlink_index].emit('close')
-        // console.log('unlink index', unlink_index, 'unlink element', this.blu_receiver[unlink_index])
       })
   }
 
@@ -610,8 +621,10 @@ class BaseStation {
     })
     beep_reader.on('close', (info) => {
       this.stationLog(`radio closed ${radio.channel}`)
+      this.dongle_port = radio.channel
+      beep_reader.stopPollingFirmware()
       beep_reader.destroy()
-      console.log(`radio closed ${radio.channel}`)
+      console.log(`radio closed ${radio.channel}`, beep_reader)
       if (info.port_uri in Object.keys(this.active_radios)) {
       }
     })
@@ -781,11 +794,7 @@ class BaseStation {
       //   receiver.destroy_receiver()
       // })
       setTimeout(() => {
-        // this.blu_receiver = []
         console.log('Closed blu readers', this.blu_receiver)
-        // this.blu_receiver.forEach((receiver) => {
-        //   console.log('Closed blu readers', JSON.stringify(receiver.blu_radios))
-        // })
         process.exit(0)
       }, 7000)
     })

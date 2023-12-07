@@ -7,6 +7,8 @@ let beep_channels = [];
 let blu_stats = {};
 let blu_ports = []
 let unlink_port
+let dongle_radios = []
+let unlink_dongle
 // let poll_interval = 10000;
 let poll_interval;
 let filter
@@ -923,6 +925,17 @@ const handle_tag_beep = function (beep) {
     }
   }
 
+  /** Uncomment to hide dongle radios when removed */
+  // if (unlink_dongle > 0) {
+  //   console.log('handle tag beep unlink port', unlink_dongle)
+  //   document.querySelector('#dongles').style.display = 'none'
+  //   // let unlink_index = blu_ports.findIndex(port => port === unlink_dongle.toString())
+  //   // blu_ports.splice(unlink_index, 1)
+  //   // console.log('handle tag beep unlink blu ports', blu_ports)
+  //   unlink_dongle = null
+  //   console.log('handle tag beep unlink port after null', unlink_dongle)
+  // }
+
   let BEEP_TABLE = document.querySelector('#radio_' + beep.channel); // creates table for individual beeps
   let tr = document.createElement('tr');
 
@@ -1455,6 +1468,9 @@ const initialize_websocket = function () {
       case ('unlink_port'):
         // console.log('unlink port', data)
         unlink_port = data.port
+        break;
+      case ('unlink_dongle'):
+        unlink_dongle = data.port
         break;
       case ('stats'):
         // console.log('handle stats data', data)
