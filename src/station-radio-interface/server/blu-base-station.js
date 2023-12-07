@@ -54,7 +54,7 @@ class BluStation extends BluReceiver {
     //     rx_blink: 1,
     //   })
     await this.getDetections(radio_channel, poll_interval)
-    await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
+    // await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
     // await this.getBluVersion(radio_channel)
     // }, 10000)
     // restart radio with poll interval of 10s
@@ -195,7 +195,7 @@ class BluStation extends BluReceiver {
     })
 
     const logo_flash = await Promise.all(blu_leds.map((led) => {
-      this.setLogoFlash(led, { led_state: 2, blink_rate: 100, blink_count: 6, })
+      this.setLogoFlash(led, { led_state: 2, blink_rate: 500, blink_count: 6, })
     })).then((value) => {
       console.log('logo leds are flashing', value)
     }).catch((e) => {
@@ -211,7 +211,7 @@ class BluStation extends BluReceiver {
     await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
     await this.getBluVersion(radio_channel)
     await this.getDetections(radio_channel, poll_interval)
-    await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
+    // await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
     console.log('radio ', radio_channel, 'is on at', poll_interval, 'poll rate')
   }
 
@@ -246,7 +246,7 @@ class BluStation extends BluReceiver {
           radio_channel,
         })
       }, 20000)
-      await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
+      // await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1 })
       // await this.getBluVersion(radio_channel)
     } catch (e) {
       console.error('Update firmware error', e)

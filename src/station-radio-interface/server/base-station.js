@@ -533,7 +533,8 @@ class BaseStation {
 
           console.log('unlink path', path)
 
-          let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
+          // let unlink_index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
+          let unlink_index = this.findBluPath(path)
           let unlink_receiver = {
             msg_type: "unlink_port",
             port: this.blu_receiver[unlink_index].port,
@@ -573,7 +574,7 @@ class BaseStation {
  * @param {String} path radio path from /dev/serial/by-path/ directory 
  * @returns 
  */
-  findBluPath(path) {
+  findBluReceiver(path) {
     let radio_path = path.substring(17)
     // console.log('find blu path path', radio_path)
     let radio_index = this.blu_config.findIndex(radio => radio.path === radio_path)
@@ -634,15 +635,18 @@ class BaseStation {
 
   // startBluRadios(path) {
   startBluRadios(path) {
-    let blu_radio = this.findBluPath(path)
+    let blu_radio = this.findBluReceiver(path)
     console.log(' start blu radios blu radio', blu_radio)
     let blu_reader = new BluStation({
       path: blu_radio.path,
       port: blu_radio.channel,
     })
-    console.log('blu reader', blu_reader)
+    console.log('blu reader before', blu_reader)
     blu_reader.path = blu_radio.path
     this.blu_receiver.push(blu_reader)
+    blu_reader = undefined
+    console.log('blu reader after', blu_reader)
+
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
     console.log('blu receiver', this.blu_receiver[br_index])
     setTimeout(() => {
@@ -746,7 +750,7 @@ class BaseStation {
     })
 
     // why does this break the regular logo flashing?
-    // blu_reader.startUpFlashLogo()
+    this.blu_receiver[br_index].startUpFlashLogo()
 
     // get versions are on a timer so version number can be loaded to interface
     setInterval(() => {
@@ -765,7 +769,7 @@ class BaseStation {
     })).then((values) => {
       console.log('radios started')
     }).catch((e) => {
-      console.error(e)
+      console.error('radios could not start properly', e)
     })
 
     process.on('SIGINT', () => {
@@ -773,12 +777,12 @@ class BaseStation {
 
       if (this.blu_receiver[br_index].port) {
 
-
         console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
-        const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
-          this.blu_receiver[br_index].radioOff(radio)
-          console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
-        }))
+        const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios)
+          .map((radio) => {
+            this.blu_receiver[br_index].radioOff(radio)
+            console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
+          }))
         Promise.all(radios_exit).then((values) => {
           console.log(values)
         }).catch((e) => {
@@ -804,25 +808,22 @@ class BaseStation {
   stopBluRadios(path) {
     if (path !== undefined) {
       console.log('stop blu radios path', path)
-      // let blu_radio = this.findBluPath(path)
-      let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === path)
+      // let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === path)
+      let br_index = this.findBluPath(path)
 
       this.stationLog('blu radio is closing')
       console.log('blu receiver', this.blu_receiver[br_index], 'is closing')
-      const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
-        this.blu_receiver[br_index].radioOff(radio)
-        console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
-      }))
+      const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios)
+        .map((radio) => {
+          this.blu_receiver[br_index].radioOff(radio)
+          console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
+        }))
       Promise.all(radios_exit).then((values) => {
         console.log(values)
+      }).catch((e) => {
+        console.error('can\'t turn off all radios, probably because receiver was destroyed', e)
       })
-      // const radios_exit = Object.keys(this.blu_radios).map(radio => {
-      //   this.blu_receiver[br_index].radioOff(radio)
-      //   console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
-      // })
-      // Promise.all(radios_exit).then((values) => {
-      //   console.log(values)
-      // })
+
       // this.blu_receiver[br_index].destroy_receiver()
 
       setTimeout(() => {
@@ -838,6 +839,13 @@ class BaseStation {
     let index = this.blu_receiver.findIndex(receiver => receiver.port === Number(port))
     return index
   }
+
+  findBluPath(path) {
+    let index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17) || receiver.path === path)
+    return index
+  }
+
+
 
 } // end of base station class
 
