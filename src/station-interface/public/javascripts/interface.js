@@ -12,6 +12,7 @@ let poll_interval;
 let filter
 let umacr = '\u016B';
 
+console.log('tag filter filter initial value', filter)
 
 const DATE_FMT = 'YYYY-MM-DD HH:mm:ss';
 let socket;
@@ -318,6 +319,8 @@ const initialize_controls = function () {
     input = document.getElementById('tag-filter-input')
     console.log('tag filter input', input)
     filter = input.value.toUpperCase()
+    console.log('tag filter value', filter)
+
     // table = document.getElementsByClassName('table table-sm table-bordered table-dark radio')
     Object.values(document.getElementsByClassName('table table-sm table-bordered table-dark radio')).forEach((table) => {
       console.log('tag filter tables', table)
@@ -343,6 +346,8 @@ const initialize_controls = function () {
   }) //end of get tables forEach loop
 
 };
+
+
 
 const initialize_blu_controls = function () {
   // Blu Buttons
@@ -794,7 +799,7 @@ const handle_blu_beep = function (beep) {
     tr.appendChild(createElement(tag_id));
   }
 
-  if (tag_id === filter) {
+  if (tag_id === filter || filter === undefined) {
     tr.style.display = ""
   } else {
     tr.style.display = "none"
@@ -938,7 +943,7 @@ const handle_tag_beep = function (beep) {
     tr.appendChild(createElement(tag_id));
   }
 
-  if (tag_id === filter) {
+  if (tag_id === filter || filter === undefined) {
     tr.style.display = ""
   } else {
     tr.style.display = "none"
@@ -2029,6 +2034,12 @@ const init_sg = () => {
 }
 
   ; (function () {
+
+    window.onload = function () {
+      document.getElementById('tag-filter-input').value = '';
+      console.log('tag filter reset value', document.getElementById('tag-filter-input').value = '')
+    }
+
     document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
     render_gateway()
     initialize_reboot()
