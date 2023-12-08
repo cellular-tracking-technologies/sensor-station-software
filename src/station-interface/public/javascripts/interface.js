@@ -5,7 +5,6 @@ let beep_hist = {};
 let beep_channels = [];
 let blu_stats = {};
 let blu_ports = []
-let unlink_port
 let dongle_radios = []
 let unlink_dongle
 let poll_interval;
@@ -773,14 +772,7 @@ const handle_blu_beep = function (beep) {
 
   // console.log('blu ports', blu_ports)
   blu_ports.forEach((port) => {
-
-    // if (BLU_ENABLED == false) {
-    // if (port) {
-    // BLU_ENABLED = true
     document.querySelector(`#blu-receiver-${port}`).style.display = 'block'
-
-    //   }
-    // }
   })
 
 
@@ -1124,6 +1116,16 @@ const handle_stats = function (stats) {
   render_channel_stats(channel_stats);
   // render_blu_stats(channel_stats);
 };
+
+const handle_add_port = function (data) {
+  console.log('handle add port data', data)
+  let add_port = data.port
+  console.log('handle add port add_port', add_port)
+
+  document.querySelector(`#blu-receiver-${add_port}`).style.display = 'block'
+  blu_ports.push(add_port.toString())
+  console.log('handle add port blu ports', blu_ports)
+}
 
 const handle_unlink_port = function (data) {
   console.log('handle unlink port data', data)
@@ -1477,6 +1479,10 @@ const initialize_websocket = function () {
       case ('poll_interval'):
         // console.log('blu radio poll interval', data)
         handle_poll(data)
+        break;
+      case ('add_port'):
+        console.log('add port', data)
+        handle_add_port(data)
         break;
       case ('unlink_port'):
         console.log('unlink port', data)

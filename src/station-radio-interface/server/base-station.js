@@ -509,6 +509,7 @@ class BaseStation {
 
         if (!path.includes('0:1.2.') && path.includes('-port0')) {
           this.startBluRadios(path)
+
         } else if (!path.includes('-port0')) {
           this.startRadios(path)
         }
@@ -621,6 +622,16 @@ class BaseStation {
 
   // startBluRadios(path) {
   startBluRadios(path) {
+
+    // let add_index = this.findBluPath(path)
+    // console.log('add index', add_index)
+    // let add_receiver = {
+    //   msg_type: 'add_port',
+    //   port: this.blu_receiver[add_index].port
+    // }
+    // console.log('add receiver', add_receiver)
+    // this.broadcast(JSON.stringify(add_receiver))
+
     let blu_radio = this.findBluReceiver(path)
     console.log(' start blu radios blu radio', blu_radio)
     // let blu_reader = new BluStation({
@@ -641,6 +652,14 @@ class BaseStation {
 
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
     console.log('blu receiver', this.blu_receiver[br_index])
+
+    // let add_receiver = {
+    //   msg_type: 'add_port',
+    //   port: this.blu_receiver[br_index].port
+    // }
+    // console.log('add receiver', add_receiver)
+    // this.broadcast(JSON.stringify(add_receiver))
+
     setTimeout(() => {
 
     }, 2000)
