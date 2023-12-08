@@ -783,15 +783,6 @@ const handle_blu_beep = function (beep) {
     // }
   })
 
-  if (unlink_port > 0) {
-    console.log('handle blu beep unlink port', unlink_port)
-    document.querySelector(`#blu-receiver-${unlink_port}`).style.display = 'none'
-    let unlink_index = blu_ports.findIndex(port => port === unlink_port.toString())
-    blu_ports.splice(unlink_index, 1)
-    console.log('handle blu beep unlink blu ports', blu_ports)
-    unlink_port = null
-    console.log('handle blu beep unlink port after null', unlink_port)
-  }
 
   build_blu_stats(port, channel)
 
@@ -1134,6 +1125,20 @@ const handle_stats = function (stats) {
   // render_blu_stats(channel_stats);
 };
 
+const handle_unlink_port = function (data) {
+  console.log('handle unlink port data', data)
+  let unlink_port = data.port
+  document.querySelector(`#blu-receiver-${unlink_port}`).style.display = 'none'
+  let unlink_index = blu_ports.findIndex(port => port === unlink_port.toString())
+  console.log('handle blu beep unlink index', unlink_index)
+  console.log('handle blu beep unlink blu ports', blu_ports)
+  blu_ports.splice(unlink_index, 1)
+  console.log('handle blu beep unlink blu ports', blu_ports)
+  // unlink_port = null
+  console.log('handle blu beep unlink port after null', unlink_port)
+
+}
+
 const build_blu_stats = function (port, channel) {
   // console.log('build blu stats object', blu_stats)
   if (Object.keys(blu_stats).includes(port)) {
@@ -1474,8 +1479,10 @@ const initialize_websocket = function () {
         handle_poll(data)
         break;
       case ('unlink_port'):
-        // console.log('unlink port', data)
-        unlink_port = data.port
+        console.log('unlink port', data)
+        handle_unlink_port(data)
+        // unlink_port = data.port
+        // console.log('unlink port event', unlink_port)
         break;
       case ('unlink_dongle'):
         unlink_dongle = data.port

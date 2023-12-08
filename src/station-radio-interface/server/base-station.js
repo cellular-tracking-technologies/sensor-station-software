@@ -519,13 +519,16 @@ class BaseStation {
           console.log('unlink path', path)
 
           let unlink_index = this.findBluPath(path)
+          console.log('unlink index', unlink_index)
           let unlink_receiver = {
             msg_type: "unlink_port",
             port: this.blu_receiver[unlink_index].port,
           }
+          console.log('unlink receiver', unlink_receiver)
+
           this.broadcast(JSON.stringify(unlink_receiver))
 
-          this.stopBluRadios(path.substring(17))
+          this.stopBluRadios(path)
           this.blu_receiver[unlink_index].destroy_receiver()
 
         } else if (!path.includes('-port0')) {
@@ -835,7 +838,8 @@ class BaseStation {
    * @returns 
    */
   findBluPath(path) {
-    let index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17) || receiver.path === path)
+    let index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
+    console.log('findBluPath index', index)
     return index
   }
 
