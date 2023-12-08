@@ -815,7 +815,7 @@ const handle_blu_beep = function (beep) {
   }
   console.log('handle blu beep filter', filter)
 
-  let regex_filter = filter !== '' ? new RegExp((filter + '*')) : new RegExp((undefined + '*'))
+  let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
   console.log('regex filter', regex_filter)
   if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
@@ -975,7 +975,7 @@ const handle_tag_beep = function (beep) {
     tr.appendChild(createElement(tag_id));
   }
   console.log('handle tag beep filter', filter)
-  let regex_filter = filter !== '' ? new RegExp((filter + '*')) : new RegExp((undefined + '*'))
+  let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
   console.log('regex filter', regex_filter)
   if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
