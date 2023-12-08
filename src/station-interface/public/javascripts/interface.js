@@ -1,5 +1,4 @@
 let beeps = [];
-let blu_beeps = [];
 let tags = new Set();
 let nodes = {};
 let beep_hist = {};
@@ -9,14 +8,10 @@ let blu_ports = []
 let unlink_port
 let dongle_radios = []
 let unlink_dongle
-// let poll_interval = 10000;
 let poll_interval;
 let filter
-// let regex_filter = new RegExp((filter + '*'))
-// console.log('regex filter', regex_filter)
 let umacr = '\u016B';
 
-console.log('tag filter filter initial value', filter)
 
 const DATE_FMT = 'YYYY-MM-DD HH:mm:ss';
 let socket;
@@ -760,6 +755,9 @@ const handle_beep = function (beep) {
   }
 };
 
+let DONGLES_ENABLED = false;
+let MAX_ROW_COUNT = 1000;
+
 const handle_blu_beep = function (beep) {
   // console.log('handle blu beep', beep)
   let tag_id = beep.tag_id.toUpperCase();
@@ -828,21 +826,12 @@ const handle_blu_beep = function (beep) {
 
   tr.appendChild(createElement(beep.rssi));
   tr.appendChild(createElement(beep.node_id));
-  // console.log('blu tr', tr)
-  // console.log('blu table', BLU_TABLE)
 
   // remove last beep record if table exceeds max row count
-  // if (BLU_TABLE.children.length > MAX_ROW_COUNT) {
-  // if (BLU_TABLE.children.length > 1000) {
-  //   BLU_TABLE.removeChild(BLU_TABLE.lastElementChild)
-  // }
+  if (BLU_TABLE.children.length > MAX_ROW_COUNT) {
+    BLU_TABLE.removeChild(BLU_TABLE.lastElementChild)
+  }
   BLU_TABLE.insertBefore(tr, BLU_TABLE.firstChild.nextSibling);
-  // console.log('blu table 2', BLU_TABLE)
-  // console.log('blu table beep', beep)
-
-  blu_beeps.push(beep);
-  // } // end of blu port for loop
-  // console.log('blu table beeps', blu_beeps)
 
   let beep_count = beep_hist[tag_id];
   // console.log('beep count', beep_count)
@@ -909,9 +898,7 @@ const handle_blu_beep = function (beep) {
   }
 }
 
-let DONGLES_ENABLED = false;
-let BLU_ENABLED = false;
-let MAX_ROW_COUNT = 1000;
+
 
 const clip_beep_tables = function () {
   let children
