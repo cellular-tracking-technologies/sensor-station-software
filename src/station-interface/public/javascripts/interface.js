@@ -12,6 +12,8 @@ let unlink_dongle
 // let poll_interval = 10000;
 let poll_interval;
 let filter
+// let regex_filter = new RegExp((filter + '*'))
+// console.log('regex filter', regex_filter)
 let umacr = '\u016B';
 
 console.log('tag filter filter initial value', filter)
@@ -337,14 +339,14 @@ const initialize_controls = function () {
       console.log('tag filter tables', table)
 
       tr = table.getElementsByTagName('tr')
-      console.log('tag filter tr', tr)
+      // console.log('tag filter tr', tr)
 
       for (i = 0; i < tr.length; i++) {
         td = tr[i].getElementsByTagName('td')[1]
-        console.log('tag filter td', td)
+        // console.log('tag filter td', td)
         if (td) {
           txtValue = td.textContent || td.innterText
-          console.log('tag filter txtValue', txtValue)
+          // console.log('tag filter txtValue', txtValue)
 
           if (txtValue.toUpperCase().indexOf(filter) > -1) {
             tr[i].style.display = ""
@@ -811,9 +813,15 @@ const handle_blu_beep = function (beep) {
   } else {
     tr.appendChild(createElement(tag_id));
   }
+  console.log('handle blu beep filter', filter)
 
-  if (tag_id === filter || filter === undefined) {
+  let regex_filter = filter !== '' ? new RegExp((filter + '*')) : new RegExp((undefined + '*'))
+  console.log('regex filter', regex_filter)
+  if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
+    // } else if (tag_id == filter) {
+    //   tr.style.display = ''
+
   } else {
     tr.style.display = "none"
   }
@@ -966,8 +974,10 @@ const handle_tag_beep = function (beep) {
   } else {
     tr.appendChild(createElement(tag_id));
   }
-
-  if (tag_id === filter || filter === undefined) {
+  console.log('handle tag beep filter', filter)
+  let regex_filter = filter !== '' ? new RegExp((filter + '*')) : new RegExp((undefined + '*'))
+  console.log('regex filter', regex_filter)
+  if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
   } else {
     tr.style.display = "none"
