@@ -37,7 +37,6 @@ class BaseStation {
 
     // this.blu_radios = this.config.default_config.blu_radios
     this.blu_receivers = this.config.default_config.blu_receivers
-    this.blu_dir = []
     this.blu_config = blu_config
     this.blu_reader
     this.blu_receiver = []
@@ -621,15 +620,21 @@ class BaseStation {
   startBluRadios(path) {
     let blu_radio = this.findBluReceiver(path)
     console.log(' start blu radios blu radio', blu_radio)
-    let blu_reader = new BluStation({
+    // let blu_reader = new BluStation({
+    this.blu_reader = new BluStation({
       path: blu_radio.path,
       port: blu_radio.channel,
     })
-    console.log('blu reader before', blu_reader)
-    blu_reader.path = blu_radio.path
-    this.blu_receiver.push(blu_reader)
-    blu_reader = undefined
-    console.log('blu reader after', blu_reader)
+    // console.log('blu reader before', blu_reader)
+    // blu_reader.path = blu_radio.path
+    console.log('blu reader before', this.blu_reader)
+    this.blu_reader.path = blu_radio.path
+    // this.blu_receiver.push(blu_reader)
+    this.blu_receiver.push(this.blu_reader)
+    delete this.blu_reader
+    console.log('blu reader after', this.blu_reader)
+    // blu_reader = undefined
+    // console.log('blu reader after', blu_reader)
 
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
     console.log('blu receiver', this.blu_receiver[br_index])
@@ -746,6 +751,10 @@ class BaseStation {
       console.log('radios started')
     }).catch((e) => {
       console.error('radios could not start properly', e)
+    })
+
+    this.blu_receiver[br_index].on('close', () => {
+      console.log('blu receiver closing within startBluRadios')
     })
 
     process.on('SIGINT', () => {

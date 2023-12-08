@@ -816,7 +816,7 @@ const handle_blu_beep = function (beep) {
   console.log('handle blu beep filter', filter)
 
   let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
-  console.log('regex filter', regex_filter)
+  // console.log('regex filter', regex_filter)
   if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
     // } else if (tag_id == filter) {
@@ -974,9 +974,9 @@ const handle_tag_beep = function (beep) {
   } else {
     tr.appendChild(createElement(tag_id));
   }
-  console.log('handle tag beep filter', filter)
+  // console.log('handle tag beep filter', filter)
   let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
-  console.log('regex filter', regex_filter)
+  // console.log('regex filter', regex_filter)
   if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
   } else {
@@ -1666,7 +1666,8 @@ const build_radio_component = function (n) {
   table.setAttribute('id', `radio_${n}`)
   tr = document.createElement('tr')
   tr.setAttribute('class', 'table-primary')
-  tr.setAttribute('style', 'color:#111;')
+  // tr.setAttribute('style', 'color:#111;')
+  tr.setAttribute('style', 'color:#fff;')
   th = document.createElement('th')
   th.textContent = 'Time'
   tr.appendChild(th)
@@ -1744,6 +1745,7 @@ const build_blu_receiver = function (port) {
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-align: center; color: #007FFF')
   h2.setAttribute('id', `blu-port-${port}`)
+  h2.setAttribute('padding', '10')
   // wrapper.appendChild(div)
 
   // h2.setAttribute('style', 'display:none')
@@ -1799,7 +1801,8 @@ const build_blu_component = function (port, radio) {
   table.setAttribute('id', `blu-radio_${port}-${radio}`)
   tr = document.createElement('tr')
   tr.setAttribute('class', 'table-primary')
-  tr.setAttribute('style', 'color:#111;')
+  // tr.setAttribute('style', 'color:#111;')
+  tr.setAttribute('style', 'color:#fff;')
   th = document.createElement('th')
   th.textContent = 'Time'
   tr.appendChild(th)

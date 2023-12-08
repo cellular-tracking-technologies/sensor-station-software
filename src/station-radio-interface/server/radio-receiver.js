@@ -32,7 +32,6 @@ class RadioReceiver extends EventEmitter {
     this.current_command = null
     this.delay = 0.25
     this.fw_version = null
-    this.destroyed_port
 
     this.preset_commands = {
       node: "preset:node3",
@@ -51,7 +50,7 @@ class RadioReceiver extends EventEmitter {
     delete this.port_uri
     delete this.parser
     this.stopPollingFirmware()
-    this.destroyed_port = true
+    delete this
   }
 
   pollFirmware() {
