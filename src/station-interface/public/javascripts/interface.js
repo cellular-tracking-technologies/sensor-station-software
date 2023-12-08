@@ -316,9 +316,18 @@ const initialize_controls = function () {
   });
 
   let tag_filter = document.getElementById("tag-filter")
+
   tag_filter.addEventListener('input', (e) => {
     let input, table, tr, td, i, txtValue
     input = document.getElementById('tag-filter-input')
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        // e.stopPropagation()
+        e.preventDefault()
+      }
+      // console.log('enter button pressed', e)
+    }, false)
+
     console.log('tag filter input', input)
     filter = input.value.toUpperCase()
     console.log('tag filter value', filter)
@@ -344,8 +353,10 @@ const initialize_controls = function () {
           }
         }
       }
-    })
-  }) //end of get tables forEach loop
+    }) //end of get tables forEach loop
+  })
+
+
 
 };
 
