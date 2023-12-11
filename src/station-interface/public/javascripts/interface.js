@@ -1456,6 +1456,7 @@ const initialize_websocket = function () {
   });
   socket.onopen = function (event) {
     console.log('hello connection established')
+    console.log('socket on open event', event)
   }
   socket.onmessage = function (msg) {
     // console.log('message', msg);

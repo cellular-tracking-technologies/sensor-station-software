@@ -68,13 +68,13 @@ class BluReceiverIo extends EventEmitter {
     this.#data.usb.dtr = false
   }
   reboot(channel) {
-    return this.generic_command(channel, this.#commands.REBOOT, 500)
+    return this.generic_command(channel, this.#commands.REBOOT, 1500)
   }
   stats(channel) {
-    return this.generic_command(channel, this.#commands.STATS, 500)
+    return this.generic_command(channel, this.#commands.STATS, 1500)
   }
   version(channel) {
-    return this.generic_command(channel, this.#commands.VERSION, 500)
+    return this.generic_command(channel, this.#commands.VERSION, 1500)
   }
   /**
    * 
@@ -84,7 +84,7 @@ class BluReceiverIo extends EventEmitter {
    */
   config(channel, opts) {
     const { scan, rx_blink } = opts;
-    return this.generic_command(channel, this.#commands.CONFIG, 500, {
+    return this.generic_command(channel, this.#commands.CONFIG, 1500, {
       scan,
       rx_blink
     })
@@ -98,7 +98,7 @@ class BluReceiverIo extends EventEmitter {
    * @returns {Promise}
    */
   led(channel, opts) {
-    return this.generic_command(channel, this.#commands.LEDS, 500, {
+    return this.generic_command(channel, this.#commands.LEDS, 3000, {
       channel: opts.channel,
       state: opts.state,
       blink_rate_ms: opts.blink_rate_ms,
@@ -115,7 +115,7 @@ class BluReceiverIo extends EventEmitter {
 
     let promise = new Promise((resolve, reject) => {
 
-      this.addSelfDestructingEventListener('line', { timeout: 500, reload: true }, (data, error) => {
+      this.addSelfDestructingEventListener('line', { timeout: 1500, reload: true }, (data, error) => {
         if (error === 'timeout') {
           reject(error)
           return true
@@ -166,7 +166,7 @@ class BluReceiverIo extends EventEmitter {
     let promise = new Promise((resolve, reject) => {
       let detections = []
 
-      this.addSelfDestructingEventListener('line', { timeout: 500, reload: true }, (data, error) => {
+      this.addSelfDestructingEventListener('line', { timeout: 1500, reload: true }, (data, error) => {
         if (error === 'timeout') {
           reject(error)
           return true
