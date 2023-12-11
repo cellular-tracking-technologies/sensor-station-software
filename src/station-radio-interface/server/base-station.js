@@ -513,7 +513,7 @@ class BaseStation {
           let add_receiver = {
             msg_type: 'add_port',
             port: port,
-            // poll_interval: this.blu_receivers[port.toString()].settings.values.current,
+            poll_interval: this.blu_receivers[port.toString()].settings.values.current,
           }
           // console.log('add receiver', add_receiver)
           this.broadcast(JSON.stringify(add_receiver))
@@ -882,7 +882,7 @@ class BaseStation {
    */
   findBluPath(path) {
     let index = this.blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
-    console.log('findBluPath index', index)
+    // console.log('findBluPath index', index)
     return index
   }
 
