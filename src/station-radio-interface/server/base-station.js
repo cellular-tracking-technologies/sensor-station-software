@@ -508,10 +508,12 @@ class BaseStation {
         if (!path.includes('0:1.2.') && path.includes('-port0')) {
           // this.startBluRadios(path)
           let add_index = this.findBluPath(path)
+          let port = this.blu_receiver[add_index].port
           // console.log('add index', add_index)
           let add_receiver = {
             msg_type: 'add_port',
-            port: this.blu_receiver[add_index].port
+            port: port,
+            // poll_interval: this.blu_receivers[port.toString()].blu_radios["1"].values.current,
           }
           // console.log('add receiver', add_receiver)
           this.broadcast(JSON.stringify(add_receiver))
@@ -712,7 +714,8 @@ class BaseStation {
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
-              beep.poll_interval = this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[beep.channel].values.current
+              // beep.poll_interval = this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[beep.channel].values.current
+              beep.poll_interval = this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[beep.channel].values.current
               beep.port = this.blu_receiver[br_index].port
               this.data_manager.handleBluBeep(beep)
               this.broadcast(JSON.stringify(beep))

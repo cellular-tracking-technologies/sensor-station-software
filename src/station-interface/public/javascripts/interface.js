@@ -1107,6 +1107,7 @@ const handle_stats = function (stats) {
 const handle_add_port = function (data) {
   console.log('handle add port data', data)
   let add_port = data.port
+  // let poll_interval = data.poll_interval
   console.log('handle add port add_port', add_port)
 
   if (blu_ports.includes(add_port)) {
@@ -1119,6 +1120,11 @@ const handle_add_port = function (data) {
   // console.log('blu ports', blu_ports)
   blu_ports.forEach((port) => {
     document.querySelector(`#blu-receiver-${port}`).style.display = 'block'
+    // for (let i = 1; i <= 4; i++) {
+    //   document.querySelector(`#poll_interval_${port}-${i}`).textContent = poll_interval;
+
+    // }
+
   })
 
   // document.querySelector(`#blu-receiver-${add_port}`).style.display = 'block'
