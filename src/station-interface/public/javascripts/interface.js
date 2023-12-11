@@ -762,19 +762,6 @@ const handle_blu_beep = function (beep) {
   let tag_id = beep.tag_id.toUpperCase();
   let port = beep.port.toString()
   let channel = beep.channel.toString()
-  // console.log('handle blu beep port', port, 'channel', channel)
-  if (blu_ports.includes(port)) {
-    // console.log('blu ports, port is present', port)
-  } else {
-    // console.log('blu ports adding unique port', port)
-    blu_ports.push(port)
-  }
-
-  // console.log('blu ports', blu_ports)
-  blu_ports.forEach((port) => {
-    document.querySelector(`#blu-receiver-${port}`).style.display = 'block'
-  })
-
 
   build_blu_stats(port, channel)
 
@@ -794,7 +781,7 @@ const handle_blu_beep = function (beep) {
   } else {
     tr.appendChild(createElement(tag_id));
   }
-  console.log('handle blu beep filter', filter)
+  // console.log('handle blu beep filter', filter)
 
   let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
   // console.log('regex filter', regex_filter)
@@ -1122,8 +1109,20 @@ const handle_add_port = function (data) {
   let add_port = data.port
   console.log('handle add port add_port', add_port)
 
-  document.querySelector(`#blu-receiver-${add_port}`).style.display = 'block'
-  blu_ports.push(add_port.toString())
+  if (blu_ports.includes(add_port)) {
+    console.log('handle add port, port is present', add_port)
+  } else {
+    console.log('handle add port adding unique port', add_port)
+    blu_ports.push(add_port)
+  }
+
+  // console.log('blu ports', blu_ports)
+  blu_ports.forEach((port) => {
+    document.querySelector(`#blu-receiver-${port}`).style.display = 'block'
+  })
+
+  // document.querySelector(`#blu-receiver-${add_port}`).style.display = 'block'
+  // blu_ports.push(add_port.toString())
   console.log('handle add port blu ports', blu_ports)
 }
 
@@ -1723,7 +1722,14 @@ const build_radio_component = function (n) {
 
 const build_blu_receiver = function (port) {
   let wrapper = document.createElement('div')
-  wrapper.setAttribute('style', 'display:none')
+  // console.log('build blu receiver blu ports', blu_ports, 'port', port)
+
+  if (blu_ports.includes(port)) {
+    console.log('build blu receiver blu ports', blu_ports, 'port', port)
+    wrapper.setAttribute('style', 'display:block')
+  } else {
+    wrapper.setAttribute('style', 'display:none')
+  }
 
   wrapper.setAttribute('class', 'container')
   wrapper.setAttribute('id', `blu-receiver-${port}`)
@@ -2108,6 +2114,7 @@ const init_sg = () => {
     }
 
     for (let i = 1; i <= 6; i++) {
+      console.log('blu ports, let\'s see if it\'s full', blu_ports)
       blu_receiver = build_blu_receiver(i)
       row = document.createElement('div')
       row.classList.add('row')
