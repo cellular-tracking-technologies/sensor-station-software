@@ -138,7 +138,7 @@ class BaseStation {
       port: this.config.data.http.websocket_port,
     })
     this.sensor_socket_server.on('open', (event) => {
-
+      console.log('websocket event', event)
     })
     this.sensor_socket_server.on('cmd', (cmd) => {
       switch (cmd.cmd) {
@@ -503,55 +503,83 @@ class BaseStation {
  * file watcher using chokidar
  */
   directoryWatcher() {
-    chokidar.watch('../../../../../../dev/serial/by-path', { ignoreInitial: false, usePolling: false, })
-      .on('change', path => {
-        // console.log('chokidar change path', path)
-        if (!path.includes('0:1.2.') && path.includes('-port0')) {
-          this.sendBluPort(path)
+    let watcher = chokidar.watch('../../../../../../dev/serial/by-path', { ignoreInitial: false, usePolling: true, })
+    // .on('ready', () => {
+    //   let watchedPaths = watcher.getWatched()
+    //   console.log('watched paths', Object.values(watchedPaths)[1])
+    //   let blu_paths = Object.values(watchedPaths)[1]
+    //   console.log('watcher blu paths', blu_paths)
+    //   blu_paths.forEach((path) => {
+    //     console.log('watcher blu path', path)
 
+    //     if (!path.includes('0:1.2.') && path.includes('-port0')) {
+    //       console.log('found blu path', `/dev/serial/by-path/${path}`)
+
+    //       blu_radios.forEach((blu_path) => {
+    //         // console.log('blu radios path', blu_path)
+    //         if (`/dev/serial/by-path/${path}` === blu_path.path) {
+    //           console.log('add port path', path, blu_path.channel)
+    //           let add_port = {
+    //             port: blu_path.channel,
+    //             msg_type: 'add_port'
+    //           }
+    //           console.log('add port object', add_port)
+    //           this.broadcast(JSON.stringify(add_port))
+    //         }
+    //       })
+    //     }
+    //   })
+    // })
+
+    watcher.on('change', path => {
+      // console.log('chokidar change path', path)
+      if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        this.sendBluPort(path)
+
+      }
+    })
+    watcher.on('add', path => {
+      console.log('chokidar add path', path)
+      // console.log('directory watcher blu receiver array', this.blu_receiver)
+      this.broadcast(JSON.stringify('add port', path))
+
+      if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        this.startBluRadios(path)
+        this.sendBluPort(path)
+
+      } else if (!path.includes('-port0')) {
+        this.startRadios(path)
+      }
+    })
+
+    watcher.on('unlink', path => {
+      if (!path.includes('0:1.2.') && path.includes('-port0')) {
+
+        console.log('unlink path', path)
+
+        let unlink_index = this.findBluPath(path)
+        console.log('unlink index', unlink_index)
+        let unlink_receiver = {
+          msg_type: "unlink_port",
+          port: this.blu_receiver[unlink_index].port,
         }
-      })
-      .on('add', path => {
-        console.log('chokidar add path', path)
-        // console.log('directory watcher blu receiver array', this.blu_receiver)
-        this.broadcast(JSON.stringify('add port', path))
+        console.log('unlink receiver', unlink_receiver)
 
-        if (!path.includes('0:1.2.') && path.includes('-port0')) {
-          this.startBluRadios(path)
-          // this.sendBluPort(path)
+        this.broadcast(JSON.stringify(unlink_receiver))
 
-        } else if (!path.includes('-port0')) {
-          this.startRadios(path)
+        this.stopBluRadios(path)
+        this.blu_receiver[unlink_index].destroy_receiver()
+
+      } else if (!path.includes('-port0')) {
+        console.log('dongle radio removed from usb port')
+        let unlink_dongle = {
+          msg_type: "unlink_dongle",
+          path: path.substring(17),
+          port: this.dongle_port,
         }
-      })
-      .on('unlink', path => {
-        if (!path.includes('0:1.2.') && path.includes('-port0')) {
-
-          console.log('unlink path', path)
-
-          let unlink_index = this.findBluPath(path)
-          console.log('unlink index', unlink_index)
-          let unlink_receiver = {
-            msg_type: "unlink_port",
-            port: this.blu_receiver[unlink_index].port,
-          }
-          console.log('unlink receiver', unlink_receiver)
-
-          this.broadcast(JSON.stringify(unlink_receiver))
-
-          this.stopBluRadios(path)
-          this.blu_receiver[unlink_index].destroy_receiver()
-
-        } else if (!path.includes('-port0')) {
-          console.log('dongle radio removed from usb port')
-          let unlink_dongle = {
-            msg_type: "unlink_dongle",
-            path: path.substring(17),
-            port: this.dongle_port,
-          }
-          this.broadcast(JSON.stringify(unlink_dongle))
-        }
-      })
+        this.broadcast(JSON.stringify(unlink_dongle))
+      }
+    })
   }
 
   /**
@@ -632,9 +660,11 @@ class BaseStation {
 
   sendBluPort(path) {
     let add_index = this.findBluPath(path)
-    console.log('send blu port receiver', this.blu_receiver[add_index])
-    let port = this.blu_receiver[add_index].port
     // console.log('add index', add_index)
+
+    // console.log('send blu port receiver', this.blu_receiver[add_index])
+    let port = this.blu_receiver[add_index].port
+
     let add_receiver = {
       msg_type: 'add_port',
       port: port,
@@ -642,19 +672,11 @@ class BaseStation {
     }
     console.log('send blu port', add_receiver)
     this.broadcast(JSON.stringify(add_receiver))
+    // this.sensor_socket_server.emit(JSON.stringify(add_receiver))
   }
 
   // startBluRadios(path) {
   startBluRadios(path) {
-
-    // let add_index = this.findBluPath(path)
-    // console.log('add index', add_index)
-    // let add_receiver = {
-    //   msg_type: 'add_port',
-    //   port: this.blu_receiver[add_index].port
-    // }
-    // console.log('add receiver', add_receiver)
-    // this.broadcast(JSON.stringify(add_receiver))
 
     let blu_radio = this.findBluReceiver(path)
     console.log(' start blu radios blu radio', blu_radio)
@@ -676,13 +698,6 @@ class BaseStation {
 
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
     console.log('blu receiver', this.blu_receiver[br_index])
-
-    // let add_receiver = {
-    //   msg_type: 'add_port',
-    //   port: this.blu_receiver[br_index].port
-    // }
-    // console.log('add receiver', add_receiver)
-    // this.broadcast(JSON.stringify(add_receiver))
 
     setTimeout(() => {
 

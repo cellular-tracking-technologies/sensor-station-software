@@ -1253,7 +1253,7 @@ const render_blu_stats = function (blu_stats) {
           let stats = blu_stats[Number(port)].channels[Number(channel)].blu_beeps;
           // console.log('blu stats', blu_beep_info, stats)
           // if (stats.blu_beeps) {
-          document.querySelector(blu_beep_info).textContent = stats
+          document.querySelector(blu_beep_info).textContent = stats > 0 ? stats : 0
           // }
         }
       })
@@ -1289,7 +1289,7 @@ const render_dropped_detections = function (blu_stats) {
 
         let stats_blu = blu_stats[Number(port)].channels[Number(channel)].blu_dropped;
         // console.log('render dropped detections', stats_blu)
-        document.querySelector(blu_stat_info).textContent = stats_blu;
+        document.querySelector(blu_stat_info).textContent = stats_blu > 0 ? stats_blu : 0
       }
     })
   })
