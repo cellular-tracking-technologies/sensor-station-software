@@ -685,7 +685,7 @@ class BaseStation {
   startBluRadios(path) {
 
     let blu_radio = this.findBluReceiver(path)
-    console.log(' start blu radios blu radio', blu_radio)
+    // console.log(' start blu radios blu radio', blu_radio)
     // let blu_reader = new BluStation({
     this.blu_reader = new BluStation({
       path: blu_radio.path,
@@ -693,17 +693,17 @@ class BaseStation {
     })
     // console.log('blu reader before', blu_reader)
     // blu_reader.path = blu_radio.path
-    console.log('blu reader before', this.blu_reader)
+    // console.log('blu reader before', this.blu_reader)
     this.blu_reader.path = blu_radio.path
     // this.blu_receiver.push(blu_reader)
     this.blu_receiver.push(this.blu_reader)
     delete this.blu_reader
-    console.log('blu reader after', this.blu_reader)
+    // console.log('blu reader after', this.blu_reader)
     // blu_reader = undefined
     // console.log('blu reader after', blu_reader)
 
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
-    console.log('blu receiver', this.blu_receiver[br_index])
+    // console.log('blu receiver', this.blu_receiver[br_index])
 
     setTimeout(() => {
 
@@ -711,7 +711,7 @@ class BaseStation {
 
     // console.log('start blu radios blu reader by index', br_index, blu_reader)
     this.blu_receiver[br_index].on('complete', (job) => {
-      this.broadcast(JSON.stringify('blu receiver is complete')) // somehow repeats more than chokidar.on(change)
+      // this.broadcast(JSON.stringify('blu receiver is complete')) // somehow repeats more than chokidar.on(change)
       switch (job.task) {
         case BluReceiverTask.VERSION:
           try {
