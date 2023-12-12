@@ -565,7 +565,7 @@ const initialize_blu_controls = function () {
     });
   });
 
-  document.querySelectorAll('#main-radio-switch').forEach((btn) => {
+  document.querySelectorAll('#mainRadiosSwitch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       console.log('display main radio switch clicked', document.querySelector('#mainRadiosSwitch'))
       if (document.querySelector('#main-radios').style.display !== 'none') {
@@ -578,7 +578,7 @@ const initialize_blu_controls = function () {
     })
   })
 
-  document.querySelectorAll('#dongle-radio-switch').forEach((btn) => {
+  document.querySelectorAll('#dongleRadioSwitch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       console.log('display dongle radio switch clicked', document.querySelector('#dongleRadiosSwitch'))
       // if (document.querySelector('#dongles').style.display !== 'none') {
@@ -594,7 +594,7 @@ const initialize_blu_controls = function () {
     })
   })
 
-  document.querySelectorAll('#blu-receiver-switch').forEach((btn) => {
+  document.querySelectorAll('#bluRadioSwitch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       console.log('display blu radio switch clicked', document.querySelector('#blu-switch'))
       if (document.querySelector('#blu-receiver').style.display !== 'none') {
