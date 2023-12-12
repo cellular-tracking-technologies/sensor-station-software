@@ -138,7 +138,7 @@ class BaseStation {
       port: this.config.data.http.websocket_port,
     })
     this.sensor_socket_server.on('open', (event) => {
-      console.log('websocket event', event)
+
     })
     this.sensor_socket_server.on('cmd', (cmd) => {
       switch (cmd.cmd) {
@@ -504,7 +504,9 @@ class BaseStation {
  */
   directoryWatcher() {
     let watcher = chokidar.watch('../../../../../../dev/serial/by-path', { ignoreInitial: false, usePolling: true, })
-    // .on('ready', () => {
+    // watcher.on('ready', () => {
+    //   this.broadcast(JSON.stringify('chokidar filewatcher is ready'))
+    // })
     //   let watchedPaths = watcher.getWatched()
     //   console.log('watched paths', Object.values(watchedPaths)[1])
     //   let blu_paths = Object.values(watchedPaths)[1]
