@@ -30,9 +30,9 @@ class SensorSocketServer extends EventEmitter {
     wss.on('connection', (ws, req) => {
       let ip
       try {
-        ip = req.connection.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
+        ip = req.socket.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
       } catch (err) {
-        ip = req.connection.remoteAddress
+        ip = req.socket.remoteAddress
       }
       this.emit('client_conn', ip)
       ws.on('message', (msg) => {
