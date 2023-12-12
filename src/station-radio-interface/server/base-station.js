@@ -503,10 +503,14 @@ class BaseStation {
  * file watcher using chokidar
  */
   directoryWatcher() {
-    let watcher = chokidar.watch('../../../../../../dev/serial/by-path', { ignoreInitial: false, usePolling: true, })
-    // watcher.on('ready', () => {
-    //   this.broadcast(JSON.stringify('chokidar filewatcher is ready'))
-    // })
+    let watcher = chokidar.watch('../../../../../../dev/serial/by-path',
+      {
+        ignoreInitial: false,
+        usePolling: true,
+        alwaysStat: true,
+        followSymlinks: true,
+      })
+
     //   let watchedPaths = watcher.getWatched()
     //   console.log('watched paths', Object.values(watchedPaths)[1])
     //   let blu_paths = Object.values(watchedPaths)[1]
@@ -707,7 +711,7 @@ class BaseStation {
 
     // console.log('start blu radios blu reader by index', br_index, blu_reader)
     this.blu_receiver[br_index].on('complete', (job) => {
-
+      this.broadcast(JSON.stringify('blu receiver is complete')) // somehow repeats more than chokidar.on(change)
       switch (job.task) {
         case BluReceiverTask.VERSION:
           try {
