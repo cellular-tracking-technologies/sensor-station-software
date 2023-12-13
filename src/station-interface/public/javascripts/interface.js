@@ -388,7 +388,54 @@ const initialize_controls = function () {
 
 
 const initialize_blu_controls = function () {
-  // Blu Buttons
+  // Blu Buttons for Each Port that controls all radios on receiver
+  document.querySelectorAll('button[name="all_radios_on"]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      let port = e.target.getAttribute('value')
+      console.log('turn on all radios on port', port)
+      let res = window.prompt(`Turn on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`)
+      res = Number(res)
+      if (isNaN(res) === true || res === 0) {
+        window.alert('Invalid Input, please enter an integer (number with no decimals).')
+      } else {
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'blu_radio_all_on',
+          data: {
+            // type: 'blu_on',
+            // channel: radio_id,
+            port: port,
+            poll_interval: res,
+            scan: 1,
+            rx_blink: 1,
+          }
+        }));
+      }
+    })
+  })
+
+  document.querySelectorAll('button[name="all_radios_off"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let port = e.target.getAttribute('value')
+      let res = window.confirm(`Are you sure you want to turn all Bl${umacr} Series Radios off on USB Port ${port}?`);
+      if (res) {
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'blu_radio_all_off',
+          data: {
+            // type: 'blu_off',
+            // channel: radio_id,
+            port: port,
+
+            scan: 0,
+            rx_blink: 0,
+          }
+        }));
+      }
+    })
+  })
+
+  // Blu Buttons for Individual Radios on Receivers
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       let port = e.target.getAttribute('value').substring(0, 1)
@@ -415,34 +462,6 @@ const initialize_blu_controls = function () {
     })
   })
 
-  // document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
-  //   console.log('blu btn', btn)
-  //   btn.addEventListener('click', function (e) {
-  //     let radio_id = e.target.getAttribute('value');
-  //     let res = window.prompt(`Turning on Radio ${radio_id} and setting polling interval as:`);
-  //     // if (res) {
-  //       res = Number(res)
-  //       console.log('polling res', res, typeof res)
-  //       if (isNaN(res) === true || res === 0) {
-  //         window.alert('Invalid Input, please enter an integer (number with no decimals).')
-  //       // } else if (res === 0) {
-  //       //   window.alert('Invalid Input, please enter an integer (number with no decimals).')
-  //       } else {
-  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio On'
-  //       socket.send(JSON.stringify({
-  //         msg_type: 'cmd',
-  //         cmd: 'toggle_blu',
-  //         data: {
-  //           type: 'blu_on',
-  //           // channel: radio_id,
-  //           poll_interval: res,
-  //           scan: 1,
-  //           rx_blink: 1,
-  //         }
-  //       }));
-  //     }
-  //   });
-  // });
   document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       let port = e.target.getAttribute('value').substring(0, 1)

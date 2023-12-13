@@ -148,6 +148,33 @@ class BaseStation {
             mode: cmd.data.type
           })
           break
+        case ('blu_radio_all_on'):
+          // let all_on_port = cmd.data.port
+          let all_on_index = this.findBluPort(cmd.data.port)
+
+          const radios_on = Object.keys(this.blu_receiver[all_on_index].blu_radios).map(radio => {
+            this.blu_receivers[this.blu_receiver[all_on_index].port.toString()].blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
+            this.blu_receivers[this.blu_receiver[all_on_index].port.toString()].blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
+            this.config.default_config.blu_receivers = this.blu_receivers
+            this.blu_receiver[all_on_index].updateConfig(this.config.default_config)
+            this.blu_receiver[all_on_index].radioOn(Number(radio), cmd.data.poll_interval)
+          })
+          // console.log('radios on', radios_on)
+          Promise.all(radios_on).then((values) => {
+            console.log('promise radios', values)
+
+          })
+          break;
+        case ('blu_radio_all_off'):
+          let all_off_index = this.findBluPort(cmd.data.port)
+
+          const radios_off = Object.keys(this.blu_receiver[all_off_index].blu_radios).map(radio => {
+            this.blu_receiver[all_off_index].radioOff(radio)
+          })
+          Promise.all(radios_off).then((values) => {
+            console.log('turning blu radio off', values)
+          })
+          break
         case ('toggle_blu'):
           console.log('blu radio button clicked', cmd)
 
