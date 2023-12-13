@@ -491,7 +491,7 @@ const initialize_blu_controls = function () {
       let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.confirm(`Are you sure you want to switch Blu Series Radios on USB Port ${port} LED On?`);
       if (res) {
-        document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED On'
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED On'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'toggle_blu_led',
@@ -513,7 +513,7 @@ const initialize_blu_controls = function () {
       let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.confirm(`Are you sure you want to switch Blu Series Radio LEDs on USB Port ${port} Off?`);
       if (res) {
-        document.querySelector(`#config_radio_${port}`).textContent = 'Radio LEDs Off'
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Radio LEDs Off'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'toggle_blu_led',
@@ -561,7 +561,7 @@ const initialize_blu_controls = function () {
       if (isNaN(res) === true || res === 0) {
         window.alert('Invalid Input, please enter an integer (number with no decimals).')
       } else {
-        document.querySelector(`#config_radio_${port}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'change_poll',
@@ -582,7 +582,7 @@ const initialize_blu_controls = function () {
       let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.confirm('Are you sure you want to update Blu Series Radios on USB Port ' + port + '?');
       if (res) {
-        document.querySelector(`#config_radio_${port}`).textContent = 'Radio Updated to Latest Firmware'
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Radio Updated to Latest Firmware'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'update-blu-firmware',
@@ -1750,12 +1750,105 @@ const build_blu_receiver = function (port) {
   h2.setAttribute('style', 'text-align: center; color: #007FFF')
   h2.setAttribute('id', `blu-port-${port}`)
   h2.setAttribute('padding', '10')
-  // wrapper.appendChild(div)
 
-  // h2.setAttribute('style', 'display:none')
+  let row = document.createElement('div')
+  row.classList.add('row')
+  row.setAttribute('id', `blu-receiver-${port}-row`)
+
+
+
+  // Create All Radios On button
+  let div = document.createElement('div')
+  div.setAttribute('class', 'row')
+  div.setAttribute('id', 'blu-port-buttons')
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'all_radios_on')
+  button.setAttribute('value', port)
+  button.textContent = 'All Radios On'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+  // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
+  // row.appendChild(div) // this needs to go under #blu-receiver-1-row
+
+  // Create All Radios Off Button
+  // div = document.createElement('div')
+  // div.setAttribute('class', 'row')
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'all_radios_off')
+  button.setAttribute('value', port)
+  button.textContent = 'All Radios Off'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+  // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
+
+  // Create All Radio Leds On Button
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'all_radios_leds_on')
+  button.setAttribute('value', port)
+  button.textContent = 'All Radios LEDs On'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  // Create All Radio Leds Off Button
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'all_radios_leds_off')
+  button.setAttribute('value', port)
+  button.textContent = 'All Radios LEDs Off'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  // Create All Radio Reboot Button
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'all_radios_reboot')
+  button.setAttribute('value', port)
+  button.textContent = 'All Radios Reboot'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  // Create All Radio Change Polling Interval Button
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'all_radios_poll')
+  button.setAttribute('value', port)
+  button.textContent = 'All Radios Change Poll'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  // Create All Radio Update Firmware
+  col_sm = document.createElement('div')
+  col_sm.setAttribute('class', 'col-sm')
+  button = document.createElement('button')
+  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('name', 'all_radios_update')
+  button.setAttribute('value', port)
+  button.textContent = 'All Radios Update Firmware'
+  col_sm.appendChild(button)
+  div.appendChild(col_sm)
+
+  // row.appendChild(component)
 
   h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
   wrapper.appendChild(h2)
+
+  row.appendChild(div) // this needs to go under #blu-receiver-1-row
+  wrapper.appendChild(row)
 
   return wrapper
 }
@@ -2114,43 +2207,7 @@ const init_sg = () => {
     for (let i = 1; i <= 6; i++) {
       console.log('blu ports, let\'s see if it\'s full', blu_ports)
       blu_receiver = build_blu_receiver(i)
-      row = document.createElement('div')
-      row.classList.add('row')
-      row.setAttribute('id', `blu-receiver-${i}-row`)
 
-
-      // Create All Radios On button
-      let div = document.createElement('div')
-      div.setAttribute('class', 'row')
-      col_sm = document.createElement('div')
-      col_sm.setAttribute('class', 'col-sm')
-      button = document.createElement('button')
-      button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-      button.setAttribute('name', 'all_radios_on')
-      button.setAttribute('value', i)
-      button.textContent = 'All Radios On'
-      col_sm.appendChild(button)
-      div.appendChild(col_sm)
-      // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
-      row.appendChild(div) // this needs to go under #blu-receiver-1-row
-
-      // Create All Radios Off Button
-      div = document.createElement('div')
-      div.setAttribute('class', 'row')
-      col_sm = document.createElement('div')
-      col_sm.setAttribute('class', 'col-sm')
-      button = document.createElement('button')
-      button.setAttribute('class', 'btn btn-block btn-sm btn-info')
-      button.setAttribute('name', 'all_radios_off')
-      button.setAttribute('value', i)
-      button.textContent = 'All Radios Off'
-      col_sm.appendChild(button)
-      div.appendChild(col_sm)
-      // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
-      row.appendChild(div) // this needs to go under #blu-receiver-1-row
-
-      // row.appendChild(component)
-      blu_receiver.appendChild(row)
       document.querySelector('#blu-receiver').appendChild(blu_receiver)
 
       // document.querySelector('#blu-receiver').appendChild(row)
