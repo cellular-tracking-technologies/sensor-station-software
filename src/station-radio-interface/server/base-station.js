@@ -222,7 +222,6 @@ class BaseStation {
           this.blu_receiver[reboot_index].updateConfig(this.config.default_config)
 
           this.blu_receiver[reboot_index].rebootBluReceiver(Number(reboot_radio), this.poll_data.poll_interval)
-
           // setTimeout(() => {
           //   Object.keys(this.blu_receiver[reboot_index].blu_radios).forEach((radio) => {
           //     this.blu_receiver[reboot_index].rebootBluReceiver(Number(radio), this.poll_data.poll_interval)
