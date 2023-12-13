@@ -1720,7 +1720,7 @@ const build_radio_component = function (n) {
   button.setAttribute('value', n)
   button.textContent = 'OOK'
   col_sm.appendChild(button)
-  div.appendChild(col_sm)
+  // div.appendChild(col_sm) // turning off ook button
   wrapper.appendChild(div)
 
   return wrapper
@@ -1739,21 +1739,7 @@ const build_blu_receiver = function (port) {
 
   wrapper.setAttribute('class', 'container')
   wrapper.setAttribute('id', `blu-receiver-${port}`)
-  // let div = document.createElement('div')
-  // div.setAttribute('class', `blu-receiver-switch-${port}`)
-  // div.setAttribute('id', `blu-receiver-switch-${port}`)
-  // let input = document.createElement('input')
-  // input.setAttribute('class', 'form-check-input')
-  // input.setAttribute('type', 'checkbox')
-  // input.setAttribute('role', 'switch')
-  // input.setAttribute('id', `blu-receiver-switch-${port}-input`)
-  // // input.setAttribute('')
-  // let label = document.createElement('label')
-  // label.setAttribute('class', 'form-check-label')
-  // label.setAttribute('style', 'top:1.2rem; width:1.85rem; height:1.85rem;')
-  // label.setAttribute('for', `blu-receiver-switch-${port}-input`)
-  // div.appendChild(input)
-  // div.appendChild(label)
+
   let h2 = document.createElement('h2')
   h2.setAttribute('style', 'text-align: center; color: #007FFF')
   h2.setAttribute('id', `blu-port-${port}`)
@@ -1837,7 +1823,7 @@ const build_blu_component = function (port, radio) {
   return wrapper
 }
 
-const build_blu_buttons = function (port) {
+const build_blu_buttons = function (port, radio) {
   let div = document.createElement('div')
   div.setAttribute('class', 'row')
   col_sm = document.createElement('div')
@@ -1845,7 +1831,7 @@ const build_blu_buttons = function (port) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_on')
-  button.setAttribute('value', port)
+  button.setAttribute('value', `${port}-${radio}`)
   button.textContent = 'Radios On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1856,7 +1842,7 @@ const build_blu_buttons = function (port) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_off')
-  button.setAttribute('value', port)
+  button.setAttribute('value', `${port}-${radio}`)
   button.textContent = 'Radios Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1867,7 +1853,7 @@ const build_blu_buttons = function (port) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_on')
-  button.setAttribute('value', port)
+  button.setAttribute('value', `${port}-${radio}`)
   button.textContent = 'Radio LEDs On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1878,7 +1864,7 @@ const build_blu_buttons = function (port) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_off')
-  button.setAttribute('value', port)
+  button.setAttribute('value', `${port}-${radio}`)
   button.textContent = 'Radio LEDs Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1889,7 +1875,7 @@ const build_blu_buttons = function (port) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'reboot_blu_radio')
-  button.setAttribute('value', port)
+  button.setAttribute('value', `${port}-${radio}`)
   button.textContent = 'Reboot Radios'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1900,7 +1886,7 @@ const build_blu_buttons = function (port) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'radio_polling')
-  button.setAttribute('value', port)
+  button.setAttribute('value', `${port}-${radio}`)
   button.textContent = `Change Polling Interval`
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -1911,7 +1897,7 @@ const build_blu_buttons = function (port) {
   button = document.createElement('button')
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'update_blu_firmware')
-  button.setAttribute('value', port)
+  button.setAttribute('value', `${port}-${radio}`)
   button.textContent = `Update Bl${umacr} Radio Firmware`
   col_sm.appendChild(button)
   div.appendChild(col_sm)
@@ -2096,7 +2082,7 @@ const init_sg = () => {
     render_gateway()
     initialize_reboot()
     setInterval(render_gateway, 5000)
-    let blu_receiver, blu_radio, component, col, row
+    let blu_receiver, blu_radio, component, col, row, div
     let max_row_count = localStorage.getItem('max-row-count')
     if (max_row_count) {
       MAX_ROW_COUNT = max_row_count
@@ -2125,6 +2111,38 @@ const init_sg = () => {
       row = document.createElement('div')
       row.classList.add('row')
       row.setAttribute('id', `blu-receiver-${i}-row`)
+      
+
+      // Create All Radios On button
+      let div = document.createElement('div')
+      div.setAttribute('class', 'row')
+      col_sm = document.createElement('div')
+      col_sm.setAttribute('class', 'col-sm')
+      button = document.createElement('button')
+      button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+      button.setAttribute('name', 'all_radios_on')
+      button.setAttribute('value', i)
+      button.textContent = 'All Radios On'
+      col_sm.appendChild(button)
+      div.appendChild(col_sm)
+      // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
+      row.appendChild(div) // this needs to go under #blu-receiver-1-row
+
+      // Create All Radios Off Button
+      div = document.createElement('div')
+      div.setAttribute('class', 'row')
+      col_sm = document.createElement('div')
+      col_sm.setAttribute('class', 'col-sm')
+      button = document.createElement('button')
+      button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+      button.setAttribute('name', 'all_radios_off')
+      button.setAttribute('value', i)
+      button.textContent = 'All Radios Off'
+      col_sm.appendChild(button)
+      div.appendChild(col_sm)
+      // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
+      row.appendChild(div) // this needs to go under #blu-receiver-1-row
+
       // row.appendChild(component)
       blu_receiver.appendChild(row)
       document.querySelector('#blu-receiver').appendChild(blu_receiver)
@@ -2149,10 +2167,11 @@ const init_sg = () => {
         // document.querySelector('#blu-receiver').appendChild(col)
         // blu_receiver.appendChild(col)
 
+        build_blu_buttons(i, j)
 
       }
 
-      build_blu_buttons(i)
+      // build_blu_buttons(i)
     }
 
     initialize_websocket();
