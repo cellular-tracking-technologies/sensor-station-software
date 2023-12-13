@@ -311,6 +311,35 @@ const initialize_controls = function () {
     });
   });
 
+  document.querySelectorAll('#mainRadiosSwitch').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      console.log('display main radio switch clicked', document.querySelector('#mainRadiosSwitch'))
+      if (document.querySelector('#main-radios').style.display !== 'none') {
+        document.querySelector('#main-radios').style.display = 'none'
+
+      } else {
+        document.querySelector('#main-radios').style.display = ''
+
+      }
+    })
+  })
+
+  document.querySelectorAll('#dongleRadioSwitch').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      console.log('display dongle radio switch clicked', document.querySelector('#dongleRadiosSwitch'))
+      // if (document.querySelector('#dongles').style.display !== 'none') {
+
+      if (document.querySelector('#dongles').style.display !== 'none') {
+        document.querySelector('#dongles').style.display = 'none'
+
+      } else {
+        document.querySelector('#dongles').style.display = ''
+
+      }
+      // }
+    })
+  })
+
   let tag_filter = document.getElementById("tag-filter")
 
   tag_filter.addEventListener('input', (e) => {
@@ -362,8 +391,9 @@ const initialize_blu_controls = function () {
   // Blu Buttons
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-      let port = e.target.getAttribute('value')
-
+      let port = e.target.getAttribute('value').substring(0, 1)
+      let radio_id = e.target.getAttribute('value').substring(2)
+      console.log('toggle radio on value', port, radio_id)
       let res = window.prompt(`Turning on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`);
       res = Number(res)
       if (isNaN(res) === true || res === 0) {
@@ -374,7 +404,7 @@ const initialize_blu_controls = function () {
           cmd: 'toggle_blu',
           data: {
             type: 'blu_on',
-            // channel: radio_id,
+            channel: radio_id,
             port: port,
             poll_interval: res,
             scan: 1,
@@ -415,8 +445,8 @@ const initialize_blu_controls = function () {
   // });
   document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
-      let port = e.target.getAttribute('value')
-
+      let port = e.target.getAttribute('value').substring(0, 1)
+      let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.confirm(`Are you sure you want to turn all Bl${umacr} Series Radios off on USB Port ${port}?`);
       if (res) {
         socket.send(JSON.stringify({
@@ -424,7 +454,7 @@ const initialize_blu_controls = function () {
           cmd: 'toggle_blu',
           data: {
             type: 'blu_off',
-            // channel: radio_id,
+            channel: radio_id,
             port: port,
 
             scan: 0,
@@ -457,7 +487,8 @@ const initialize_blu_controls = function () {
     btn.addEventListener('click', function (e) {
       // console.log('blu button radio on event', e)
       // let radio_id = e.target.getAttribute('value');
-      let port = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value').substring(0, 1)
+      let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.confirm(`Are you sure you want to switch Blu Series Radios on USB Port ${port} LED On?`);
       if (res) {
         document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED On'
@@ -466,7 +497,7 @@ const initialize_blu_controls = function () {
           cmd: 'toggle_blu_led',
           data: {
             type: 'led_on',
-            // channel: radio_id,
+            channel: radio_id,
             port: port,
             scan: 1,
             rx_blink: 1,
@@ -478,7 +509,8 @@ const initialize_blu_controls = function () {
   document.querySelectorAll('button[name="toggle_radio_led_off"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       // let radio_id = e.target.getAttribute('value');
-      let port = e.target.getAttribute('value')
+      let port = e.target.getAttribute('value').substring(0, 1)
+      let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.confirm(`Are you sure you want to switch Blu Series Radio LEDs on USB Port ${port} Off?`);
       if (res) {
         document.querySelector(`#config_radio_${port}`).textContent = 'Radio LEDs Off'
@@ -487,7 +519,7 @@ const initialize_blu_controls = function () {
           cmd: 'toggle_blu_led',
           data: {
             type: 'led_off',
-            // channel: radio_id,
+            channel: radio_id,
             port: port,
             scan: 1,
             rx_blink: 0,
@@ -499,17 +531,17 @@ const initialize_blu_controls = function () {
   document.querySelectorAll('button[name="reboot_blu_radio"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       // let radio_id = e.target.getAttribute('value');
-      let port = e.target.getAttribute('value')
-
-      let res = window.confirm(`Are you sure you want to reboot Radio radio_id on USB Port ${port}?`);
+      let port = e.target.getAttribute('value').substring(0, 1)
+      let radio_id = e.target.getAttribute('value').substring(2)
+      let res = window.confirm(`Are you sure you want to reboot Radio ${radio_id} on USB Port ${port}?`);
       if (res) {
-        document.querySelector(`#config_radio_${port}`).textContent = 'Reboot Radio'
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Reboot Radio'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'reboot_blu_radio',
           data: {
             type: 'reboot_blu_radio',
-            // channel: radio_id,
+            channel: radio_id,
             port: port,
           }
         }));
@@ -519,8 +551,8 @@ const initialize_blu_controls = function () {
   document.querySelectorAll('button[name="radio_polling"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       // let radio_id = e.target.getAttribute('value');
-      let port = e.target.getAttribute('value')
-
+      let port = e.target.getAttribute('value').substring(0, 1)
+      let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.prompt('Enter polling interval in milliseconds (ms) for USB Port ' + port +
         ' radios.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
       res = Number(res)
@@ -537,7 +569,7 @@ const initialize_blu_controls = function () {
             type: 'change_poll',
             poll_interval: res,
             port: port,
-            // channel: radio_id,
+            channel: radio_id,
           }
         }));
       }
@@ -546,8 +578,8 @@ const initialize_blu_controls = function () {
   document.querySelectorAll('button[name="update_blu_firmware"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       // let radio_id = e.target.getAttribute('value');
-      let port = e.target.getAttribute('value')
-
+      let port = e.target.getAttribute('value').substring(0, 1)
+      let radio_id = e.target.getAttribute('value').substring(2)
       let res = window.confirm('Are you sure you want to update Blu Series Radios on USB Port ' + port + '?');
       if (res) {
         document.querySelector(`#config_radio_${port}`).textContent = 'Radio Updated to Latest Firmware'
@@ -556,7 +588,7 @@ const initialize_blu_controls = function () {
           cmd: 'update-blu-firmware',
           data: {
             type: 'update-firmware',
-            // channel: radio_id,
+            channel: radio_id,
             port: port,
             poll_interval: 10000,
           }
@@ -565,34 +597,7 @@ const initialize_blu_controls = function () {
     });
   });
 
-  document.querySelectorAll('#mainRadiosSwitch').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      console.log('display main radio switch clicked', document.querySelector('#mainRadiosSwitch'))
-      if (document.querySelector('#main-radios').style.display !== 'none') {
-        document.querySelector('#main-radios').style.display = 'none'
 
-      } else {
-        document.querySelector('#main-radios').style.display = ''
-
-      }
-    })
-  })
-
-  document.querySelectorAll('#dongleRadioSwitch').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      console.log('display dongle radio switch clicked', document.querySelector('#dongleRadiosSwitch'))
-      // if (document.querySelector('#dongles').style.display !== 'none') {
-
-      if (document.querySelector('#dongles').style.display !== 'none') {
-        document.querySelector('#dongles').style.display = 'none'
-
-      } else {
-        document.querySelector('#dongles').style.display = ''
-
-      }
-      // }
-    })
-  })
 
   document.querySelectorAll('#bluRadioSwitch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
@@ -1105,15 +1110,15 @@ const handle_stats = function (stats) {
 };
 
 const handle_add_port = function (data) {
-  console.log('handle add port data', data)
+  // console.log('handle add port data', data)
   let add_port = data.port
   // let poll_interval = data.poll_interval
-  console.log('handle add port add_port', add_port)
+  // console.log('handle add port add_port', add_port)
 
   if (blu_ports.includes(add_port)) {
-    console.log('handle add port, port is present', add_port)
+    // console.log('handle add port, port is present', add_port)
   } else {
-    console.log('handle add port adding unique port', add_port)
+    // console.log('handle add port adding unique port', add_port)
     blu_ports.push(add_port)
   }
 
@@ -1129,7 +1134,7 @@ const handle_add_port = function (data) {
 
   // document.querySelector(`#blu-receiver-${add_port}`).style.display = 'block'
   // blu_ports.push(add_port.toString())
-  console.log('handle add port blu ports', blu_ports)
+  // console.log('handle add port blu ports', blu_ports)
 }
 
 const handle_unlink_port = function (data) {
@@ -1218,11 +1223,12 @@ const handle_poll = function (data) {
 }
 
 const render_poll_interval = function (data) {
-  // const { channel, poll_interval } = data
+  // console.log('render poll interval data', data)
   poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
   // console.log('render poll interval', poll_interval_info)
   document.querySelector(poll_interval_info).textContent = poll_interval;
+  // document.getElementById(poll_interval_info).textContent = poll_interval;
 }
 
 const render_channel_stats = function (channel_stats) {
@@ -1486,7 +1492,7 @@ const initialize_websocket = function () {
         handle_poll(data)
         break;
       case ('add_port'):
-        console.log('add port', data)
+        // console.log('add port', data)
         handle_add_port(data)
         break;
       case ('unlink_port'):
@@ -1732,7 +1738,7 @@ const build_blu_receiver = function (port) {
 
   if (blu_ports.includes(port)) {
     console.log('build blu receiver blu ports', blu_ports, 'port', port)
-    wrapper.setAttribute('style', 'display:block')
+    wrapper.setAttribute('style', 'display:\'\'')
   } else {
     wrapper.setAttribute('style', 'display:none')
   }
@@ -1757,10 +1763,10 @@ const build_blu_receiver = function (port) {
 const build_blu_component = function (port, radio) {
   let wrapper = document.createElement('div')
   wrapper.setAttribute('id', `blu-radio-${port}-${radio}`)
-  let h2 = document.createElement('h2')
-  h2.setAttribute('style', 'text-align: center; color: #007FFF')
-  h2.textContent = `Bl${umacr} Radio ` + radio
-  wrapper.appendChild(h2)
+  let h3 = document.createElement('h3')
+  h3.setAttribute('style', 'text-align: center; color: #007FFF')
+  h3.textContent = `Bl${umacr} Radio ` + radio
+  wrapper.appendChild(h3)
   const version_label = document.createElement('span')
   version_label.textContent = 'version: '
   const firmware_version = document.createElement('span')
@@ -1769,15 +1775,15 @@ const build_blu_component = function (port, radio) {
   firmware.appendChild(version_label)
   firmware.appendChild(firmware_version)
   wrapper.appendChild(firmware)
-  let h5 = document.createElement('h5')
+  let h4 = document.createElement('h4')
   let span = document.createElement('span')
   // span.setAttribute('style', 'padding-right:5px;')
   // span.textContent = 'Current Mode:'
   // h5.appendChild(span)
   span = document.createElement('span')
   span.setAttribute('id', `config_radio_${port}`)
-  h5.appendChild(span)
-  wrapper.appendChild(h5)
+  h4.appendChild(span)
+  wrapper.appendChild(h4)
   let table = document.createElement('table')
   table.setAttribute('class', 'table table-sm table-bordered table-dark')
   table.setAttribute('id', `radio_stats_${port}-${radio}`)
@@ -1832,7 +1838,7 @@ const build_blu_buttons = function (port, radio) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_on')
   button.setAttribute('value', `${port}-${radio}`)
-  button.textContent = 'Radios On'
+  button.textContent = 'Radio On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
@@ -1843,7 +1849,7 @@ const build_blu_buttons = function (port, radio) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_off')
   button.setAttribute('value', `${port}-${radio}`)
-  button.textContent = 'Radios Off'
+  button.textContent = 'Radio Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
@@ -1854,7 +1860,7 @@ const build_blu_buttons = function (port, radio) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_on')
   button.setAttribute('value', `${port}-${radio}`)
-  button.textContent = 'Radio LEDs On'
+  button.textContent = 'Radio LED On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
@@ -1865,7 +1871,7 @@ const build_blu_buttons = function (port, radio) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'toggle_radio_led_off')
   button.setAttribute('value', `${port}-${radio}`)
-  button.textContent = 'Radio LEDs Off'
+  button.textContent = 'Radio LED Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
@@ -1876,7 +1882,7 @@ const build_blu_buttons = function (port, radio) {
   button.setAttribute('class', 'btn btn-block btn-sm btn-info')
   button.setAttribute('name', 'reboot_blu_radio')
   button.setAttribute('value', `${port}-${radio}`)
-  button.textContent = 'Reboot Radios'
+  button.textContent = 'Reboot Radio'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
   document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
@@ -2111,7 +2117,7 @@ const init_sg = () => {
       row = document.createElement('div')
       row.classList.add('row')
       row.setAttribute('id', `blu-receiver-${i}-row`)
-      
+
 
       // Create All Radios On button
       let div = document.createElement('div')
@@ -2158,7 +2164,7 @@ const init_sg = () => {
         // .appendChild(document.createElement('div').classList.add('col-lg'))
         // .appendChild(document.querySelector('#blu-radios').appendChild())
         col = document.createElement('div')
-        col.classList.add('col-lg')
+        col.classList.add('col-sm')
         col.setAttribute('id', `blu-column-${i}-${j}`)
         col.appendChild(blu_radio)
         document.querySelector(`#blu-receiver-${i}-row`).append(col)
