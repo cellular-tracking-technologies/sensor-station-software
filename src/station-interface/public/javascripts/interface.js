@@ -1893,7 +1893,7 @@ const build_blu_receiver = function (port) {
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('class', 'btn btn-block btn-lg btn-primary')
   button.setAttribute('name', 'all_radios_on')
   button.setAttribute('value', port)
   button.textContent = 'All Radios On'
@@ -1908,7 +1908,7 @@ const build_blu_receiver = function (port) {
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('class', 'btn btn-block btn-lg btn-primary')
   button.setAttribute('name', 'all_radios_off')
   button.setAttribute('value', port)
   button.textContent = 'All Radios Off'
@@ -1920,7 +1920,7 @@ const build_blu_receiver = function (port) {
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('class', 'btn btn-block btn-lg btn-primary')
   button.setAttribute('name', 'all_radios_leds_on')
   button.setAttribute('value', port)
   button.textContent = 'All Radios LEDs On'
@@ -1931,7 +1931,7 @@ const build_blu_receiver = function (port) {
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('class', 'btn btn-block btn-lg btn-primary')
   button.setAttribute('name', 'all_radios_leds_off')
   button.setAttribute('value', port)
   button.textContent = 'All Radios LEDs Off'
@@ -1942,7 +1942,7 @@ const build_blu_receiver = function (port) {
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('class', 'btn btn-block btn-lg btn-primary')
   button.setAttribute('name', 'all_radios_reboot')
   button.setAttribute('value', port)
   button.textContent = 'All Radios Reboot'
@@ -1953,7 +1953,7 @@ const build_blu_receiver = function (port) {
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('class', 'btn btn-block btn-lg btn-primary')
   button.setAttribute('name', 'all_radios_poll')
   button.setAttribute('value', port)
   button.textContent = 'All Radios Change Poll'
@@ -1964,7 +1964,7 @@ const build_blu_receiver = function (port) {
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-block btn-sm btn-info')
+  button.setAttribute('class', 'btn btn-block btn-lg btn-primary')
   button.setAttribute('name', 'all_radios_update')
   button.setAttribute('value', port)
   button.textContent = 'All Radios Update Firmware'
