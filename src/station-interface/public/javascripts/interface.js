@@ -1978,15 +1978,14 @@ const build_blu_radio = function (port, radio) {
   firmware.appendChild(version_label)
   firmware.appendChild(firmware_version)
   wrapper.appendChild(firmware)
-  let h4 = document.createElement('h4')
-  let span = document.createElement('span')
-  // span.setAttribute('style', 'padding-right:5px;')
-  // span.textContent = 'Current Mode:'
-  // h5.appendChild(span)
-  span = document.createElement('span')
-  // span.setAttribute('id', `config_radio_${port}`)
-  h4.appendChild(span)
-  wrapper.appendChild(h4)
+  // let h4 = document.createElement('h4')
+  // let span = document.createElement('span')
+  // // span.setAttribute('style', 'padding-right:5px;')
+  // // span.textContent = 'Current Mode:'
+  // // h5.appendChild(span)
+  // span = document.createElement('span')
+  // h4.appendChild(span)
+  // wrapper.appendChild(h4)
   let table = document.createElement('table')
   table.setAttribute('class', 'table table-sm table-bordered table-dark')
   table.setAttribute('id', `radio_stats_${port}-${radio}`)
@@ -2044,7 +2043,8 @@ const build_blu_buttons = function (port, radio) {
   button.textContent = 'Radio On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  // document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
@@ -2055,7 +2055,8 @@ const build_blu_buttons = function (port, radio) {
   button.textContent = 'Radio Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  // document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
@@ -2066,7 +2067,8 @@ const build_blu_buttons = function (port, radio) {
   button.textContent = 'Radio LED On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  // document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
@@ -2077,7 +2079,8 @@ const build_blu_buttons = function (port, radio) {
   button.textContent = 'Radio LED Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  // document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
@@ -2088,7 +2091,8 @@ const build_blu_buttons = function (port, radio) {
   button.textContent = 'Reboot Radio'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  // document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
@@ -2099,7 +2103,9 @@ const build_blu_buttons = function (port, radio) {
   button.textContent = `Change Polling Interval`
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  // document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
+
 
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
@@ -2110,7 +2116,9 @@ const build_blu_buttons = function (port, radio) {
   button.textContent = `Update Bl${umacr} Radio Firmware`
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  // document.querySelector(`#blu-receiver-${port}-row`).appendChild(div)
+  document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
+
 
 }
 
