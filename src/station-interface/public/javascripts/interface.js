@@ -1224,7 +1224,7 @@ const handle_stats = function (stats) {
 const handle_add_port = function (data) {
   // console.log('handle add port data', data)
   let add_port = data.port
-  // let poll_interval = data.poll_interval
+  let poll_interval = data.poll_interval
   // console.log('handle add port add_port', add_port)
 
   if (blu_ports.includes(add_port)) {

@@ -787,7 +787,7 @@ class BaseStation {
       switch (job.task) {
         case BluReceiverTask.VERSION:
           try {
-            console.log(`BluReceiverTask.VERSION ${JSON.stringify(job)}`)
+            console.log(`BluReceiverTask.VERSION Port ${this.blu_receiver[br_index].port} ${JSON.stringify(job)}`)
             this.stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
             this.blu_fw = {
               msg_type: 'blu-firmware',
@@ -888,16 +888,19 @@ class BaseStation {
       this.blu_receiver[br_index].getBluVersion(4)
     }, 10000)
 
-    const radios_start = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
-      console.log('radios start radio', radio)
-      let radio_key = radio.toString()
-      let port_key = this.blu_receiver[br_index].port.toString()
-      this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
-    })).then((values) => {
-      console.log('radios started')
-    }).catch((e) => {
-      console.error('radios could not start properly', e)
-    })
+    setTimeout(() => {
+
+      const radios_start = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
+        console.log('radios start radio', radio)
+        let radio_key = radio.toString()
+        let port_key = this.blu_receiver[br_index].port.toString()
+        this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
+      })).then((values) => {
+        console.log('radios started')
+      }).catch((e) => {
+        console.error('radios could not start properly', e)
+      })
+    }, 2000)
 
     this.blu_receiver[br_index].on('close', () => {
       console.log('blu receiver closing within startBluRadios')
