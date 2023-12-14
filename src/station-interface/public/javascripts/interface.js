@@ -394,7 +394,7 @@ const initialize_blu_controls = function () {
       let port = e.target.getAttribute('value')
       console.log('turn on all radios on port', port)
       let res = window.prompt(`Turn on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`)
-      res = Number(res)
+      res = Number(res) * 1000
       if (isNaN(res) === true || res === 0) {
         window.alert('Invalid Input, please enter an integer (number with no decimals).')
       } else {
@@ -502,15 +502,14 @@ const initialize_blu_controls = function () {
   document.querySelectorAll('button[name="all_radios_poll"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       let port = e.target.getAttribute('value')
-      let res = window.prompt('Enter polling interval in milliseconds (ms) for USB Port ' + port +
-        ' radios.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
-      res = Number(res)
+      let res = window.prompt('Enter polling interval in seconds (s) for USB Port ' + port +
+        ' radios.');
+      res = Number(res) * 1000
       poll_interval = res ? res : 10000
       // console.log('polling res', res, typeof res)
       if (isNaN(res) === true || res === 0) {
         window.alert('Invalid Input, please enter an integer (number with no decimals).')
       } else {
-        // document.querySelector(`#config_radio_${port}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
         socket.send(JSON.stringify({
           msg_type: 'cmd',
           cmd: 'all_change_poll',
@@ -554,7 +553,7 @@ const initialize_blu_controls = function () {
       let radio_id = e.target.getAttribute('value').substring(2)
       console.log('toggle radio on value', port, radio_id)
       let res = window.prompt(`Turning on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`);
-      res = Number(res)
+      res = Number(res) * 1000
       if (isNaN(res) === true || res === 0) {
         window.alert('Invalid Input, please enter an integer (number with no decimals).')
       } else {
@@ -595,25 +594,7 @@ const initialize_blu_controls = function () {
       }
     })
   })
-  // document.querySelectorAll('button[name="toggle_radio_off"]').forEach((btn) => {
-  //   btn.addEventListener('click', function (e) {
-  //     let radio_id = e.target.getAttribute('value');
-  //     let res = window.confirm('Are you sure you want to switch Blu Series Radio' + radio_id + ' off?');
-  //     if (res) {
-  //       document.querySelector(`#config_radio_${radio_id}`).textContent = 'Radio Off'
-  //       socket.send(JSON.stringify({
-  //         msg_type: 'cmd',
-  //         cmd: 'toggle_blu',
-  //         data: {
-  //           type: 'blu_off',
-  //           channel: radio_id,
-  //           scan: 0,
-  //           rx_blink: 0,
-  //         }
-  //       }));
-  //     }
-  //   });
-  // });
+
   document.querySelectorAll('button[name="toggle_radio_led_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
       // console.log('blu button radio on event', e)
@@ -684,9 +665,9 @@ const initialize_blu_controls = function () {
       // let radio_id = e.target.getAttribute('value');
       let port = e.target.getAttribute('value').substring(0, 1)
       let radio_id = e.target.getAttribute('value').substring(2)
-      let res = window.prompt('Enter polling interval in milliseconds (ms) for USB Port ' + port +
-        ' radios.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
-      res = Number(res)
+      let res = window.prompt('Enter polling interval in seconds (s) for USB Port ' + port +
+        ' radios.');
+      res = Number(res) * 1000
       poll_interval = res ? res : 10000
       // console.log('polling res', res, typeof res)
       if (isNaN(res) === true || res === 0) {
@@ -1356,7 +1337,7 @@ const render_poll_interval = function (data) {
   poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
   // console.log('render poll interval', poll_interval_info)
-  document.querySelector(poll_interval_info).textContent = poll_interval;
+  document.querySelector(poll_interval_info).textContent = (Number(poll_interval) / 1000);
   // document.getElementById(poll_interval_info).textContent = poll_interval;
 }
 
@@ -2017,7 +1998,7 @@ const build_blu_component = function (port, radio) {
   // table.appendChild(row)
   // row = build_row({ n: n, header: 'Telemetry', id: `blu_telemetry_beep_count_${n}` })
   // table.appendChild(row)
-  row = build_row({ header: 'Poll Interval (ms)', id: `poll_interval_${port}-${radio}` })
+  row = build_row({ header: 'Poll Interval (s)', id: `poll_interval_${port}-${radio}` })
   table.appendChild(row)
   wrapper.appendChild(table)
   let div = document.createElement('div')
