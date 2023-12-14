@@ -1822,7 +1822,7 @@ const build_blu_receiver = function (port) {
   wrapper.setAttribute('id', `blu-receiver-${port}`)
 
   let h2 = document.createElement('h2')
-  h2.setAttribute('style', 'text-align: center; color: #007FFF')
+  h2.setAttribute('style', 'text-align: center; color: #007FFF; margin:30')
   h2.setAttribute('id', `blu-port-${port}`)
   h2.setAttribute('padding', '10')
 
@@ -1920,6 +1920,7 @@ const build_blu_receiver = function (port) {
   // row.appendChild(component)
 
   h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
+  // h2.setAttribute('style', 'margin:30')
   wrapper.appendChild(h2)
 
   row.appendChild(div) // this needs to go under #blu-receiver-1-row
@@ -1932,8 +1933,10 @@ const build_blu_radio = function (port, radio) {
   let wrapper = document.createElement('div')
   wrapper.setAttribute('id', `blu-radio-${port}-${radio}`)
   let h3 = document.createElement('h3')
-  h3.setAttribute('style', 'text-align: center; color: #007FFF')
+  h3.setAttribute('style', 'text-align: center; color: #0dcaf0; margin:30')
   h3.textContent = `Bl${umacr} Radio ` + radio
+  // h3.setAttribute('margin', 30)
+
   wrapper.appendChild(h3)
   const version_label = document.createElement('span')
   version_label.textContent = 'version: '
