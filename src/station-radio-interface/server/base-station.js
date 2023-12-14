@@ -198,7 +198,7 @@ class BaseStation {
 
             this.poll_data = {
               channel: radio,
-              poll_interval: this.blu_receivers[this.blu_receiver[reboot_index_all].port.toString()].blu_radios[reboot_radio].values.default,
+              poll_interval: this.blu_receivers[this.blu_receiver[reboot_index_all].port.toString()].blu_radios[radio].values.default,
               msg_type: 'poll_interval',
             }
             console.log('after reboot', this.poll_data)
@@ -245,13 +245,17 @@ class BaseStation {
           console.log('updating blu series receiver firmware', cmd)
           let update_all_index = this.findBluPort(cmd.data.port)
 
-          Object.keys(this.blu_receiver[update_all_index].blu_radios).forEach((radio) => {
-            let current_poll_interval = this.blu_receivers[cmd.data.port].blu_radios[update_radio].values.current
+          const blu_update_all = Promise.all(Object.keys(this.blu_receiver[update_all_index].blu_radios).forEach((radio) => {
+            let current_poll_interval = this.blu_receivers[cmd.data.port].blu_radios[radio].values.current
             console.log('update firmware poll interval', current_poll_interval)
 
             console.log('update blu firmware default poll interval', this.blu_receivers[cmd.data.port].blu_radios[radio].values.current)
 
             this.blu_receiver[update_all_index].updateBluFirmware(Number(radio), this.firmware, current_poll_interval)
+          })).then((values) => {
+            console.log('turning blu radio off', values)
+          }).catch((e) => {
+            console.erro(`Can't update all radios on port ${cmd.data.port}`)
           })
           break
         case ('toggle_blu'):

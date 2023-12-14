@@ -435,6 +435,118 @@ const initialize_blu_controls = function () {
     })
   })
 
+  document.querySelectorAll('button[name="all_radios_leds_on"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+
+      let port = e.target.getAttribute('value')
+      let res = window.confirm(`Are you sure you want to switch Blu Series Radios on USB Port ${port} LED On?`);
+      if (res) {
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED On'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'blu_led_all',
+          data: {
+            type: 'led_on',
+            // channel: radio_id,
+            port: port,
+            scan: 1,
+            rx_blink: 1,
+          }
+        }));
+      }
+    });
+  });
+
+  document.querySelectorAll('button[name="all_radios_leds_off"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+
+      let port = e.target.getAttribute('value')
+      let res = window.confirm(`Are you sure you want to switch Blu Series Radios on USB Port ${port} LED On?`);
+      if (res) {
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Radio LED On'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'blu_led_all',
+          data: {
+            type: 'led_off',
+            // channel: radio_id,
+            port: port,
+            scan: 1,
+            rx_blink: 0,
+          }
+        }));
+      }
+    });
+  });
+
+  document.querySelectorAll('button[name="all_radios_reboot"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      // let radio_id = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value')
+      let res = window.confirm(`Are you sure you want to reboot all the radios on USB Port ${port}?`);
+      if (res) {
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Reboot Radio'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'blu_reboot_all',
+          data: {
+            type: 'reboot_blu_radio',
+            // channel: radio_id,
+            port: port,
+          }
+        }));
+      }
+    });
+  });
+
+  document.querySelectorAll('button[name="all_radios_poll"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      let port = e.target.getAttribute('value')
+      let res = window.prompt('Enter polling interval in milliseconds (ms) for USB Port ' + port +
+        ' radios.\n Warning! DO NOT enter a value below 100 ms, otherwise it will crash the program.');
+      res = Number(res)
+      poll_interval = res ? res : 10000
+      // console.log('polling res', res, typeof res)
+      if (isNaN(res) === true || res === 0) {
+        window.alert('Invalid Input, please enter an integer (number with no decimals).')
+      } else {
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Change Polling Interval (Default is 10000 ms)'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'all_change_poll',
+          data: {
+            type: 'change_poll',
+            poll_interval: res,
+            port: port,
+            // channel: radio_id,
+          }
+        }));
+      }
+    });
+  });
+
+  document.querySelectorAll('button[name="all_radios_update"]').forEach((btn) => {
+    btn.addEventListener('click', function (e) {
+      // let radio_id = e.target.getAttribute('value');
+      let port = e.target.getAttribute('value')
+      // let radio_id = e.target.getAttribute('value')
+      let res = window.confirm('Are you sure you want to update Blu Series Radios on USB Port ' + port + '?');
+      if (res) {
+        // document.querySelector(`#config_radio_${port}`).textContent = 'Radio Updated to Latest Firmware'
+        socket.send(JSON.stringify({
+          msg_type: 'cmd',
+          cmd: 'blu_update_all',
+          data: {
+            type: 'update-firmware',
+            // channel: radio_id,
+            port: port,
+            poll_interval: 10000,
+          }
+        }));
+      }
+    });
+  });
+
   // Blu Buttons for Individual Radios on Receivers
   document.querySelectorAll('button[name="toggle_radio_on"]').forEach((btn) => {
     btn.addEventListener('click', function (e) {
@@ -615,8 +727,6 @@ const initialize_blu_controls = function () {
       }
     });
   });
-
-
 
   document.querySelectorAll('#bluRadioSwitch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
