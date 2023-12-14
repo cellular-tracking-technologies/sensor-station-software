@@ -818,6 +818,9 @@ class BaseStation {
               beep.poll_interval = this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[beep.channel].values.current
               beep.port = this.blu_receiver[br_index].port
               this.data_manager.handleBluBeep(beep)
+              beep.vcc = beep.payload.parsed.solar
+              beep.temp = beep.payload.parsed.temp
+              // console.log('base station beep', beep)
               this.broadcast(JSON.stringify(beep))
             })
             let blu_sum = {

@@ -728,7 +728,7 @@ const initialize_blu_controls = function () {
 const format_beep = function (beep) {
   // console.log('format beep', beep)
   if (beep.data) {
-    let tag_id, rssi, node_id, tag_at, blu_channel, data_type, port;
+    let tag_id, rssi, node_id, tag_at, blu_channel, data_type, port, vcc, temp;
     let beep_at = moment(new Date(beep.received_at)).utc();
     tag_at = beep_at;
     if (beep.protocol) {
@@ -741,6 +741,8 @@ const format_beep = function (beep) {
         tag_at = beep_at;
         data_type = beep.meta.data_type
         port = beep.port
+        vcc = beep.vcc
+        temp = beep.temp
       }
       // new protocol
       if (beep.meta.data_type == 'node_coded_id') {
@@ -790,6 +792,8 @@ const format_beep = function (beep) {
       tag_at: tag_at,
       data_type: data_type,
       port: port ?? null,
+      vcc: vcc ?? null,
+      temp: temp ?? null,
     }
 
     // console.log('format beep data', data)
@@ -911,8 +915,11 @@ const handle_blu_beep = function (beep) {
     tr.style.display = "none"
   }
 
+  // individual beeps table data goes here!!!
   tr.appendChild(createElement(beep.rssi));
   tr.appendChild(createElement(beep.node_id));
+  tr.appendChild(createElement(beep.vcc))
+  tr.appendChild(createElement(beep.temp))
 
   // remove last beep record if table exceeds max row count
   if (BLU_TABLE.children.length > MAX_ROW_COUNT) {
@@ -1224,7 +1231,6 @@ const handle_stats = function (stats) {
 const handle_add_port = function (data) {
   // console.log('handle add port data', data)
   let add_port = data.port
-  let poll_interval = data.poll_interval
   // console.log('handle add port add_port', add_port)
 
   if (blu_ports.includes(add_port)) {
@@ -1237,13 +1243,7 @@ const handle_add_port = function (data) {
   // console.log('blu ports', blu_ports)
   blu_ports.forEach((port) => {
     document.querySelector(`#blu-receiver-${port}`).style.display = ''
-
-
   })
-
-  // document.querySelector(`#blu-receiver-${add_port}`).style.display = 'block'
-  // blu_ports.push(add_port.toString())
-  // console.log('handle add port blu ports', blu_ports)
 }
 
 const handle_unlink_port = function (data) {
@@ -1261,83 +1261,48 @@ const handle_unlink_port = function (data) {
 }
 
 const build_blu_stats = function (port, channel) {
-  // console.log('build blu stats object', blu_stats)
   if (Object.keys(blu_stats).includes(port)) {
-    // console.log('build blu stats existing port', blu_stats, 'port', port)
     // if port exists within blu stats object, add blu_dropped to existing value
     if (Object.keys(blu_stats[port].channels).includes(channel)) {
       // if channel exists within blu stats object, add blu_dropped to existing value
-      // console.log('build blu stats existing channel', blu_stats, 'port', port, 'channel', channel)
     } else {
       // if channel does not exist, channel is added to object and its value is blu_dropped
       blu_stats[port].channels[channel] = { blu_beeps: 0, blu_dropped: 0, }
-      // console.log('build blu stats adding new channel to object', blu_stats, 'port', port, 'channel', channel)
-      // blu_stats[port].channels[channel].blu_dropped = d
     }
   } else { // blu_stats port conditional
 
     // add empty port and channels objects to blu_stats object
     blu_stats[port] = { channels: {} }
-
-    // blu_stats = {
-    //   [port]: {
-    //     channels: {
-    //       [channel]: {
-    //         blu_beeps: 0,
-    //         blu_dropped: 0,
-    //       },
-    //     },
-    //   },
-    // }
-
-    // console.log('build blu stats adding port to object', blu_stats)
-  } // blu_stats end conditional
+  }
 }
 
 const handle_blu_stats = function (data) {
-  // console.log('handle blu stats incoming data', data)
-  // console.log('handle blu stats object before manipulation', blu_stats)
-
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
   let blu_beeps = data.blu_beeps
-  // console.log('handle blu stats variables for addition', blu_beeps, blu_stats[port_key].channels[channel_key].blu_beeps)
   blu_stats[port_key].channels[channel_key].blu_beeps += blu_beeps
-  // console.log('handle blu stats after addition', blu_stats)
   render_blu_stats(blu_stats)
 
 }
 
 const handle_blu_dropped = function (data) {
-  // console.log('handle blu dropped data', data)
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
-  // let blu_beeps = 0
   let dropped = data.blu_dropped ?? 0
-  // console.log('handle blu dropped, dropped beeps', dropped)
-
   blu_stats[port_key].channels[channel_key].blu_dropped += dropped
-
-  // console.log('handle blu dropped blu stats after functions', blu_stats)
-
   render_dropped_detections(blu_stats);
 
 }
 
 const handle_poll = function (data) {
-  // console.log('handle poll', data)
   poll_interval = data.poll_interval
-  // console.log('handle poll after button click', poll_interval)
   render_poll_interval(data)
 }
 
 const render_poll_interval = function (data) {
-  // console.log('render poll interval data', data)
   poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
-  // console.log('render poll interval', poll_interval_info)
   document.querySelector(poll_interval_info).textContent = (Number(poll_interval) / 1000);
-  // document.getElementById(poll_interval_info).textContent = poll_interval;
 }
 
 const render_channel_stats = function (channel_stats) {
@@ -2020,6 +1985,12 @@ const build_blu_radio = function (port, radio) {
   tr.appendChild(th)
   th = document.createElement('th')
   th.textContent = 'Node'
+  tr.appendChild(th)
+  th = document.createElement('th')
+  th.textContent = 'Voltage (V)'
+  tr.appendChild(th)
+  th = document.createElement('th')
+  th.textContent = 'Temp (C)'
   tr.appendChild(th)
   table.appendChild(tr)
   div.appendChild(table)
