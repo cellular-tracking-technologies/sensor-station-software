@@ -884,6 +884,7 @@ const handle_blu_beep = function (beep) {
   let port = beep.port.toString()
   let channel = beep.channel.toString()
 
+  handle_add_port(beep)
   build_blu_stats(port, channel)
 
   let BLU_TABLE = document.querySelector('#blu-radio_' + port + '-' + beep.blu_channel);
@@ -1229,7 +1230,7 @@ const handle_stats = function (stats) {
 };
 
 const handle_add_port = function (data) {
-  // console.log('handle add port data', data)
+  console.log('handle add port data', data)
   let add_port = data.port
   // console.log('handle add port add_port', add_port)
 
@@ -1567,7 +1568,7 @@ const initialize_websocket = function () {
         break;
       case ('add_port'):
         // console.log('add port', data)
-        handle_add_port(data)
+        // handle_add_port(data)
         break;
       case ('unlink_port'):
         console.log('unlink port', data)
