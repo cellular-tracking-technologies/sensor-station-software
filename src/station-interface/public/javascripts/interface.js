@@ -728,7 +728,7 @@ const initialize_blu_controls = function () {
 const format_beep = function (beep) {
   // console.log('format beep', beep)
   if (beep.data) {
-    let tag_id, rssi, node_id, tag_at, blu_channel, data_type, port, vcc, temp;
+    let tag_id, rssi, node_id, tag_at, blu_channel, data_type, port, vcc, temp, poll_interval;
     let beep_at = moment(new Date(beep.received_at)).utc();
     tag_at = beep_at;
     if (beep.protocol) {
@@ -736,6 +736,7 @@ const format_beep = function (beep) {
         // console.log('blu tag is being formatted')
         // blu_channel = beep.blu_channel;
         blu_channel = beep.channel;
+        poll_interval = beep.poll_interval;
         tag_id = beep.id;
         rssi = beep.rssi;
         tag_at = beep_at;
@@ -788,6 +789,7 @@ const format_beep = function (beep) {
       rssi: rssi,
       channel: beep.channel,
       blu_channel: blu_channel,
+      poll_interval: poll_interval ?? null,
       received_at: beep_at,
       tag_at: tag_at,
       data_type: data_type,
@@ -1244,6 +1246,7 @@ const handle_add_port = function (data) {
   // console.log('blu ports', blu_ports)
   blu_ports.forEach((port) => {
     document.querySelector(`#blu-receiver-${port}`).style.display = ''
+    // document.querySelector(`#poll_interval_${port}-${data.channel}`).textContent = data.poll_interval
   })
 }
 
