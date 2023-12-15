@@ -223,7 +223,7 @@ class BaseStation {
           this.poll_interval = Number(cmd.data.poll_interval)
 
           // set current poll interval in default-config
-          Object.keys(this.blu_receivers[change_poll_all_port].blu_radios).forEach((radio) => {
+          let radios_all_poll = Promise.all(Object.keys(this.blu_receivers[change_poll_all_port].blu_radios).forEach((radio) => {
             console.log('change poll radio', radio)
             this.blu_receivers[change_poll_all_port.toString()].blu_radios[radio].values.current = this.poll_interval
             console.log('radio', radio, 'is polling at', this.blu_receivers[change_poll_all_port.toString()].blu_radios[radio].values.current, 'poll interval')
@@ -242,7 +242,7 @@ class BaseStation {
             this.blu_receiver[change_poll_all_index].stopDetections(Number(radio))
             this.blu_receiver[change_poll_all_index].setBluConfig(Number(radio), { scan: 1, rx_blink: 1, })
             this.blu_receiver[change_poll_all_index].getDetections(Number(radio), this.poll_interval)
-          })
+          }))
           break
         case ('blu_update_all'):
           console.log('updating blu series receiver firmware', cmd)
@@ -270,7 +270,7 @@ class BaseStation {
             let radio_on = cmd.data.channel
             console.log('turn radios on blu receiver', this.blu_receiver[br_index])
 
-            this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[Number(radio_on)].values.current = Number(cmd.data.poll_interval)
+            this.blu_receivers[cmd.data.port.toString()].blu_radios[Number(radio_on)].values.current = Number(cmd.data.poll_interval)
             this.config.default_config.blu_receivers = this.blu_receivers
             this.blu_receiver[br_index].updateConfig(this.config.default_config)
             this.blu_receiver[br_index].radioOn(Number(radio_on), cmd.data.poll_interval)
@@ -297,7 +297,6 @@ class BaseStation {
           let reboot_index = this.findBluPort(cmd.data.port)
           let reboot_port = cmd.data.port
           let reboot_radio = cmd.data.channel
-          // Object.keys(this.blu_receivers[this.blu_receiver[reboot_index].port.toString()].blu_radios).forEach((radio) => {
           console.log('reboot receiver', this.blu_receivers[reboot_port])
           let default_poll = this.blu_receivers[reboot_port].blu_radios[reboot_radio].values.default
           console.log('default polling interval', default_poll)
@@ -310,16 +309,10 @@ class BaseStation {
           }
           console.log('after reboot', this.poll_data)
           this.broadcast(JSON.stringify(this.poll_data))
-          // })
           this.config.default_config.blu_receivers = this.blu_receivers
           this.blu_receiver[reboot_index].updateConfig(this.config.default_config)
 
           this.blu_receiver[reboot_index].rebootBluReceiver(Number(reboot_radio), this.poll_data.poll_interval)
-          // setTimeout(() => {
-          //   Object.keys(this.blu_receiver[reboot_index].blu_radios).forEach((radio) => {
-          //     this.blu_receiver[reboot_index].rebootBluReceiver(Number(radio), this.poll_data.poll_interval)
-          //   })
-          // }, 10000)
           break
         case ('change_poll'):
           console.log('change poll interval', cmd)
