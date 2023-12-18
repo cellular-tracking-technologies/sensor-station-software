@@ -38,6 +38,7 @@ class WifiConfig {
     if (valid_opts) {
       console.log('station-hardware connecting to internet')
       child.exec(`sudo raspi-config nonint do_wifi_ssid_passphrase ${opts.ssid} ${opts.psk} 0 1`)
+      child.exec('sudo rm /etc/wpa_supplicant/.wpa_supplicant.conf.swp') // remove bad lock file
 
       // const network_info = `\nnetwork={\n\tssid=\"${opts.ssid}\"\n\tpsk=\"${opts.psk}\"\n}`
       // const file_contents = `${this.wifi_header}${network_info}`
