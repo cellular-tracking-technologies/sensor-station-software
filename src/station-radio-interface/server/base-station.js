@@ -601,7 +601,6 @@ class BaseStation {
     chokidar.watch('../../../../../../dev/serial/by-path')
       .on('add', path => {
         console.log('chokidar path', path)
-        // if (!path.includes('0:1.2.') && path.includes('-port0')) {
         if (path.includes('-port0')) {
 
           this.startBluRadios(path)
@@ -611,7 +610,6 @@ class BaseStation {
         }
       })
       .on('unlink', path => {
-        // if (!path.includes('0:1.2.') && path.includes('-port0')) {
         if (path.includes('-port0')) {
           console.log('unlink path', path)
 
@@ -716,51 +714,25 @@ class BaseStation {
     this.active_radios[radio.channel] = beep_reader
   } // end of startRadios()
 
-  // startBluRadios(path) {
   startBluRadios(path) {
-
-    // let add_index = this.findBluPath(path)
-    // console.log('add index', add_index)
-    // let add_receiver = {
-    //   msg_type: 'add_port',
-    //   port: this.blu_receiver[add_index].port
-    // }
-    // console.log('add receiver', add_receiver)
-    // this.broadcast(JSON.stringify(add_receiver))
 
     let blu_radio = this.findBluReceiver(path)
     console.log(' start blu radios blu radio', blu_radio)
-    // let blu_reader = new BluStation({
     this.blu_reader = new BluStation({
       path: blu_radio.path,
       port: blu_radio.channel,
     })
-    // console.log('blu reader before', blu_reader)
-    // blu_reader.path = blu_radio.path
-    console.log('blu reader before', this.blu_reader)
+
     this.blu_reader.path = blu_radio.path
-    // this.blu_receiver.push(blu_reader)
     this.blu_receiver.push(this.blu_reader)
     delete this.blu_reader
-    console.log('blu reader after', this.blu_reader)
-    // blu_reader = undefined
-    // console.log('blu reader after', blu_reader)
 
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
-    console.log('blu receiver', this.blu_receiver[br_index])
-
-    // let add_receiver = {
-    //   msg_type: 'add_port',
-    //   port: this.blu_receiver[br_index].port
-    // }
-    // console.log('add receiver', add_receiver)
-    // this.broadcast(JSON.stringify(add_receiver))
 
     setTimeout(() => {
 
     }, 2000)
 
-    // console.log('start blu radios blu reader by index', br_index, blu_reader)
     this.blu_receiver[br_index].on('complete', (job) => {
 
       switch (job.task) {
@@ -784,7 +756,6 @@ class BaseStation {
           }
           break
         case BluReceiverTask.DETECTIONS:
-          // console.log(`BluReceiverTask.DETECTIONS ${JSON.stringify(job)}`)
           try {
             console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
             job.data.forEach((beep) => {
@@ -793,13 +764,11 @@ class BaseStation {
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
-              // beep.poll_interval = this.config.default_config.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[beep.channel].values.current
               beep.poll_interval = this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[beep.channel].values.current
               beep.port = this.blu_receiver[br_index].port
               this.data_manager.handleBluBeep(beep)
               beep.vcc = beep.payload.parsed.solar
               beep.temp = beep.payload.parsed.temp
-              // console.log('base station beep', beep)
               this.broadcast(JSON.stringify(beep))
             })
             let blu_sum = {
@@ -817,7 +786,6 @@ class BaseStation {
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
           console.log(this.blu_receiver[br_index].port, `BluReceiverTask.DFU ${JSON.stringify(job)}`)
-          // blu_reader.getBluVersion(job.radio_channel)
           break
         case BluReceiverTask.REBOOT:
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
@@ -853,16 +821,8 @@ class BaseStation {
       }
     })
 
-    // let add_receiver = {
-    //   msg_type: 'add_port',
-    //   port: this.blu_receiver[br_index].port
-    // }
-    // console.log('add receiver', add_receiver)
-    // this.broadcast(JSON.stringify(add_receiver))
-    // why does this break the regular logo flashing?
     this.blu_receiver[br_index].startUpFlashLogo()
 
-    // get versions are on a timer so version number can be loaded to interface
     setInterval(() => {
       this.blu_receiver[br_index].getBluVersion(1)
       this.blu_receiver[br_index].getBluVersion(2)
@@ -970,9 +930,6 @@ class BaseStation {
     // console.log('findBluPath index', index)
     return index
   }
-
-
-
 } // end of base station class
 
 export { BaseStation }

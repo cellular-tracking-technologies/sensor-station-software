@@ -1232,7 +1232,7 @@ const handle_stats = function (stats) {
 };
 
 const handle_add_port = function (data) {
-  console.log('handle add port data', data)
+  // console.log('handle add port data', data)
   let add_port = data.port
   // console.log('handle add port add_port', add_port)
 
