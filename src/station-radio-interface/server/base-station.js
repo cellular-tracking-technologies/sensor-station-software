@@ -599,28 +599,11 @@ class BaseStation {
  */
   directoryWatcher() {
     chokidar.watch('../../../../../../dev/serial/by-path')
-      // .on('change', path => {
-      //   // console.log('chokidar change path', path)
-      //   if (!path.includes('0:1.2.') && path.includes('-port0')) {
-      //     // this.startBluRadios(path)
-      //     let add_index = this.findBluPath(path)
-      //     let port = this.blu_receiver[add_index].port
-      //     // console.log('add index', add_index)
-      //     let add_receiver = {
-      //       msg_type: 'add_port',
-      //       port: port,
-      //       // poll_interval: this.blu_receivers[port.toString()].blu_radios["1"].values.current,
-      //     }
-      //     // console.log('add receiver', add_receiver)
-      //     this.broadcast(JSON.stringify(add_receiver))
-      //   }
-      // })
       .on('add', path => {
         console.log('chokidar path', path)
-        // console.log('directory watcher blu receiver array', this.blu_receiver)
-        this.broadcast(JSON.stringify('add port'))
+        // if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        if (path.includes('-port0')) {
 
-        if (!path.includes('0:1.2.') && path.includes('-port0')) {
           this.startBluRadios(path)
 
         } else if (!path.includes('-port0')) {
@@ -628,8 +611,8 @@ class BaseStation {
         }
       })
       .on('unlink', path => {
-        if (!path.includes('0:1.2.') && path.includes('-port0')) {
-
+        // if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        if (path.includes('-port0')) {
           console.log('unlink path', path)
 
           let unlink_index = this.findBluPath(path)
