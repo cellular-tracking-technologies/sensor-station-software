@@ -2296,6 +2296,7 @@ const init_sg = () => {
       component = build_radio_component(i)
       col = document.createElement('div')
       col.classList.add('col-lg')
+      col.setAttribute('id', `dongle-radio-${i}`)
       col.appendChild(component)
       document.querySelector('#extra-radios').appendChild(col)
     }
