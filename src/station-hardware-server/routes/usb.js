@@ -119,11 +119,13 @@ router.get('/wifi', function (req, res, next) {
     try {
       // load JSON file with credentials
       var data = JSON.parse(fs.readFileSync(path, 'utf8'))
-      let wifi = new WifiConfig(data.country)
-      wifi.write({
-        ssid: data.ssid,
-        psk: data.psk
-      })
+      child.exec(`sudo raspi-config nonint do_wifi_ssid_passphrase ${data.ssid} ${data.psk} 0 1`)
+      child.exec('sudo rm /etc/wpa_supplicant/.wpa_supplicant.conf.swp') // remove bad lock file
+      // let wifi = new WifiConfig(data.country)
+      // wifi.write({
+      //   ssid: data.ssid,
+      //   psk: data.psk
+      // })
       // finished
       response = success
     } catch (err) {
