@@ -862,16 +862,17 @@ class BaseStation {
 
     // setTimeout(() => {
 
-    const radios_start = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
-      console.log('radios start radio', radio)
-      let radio_key = radio.toString()
-      let port_key = this.blu_receiver[br_index].port.toString()
-      this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
-    })).then((values) => {
-      console.log('radios started')
-    }).catch((e) => {
-      console.error('radios could not start properly', e)
-    })
+    const radios_start = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios)
+      .map((radio) => {
+        console.log('radios start radio', radio)
+        let radio_key = radio.toString()
+        let port_key = this.blu_receiver[br_index].port.toString()
+        this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
+      })).then((values) => {
+        console.log('radios started')
+      }).catch((e) => {
+        console.error('radios could not start properly', e)
+      })
 
     this.blu_receiver[br_index].on('close', () => {
       console.log('blu receiver closing within startBluRadios')
@@ -883,7 +884,7 @@ class BaseStation {
       if (this.blu_receiver[br_index].port) {
 
         console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
-        const radios_exit = Promise.all(this.blu_receivers.blu_radios
+        const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios)
           .map((radio) => {
             this.blu_receiver[br_index].radioOff(radio)
             console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
