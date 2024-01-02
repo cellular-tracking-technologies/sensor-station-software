@@ -69,7 +69,7 @@ export class FileManager {
       let now = moment(new Date()).utc().format('YYYY-MM-DD_HHmmss')
       let newname = `${opts.new_basename.replace('.csv', '')}.${now}.csv`
       let rotated_uri = path.join(this.base_log_dir, 'rotated', newname)
-
+      console.log('roated data file directory', rotated_uri)
       // ensure the rotated directory exists
       fs.mkdirSync(path.join(this.base_log_dir, 'rotated'), {
         recursive: true

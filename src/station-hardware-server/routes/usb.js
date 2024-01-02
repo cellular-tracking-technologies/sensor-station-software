@@ -2,46 +2,45 @@ import express from 'express'
 import fs from 'fs'
 import { UsbStorage } from '../../usb-storage-driver/index.js'
 import drivelist from 'drivelist'
+import command from '../../command.js'
 
 const router = express.Router()
 
-class WifiConfig {
-	/**
-	 * 
-	 * @param {*} country 
-	 */
-  constructor(country) {
-    if (!country) {
-      // default to US
-      country = 'US'
-    }
-    this.country = country 
-    this.wpa_supplicant_location = '/etc/wpa_supplicant/wpa_supplicant.conf'
-    this.wifi_header = `ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\ncountry=${country}\n`
-  }
+// class WifiConfig {
+//   /**
+//    * 
+//    * @param {*} country 
+//    */
+//   constructor(country) {
+//     if (!country) {
+//       // default to US
+//       country = 'US'
+//     }
+//     this.country = country
+//     this.wpa_supplicant_location = '/etc/wpa_supplicant/wpa_supplicant.conf'
+//     this.wifi_header = `ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\ncountry=${country}\n`
+//   }
 
-  /**
-   * write wpa_supplicant.conf file - only supports 1 network at a time
-   * @param {*} opts.ssid
-   * @param {*} opts.psk
-   */
-  write(opts) {
-    let valid_opts = false
-    if (opts.ssid) {
-      if (opts.psk) {
-        valid_opts = true
-      }
-    }
-    if (valid_opts) {
-      const network_info = `\nnetwork={\n\tssid=\"${opts.ssid}\"\n\tpsk=\"${opts.psk}\"\n}`
-      const file_contents = `${this.wifi_header}${network_info}`
-      console.log('station-hardware overwriting wpa_supplicant file')
-      fs.writeFileSync(this.wpa_supplicant_location, file_contents)
-    } else {
-      throw new Error('missing ssid and/or psk')
-    }
-  }
-}
+//   /**
+//    * write wpa_supplicant.conf file - only supports 1 network at a time
+//    * @param {*} opts.ssid
+//    * @param {*} opts.psk
+//    */
+//   write(opts) {
+//     let valid_opts = false
+//     if (opts.ssid) {
+//       if (opts.psk) {
+//         valid_opts = true
+//       }
+//     }
+//     if (valid_opts) {
+//       console.log('station-hardware connecting to internet')
+
+//     } else {
+//       throw new Error('missing ssid and/or psk')
+//     }
+//   }
+// }
 
 const usb = new UsbStorage()
 
@@ -49,7 +48,7 @@ const usb = new UsbStorage()
 router.get('/', function (req, res, next) {
   drivelist.list()
     .then((devices) => {
-      res.json(devices.filter(device => { return device.busType == 'USB'}))
+      res.json(devices.filter(device => { return device.busType == 'USB' }))
     }).catch((error) => {
       res.json(null)
     })
@@ -112,21 +111,21 @@ router.get('/wifi', function (req, res, next) {
     try {
       // load JSON file with credentials
       var data = JSON.parse(fs.readFileSync(path, 'utf8'))
-      let wifi = new WifiConfig(data.country)
-      wifi.write({
-				ssid: data.ssid, 
-				psk: data.psk
-			})
-      // finished
+      command(`sudo raspi-config nonint do_wifi_ssid_passphrase ${data.ssid} ${data.psk} 0 1`)
+      command('sudo rm /etc/wpa_supplicant/.wpa_supplicant.conf.swp') // remove bad lock file
+
       response = success
-    } catch(err) {
+    } catch (err) {
       console.log('something went wrong adding wifi network')
       console.log(err)
     }
   } else {
-		console.log('hardware-server WiFi crendentials path does not exist', path)
-	}
+    console.log('hardware-server WiFi crendentials path does not exist', path)
+    console.log('obtaining WiFi credentials from raspberry pi')
+
+  }
   res.json(response)
+  console.log('usb response', response, 'connecting to internet')
 })
 
 export default router

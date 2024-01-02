@@ -1,10 +1,13 @@
 import fetch from 'node-fetch'
 import url from 'url'
+// import glob from 'glob'
 
 class UsbWifiUploadTask {
   constructor(base_url) {
     this.url = url.resolve(base_url, 'usb/wifi')
     this.header = "WiFi"
+    console.log('url', this.url)
+
   }
   loading() {
     return [this.header, "Uploading..."]
@@ -13,6 +16,7 @@ class UsbWifiUploadTask {
     return new Promise((resolve, reject) => {
       fetch(this.url)
         .then(data => {
+          console.log('data', data)
           return data.json()
         })
         .then(res => {

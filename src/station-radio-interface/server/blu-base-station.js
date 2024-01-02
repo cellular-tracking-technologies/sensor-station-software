@@ -68,6 +68,10 @@ class BluStation extends BluReceiver {
    */
   async getDroppedDetections(radio_channel, buffer_interval) {
     // console.log('BluReceiverTask.STATS', job.task)
+    this.schedule({
+      task: BluReceiverTask.STATS,
+      radio_channel: radio_channel,
+    })
     this.dropped = setInterval(() => {
       this.schedule({
         task: BluReceiverTask.STATS,
@@ -87,6 +91,10 @@ class BluStation extends BluReceiver {
     // await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 1000, blink_count: -1, })
     try {
       const key = radio_channel.toString()
+      this.schedule({
+        task: BluReceiverTask.DETECTIONS,
+        radio_channel,
+      })
       this.beeps = setInterval(() => {
         this.schedule({
           task: BluReceiverTask.DETECTIONS,
