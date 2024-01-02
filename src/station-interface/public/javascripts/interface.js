@@ -1028,7 +1028,7 @@ const handle_tag_beep = function (beep) {
     }
   }
 
-  /** Uncomment to hide dongle radios when removed */
+  // /** Uncomment to hide dongle radios when removed */
   // if (unlink_dongle > 0) {
   //   console.log('handle tag beep unlink port', unlink_dongle)
   //   document.querySelector('#dongles').style.display = 'none'
@@ -1038,6 +1038,19 @@ const handle_tag_beep = function (beep) {
   //   unlink_dongle = null
   //   console.log('handle tag beep unlink port after null', unlink_dongle)
   // }
+
+  if (beep.channel > 5 && dongle_radios.includes(beep.channel)) {
+    console.log('dongle radio is present', beep.channel)
+  } else if (beep.channel > 5) {
+    console.log('dongle radio is not present, adding it to array', beep.channel)
+    dongle_radios.push(beep.channel)
+  }
+
+  // console.log('blu ports', blu_ports)
+  dongle_radios.forEach((radio) => {
+    document.querySelector(`#dongle-radio-${radio}`).style.display = ''
+    // document.querySelector(`#poll_interval_${port}-${data.channel}`).textContent = data.poll_interval
+  })
 
   let BEEP_TABLE = document.querySelector('#radio_' + beep.channel); // creates table for individual beeps
   let tr = document.createElement('tr');
@@ -1250,7 +1263,7 @@ const handle_add_port = function (data) {
   })
 }
 
-const handle_unlink_port = function (data) {
+const handle_blu_unlink = function (data) {
   console.log('handle unlink port data', data)
   let unlink_port = data.port
   document.querySelector(`#blu-receiver-${unlink_port}`).style.display = 'none'
@@ -1262,6 +1275,19 @@ const handle_unlink_port = function (data) {
   // unlink_port = null
   console.log('handle blu beep unlink port after null', unlink_port)
 
+}
+
+const handle_dongle_unlink = function (data) {
+  console.log('handle unlink port data', data)
+  let unlink_port = data.port
+  document.querySelector(`#dongle-radio-${unlink_port}`).style.display = 'none'
+  let unlink_index = dongle_radios.findIndex(port => port === unlink_port)
+  console.log('handle dongle unlink index', unlink_index)
+  console.log('handle dongle radios unlink', dongle_radios)
+  dongle_radios.splice(unlink_index, 1)
+  console.log('handle dongle radio unlink after splice', dongle_radios)
+  // unlink_port = null
+  // console.log('handle dongle unlink port after splice', unlink_port)
 }
 
 const build_blu_stats = function (port, channel) {
@@ -1575,12 +1601,13 @@ const initialize_websocket = function () {
         break;
       case ('unlink_port'):
         console.log('unlink port', data)
-        handle_unlink_port(data)
+        handle_blu_unlink(data)
         // unlink_port = data.port
         // console.log('unlink port event', unlink_port)
         break;
       case ('unlink_dongle'):
         unlink_dongle = data.port
+        handle_dongle_unlink(data)
         break;
       case ('stats'):
         // console.log('handle stats data', data)
@@ -2297,6 +2324,7 @@ const init_sg = () => {
       col = document.createElement('div')
       col.classList.add('col-lg')
       col.setAttribute('id', `dongle-radio-${i}`)
+      col.setAttribute('style', 'display:none')
       col.appendChild(component)
       document.querySelector('#extra-radios').appendChild(col)
     }
@@ -2307,31 +2335,19 @@ const init_sg = () => {
 
       document.querySelector('#blu-receiver').appendChild(blu_receiver)
 
-      // document.querySelector('#blu-receiver').appendChild(row)
-      // document.querySelector(`#blu-port-${i}`).appendChild(row)
-
-
       for (let j = 1; j <= 4; j++) {
         blu_radio = build_blu_radio(i, j)
         blu_radio.setAttribute('id', `blu-radio-${i}-${j}`)
 
-        // .appendChild(document.createElement('div').classList.add('col-lg'))
-        // .appendChild(document.querySelector('#blu-radios').appendChild())
         col = document.createElement('div')
         col.classList.add('col-sm')
         col.setAttribute('id', `blu-column-${i}-${j}`)
         col.appendChild(blu_radio)
         document.querySelector(`#blu-receiver-${i}-row`).append(col)
-        // blu_radio.appendChild(col)
-        // document.querySelector('#blu-radios').appendChild(col)
-        // document.querySelector('#blu-receiver').appendChild(col)
-        // blu_receiver.appendChild(col)
 
         build_blu_buttons(i, j)
 
       }
-
-      // build_blu_buttons(i)
     }
 
     initialize_websocket();
