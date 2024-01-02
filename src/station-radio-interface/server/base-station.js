@@ -601,7 +601,9 @@ class BaseStation {
     chokidar.watch('../../../../../../dev/serial/by-path')
       .on('add', path => {
         console.log('chokidar path', path)
-        if (path.includes('-port0')) {
+        // if (path.includes('-port0')) {
+        if (!path.includes('0:1.2.') && path.includes('-port0')) {
+
 
           this.startBluRadios(path)
 
@@ -651,10 +653,10 @@ class BaseStation {
   }
 
   /**
- * 
- * @param {String} path radio path from /dev/serial/by-path/ directory 
- * @returns 
- */
+  * 
+  * @param {String} path radio path from /dev/serial/by-path/ directory 
+  * @returns 
+  */
   findBluReceiver(path) {
     let radio_path = path.substring(17)
     // console.log('find blu path path', radio_path)
