@@ -612,7 +612,7 @@ class BaseStation {
         }
       })
       .on('unlink', path => {
-        if (path.includes('-port0')) {
+        if (!path.includes('0:1.2.') && path.includes('-port0')) {
           console.log('unlink path', path)
 
           let unlink_index = this.findBluPath(path)
