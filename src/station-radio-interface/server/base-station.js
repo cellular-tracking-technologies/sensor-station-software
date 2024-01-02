@@ -162,8 +162,9 @@ class BaseStation {
           })
           // console.log('radios on', radios_on)
           Promise.all(radios_on).then((values) => {
-            console.log('promise radios', values)
-
+            console.log('all radios on', values)
+          }).catch((e) => {
+            console.error('all radios on error', e)
           })
           break;
         case ('blu_radio_all_off'):
@@ -210,7 +211,11 @@ class BaseStation {
             this.config.default_config.blu_receivers = this.blu_receivers
             this.blu_receiver[reboot_index_all].updateConfig(this.config.default_config)
 
-          }))
+          })).then((values) => {
+            console.log('all radios rebooting', values)
+          }).catch((e) => {
+            console.error('all radios reboot error', e)
+          })
 
 
           break
@@ -243,7 +248,12 @@ class BaseStation {
             this.blu_receiver[change_poll_all_index].stopDetections(Number(radio))
             this.blu_receiver[change_poll_all_index].setBluConfig(Number(radio), { scan: 1, rx_blink: 1, })
             this.blu_receiver[change_poll_all_index].getDetections(Number(radio), this.poll_interval)
-          }))
+          })).then((values) => {
+            console.log('all radios change poll', values)
+          }).catch((e) => {
+            console.error('all radios change poll error', e)
+          })
+
           break
         case ('blu_update_all'):
           console.log('updating blu series receiver firmware', cmd)
@@ -259,7 +269,7 @@ class BaseStation {
           })).then((values) => {
             console.log('turning blu radio off', values)
           }).catch((e) => {
-            console.erro(`Can't update all radios on port ${cmd.data.port}`)
+            console.error(`Can't update all radios on port ${cmd.data.port}`)
           })
           break
         case ('toggle_blu'):
@@ -850,64 +860,64 @@ class BaseStation {
       this.blu_receiver[br_index].getBluVersion(4)
     }, 10000)
 
-    setTimeout(() => {
+    // setTimeout(() => {
 
-      const radios_start = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
-        console.log('radios start radio', radio)
-        let radio_key = radio.toString()
-        let port_key = this.blu_receiver[br_index].port.toString()
-        this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
-      })).then((values) => {
-        console.log('radios started')
-      }).catch((e) => {
-        console.error('radios could not start properly', e)
-      })
+    const radios_start = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).map((radio) => {
+      console.log('radios start radio', radio)
+      let radio_key = radio.toString()
+      let port_key = this.blu_receiver[br_index].port.toString()
+      this.blu_receiver[br_index].radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
+    })).then((values) => {
+      console.log('radios started')
+    }).catch((e) => {
+      console.error('radios could not start properly', e)
+    })
 
-      this.blu_receiver[br_index].on('close', () => {
-        console.log('blu receiver closing within startBluRadios')
-      })
+    this.blu_receiver[br_index].on('close', () => {
+      console.log('blu receiver closing within startBluRadios')
+    })
 
-      process.on('SIGINT', () => {
-        this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
+    process.on('SIGINT', () => {
+      this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
 
-        if (this.blu_receiver[br_index].port) {
+      if (this.blu_receiver[br_index].port) {
 
-          console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
-          const radios_exit = Promise.all(this.blu_receivers.blu_radios
-            .map((radio) => {
-              this.blu_receiver[br_index].radioOff(radio)
-              console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
-            }))
-          Promise.all(radios_exit).then((values) => {
-            console.log(values)
-          }).catch((e) => {
-            console.error('no port to closed in destroyed blu receiver', e)
-          })
-        } else {
-          console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index])
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index].port)
+        const radios_exit = Promise.all(this.blu_receivers.blu_radios
+          .map((radio) => {
+            this.blu_receiver[br_index].radioOff(radio)
+            console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
+          }))
+        Promise.all(radios_exit).then((values) => {
+          console.log(values)
+        }).catch((e) => {
+          console.error('no port to closed in destroyed blu receiver', e)
+        })
+      } else {
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_receiver[br_index])
 
-        }
+      }
 
-        // uncomment to destroy each receiver, need to find way to do this after turning off all radios in receiver
-        // this.blu_receiver.forEach((receiver) => {
-        //   receiver.destroy_receiver()
-        // })
-        setTimeout(() => {
-          console.log('Closed blu readers', this.blu_receiver)
-          process.exit(0)
-        }, 7000)
-      })
-      // }) // end of forEach
-    } // end of startBluRadios
+      // uncomment to destroy each receiver, need to find way to do this after turning off all radios in receiver
+      // this.blu_receiver.forEach((receiver) => {
+      //   receiver.destroy_receiver()
+      // })
+      setTimeout(() => {
+        console.log('Closed blu readers', this.blu_receiver)
+        process.exit(0)
+      }, 7000)
+    })
+    // }) // end of forEach
+  } // end of startBluRadios
 
   stopBluRadios(path) {
-      if(path !== undefined) {
+    if (path !== undefined) {
       console.log('stop blu radios path', path)
       let br_index = this.findBluPath(path)
 
       this.stationLog('blu radio is closing')
       console.log('blu receiver', this.blu_receiver[br_index], 'is closing')
-      const radios_exit = Promise.all(this.blu_receivers.blu_radios
+      const radios_exit = Promise.all(Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios)
         .map((radio) => {
           this.blu_receiver[br_index].radioOff(radio)
           console.log('receiver', this.blu_receiver[br_index].port, 'radio', radio, 'is off')
