@@ -575,15 +575,15 @@ class BluStation extends BluReceiver {
 
     let blu_radio = this.findBluReceiver(path)
     console.log(' start blu radios blu radio', blu_radio)
-    this.blu_reader = new BluStation({
-      path: blu_radio.path,
-      port: blu_radio.channel,
-      web_port: this.config.data.http.websocket_port,
-    })
+    // this.blu_reader = new BluStation({
+    //   path: blu_radio.path,
+    //   port: blu_radio.channel,
+    //   web_port: this.config.data.http.websocket_port,
+    // })
 
-    this.blu_reader.path = blu_radio.path
-    this.blu_receiver.push(this.blu_reader)
-    delete this.blu_reader
+    this.path = blu_radio.path
+    this.blu_receiver.push(this)
+    delete this
 
     let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
 
