@@ -18,6 +18,7 @@ import moment from 'moment'
 import process from 'node:process'
 import chokidar from 'chokidar'
 import blu_radios from '../../../system/radios/blu-radio-map.js'
+import revision from '../../revision.js'
 
 /**
  * manager class for controlling / reading radios
@@ -395,47 +396,84 @@ class BaseStation {
     chokidar.watch('../../../../../../dev/serial/by-path')
       .on('add', path => {
         console.log('chokidar path', path)
-        // if (path.includes('-port0')) {
-        if (!path.includes('0:1.2.') && path.includes('-port0')) {
-          this.blu_station = new BluStation({
-            path: path,
-            web_port: this.config.data.http.websocket_port,
-            config: this.config,
-          })
-
-          this.blu_station.startBluRadios(path)
-
-        } else if (!path.includes('-port0')) {
-          this.startRadios(path)
-        }
+        this.addPath(path)
       })
       .on('unlink', path => {
-        if (!path.includes('0:1.2.') && path.includes('-port0')) {
-          console.log('unlink path', path)
-
-          let unlink_index = this.blu_station.findBluPath(path)
-          console.log('unlink index', unlink_index)
-          let unlink_receiver = {
-            msg_type: "unlink_port",
-            port: this.blu_station.blu_receiver[unlink_index].port,
-          }
-          console.log('unlink receiver', unlink_receiver)
-
-          this.broadcast(JSON.stringify(unlink_receiver))
-
-          this.blu_station.stopBluRadios(path)
-          this.blu_station.blu_receiver[unlink_index].destroy_receiver()
-
-        } else if (!path.includes('-port0')) {
-          console.log('dongle radio removed from usb port')
-          let unlink_dongle = {
-            msg_type: "unlink_dongle",
-            path: path.substring(17),
-            port: this.dongle_port,
-          }
-          this.broadcast(JSON.stringify(unlink_dongle))
-        }
+        this.unlinkPath(path)
       })
+  }
+
+  addPath(path) {
+    if (revision.revision >= 3) {
+      // V3 Radio Paths
+      if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        let blu_station = new BluStation({
+          path: path,
+          blu_receivers: this.config.default_config.blu_receivers,
+          blu_radios: blu_radios,
+          data_manager: this.data_manager,
+          broadcast: this.broadcast,
+        })
+        blu_station.startBluRadios(path)
+      } else if (!path.includes('-port0')) {
+        this.startRadios(path)
+      }
+    } else {
+      // V2 Radio Paths
+      if (path.includes('-port0')) {
+        let blu_station = new BluStation({
+          path: path,
+        })
+        blu_station.startBluRadios(path)
+      } else if (!path.includes('-port0')) {
+        this.startRadios(path)
+      }
+    }
+  }
+
+  unlinkPath(path) {
+    if (revision.revision >= 3) {
+      // V3 Radio paths
+      if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        let unlink_index = this.blu_station.findBluPath(path)
+        let unlink_receiver = {
+          msg_type: "unlink_port",
+          port: this.blu_receiver[unlink_index].port,
+        }
+        this.broadcast(JSON.stringify(unlink_receiver))
+        this.blu_station.stopBluRadios(path)
+        this.blu_receiver[unlink_index].destroy_receiver()
+
+      } else if (!path.includes('-port0')) {
+        let unlink_dongle = {
+          msg_type: "unlink_dongle",
+          path: path.substring(17),
+          port: this.dongle_port,
+        }
+        this.broadcast(JSON.stringify(unlink_dongle))
+      }
+    } else {
+      // V2 Radio Paths
+      if (path.includes('-port0')) {
+        let unlink_index = this.findBluPath(path)
+        console.log('unlink index', unlink_index)
+        let unlink_receiver = {
+          msg_type: "unlink_port",
+          port: this.blu_receiver[unlink_index].port,
+        }
+        this.broadcast(JSON.stringify(unlink_receiver))
+        this.blu_station.stopBluRadios(path)
+        this.blu_receiver[unlink_index].destroy_receiver()
+
+      } else if (!path.includes('-port0')) {
+        let unlink_dongle = {
+          msg_type: "unlink_dongle",
+          path: path.substring(17),
+          port: this.dongle_port,
+        }
+        this.broadcast(JSON.stringify(unlink_dongle))
+      }
+    }
   }
 
   /**

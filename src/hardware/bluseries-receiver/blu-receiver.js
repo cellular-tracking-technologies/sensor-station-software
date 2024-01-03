@@ -24,7 +24,7 @@ class BluReceiver extends EventEmitter {
     }
 
     this.#data.io.on('open', () => {
-      console.log('blu radio is opening')
+      // console.log('blu radio is opening')
       this.#data.connected = true
       this.run_schedule()
     })
