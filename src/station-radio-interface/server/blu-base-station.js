@@ -6,6 +6,7 @@ import fs from 'fs'
 import { SensorSocketServer } from './http/web-socket-server.js'
 import blu_radios from '../../../system/radios/blu-radio-map.js'
 import { StationConfig } from './station-config.js'
+import moment from 'moment'
 
 class BluStation extends BluReceiver {
   constructor(opts) {
@@ -601,40 +602,32 @@ class BluStation extends BluReceiver {
 
     let blu_radio = this.findBluReceiver(path)
     console.log(' start blu radios blu radio', blu_radio)
-    // this.blu_reader = new BluStation({
-    //   path: blu_radio.path,
-    //   port: blu_radio.channel,
-    //   web_port: this.config.data.http.websocket_port,
-    // })
 
     this.path = blu_radio.path
     this.port = blu_radio.channel
     console.log('blu station this', this)
-    let blu_receiver = this
-    console.log('blu receiver array on blu base-station file', blu_receiver.blu_receivers[0].blu_radios)
-    // delete this
+    let blu_station = this
+    let br_index = blu_station.blu_receivers.findIndex(blu_reader => blu_reader.path === blu_station.path)
 
-    // let br_index = this.blu_receiver.findIndex(blu_reader => blu_reader.path === blu_radio.path)
-    let br_index = blu_receiver.blu_receivers.findIndex(blu_reader => blu_reader.path === blu_receiver.path)
-
+    console.log('blu receiver array on blu base-station file', blu_station.blu_receivers[br_index].blu_radios)
 
     setTimeout(() => {
 
     }, 2000)
 
-    blu_receiver.on('complete', (job) => {
+    blu_station.on('complete', (job) => {
       // this.broadcast(JSON.stringify('blu receiver is complete')) // somehow repeats more than chokidar.on(change)
       switch (job.task) {
         case BluReceiverTask.VERSION:
           try {
-            console.log(`BluReceiverTask.VERSION Port ${blu_receiver.port} ${JSON.stringify(job)}`)
+            console.log(`BluReceiverTask.VERSION Port ${blu_station.port} ${JSON.stringify(job)}`)
             // this.stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
             // stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
 
             this.blu_fw = {
               msg_type: 'blu-firmware',
               firmware: {
-                [blu_receiver.port]: {
+                [blu_station.port]: {
                   channels: {
                     [job.radio_channel]: job.data.version,
                   }
@@ -649,35 +642,35 @@ class BluStation extends BluReceiver {
           break
         case BluReceiverTask.DETECTIONS:
           try {
-            console.log('Port', this.blu_receiver[br_index].port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
+            console.log('Port', blu_station.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
             job.data.forEach((beep) => {
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
-              beep.poll_interval = this.blu_receivers[blu_receiver.port.toString()].blu_radios[beep.channel].values.current
-              beep.port = this.blu_receiver[br_index].port
+              beep.poll_interval = blu_station.blu_receivers[br_index].blu_radios[beep.channel].values.current
+              beep.port = blu_station.port
               this.data_manager.handleBluBeep(beep)
               beep.vcc = beep.payload.parsed.solar
               beep.temp = beep.payload.parsed.temp
               this.broadcast(JSON.stringify(beep))
             })
             let blu_sum = {
-              port: blu_receiver.port,
+              port: blu_station.port,
               channel: job.radio_channel,
               blu_beeps: job.data.length == null ? 0 : job.data.length,
               msg_type: "blu_stats",
             }
             this.broadcast(JSON.stringify(blu_sum))
           } catch (e) {
-            console.error('base station get detections error on Port', blu_receiver.port, 'Radio', job.radio_channel, e)
+            console.error('base station get detections error on Port', blu_station.port, 'Radio', job.radio_channel, e)
           }
           break
         // console.log(JSON.stringify(job))
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
-          console.log(blu_receiver.port, `BluReceiverTask.DFU ${JSON.stringify(job)}`)
+          console.log(blu_station.port, `BluReceiverTask.DFU ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.REBOOT:
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
@@ -696,16 +689,16 @@ class BluStation extends BluReceiver {
           try {
 
             let blu_stats = {
-              port: blu_receiver.port,
+              port: blu_station.port,
               channel: job.radio_channel,
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
               msg_type: "blu_dropped",
             }
-            console.log('Port', blu_receiver.port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
+            console.log('Port', blu_station.port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
 
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
-            console.log('base station stats error:', 'receiver', blu_receiver.port, 'radio', job.radio_channel, e)
+            console.log('base station stats error:', 'receiver', blu_station.port, 'radio', job.radio_channel, e)
           }
           break
         default:
@@ -713,45 +706,45 @@ class BluStation extends BluReceiver {
       }
     })
 
-    blu_receiver.startUpFlashLogo()
+    blu_station.startUpFlashLogo()
 
     setInterval(() => {
-      blu_receiver.getBluVersion(1)
-      blu_receiver.getBluVersion(2)
-      blu_receiver.getBluVersion(3)
-      blu_receiver.getBluVersion(4)
+      blu_station.getBluVersion(1)
+      blu_station.getBluVersion(2)
+      blu_station.getBluVersion(3)
+      blu_station.getBluVersion(4)
     }, 10000)
 
     // setTimeout(() => {
 
     // const radios_start = Promise.all(Object.keys(this.blu_receivers[blu_receiver.port.toString()].blu_radios)
-    const radios_start = Promise.all(Object.keys(blu_receiver.blu_receivers[br_index].blu_radios)
+    const radios_start = Promise.all(Object.keys(blu_station.blu_receivers[br_index].blu_radios)
       .map((radio) => {
         console.log('radios start radio', radio)
         let radio_key = radio.toString()
-        let port_key = blu_receiver.port.toString()
+        let port_key = blu_station.port.toString()
         // blu_receiver.radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
-        blu_receiver.radioOn(Number(radio_key), blu_receiver.blu_receivers[br_index].blu_radios[radio_key].values.current)
+        blu_station.radioOn(Number(radio_key), blu_station.blu_receivers[br_index].blu_radios[radio_key].values.current)
       })).then((values) => {
         console.log('radios started')
       }).catch((e) => {
         console.error('radios could not start properly', e)
       })
 
-    blu_receiver.on('close', () => {
+    blu_station.on('close', () => {
       console.log('blu receiver closing within startBluRadios')
     })
 
     process.on('SIGINT', () => {
       // this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
 
-      if (blu_receiver.port) {
+      if (blu_station.port) {
 
-        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_receiver.port)
-        const radios_exit = Promise.all(Object.keys(this.blu_receivers[blu_receiver.port.toString()].blu_radios)
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_station.port)
+        const radios_exit = Promise.all(Object.keys(blu_station.blu_receivers[br_index].blu_radios)
           .map((radio) => {
-            blu_receiver.radioOff(radio)
-            console.log('receiver', blu_receiver.port, 'radio', radio, 'is off')
+            blu_station.radioOff(radio)
+            console.log('receiver', blu_station.port, 'radio', radio, 'is off')
           }))
         Promise.all(radios_exit).then((values) => {
           console.log(values)
@@ -759,7 +752,7 @@ class BluStation extends BluReceiver {
           console.error('no port to closed in destroyed blu receiver', e)
         })
       } else {
-        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_receiver)
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_station)
 
       }
 
@@ -768,7 +761,7 @@ class BluStation extends BluReceiver {
       //   receiver.destroy_receiver()
       // })
       setTimeout(() => {
-        console.log('Closed blu readers', this.blu_receiver)
+        console.log('Closed blu readers', blu_station)
         process.exit(0)
       }, 7000)
     })
@@ -781,11 +774,11 @@ class BluStation extends BluReceiver {
       let br_index = this.findBluPath(path)
 
       // this.stationLog('blu radio is closing')
-      console.log('blu receiver', blu_receiver, 'is closing')
-      const radios_exit = Promise.all(Object.keys(this.blu_receivers[blu_receiver.port.toString()].blu_radios)
+      console.log('blu receiver', this, 'is closing')
+      const radios_exit = Promise.all(Object.keys(this.blu_receivers[br_index].blu_radios)
         .map((radio) => {
-          blu_receiver.radioOff(radio)
-          console.log('receiver', blu_receiver.port, 'radio', radio, 'is off')
+          this.radioOff(radio)
+          console.log('receiver', this.port, 'radio', radio, 'is off')
         }))
       Promise.all(radios_exit).then((values) => {
         console.log(values)
@@ -796,7 +789,7 @@ class BluStation extends BluReceiver {
       // this.blu_receiver[br_index].destroy_receiver()
 
       setTimeout(() => {
-        console.log('Closed blu readers', this.blu_receiver)
+        console.log('Closed blu readers', this)
       }, 5000)
       // })
     } else {
@@ -810,7 +803,7 @@ class BluStation extends BluReceiver {
    * @returns 
    */
   findBluPort(port) {
-    let index = blu_receiver.findIndex(receiver => receiver.port === Number(port))
+    let index = this.blu_receivers.findIndex(receiver => receiver.port === Number(port))
     return index
   }
 
@@ -820,7 +813,7 @@ class BluStation extends BluReceiver {
    * @returns 
    */
   findBluPath(path) {
-    let index = blu_receiver.findIndex(receiver => receiver.path === path.substring(17))
+    let index = blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
     // console.log('findBluPath index', index)
     return index
   }
