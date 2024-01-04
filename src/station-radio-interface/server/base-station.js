@@ -1,6 +1,5 @@
 import { RadioReceiver } from './radio-receiver.js'
 import { BluStation } from './blu-base-station.js'
-import { BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
@@ -15,7 +14,6 @@ import heartbeats from 'heartbeats'
 import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
-import process from 'node:process'
 import chokidar from 'chokidar'
 import blu_radios from '../../../system/radios/blu-radio-map.js'
 import revision from '../../revision.js'
@@ -64,7 +62,6 @@ class BaseStation {
     this.blu_fw = {}
     this.poll_interval
     this.poll_data
-    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
     this.dongle_port
 
   }

@@ -1,9 +1,6 @@
-// import SerialClient from '../../hardware/bluseries-receiver/driver/serial_client.js'
-// import fs from 'fs'
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import fs from 'fs'
-// import { SensorSocketServer } from './http/web-socket-server.js'
 import blu_radios from '../../../system/radios/blu-radio-map.js'
 
 import moment from 'moment'
@@ -26,6 +23,8 @@ class BluStation extends BluReceiver {
     this.station_id
     this.blu_receivers = blu_radios
     this.blu_reader
+    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+
   }
 
   /**
@@ -39,9 +38,7 @@ class BluStation extends BluReceiver {
   * start web socket server
   */
   startWebsocketServer() {
-    // this.sensor_socket_server = new SensorSocketServer({
-    //   port: this.web_port,
-    // })
+
     this.sensor_socket_server.on('open', (event) => {
 
     })
@@ -50,46 +47,47 @@ class BluStation extends BluReceiver {
         case ('blu_radio_all_on'):
           // let all_on_port = cmd.data.port
           let all_on_index = this.findBluPort(cmd.data.port)
+          console.log('blu radios all on: blu receivers object', this.blu_receivers, 'index number', all_on_index, 'index object', this.blu_receivers[all_on_index])
 
-          const radios_on = Object.keys(this.blu_receiver[all_on_index].blu_radios).map(radio => {
-            this.blu_receivers[this.blu_receiver[all_on_index].port.toString()].blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
-            this.blu_receivers[this.blu_receiver[all_on_index].port.toString()].blu_radios[Number(radio)].values.current = Number(cmd.data.poll_interval)
+          // const radios_on = Object.keys(this.blu_receiver[all_on_index].blu_radios).map(radio => {
+          const radios_on = Promise.all(Object.keys(this.blu_receivers[all_on_index].blu_radios).map(radio => {
+            this.blu_receivers[all_on_index].blu_radios[radio].values.current = Number(cmd.data.poll_interval)
             this.config.default_config.blu_receivers = this.blu_receivers
-            this.blu_receiver[all_on_index].updateConfig(this.config.default_config)
-            this.blu_receiver[all_on_index].radioOn(Number(radio), cmd.data.poll_interval)
-          })
-          // console.log('radios on', radios_on)
-          Promise.all(radios_on).then((values) => {
+            this.updateConfig(this.config.default_config)
+            this.radioOn(Number(radio), cmd.data.poll_interval)
+          })).then((values) => {
             console.log('all radios on', values)
           }).catch((e) => {
             console.error('all radios on error', e)
           })
+
           break;
         case ('blu_radio_all_off'):
           let all_off_index = this.findBluPort(cmd.data.port)
 
-          const radios_off = Object.keys(this.blu_receiver[all_off_index].blu_radios).map(radio => {
-            this.blu_receiver[all_off_index].radioOff(radio)
-          })
-          Promise.all(radios_off).then((values) => {
+          // const radios_off = Object.keys(this.blu_receiver[all_off_index].blu_radios).map(radio => {
+          console.log('blu radios all off: blu receivers object', this.blu_receivers, 'index number', all_off_index, 'index object', this.blu_receivers[all_off_index])
+          const radios_off = Promise.all(Object.keys(this.blu_receivers[all_off_index].blu_radios).map(radio => {
+            this.radioOff(radio)
+          })).then((values) => {
             console.log('turning blu radio off', values)
+          }).catch((e) => {
+            console.error('all radios off error', e)
           })
           break
         case ('blu_led_all'):
           let all_led_index = this.findBluPort(cmd.data.port)
 
-          const all_leds = Object.keys(this.blu_receiver[all_led_index].blu_radios).map(radio => {
-            this.blu_receiver[all_led_index].setBluConfig(Number(radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
-          })
-
-          Promise.all(all_leds).then((values) => {
+          // const all_leds = Object.keys(this.blu_receiver[all_led_index].blu_radios).map(radio => {
+          const all_leds = Promise.all(Object.keys(this.blu_receivers[all_led_index].blu_radios).map(radio => {
+            this.setBluConfig(Number(radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
+          })).then((values) => {
             console.log('turning radio leds on', values)
           }).catch((e) => {
             console.log('cannot turn radio leds on', e)
           })
           break
         case ('blu_reboot_all'):
-
           let radios_reboot = Promise.all(Object.keys(this.blu_receivers[cmd.data.port.toString()].blu_radios).forEach((radio) => {
             let reboot_index_all = this.findBluPort(cmd.data.port)
             console.log('reboot all index', reboot_index_all)
@@ -100,14 +98,14 @@ class BluStation extends BluReceiver {
 
             this.poll_data = {
               channel: radio,
-              poll_interval: this.blu_receivers[this.blu_receiver[reboot_index_all].port.toString()].blu_radios[radio].values.default,
+              poll_interval: this.blu_receivers[reboot_index_all].port.toString().blu_radios[radio].values.default,
               msg_type: 'poll_interval',
             }
             console.log('after reboot', this.poll_data)
             this.broadcast(JSON.stringify(this.poll_data))
-            this.blu_receiver[reboot_index_all].rebootBluReceiver(Number(radio), this.poll_data.poll_interval)
+            this.rebootBluReceiver(Number(radio), this.poll_data.poll_interval)
             this.config.default_config.blu_receivers = this.blu_receivers
-            this.blu_receiver[reboot_index_all].updateConfig(this.config.default_config)
+            this.updateConfig(this.config.default_config)
 
           })).then((values) => {
             console.log('all radios rebooting', values)
@@ -117,9 +115,9 @@ class BluStation extends BluReceiver {
 
           break
         case ('all_change_poll'):
-          let change_poll_all_port = cmd.data.port
-          let change_poll_all_index = this.findBluPort(change_poll_all_port)
-          console.log('change poll blu receiver', this.blu_receiver[change_poll_all_index])
+          let change_poll_all_port = cmd.data.port.toString()
+          // let change_poll_all_index = this.findBluPort(change_poll_all_port)
+          // console.log('change poll blu receiver', this.blu_receiver[change_poll_all_index])
           // let port_key = cmd.data.port.toString()
 
           console.log('changing polling interval on Radio', cmd)
@@ -128,8 +126,8 @@ class BluStation extends BluReceiver {
           // set current poll interval in default-config
           let radios_all_poll = Promise.all(Object.keys(this.blu_receivers[change_poll_all_port].blu_radios).forEach((radio) => {
             console.log('change poll radio', radio)
-            this.blu_receivers[change_poll_all_port.toString()].blu_radios[radio].values.current = this.poll_interval
-            console.log('radio', radio, 'is polling at', this.blu_receivers[change_poll_all_port.toString()].blu_radios[radio].values.current, 'poll interval')
+            this.blu_receivers[change_poll_all_port].blu_radios[radio].values.current = this.poll_interval
+            console.log('radio', radio, 'is polling at', this.blu_receivers[change_poll_all_port].blu_radios[radio].values.current, 'poll interval')
             this.poll_data = {
               port: cmd.data.port,
               channel: radio,
@@ -137,14 +135,14 @@ class BluStation extends BluReceiver {
               msg_type: 'poll_interval',
             }
             this.config.default_config.blu_receivers = this.blu_receivers
-            this.blu_receiver[change_poll_all_index].updateConfig(this.config.default_config)
+            this.updateConfig(this.config.default_config)
 
             this.broadcast(JSON.stringify(this.poll_data))
             console.log('poll interval', this.poll_interval, typeof this.poll_interval)
 
-            this.blu_receiver[change_poll_all_index].stopDetections(Number(radio))
-            this.blu_receiver[change_poll_all_index].setBluConfig(Number(radio), { scan: 1, rx_blink: 1, })
-            this.blu_receiver[change_poll_all_index].getDetections(Number(radio), this.poll_interval)
+            this.stopDetections(Number(radio))
+            this.setBluConfig(Number(radio), { scan: 1, rx_blink: 1, })
+            this.getDetections(Number(radio), this.poll_interval)
           })).then((values) => {
             console.log('all radios change poll', values)
           }).catch((e) => {
@@ -156,13 +154,13 @@ class BluStation extends BluReceiver {
           console.log('updating blu series receiver firmware', cmd)
           let update_all_index = this.findBluPort(cmd.data.port)
 
-          const blu_update_all = Promise.all(Object.keys(this.blu_receiver[update_all_index].blu_radios).forEach((radio) => {
+          const blu_update_all = Promise.all(Object.keys(this.blu_receivers[update_all_index].blu_radios).forEach((radio) => {
             let current_poll_interval = this.blu_receivers[cmd.data.port].blu_radios[radio].values.current
             console.log('update firmware poll interval', current_poll_interval)
 
             console.log('update blu firmware default poll interval', this.blu_receivers[cmd.data.port].blu_radios[radio].values.current)
 
-            this.blu_receiver[update_all_index].updateBluFirmware(Number(radio), this.firmware, current_poll_interval)
+            this.updateBluFirmware(Number(radio), this.firmware, current_poll_interval)
           })).then((values) => {
             console.log('turning blu radio off', values)
           }).catch((e) => {
@@ -180,13 +178,13 @@ class BluStation extends BluReceiver {
 
             this.blu_receivers[cmd.data.port.toString()].blu_radios[Number(radio_on)].values.current = Number(cmd.data.poll_interval)
             this.config.default_config.blu_receivers = this.blu_receivers
-            this.blu_receiver[br_index].updateConfig(this.config.default_config)
-            this.blu_receiver[br_index].radioOn(Number(radio_on), cmd.data.poll_interval)
+            this.updateConfig(this.config.default_config)
+            this.radioOn(Number(radio_on), cmd.data.poll_interval)
 
           } else if (cmd.data.type === "blu_off") {
             let br_index = this.findBluPort(cmd.data.port)
             let radio_off = cmd.data.channel
-            this.blu_receiver[br_index].radioOff(radio_off.toString())
+            this.radioOff(radio_off.toString())
           }
           break
         case ('toggle_blu_led'):
@@ -194,10 +192,7 @@ class BluStation extends BluReceiver {
           // let ledon_index = this.blu_receiver.findIndex(receiver => receiver.port === Number(cmd.data.port))
           let ledon_index = this.findBluPort(cmd.data.port)
           let ledon_radio = cmd.data.channel
-
-          this.blu_receiver[ledon_index].setBluConfig(Number(ledon_radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
-
-
+          this.setBluConfig(Number(ledon_radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
           console.log('turning blu led on/off')
           break
         case ('reboot_blu_radio'):
@@ -208,19 +203,18 @@ class BluStation extends BluReceiver {
           console.log('reboot receiver', this.blu_receivers[reboot_port])
           let default_poll = this.blu_receivers[reboot_port].blu_radios[reboot_radio].values.default
           console.log('default polling interval', default_poll)
-          this.blu_receivers[this.blu_receiver[reboot_index].port.toString()].blu_radios[reboot_radio].values.current = default_poll
+          this.blu_receivers[reboot_index].port.toString().blu_radios[reboot_radio].values.current = default_poll
 
           this.poll_data = {
             channel: reboot_radio,
-            poll_interval: this.blu_receivers[this.blu_receiver[reboot_index].port.toString()].blu_radios[reboot_radio].values.default,
+            poll_interval: this.blu_receivers[reboot_index].port.toString().blu_radios[reboot_radio].values.default,
             msg_type: 'poll_interval',
           }
           console.log('after reboot', this.poll_data)
           this.broadcast(JSON.stringify(this.poll_data))
           this.config.default_config.blu_receivers = this.blu_receivers
-          this.blu_receiver[reboot_index].updateConfig(this.config.default_config)
-
-          this.blu_receiver[reboot_index].rebootBluReceiver(Number(reboot_radio), this.poll_data.poll_interval)
+          this.updateConfig(this.config.default_config)
+          this.rebootBluReceiver(Number(reboot_radio), this.poll_data.poll_interval)
           break
         case ('change_poll'):
           console.log('change poll interval', cmd)
@@ -236,8 +230,8 @@ class BluStation extends BluReceiver {
           // Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).forEach((radio) => {
           console.log('change poll radio', poll_radio)
           // radio.values.current = Number(this.poll_interval)
-          this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[poll_radio].values.current = this.poll_interval
-          console.log('radio', poll_radio, 'is polling at', this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios[poll_radio].values.current, 'poll interval')
+          this.blu_receivers[br_index].port.toString().blu_radios[poll_radio].values.current = this.poll_interval
+          console.log('radio', poll_radio, 'is polling at', this.blu_receivers[br_index].port.toString().blu_radios[poll_radio].values.current, 'poll interval')
           this.poll_data = {
             port: cmd.data.port,
             channel: poll_radio,
@@ -245,26 +239,26 @@ class BluStation extends BluReceiver {
             msg_type: 'poll_interval',
           }
           this.config.default_config.blu_receivers = this.blu_receivers
-          this.blu_receiver[br_index].updateConfig(this.config.default_config)
+          this.updateConfig(this.config.default_config)
 
           this.broadcast(JSON.stringify(this.poll_data))
           console.log('poll interval', this.poll_interval, typeof this.poll_interval)
 
-          this.blu_receiver[br_index].stopDetections(Number(poll_radio))
-          this.blu_receiver[br_index].setBluConfig(Number(poll_radio), { scan: 1, rx_blink: 1, })
-          this.blu_receiver[br_index].getDetections(Number(poll_radio), this.poll_interval)
+          this.stopDetections(Number(poll_radio))
+          this.setBluConfig(Number(poll_radio), { scan: 1, rx_blink: 1, })
+          this.getDetections(Number(poll_radio), this.poll_interval)
           // })
           break
         case ('update-blu-firmware'):
           console.log('updating blu series receiver firmware', cmd)
           let update_index = this.findBluPort(cmd.data.port)
           let update_radio = cmd.data.channel
-          console.log('update blu firmware default poll interval', this.blu_receivers[this.blu_receiver[update_index].port].blu_radios[update_radio].values.current)
-          let poll_interval = this.blu_receivers[this.blu_receiver[update_index].port].blu_radios[update_radio].values.current
+          console.log('update blu firmware default poll interval', this.blu_receivers[update_index].port.blu_radios[update_radio].values.current)
+          let poll_interval = this.blu_receivers[tupdate_index].port.blu_radios[update_radio].values.current
           console.log('update firmware poll interval', poll_interval)
 
           // Object.keys(this.blu_receiver[update_index].blu_radios).forEach((radio) => {
-          this.blu_receiver[update_index].updateBluFirmware(Number(update_radio), this.firmware, poll_interval)
+          this.updateBluFirmware(Number(update_radio), this.firmware, poll_interval)
           // })
           break
 
@@ -599,28 +593,27 @@ class BluStation extends BluReceiver {
     this.path = blu_radio.path
     this.port = blu_radio.channel
     console.log('blu station this', this)
-    let blu_station = this
-    let br_index = blu_station.blu_receivers.findIndex(blu_reader => blu_reader.path === blu_station.path)
+    let br_index = this.blu_receivers.findIndex(blu_reader => blu_reader.path === this.path)
 
-    console.log('blu receiver array on blu base-station file', blu_station.blu_receivers[br_index].blu_radios)
+    console.log('blu receiver array on blu base-station file', this.blu_receivers[br_index].blu_radios)
 
     setTimeout(() => {
 
     }, 2000)
 
-    blu_station.on('complete', (job) => {
+    this.on('complete', (job) => {
       // this.broadcast(JSON.stringify('blu receiver is complete')) // somehow repeats more than chokidar.on(change)
       switch (job.task) {
         case BluReceiverTask.VERSION:
           try {
-            console.log(`BluReceiverTask.VERSION Port ${blu_station.port} ${JSON.stringify(job)}`)
+            console.log(`BluReceiverTask.VERSION Port ${this.port} ${JSON.stringify(job)}`)
             // this.stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
             // stationLog(`BluReceiver Radio ${job.radio_channel} is ${job.data.version}`)
 
             this.blu_fw = {
               msg_type: 'blu-firmware',
               firmware: {
-                [blu_station.port]: {
+                [this.port]: {
                   channels: {
                     [job.radio_channel]: job.data.version,
                   }
@@ -635,35 +628,35 @@ class BluStation extends BluReceiver {
           break
         case BluReceiverTask.DETECTIONS:
           try {
-            console.log('Port', blu_station.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
+            console.log('Port', this.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
             job.data.forEach((beep) => {
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
-              beep.poll_interval = blu_station.blu_receivers[br_index].blu_radios[beep.channel].values.current
-              beep.port = blu_station.port
+              beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.channel].values.current
+              beep.port = this.port
               this.data_manager.handleBluBeep(beep)
               beep.vcc = beep.payload.parsed.solar
               beep.temp = beep.payload.parsed.temp
               this.broadcast(JSON.stringify(beep))
             })
             let blu_sum = {
-              port: blu_station.port,
+              port: this.port,
               channel: job.radio_channel,
               blu_beeps: job.data.length == null ? 0 : job.data.length,
               msg_type: "blu_stats",
             }
             this.broadcast(JSON.stringify(blu_sum))
           } catch (e) {
-            console.error('base station get detections error on Port', blu_station.port, 'Radio', job.radio_channel, e)
+            console.error('base station get detections error on Port', this.port, 'Radio', job.radio_channel, e)
           }
           break
         // console.log(JSON.stringify(job))
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
-          console.log(blu_station.port, `BluReceiverTask.DFU ${JSON.stringify(job)}`)
+          console.log(this.port, `BluReceiverTask.DFU ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.REBOOT:
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
@@ -682,16 +675,16 @@ class BluStation extends BluReceiver {
           try {
 
             let blu_stats = {
-              port: blu_station.port,
+              port: this.port,
               channel: job.radio_channel,
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
               msg_type: "blu_dropped",
             }
-            console.log('Port', blu_station.port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
+            console.log('Port', this.port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
 
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
-            console.log('base station stats error:', 'receiver', blu_station.port, 'radio', job.radio_channel, e)
+            console.log('base station stats error:', 'receiver', this.port, 'radio', job.radio_channel, e)
           }
           break
         default:
@@ -699,45 +692,45 @@ class BluStation extends BluReceiver {
       }
     })
 
-    blu_station.startUpFlashLogo()
+    this.startUpFlashLogo()
 
     setInterval(() => {
-      blu_station.getBluVersion(1)
-      blu_station.getBluVersion(2)
-      blu_station.getBluVersion(3)
-      blu_station.getBluVersion(4)
+      this.getBluVersion(1)
+      this.getBluVersion(2)
+      this.getBluVersion(3)
+      this.getBluVersion(4)
     }, 10000)
 
     // setTimeout(() => {
 
     // const radios_start = Promise.all(Object.keys(this.blu_receivers[blu_receiver.port.toString()].blu_radios)
-    const radios_start = Promise.all(Object.keys(blu_station.blu_receivers[br_index].blu_radios)
+    const radios_start = Promise.all(Object.keys(this.blu_receivers[br_index].blu_radios)
       .map((radio) => {
         console.log('radios start radio', radio)
         let radio_key = radio.toString()
-        let port_key = blu_station.port.toString()
+        let port_key = this.port.toString()
         // blu_receiver.radioOn(Number(radio_key), this.blu_receivers[port_key].blu_radios[radio_key].values.current)
-        blu_station.radioOn(Number(radio_key), blu_station.blu_receivers[br_index].blu_radios[radio_key].values.current)
+        this.radioOn(Number(radio_key), this.blu_receivers[br_index].blu_radios[radio_key].values.current)
       })).then((values) => {
         console.log('radios started')
       }).catch((e) => {
         console.error('radios could not start properly', e)
       })
 
-    blu_station.on('close', () => {
+    this.on('close', () => {
       console.log('blu receiver closing within startBluRadios')
     })
 
     process.on('SIGINT', () => {
       // this.stationLog("\nGracefully shutting down from SIGINT (Ctrl-C)")
 
-      if (blu_station.port) {
+      if (this.port) {
 
-        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_station.port)
-        const radios_exit = Promise.all(Object.keys(blu_station.blu_receivers[br_index].blu_radios)
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.port)
+        const radios_exit = Promise.all(Object.keys(this.blu_receivers[br_index].blu_radios)
           .map((radio) => {
-            blu_station.radioOff(radio)
-            console.log('receiver', blu_station.port, 'radio', radio, 'is off')
+            this.radioOff(radio)
+            console.log('receiver', this.port, 'radio', radio, 'is off')
           }))
         Promise.all(radios_exit).then((values) => {
           console.log(values)
@@ -745,7 +738,7 @@ class BluStation extends BluReceiver {
           console.error('no port to closed in destroyed blu receiver', e)
         })
       } else {
-        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", blu_station)
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this)
 
       }
 
@@ -754,7 +747,7 @@ class BluStation extends BluReceiver {
       //   receiver.destroy_receiver()
       // })
       setTimeout(() => {
-        console.log('Closed blu readers', blu_station)
+        console.log('Closed blu readers', this)
         process.exit(0)
       }, 7000)
     })
@@ -796,7 +789,7 @@ class BluStation extends BluReceiver {
    * @returns 
    */
   findBluPort(port) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.port === Number(port))
+    let index = this.blu_receivers.findIndex(receiver => receiver.channel === Number(port))
     return index
   }
 
