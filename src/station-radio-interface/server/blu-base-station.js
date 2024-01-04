@@ -88,17 +88,18 @@ class BluStation extends BluReceiver {
           })
           break
         case ('blu_reboot_all'):
-          let radios_reboot = Promise.all(Object.keys(this.blu_receivers[cmd.data.port.toString()].blu_radios).forEach((radio) => {
-            let reboot_index_all = this.findBluPort(cmd.data.port)
+          let reboot_index_all = this.findBluPort(cmd.data.port)
+
+          let radios_reboot = Promise.all(Object.keys(this.blu_receivers[reboot_index_all].blu_radios).forEach((radio) => {
             console.log('reboot all index', reboot_index_all)
             console.log('reboot all radios on receiver', this.blu_receivers[radio])
             let reboot_default_poll = this.blu_receivers[cmd.data.port].blu_radios[radio].values.default
             console.log('default polling interval', reboot_default_poll)
-            this.blu_receivers[cmd.data.port.toString()].blu_radios[radio].values.current = reboot_default_poll
+            this.blu_receivers[reboot_index_all].blu_radios[radio].values.current = reboot_default_poll
 
             this.poll_data = {
               channel: radio,
-              poll_interval: this.blu_receivers[reboot_index_all].port.toString().blu_radios[radio].values.default,
+              poll_interval: this.blu_receivers[reboot_index_all].blu_radios[radio].values.default,
               msg_type: 'poll_interval',
             }
             console.log('after reboot', this.poll_data)
@@ -116,7 +117,7 @@ class BluStation extends BluReceiver {
           break
         case ('all_change_poll'):
           let change_poll_all_port = cmd.data.port.toString()
-          // let change_poll_all_index = this.findBluPort(change_poll_all_port)
+          let change_poll_all_index = this.findBluPort(change_poll_all_port)
           // console.log('change poll blu receiver', this.blu_receiver[change_poll_all_index])
           // let port_key = cmd.data.port.toString()
 
@@ -124,10 +125,10 @@ class BluStation extends BluReceiver {
           this.poll_interval = Number(cmd.data.poll_interval)
 
           // set current poll interval in default-config
-          let radios_all_poll = Promise.all(Object.keys(this.blu_receivers[change_poll_all_port].blu_radios).forEach((radio) => {
+          let radios_all_poll = Promise.all(Object.keys(this.blu_receivers[change_poll_all_index].blu_radios).forEach((radio) => {
             console.log('change poll radio', radio)
-            this.blu_receivers[change_poll_all_port].blu_radios[radio].values.current = this.poll_interval
-            console.log('radio', radio, 'is polling at', this.blu_receivers[change_poll_all_port].blu_radios[radio].values.current, 'poll interval')
+            this.blu_receivers[change_poll_all_index].blu_radios[radio].values.current = this.poll_interval
+            console.log('radio', radio, 'is polling at', this.blu_receivers[change_poll_all_index].blu_radios[radio].values.current, 'poll interval')
             this.poll_data = {
               port: cmd.data.port,
               channel: radio,
@@ -155,10 +156,10 @@ class BluStation extends BluReceiver {
           let update_all_index = this.findBluPort(cmd.data.port)
 
           const blu_update_all = Promise.all(Object.keys(this.blu_receivers[update_all_index].blu_radios).forEach((radio) => {
-            let current_poll_interval = this.blu_receivers[cmd.data.port].blu_radios[radio].values.current
+            let current_poll_interval = this.blu_receivers[update_all_index].blu_radios[radio].values.current
             console.log('update firmware poll interval', current_poll_interval)
 
-            console.log('update blu firmware default poll interval', this.blu_receivers[cmd.data.port].blu_radios[radio].values.current)
+            console.log('update blu firmware default poll interval', this.blu_receivers[update_all_index].blu_radios[radio].values.current)
 
             this.updateBluFirmware(Number(radio), this.firmware, current_poll_interval)
           })).then((values) => {
@@ -174,9 +175,9 @@ class BluStation extends BluReceiver {
             console.log('turning blu radio on')
             let br_index = this.findBluPort(cmd.data.port)
             let radio_on = cmd.data.channel
-            console.log('turn radios on blu receiver', this.blu_receiver[br_index])
+            console.log('turn radios on blu receiver', this.blu_receivers[br_index])
 
-            this.blu_receivers[cmd.data.port.toString()].blu_radios[Number(radio_on)].values.current = Number(cmd.data.poll_interval)
+            this.blu_receivers[br_index].blu_radios[Number(radio_on)].values.current = Number(cmd.data.poll_interval)
             this.config.default_config.blu_receivers = this.blu_receivers
             this.updateConfig(this.config.default_config)
             this.radioOn(Number(radio_on), cmd.data.poll_interval)
@@ -190,7 +191,7 @@ class BluStation extends BluReceiver {
         case ('toggle_blu_led'):
           console.log('blu radio button clicked', cmd)
           // let ledon_index = this.blu_receiver.findIndex(receiver => receiver.port === Number(cmd.data.port))
-          let ledon_index = this.findBluPort(cmd.data.port)
+          // let ledon_index = this.findBluPort(cmd.data.port)
           let ledon_radio = cmd.data.channel
           this.setBluConfig(Number(ledon_radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
           console.log('turning blu led on/off')
@@ -203,11 +204,11 @@ class BluStation extends BluReceiver {
           console.log('reboot receiver', this.blu_receivers[reboot_port])
           let default_poll = this.blu_receivers[reboot_port].blu_radios[reboot_radio].values.default
           console.log('default polling interval', default_poll)
-          this.blu_receivers[reboot_index].port.toString().blu_radios[reboot_radio].values.current = default_poll
+          this.blu_receivers[reboot_index].blu_radios[reboot_radio].values.current = default_poll
 
           this.poll_data = {
             channel: reboot_radio,
-            poll_interval: this.blu_receivers[reboot_index].port.toString().blu_radios[reboot_radio].values.default,
+            poll_interval: this.blu_receivers[reboot_index].blu_radios[reboot_radio].values.default,
             msg_type: 'poll_interval',
           }
           console.log('after reboot', this.poll_data)
@@ -230,8 +231,8 @@ class BluStation extends BluReceiver {
           // Object.keys(this.blu_receivers[this.blu_receiver[br_index].port.toString()].blu_radios).forEach((radio) => {
           console.log('change poll radio', poll_radio)
           // radio.values.current = Number(this.poll_interval)
-          this.blu_receivers[br_index].port.toString().blu_radios[poll_radio].values.current = this.poll_interval
-          console.log('radio', poll_radio, 'is polling at', this.blu_receivers[br_index].port.toString().blu_radios[poll_radio].values.current, 'poll interval')
+          this.blu_receivers[br_index].blu_radios[poll_radio].values.current = this.poll_interval
+          console.log('radio', poll_radio, 'is polling at', this.blu_receivers[br_index].blu_radios[poll_radio].values.current, 'poll interval')
           this.poll_data = {
             port: cmd.data.port,
             channel: poll_radio,
@@ -253,8 +254,8 @@ class BluStation extends BluReceiver {
           console.log('updating blu series receiver firmware', cmd)
           let update_index = this.findBluPort(cmd.data.port)
           let update_radio = cmd.data.channel
-          console.log('update blu firmware default poll interval', this.blu_receivers[update_index].port.blu_radios[update_radio].values.current)
-          let poll_interval = this.blu_receivers[tupdate_index].port.blu_radios[update_radio].values.current
+          console.log('update blu firmware default poll interval', this.blu_receivers[update_index].blu_radios[update_radio].values.current)
+          let poll_interval = this.blu_receivers[update_index].blu_radios[update_radio].values.current
           console.log('update firmware poll interval', poll_interval)
 
           // Object.keys(this.blu_receiver[update_index].blu_radios).forEach((radio) => {
