@@ -409,10 +409,11 @@ class BaseStation {
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
         let blu_station = new BluStation({
           path: path,
-          blu_receivers: this.config.default_config.blu_receivers,
+          // blu_receivers: this.config.default_config.blu_receivers,
           blu_radios: blu_radios,
           data_manager: this.data_manager,
           broadcast: this.broadcast,
+          config: this.config,
         })
         blu_station.startBluRadios(path)
       } else if (!path.includes('-port0')) {
@@ -423,8 +424,14 @@ class BaseStation {
       if (path.includes('-port0')) {
         let blu_station = new BluStation({
           path: path,
+          blu_radios: blu_radios,
+          data_manager: this.data_manager,
+          broadcast: this.broadcast,
+          config: this.config,
+          websocket: this.sensor_socket_server,
         })
         blu_station.startBluRadios(path)
+        blu_station.startWebsocketServer()
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
       }

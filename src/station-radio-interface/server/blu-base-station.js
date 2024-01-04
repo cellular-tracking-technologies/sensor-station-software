@@ -3,52 +3,45 @@
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import fs from 'fs'
-import { SensorSocketServer } from './http/web-socket-server.js'
+// import { SensorSocketServer } from './http/web-socket-server.js'
 import blu_radios from '../../../system/radios/blu-radio-map.js'
-import { StationConfig } from './station-config.js'
+
 import moment from 'moment'
 
 class BluStation extends BluReceiver {
   constructor(opts) {
+    console.log('blu station opts', opts)
     super({
       path: opts.path
     })
-    // this.config = opts.config
-    // console.log('blu station config', this.config)
     this.web_port = 8001
     this.data_manager = opts.data_manager
-    // this.broadcast = opts.broadcast
+    this.broadcast = opts.broadcast
+    this.config = opts.config
+    this.sensor_socket_server = opts.websocket
     this.buffer_interval
     this.blu_radios = {}
     this.beeps
     this.dropped
-
-    this.config = new StationConfig({
-      config_filepath: opts.config_filepath,
-      radio_map_filepath: opts.radio_map_filepath
-    })
-
-    // this.blu_receivers = this.config.default_config.blu_receivers
+    this.station_id
     this.blu_receivers = blu_radios
-    // this.blu_receivers = opts.blu_receivers
-    // this.blu_radios = opts.blu_radios
     this.blu_reader
-    this.blu_receiver = []
-    // console.log('blu receivers', this.blu_receivers, 'blu radios', this.blu_radios)
   }
 
-  // config = new StationConfig({
-  //   config_filepath: opts.config_filepath,
-  //   radio_map_filepath: opts.radio_map_filepath
-  // })
+  /**
+ * get base station id
+ */
+  getId() {
+    return fs.readFileSync('/etc/ctt/station-id').toString().trim()
+  }
 
   /**
- * start web socket server
- */
+  * start web socket server
+  */
   startWebsocketServer() {
-    this.sensor_socket_server = new SensorSocketServer({
-      port: this.web_port,
-    })
+    // this.sensor_socket_server = new SensorSocketServer({
+    //   port: this.web_port,
+    // })
     this.sensor_socket_server.on('open', (event) => {
 
     })
@@ -275,21 +268,21 @@ class BluStation extends BluReceiver {
           // })
           break
 
-        case ('about'):
-          fetch('http://localhost:3000/about')
-            .then(res => res.json())
-            .then((json) => {
-              let data = json
-              data.station_id = this.station_id
-              data.msg_type = 'about'
-              data.begin = this.begin
-              this.broadcast(JSON.stringify(data))
-            })
-            .catch((err) => {
-              console.log('unable to request info from hardware server')
-              console.error(err)
-            })
-          break
+        // case ('about'):
+        //   fetch('http://localhost:3000/about')
+        //     .then(res => res.json())
+        //     .then((json) => {
+        //       let data = json
+        //       data.station_id = this.station_id
+        //       data.msg_type = 'about'
+        //       data.begin = this.begin
+        //       this.broadcast(JSON.stringify(data))
+        //     })
+        //     .catch((err) => {
+        //       console.log('unable to request info from hardware server')
+        //       console.error(err)
+        //     })
+        //   break
         default:
           break
       }
@@ -300,22 +293,22 @@ class BluStation extends BluReceiver {
   }
 
   /**
- * 
- * @param  {...any} msgs wrapper for data logger
- */
+  * 
+  * @param  {...any} msgs wrapper for data logger
+  */
   stationLog(...msgs) {
     this.data_manager.log(msgs)
   }
 
-  /**
- * 
- * @param {*} msg - message to broadcast across the web socket server
- */
-  broadcast(msg) {
-    if (this.sensor_socket_server) {
-      this.sensor_socket_server.broadcast(msg)
-    }
-  }
+  // /**
+  // * 
+  // * @param {*} msg - message to broadcast across the web socket server
+  // */
+  // broadcast(msg) {
+  //   if (this.sensor_socket_server) {
+  //     this.sensor_socket_server.broadcast(msg)
+  //   }
+  // }
 
 
   /**
@@ -819,10 +812,10 @@ class BluStation extends BluReceiver {
   }
 
   /**
-* 
-* @param {String} path radio path from /dev/serial/by-path/ directory 
-* @returns 
-*/
+  * 
+  * @param {String} path radio path from /dev/serial/by-path/ directory 
+  * @returns 
+  */
   findBluReceiver(path) {
     let radio_path = path.substring(17)
     console.log('find blu path path', radio_path, 'blu radios', this.blu_receivers)
