@@ -15,7 +15,7 @@ import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
-import blu_radios from '../../../system/radios/v2-blu-radio-map.js'
+// import blu_radios from '../../../system/radios/v2-blu-radio-map.js'
 import revision from '../../revision.js'
 
 /**
@@ -33,10 +33,9 @@ class BaseStation {
       config_filepath: opts.config_filepath,
       radio_map_filepath: opts.radio_map_filepath
     })
-
+    // console.log('base station config', this.config)
     // this.blu_radios = this.config.default_config.blu_radios
-    this.blu_receivers = this.config.default_config.blu_receivers
-    this.blu_radios = blu_radios
+    // this.blu_radios = blu_radios
     this.blu_reader
     this.blu_receiver = []
     this.active_radios = {}
@@ -86,6 +85,9 @@ class BaseStation {
 
     // save the config to disk
     this.config.save()
+    console.log('base station config in init function', this.config)
+    this.blu_receivers = this.config.data.blu_receivers
+
 
     // pull out config options to start everythign
     this.date_format = this.config.data.record.date_format
@@ -406,11 +408,10 @@ class BaseStation {
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
         let blu_station = new BluStation({
           path: path,
-          // blu_receivers: this.config.default_config.blu_receivers,
-          blu_radios: blu_radios,
+          blu_receivers: this.blu_receivers,
           data_manager: this.data_manager,
           broadcast: this.broadcast,
-          config: this.config,
+          // config: this.config,
           websocket: this.sensor_socket_server,
         })
         blu_station.startBluRadios(path)
@@ -422,10 +423,10 @@ class BaseStation {
       if (path.includes('-port0')) {
         let blu_station = new BluStation({
           path: path,
-          blu_radios: blu_radios,
+          blu_receivers: this.blu_receivers,
           data_manager: this.data_manager,
           broadcast: this.broadcast,
-          config: this.config,
+          // config: this.config,
           websocket: this.sensor_socket_server,
         })
         blu_station.startBluRadios(path)

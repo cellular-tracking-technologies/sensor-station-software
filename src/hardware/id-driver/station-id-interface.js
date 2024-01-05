@@ -164,6 +164,11 @@ class StationIdInterface {
       default: 
       throw new Error('No blu radio map found')
     }
+    return {
+      id,
+      revision,
+      radio_map
+    }
   }
 }
 

@@ -1,7 +1,8 @@
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import fs from 'fs'
-import blu_receivers from '../../../system/radios/v2-blu-radio-map.js'
+// import blu_receivers from '../../../system/radios/v2-blu-radio-map.js'
+// import blu_receivers from '../../../../../../../../etc/ctt/station-config.json'
 
 import moment from 'moment'
 
@@ -20,10 +21,12 @@ class BluStation extends BluReceiver {
     this.dropped
     this.station_id
     this.blu_radios = {}
-    this.blu_receivers = blu_receivers
+    // this.blu_receivers = blu_receivers
+    // this.blu_receivers = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json', 'utf8'))
+    this.blu_receivers = opts.blu_receivers
     this.blu_reader
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
-
+    console.log('station config blu receivers', this.blu_receivers)
   }
 
   /**
@@ -493,7 +496,6 @@ class BluStation extends BluReceiver {
     }, 2000)
 
     this.on('complete', (job) => {
-      // this.broadcast(JSON.stringify('blu receiver is complete')) // somehow repeats more than chokidar.on(change)
       switch (job.task) {
         case BluReceiverTask.VERSION:
           try {

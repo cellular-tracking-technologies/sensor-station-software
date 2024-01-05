@@ -59,6 +59,7 @@ class StationConfig {
     let radio_map = JSON.parse(radio_map_contents)
     // check if config file exists
     file_exists = await this.checkIfFileExists(this.config_filepath)
+    console.log('station config /etc/ctt/ file exists', file_exists)
     let config
     if (file_exists != true) {
       config = this.loadDefaultConfig()
@@ -66,12 +67,16 @@ class StationConfig {
     } else {
       config = fs.readFileSync(this.config_filepath).toString()
       config = JSON.parse(config)
+      console.log('station config /etc/ctt/ file exists', config)
+
     }
     let merged_config = this.threadRadioMapWithConfig({
       radio_map: radio_map,
       config: config
     })
     this.data = merged_config
+    console.log('station config merged config', merged_config)
+
     return merged_config
   }
 
@@ -102,7 +107,7 @@ class StationConfig {
     })
     try {
       this.save(this.filename)
-    } catch(err) {
+    } catch (err) {
       console.log('ERROR saving config file')
       console.error(err)
     }
