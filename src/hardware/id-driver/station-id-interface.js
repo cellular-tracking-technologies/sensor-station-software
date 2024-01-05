@@ -6,6 +6,7 @@ import i2cScanner from '../i2c/scan.js'
 import At24Mac602 from './at24mac602.js'
 import Atsha204a from './atsha204a.js'
 import Ds3231 from './ds3231.js'
+import fs from 'fs'
 
 // prefix for V3 station IDs
 const V3_PREFIX = 'V3'
@@ -145,6 +146,23 @@ class StationIdInterface {
       id,
       version,
       revision
+    }
+  }
+
+  async getRadioMap() {
+    const version_info = await this.getVersion()
+    const { version, revision } = version_info
+    let radio_map
+
+    switch(version) {
+      case 3:
+        radio_map = fs.readFileSync('/etc/ctt/radios/v3-blu-radio-map.js', null, 2)
+        break
+      case 2:
+        radio_map = fs.readFileSync('/etc/ctt/radios/v2-blu-radio-map.js', null, 2)
+        break
+      default: 
+      throw new Error('No blu radio map found')
     }
   }
 }

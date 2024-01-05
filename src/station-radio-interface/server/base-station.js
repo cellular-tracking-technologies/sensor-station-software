@@ -15,7 +15,7 @@ import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
-import blu_radios from '../../../system/radios/blu-radio-map.js'
+import blu_radios from '../../../system/radios/v2-blu-radio-map.js'
 import revision from '../../revision.js'
 
 /**
