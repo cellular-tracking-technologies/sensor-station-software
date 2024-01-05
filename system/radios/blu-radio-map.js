@@ -16,7 +16,7 @@ export default[
           "min": 1000,
           "max": 30000,
           "default": 10000,
-          "current": 5000,
+          "current": 20000,
           "warn_min": {
             "value": 30000,
             "description": "You may lose detections at this poll interval."
@@ -36,7 +36,7 @@ export default[
           "min": 1000,
           "max": 30000,
           "default": 10000,
-          "current": 7000,
+          "current": 20000,
           "warn_min": {
             "value": 30000,
             "description": "You may lose detections at this poll interval."
@@ -56,7 +56,7 @@ export default[
           "min": 1000,
           "max": 30000,
           "default": 10000,
-          "current": 9000,
+          "current": 20000,
           "warn_min": {
             "value": 30000,
             "description": "You may lose detections at this poll interval."
@@ -76,7 +76,7 @@ export default[
           "min": 1000,
           "max": 30000,
           "default": 10000,
-          "current": 13000,
+          "current": 20000,
           "warn_min": {
             "value": 30000,
             "description": "You may lose detections at this poll interval."
