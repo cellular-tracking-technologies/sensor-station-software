@@ -411,6 +411,7 @@ class BaseStation {
           data_manager: this.data_manager,
           broadcast: this.broadcast,
           config: this.config,
+          websocket: this.sensor_socket_server,
         })
         blu_station.startBluRadios(path)
       } else if (!path.includes('-port0')) {
