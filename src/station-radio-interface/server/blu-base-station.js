@@ -20,6 +20,7 @@ class BluStation extends BluReceiver {
     this.beeps
     this.dropped
     this.station_id
+    this.blu_channels
     this.blu_radios = {}
     // this.blu_receivers = blu_receivers
     // this.blu_receivers = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json', 'utf8'))
@@ -489,10 +490,10 @@ class BluStation extends BluReceiver {
     console.log('blu radio', blu_radio)
     this.path = blu_radio.path
     this.port = blu_radio.channel
-    this.blu_radios = blu_radio.blu_radios
-    // let br_index = this.blu_receivers.findIndex(blu_reader => blu_reader.path === this.path)
+    this.blu_channels = blu_radio.blu_radios
+    // let br_index = this.blu_radios.findIndex(radio => blu_reader.path === this.path)
 
-    // console.log('blu receiver this', this, 'blu receiver index', this[br_index])
+    console.log('blu receiver this.blu_radios', this.blu_radios)
     setTimeout(() => {
 
     }, 2000)
@@ -521,13 +522,22 @@ class BluStation extends BluReceiver {
         case BluReceiverTask.DETECTIONS:
           try {
             console.log('Port', this.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
+            console.log('blu receiver detections', this.blu_channels)
             job.data.forEach((beep) => {
+              console.log('blu reader beep', beep)
+
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
-              beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.channel].values.current
+              // beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.channel].values.current
+              beep.radio = this.blu_channels.find(radio =>
+                radio.radio == beep.channel
+              )
+
+              console.log('beep radio', beep.radio)
+              beep.poll_interval = beep.radio.poll_interval
               beep.port = this.port
               this.data_manager.handleBluBeep(beep)
               beep.vcc = beep.payload.parsed.solar
@@ -590,13 +600,10 @@ class BluStation extends BluReceiver {
       this.getBluVersion(4)
     }, 10000)
 
-    const radios_start = Promise.all(this.blu_radios
+    const radios_start = Promise.all(this.blu_channels
       .map((radio) => {
         console.log('radios start radio', radio)
-        // let radio_key = radio.toString()
         let radio_key = radio.radio
-        let port_key = this.port.toString()
-        // this.radioOn(Number(radio_key), this.blu_radios[radio_key].values.current)
         this.radioOn(radio_key, radio.poll_interval)
       })).then((values) => {
         console.log('radios started')
@@ -611,8 +618,9 @@ class BluStation extends BluReceiver {
     process.on('SIGINT', () => {
 
       if (this.port) {
-        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.port)
-        const radios_exit = Promise.all(Object.keys(this[br_index].blu_radios)
+        // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.port)
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
+        const radios_exit = Promise.all(this.blu_channels
           .map((radio) => {
             this.radioOff(radio)
             console.log('receiver', this.port, 'radio', radio, 'is off')
@@ -642,10 +650,10 @@ class BluStation extends BluReceiver {
   stopBluRadios(path) {
     if (path !== undefined) {
       console.log('stop blu radios path', path)
-      let br_index = this.findBluPath(path)
+      // let br_index = this.findBluPath(path)
 
       console.log('blu receiver', this, 'is closing')
-      const radios_exit = Promise.all(Object.keys(this[br_index].blu_radios)
+      const radios_exit = Promise.all(this.blu_channels
         .map((radio) => {
           this.radioOff(radio)
           console.log('receiver', this.port, 'radio', radio, 'is off')
