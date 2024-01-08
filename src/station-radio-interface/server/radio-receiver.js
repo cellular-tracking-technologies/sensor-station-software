@@ -15,7 +15,7 @@ class RadioReceiver extends EventEmitter {
    * @param {*} opts 
    */
   constructor(opts) {
-    console.log('radio receiver opts', opts)
+    // console.log('radio receiver opts', opts)
     super()
     this.port_uri = opts.port_uri
     this.baud_rate = opts.baud_rate

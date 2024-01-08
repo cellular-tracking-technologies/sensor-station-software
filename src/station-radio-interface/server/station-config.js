@@ -67,16 +67,12 @@ class StationConfig {
     } else {
       config = fs.readFileSync(this.config_filepath).toString()
       config = JSON.parse(config)
-      console.log('station config /etc/ctt/ file exists', config)
-
     }
     let merged_config = this.threadRadioMapWithConfig({
       radio_map: radio_map,
       config: config
     })
     this.data = merged_config
-    console.log('station config merged config', merged_config)
-
     return merged_config
   }
 

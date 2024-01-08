@@ -8,13 +8,13 @@ import moment from 'moment'
 
 class BluStation extends BluReceiver {
   constructor(opts) {
-    console.log('blu station opts', opts)
+    // console.log('blu station opts', opts)
     super({
       path: opts.path
     })
+    this.path = opts.path
     this.data_manager = opts.data_manager
     this.broadcast = opts.broadcast
-    // this.config = opts.config
     this.sensor_socket_server = opts.websocket
     this.buffer_interval
     this.beeps
@@ -22,12 +22,10 @@ class BluStation extends BluReceiver {
     this.station_id
     this.blu_channels
     this.blu_radios = {}
-    // this.blu_receivers = blu_receivers
-    // this.blu_receivers = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json', 'utf8'))
     this.blu_receivers = opts.blu_receivers
     this.blu_reader
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
-    console.log('station config blu receivers', this.blu_receivers)
+    console.log('a new blu station is born!', this)
   }
 
   /**
@@ -718,13 +716,19 @@ class BluStations {
     this.blu_stations = []
   }
 
-  newBluStation(path, port) {
-    let b = new BluStation(path, port)
+  newBluStation(opts) {
+    let b = new BluStation({
+      path: opts.path,
+      blu_receivers: opts.blu_receivers,
+      data_manager: opts.data_manager,
+      broadcast: opts.broadcast,
+      websocket: opts.websocket,
+    })
     this.blu_stations.push(b)
     return b
   }
 
-  get allBluStations() {
+  get getAllBluStations() {
     return this.blu_stations
   }
 }

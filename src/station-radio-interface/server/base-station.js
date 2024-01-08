@@ -1,5 +1,5 @@
 import { RadioReceiver } from './radio-receiver.js'
-import { BluStation } from './blu-base-station.js'
+import { BluStation, BluStations } from './blu-base-station.js'
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
@@ -37,6 +37,7 @@ class BaseStation {
     // this.blu_radios = this.config.default_config.blu_radios
     // this.blu_radios = blu_radios
     this.blu_reader
+    // this.blu_station
     this.blu_receiver = []
     this.active_radios = {}
     this.station_leds = new StationLeds()
@@ -62,6 +63,7 @@ class BaseStation {
     this.poll_interval
     this.poll_data
     this.dongle_port
+    this.blu_stations = new BluStations()
 
   }
 
@@ -85,7 +87,7 @@ class BaseStation {
 
     // save the config to disk
     this.config.save()
-    console.log('base station config in init function', this.config)
+    // console.log('base station config in init function', this.config)
     this.blu_receivers = this.config.data.blu_receivers
 
 
@@ -394,7 +396,7 @@ class BaseStation {
   directoryWatcher() {
     chokidar.watch('../../../../../../dev/serial/by-path')
       .on('add', path => {
-        console.log('chokidar path', path)
+        // console.log('chokidar path', path)
         this.addPath(path)
       })
       .on('unlink', path => {
@@ -411,26 +413,55 @@ class BaseStation {
           blu_receivers: this.blu_receivers,
           data_manager: this.data_manager,
           broadcast: this.broadcast,
-          // config: this.config,
           websocket: this.sensor_socket_server,
         })
         blu_station.startBluRadios(path)
+
+        // let blu_stations = new BluStations()
+        // blu_stations.newBluStation(path, this.blu_receivers, this.data_manager, this.broadcast, this.sensor_socket_server)
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
       }
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
-        let blu_station = new BluStation({
+        // let blu_station = new BluStation({
+        // this.blu_reader = new BluStation({
+        //   path: path,
+        //   blu_receivers: this.blu_receivers,
+        //   data_manager: this.data_manager,
+        //   broadcast: this.broadcast,
+        //   websocket: this.sensor_socket_server,
+        // })
+
+        this.blu_stations.newBluStation({
           path: path,
           blu_receivers: this.blu_receivers,
           data_manager: this.data_manager,
           broadcast: this.broadcast,
-          // config: this.config,
           websocket: this.sensor_socket_server,
         })
-        blu_station.startBluRadios(path)
-        blu_station.startWebsocketServer()
+        console.log('blu stations', this.blu_stations.getAllBluStations)
+        // this.blu_stations.getAllBluStations.startBluRadios(path)
+        // this.blu_stations.push(this.blu_reader)
+        let add_index = this.findBluPath(path)
+        this.blu_stations.getAllBluStations[add_index].startBluRadios(path)
+        this.blu_stations.getAllBluStations[add_index].startWebsocketServer()
+
+        // console.log('add blu radio index', add_index, 'blu stations', this.blu_stations.getAllBluStations, 'blu receiver', this.blu_stations.getAllBluStations[add_index])
+        // this.blu_stations.getAllBluStations.forEach((station) => {
+        //   console.log('blu station iterative', station)
+        //   console.log('blu station length', this.blu_stations.getAllBluStations.length)
+        //   station.startBluRadios(path)
+        //   station.startWebsocketServer()
+
+        // })
+        // this.blu_reader = undefined
+
+        // let blu_stations = new BluStations()
+        // blu_stations.newBluStation(path, this.blu_receivers, this.data_manager, this.broadcast, this.sensor_socket_server)
+
+        // blu_stations[add_index].startBluRadios(path)
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
       }
@@ -461,16 +492,16 @@ class BaseStation {
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
-        console.log('v2 path', path, 'blu station', this.blu_station)
+        // console.log('v2 path', path, 'blu station', this.blu_station)
         let unlink_index = this.findBluPath(path)
-        console.log('unlink index', unlink_index, 'unlinked blu receiver', this.blu_receivers[unlink_index].channel)
+        console.log('unlink index', unlink_index, 'unlinked blu receiver', this.blu_stations[unlink_index])
         let unlink_receiver = {
           msg_type: "unlink_port",
           port: this.blu_receivers[unlink_index].channel,
         }
         this.broadcast(JSON.stringify(unlink_receiver))
-        // this.blu_station.stopBluRadios(path)
-        // this.blu_receiver[unlink_index].destroy_receiver()
+        this.blu_stations[unlink_index].stopBluRadios(path)
+        this.blu_stations[unlink_index].destroy_receiver()
 
       } else if (!path.includes('-port0')) {
         let unlink_dongle = {
@@ -550,7 +581,7 @@ class BaseStation {
  * @returns 
  */
   findBluPath(path) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
+    let index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.path === path)
     console.log('findBluPath index', index)
     return index
   }
