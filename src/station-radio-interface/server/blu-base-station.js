@@ -486,11 +486,13 @@ class BluStation extends BluReceiver {
   startBluRadios(path) {
 
     let blu_radio = this.findBluReceiver(path)
-
+    console.log('blu radio', blu_radio)
     this.path = blu_radio.path
     this.port = blu_radio.channel
-    let br_index = this.blu_receivers.findIndex(blu_reader => blu_reader.path === this.path)
+    this.blu_radios = blu_radio.blu_radios
+    // let br_index = this.blu_receivers.findIndex(blu_reader => blu_reader.path === this.path)
 
+    // console.log('blu receiver this', this, 'blu receiver index', this[br_index])
     setTimeout(() => {
 
     }, 2000)
@@ -588,12 +590,14 @@ class BluStation extends BluReceiver {
       this.getBluVersion(4)
     }, 10000)
 
-    const radios_start = Promise.all(Object.keys(this.blu_receivers[br_index].blu_radios)
+    const radios_start = Promise.all(this.blu_radios
       .map((radio) => {
         console.log('radios start radio', radio)
-        let radio_key = radio.toString()
+        // let radio_key = radio.toString()
+        let radio_key = radio.radio
         let port_key = this.port.toString()
-        this.radioOn(Number(radio_key), this.blu_receivers[br_index].blu_radios[radio_key].values.current)
+        // this.radioOn(Number(radio_key), this.blu_radios[radio_key].values.current)
+        this.radioOn(radio_key, radio.poll_interval)
       })).then((values) => {
         console.log('radios started')
       }).catch((e) => {
@@ -608,7 +612,7 @@ class BluStation extends BluReceiver {
 
       if (this.port) {
         console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.port)
-        const radios_exit = Promise.all(Object.keys(this.blu_receivers[br_index].blu_radios)
+        const radios_exit = Promise.all(Object.keys(this[br_index].blu_radios)
           .map((radio) => {
             this.radioOff(radio)
             console.log('receiver', this.port, 'radio', radio, 'is off')
@@ -641,7 +645,7 @@ class BluStation extends BluReceiver {
       let br_index = this.findBluPath(path)
 
       console.log('blu receiver', this, 'is closing')
-      const radios_exit = Promise.all(Object.keys(this.blu_receivers[br_index].blu_radios)
+      const radios_exit = Promise.all(Object.keys(this[br_index].blu_radios)
         .map((radio) => {
           this.radioOff(radio)
           console.log('receiver', this.port, 'radio', radio, 'is off')
@@ -687,10 +691,17 @@ class BluStation extends BluReceiver {
   * @returns 
   */
   findBluReceiver(path) {
-    let radio_path = path.substring(17)
-    let radio_index = this.blu_receivers.findIndex(radio => radio.path === radio_path)
-    let radio = this.blu_receivers[radio_index]
-    return radio
+    // let radio_path = path.substring(17)
+    // let radio_path = path
+    // let radio_index = this.blu_receivers.findIndex(radio => radio.path === radio_path)
+    // let radio = this.blu_receivers[radio_index]
+    // return radio
+    console.log('findBluReceiver path', path)
+    let receiver_path = path.substring(17)
+    let receiver_index = this.blu_receivers.findIndex(receiver => receiver.path === receiver_path)
+    let receiver = this.blu_receivers[receiver_index]
+    console.log('find blu receiver receiver', receiver)
+    return receiver
   }
 }
 
