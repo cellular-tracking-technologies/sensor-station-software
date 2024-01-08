@@ -493,15 +493,21 @@ class BaseStation {
       // V2 Radio Paths
       if (path.includes('-port0')) {
         // console.log('v2 path', path, 'blu station', this.blu_station)
-        let unlink_index = this.findBluPath(path)
-        console.log('unlink index', unlink_index, 'unlinked blu receiver', this.blu_stations[unlink_index])
+        // let unlink_index = this.findBluPath(path)
+        let unlink_index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.path === path.substring(17))
+        let unlink_obj = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
+        console.log('unlink obj', unlink_obj)
+        let unlink_port = unlink_obj.channel
+        console.log('unlink port', unlink_port)
+        // console.log('unlink index', unlink_index, 'unlinked blu receiver', this.blu_stations.getAllBluStations[unlink_index])
         let unlink_receiver = {
           msg_type: "unlink_port",
-          port: this.blu_receivers[unlink_index].channel,
+          // port: this.blu_stations.getAllBluStations[unlink_index].channel,
+          port: unlink_port,
         }
         this.broadcast(JSON.stringify(unlink_receiver))
-        this.blu_stations[unlink_index].stopBluRadios(path)
-        this.blu_stations[unlink_index].destroy_receiver()
+        this.blu_stations.getAllBluStations[unlink_index].stopBluRadios(path)
+        this.blu_stations.getAllBluStations[unlink_index].destroy_receiver()
 
       } else if (!path.includes('-port0')) {
         let unlink_dongle = {
