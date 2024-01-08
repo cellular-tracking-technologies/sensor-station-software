@@ -62,9 +62,10 @@ class BluStation extends BluReceiver {
 
           break;
         case ('blu_radio_all_off'):
-          let all_off_index = this.findBluPort(cmd.data.port)
-          const radios_off = Promise.all(Object.keys(this.blu_receivers[all_off_index].blu_radios).map(radio => {
-            this.radioOff(radio)
+          // let all_off_index = this.findBluPort(cmd.data.port)
+          // const radios_off = Promise.all(Object.keys(this.blu_channels[all_off_index].blu_radios).map(radio => {
+          const radios_off = Promise.all(this.blu_channels.map(radio => {
+            this.radioOff(radio.radio)
           })).then((values) => {
             console.log('turning blu radio off', values)
           }).catch((e) => {
@@ -522,21 +523,20 @@ class BluStation extends BluReceiver {
         case BluReceiverTask.DETECTIONS:
           try {
             console.log('Port', this.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
-            console.log('blu receiver detections', this.blu_channels)
+            // console.log('blu receiver detections', this.blu_channels)
             job.data.forEach((beep) => {
-              console.log('blu reader beep', beep)
+              // console.log('blu reader beep', beep)
 
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(beep.time)).utc()
-              // beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.channel].values.current
               beep.radio = this.blu_channels.find(radio =>
                 radio.radio == beep.channel
               )
 
-              console.log('beep radio', beep.radio)
+              // console.log('beep radio', beep.radio)
               beep.poll_interval = beep.radio.poll_interval
               beep.port = this.port
               this.data_manager.handleBluBeep(beep)
@@ -678,7 +678,7 @@ class BluStation extends BluReceiver {
    * @returns 
    */
   findBluPort(port) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.channel === Number(port))
+    let index = this.blu_channels.findIndex(receiver => receiver.channel === Number(port))
     return index
   }
 
@@ -688,8 +688,8 @@ class BluStation extends BluReceiver {
    * @returns 
    */
   findBluPath(path) {
-    let index = blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
-    // console.log('findBluPath index', index)
+    let index = blu_channels.findIndex(receiver => receiver.path === path.substring(17))
+    console.log('findBluPath index', index)
     return index
   }
 

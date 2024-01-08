@@ -461,15 +461,16 @@ class BaseStation {
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
+        console.log('v2 path', path, 'blu station', this.blu_station)
         let unlink_index = this.findBluPath(path)
-        console.log('unlink index', unlink_index)
+        console.log('unlink index', unlink_index, 'unlinked blu receiver', this.blu_receivers[unlink_index].channel)
         let unlink_receiver = {
           msg_type: "unlink_port",
-          port: this.blu_receiver[unlink_index].port,
+          port: this.blu_receivers[unlink_index].channel,
         }
         this.broadcast(JSON.stringify(unlink_receiver))
-        this.blu_station.stopBluRadios(path)
-        this.blu_receiver[unlink_index].destroy_receiver()
+        // this.blu_station.stopBluRadios(path)
+        // this.blu_receiver[unlink_index].destroy_receiver()
 
       } else if (!path.includes('-port0')) {
         let unlink_dongle = {
@@ -542,6 +543,17 @@ class BaseStation {
     beep_reader.start(1000)
     this.active_radios[radio.channel] = beep_reader
   } // end of startRadios()
+
+  /**
+ * 
+ * @param {String} path 
+ * @returns 
+ */
+  findBluPath(path) {
+    let index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
+    console.log('findBluPath index', index)
+    return index
+  }
 
 
 } // end of base station class
