@@ -402,20 +402,65 @@ class BaseStation {
       .on('unlink', path => {
         this.unlinkPath(path)
       })
+
+    process.on('SIGINT', () => {
+
+      // if (this.blu_station) {
+      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.port)
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
+      const blu_stations_exit = Promise.all(this.blu_stations.getAllBluStations
+        .map((station) => {
+          // let radio_num = Number(radio)
+          station.destroy_receiver()
+          // console.log('receiver', this.port, 'radio', radio, 'is off')
+        })).then((values) => {
+          console.log(values)
+        }).catch((e) => {
+          console.error('no port to closed in destroyed blu receiver', e)
+        })
+      // } else {
+      //   console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this)
+
+      // }
+
+      // uncomment to destroy each receiver, need to find way to do this after turning off all radios in receiver
+      // this.blu_receiver.forEach((receiver) => {
+      //   receiver.destroy_receiver()
+      // })
+      setTimeout(() => {
+        console.log('Closed blu readers', this.blu_stations.getAllBluStations)
+        process.exit(0)
+      }, 7000)
+    })
   }
 
   addPath(path) {
     if (revision.revision >= 3) {
       // V3 Radio Paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
-        let blu_station = new BluStation({
+
+        this.blu_stations.newBluStation({
           path: path,
           blu_receivers: this.blu_receivers,
           data_manager: this.data_manager,
           broadcast: this.broadcast,
           websocket: this.sensor_socket_server,
         })
-        blu_station.startBluRadios(path)
+        console.log('blu stations', this.blu_stations.getAllBluStations)
+        // this.blu_stations.getAllBluStations.startBluRadios(path)
+        // this.blu_stations.push(this.blu_reader)
+        let add_index = this.findBluPath(path)
+        this.blu_stations.getAllBluStations[add_index].startBluRadios(path)
+        this.blu_stations.getAllBluStations[add_index].startWebsocketServer()
+
+        // let blu_station = new BluStation({
+        //   path: path,
+        //   blu_receivers: this.blu_receivers,
+        //   data_manager: this.data_manager,
+        //   broadcast: this.broadcast,
+        //   websocket: this.sensor_socket_server,
+        // })
+        // blu_station.startBluRadios(path)
 
         // let blu_stations = new BluStations()
         // blu_stations.newBluStation(path, this.blu_receivers, this.data_manager, this.broadcast, this.sensor_socket_server)
@@ -496,9 +541,9 @@ class BaseStation {
         // let unlink_index = this.findBluPath(path)
         let unlink_index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.path === path.substring(17))
         let unlink_obj = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
-        console.log('unlink obj', unlink_obj)
+        // console.log('unlink obj', unlink_obj)
         let unlink_port = unlink_obj.channel
-        console.log('unlink port', unlink_port)
+        // console.log('unlink port', unlink_port)
         // console.log('unlink index', unlink_index, 'unlinked blu receiver', this.blu_stations.getAllBluStations[unlink_index])
         let unlink_receiver = {
           msg_type: "unlink_port",
@@ -508,6 +553,7 @@ class BaseStation {
         this.broadcast(JSON.stringify(unlink_receiver))
         this.blu_stations.getAllBluStations[unlink_index].stopBluRadios(path)
         this.blu_stations.getAllBluStations[unlink_index].destroy_receiver()
+        console.log('destroyed blu station', this.blu_stations.getAllBluStations[unlink_index])
 
       } else if (!path.includes('-port0')) {
         let unlink_dongle = {
@@ -519,6 +565,8 @@ class BaseStation {
       }
     }
   }
+
+
 
   /**
    * 

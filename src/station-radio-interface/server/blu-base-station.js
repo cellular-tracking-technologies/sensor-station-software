@@ -462,7 +462,13 @@ class BluStation extends BluReceiver {
 
     delete this.polling
     delete this.dropped
-    // delete this.blu_radios
+    delete this.blu_fw
+    delete this.blu_channels
+    delete this.blu_radios
+    delete this.blu_receivers
+    delete this.data_manager
+    delete this.broadcast
+    delete this.sensor_socket_server
     this.destroyed_port = this.port
     delete this.port
     delete this.path
@@ -618,9 +624,10 @@ class BluStation extends BluReceiver {
       if (this.port) {
         // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.port)
         console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
-        const radios_exit = Promise.all(this.blu_channels
+        const radios_exit = Promise.all(Object.keys(this.blu_radios)
           .map((radio) => {
-            this.radioOff(radio)
+            let radio_num = Number(radio)
+            this.radioOff(radio_num)
             // console.log('receiver', this.port, 'radio', radio, 'is off')
           }))
         Promise.all(radios_exit).then((values) => {
@@ -629,7 +636,7 @@ class BluStation extends BluReceiver {
           console.error('no port to closed in destroyed blu receiver', e)
         })
       } else {
-        // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this)
+        console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this)
 
       }
 
