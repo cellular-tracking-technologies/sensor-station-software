@@ -2330,7 +2330,7 @@ const init_sg = () => {
       document.querySelector('#extra-radios').appendChild(col)
     }
 
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
       console.log('blu ports, let\'s see if it\'s full', blu_ports)
       blu_receiver = build_blu_receiver(i)
 

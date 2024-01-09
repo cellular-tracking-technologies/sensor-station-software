@@ -499,7 +499,7 @@ class BluStation extends BluReceiver {
     this.blu_channels = blu_radio.blu_radios
     // let br_index = this.blu_radios.findIndex(radio => blu_reader.path === this.path)
 
-    console.log('blu receiver this.blu_radios', this.blu_radios)
+    console.log('blu receiver this.blu_radios', this.blu_channels)
     setTimeout(() => {
 
     }, 2000)
