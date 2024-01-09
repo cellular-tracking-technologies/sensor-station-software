@@ -462,6 +462,7 @@ class BluStation extends BluReceiver {
 
     delete this.polling
     delete this.dropped
+    delete this.firmware
     delete this.blu_fw
     delete this.blu_channels
     delete this.blu_radios
@@ -473,7 +474,7 @@ class BluStation extends BluReceiver {
     delete this.port
     delete this.path
     delete this.beeps
-    delete this
+    // delete this
   }
 
   sendBluPort(path) {
