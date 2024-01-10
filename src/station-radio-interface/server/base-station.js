@@ -66,6 +66,8 @@ class BaseStation {
     this.blu_stations = new BluStations()
     this.blu_config
     this.blu_radio_filemap
+    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+
   }
 
   createBluConfig() {
@@ -321,11 +323,20 @@ class BaseStation {
 
           break
         case ('blu_update_all'):
-          let update_all_index = this.findBluPort(cmd.data.port)
 
-          const blu_update_all = Promise.all(Object.keys(this.blu_receivers[update_all_index].blu_radios).forEach((radio) => {
-            let current_poll_interval = this.blu_receivers[update_all_index].blu_radios[radio].values.current
-            this.updateBluFirmware(Number(radio), this.firmware, current_poll_interval)
+          let update_all_index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.port === Number(cmd.data.port))
+          let all_update_blustation = this.blu_stations.getAllBluStations[update_all_index]
+
+          // this.poll_interval = Number(cmd.data.poll_interval)
+
+          // set current poll interval in default-config
+          let blu_update_all = Promise.all(all_update_blustation.blu_receivers.blu_radios.map(radio => {
+            // radio.poll_interval = Number(cmd.data.poll_interval)
+
+            // const blu_update_all = Promise.all(Object.keys(this.blu_receivers[update_all_index].blu_radios).forEach((radio) => {
+            // let current_poll_interval = this.blu_receivers[update_all_index].blu_radios[radio].values.current
+            console.log('blu update all')
+            all_update_blustation.updateBluFirmware(radio, this.firmware, radio.poll_interval)
           })).then((values) => {
             console.log('turning blu radio off', values)
           }).catch((e) => {

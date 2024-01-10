@@ -433,25 +433,25 @@ class BluStation extends BluReceiver {
     clearInterval(radio_object)
   }
 
-  async updateBluFirmware(radio_channel, firmware_file, poll_interval) {
+  async updateBluFirmware(radio_object, firmware_file, poll_interval) {
     console.log('update firmware', firmware_file)
     try {
 
-      await this.getBluVersion(radio_channel)
-      await this.stopDetections(radio_channel)
-      await this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
+      await this.getBluVersion(radio_object.radio)
+      await this.stopDetections(radio_object)
+      await this.setLogoFlash(Number(radio_object.radio), { led_state: 2, blink_rate: 100, blink_count: -1, })
       this.schedule({
         task: BluReceiverTask.DFU,
-        radio_channel,
+        radio_channel: radio_object.radio,
         data: {
           file: fs.readFileSync(firmware_file),
         }
       })
-      await this.rebootBluReceiver(radio_channel, poll_interval)
+      await this.rebootBluReceiver(radio_object, poll_interval)
       setTimeout(() => {
         this.schedule({
           task: BluReceiverTask.VERSION,
-          radio_channel,
+          radio_channel: radio_object.radio,
         })
       }, 20000)
     } catch (e) {
