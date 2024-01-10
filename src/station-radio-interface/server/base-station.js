@@ -218,14 +218,8 @@ class BaseStation {
           let all_on_blustation = this.blu_stations.getAllBluStations[all_on_index]
           console.log('all on blu station', all_on_blustation)
           const radios_on = Promise.all(all_on_blustation.blu_receivers.blu_radios.map(radio => {
-            console.log('radios on radio', radio)
-            // console.log('indexed blustation on', all_on_blustation.blu_receivers[all_on_index].blu_radios)
-            // let radio_index = all_on_blustation.blu_receivers[all_on_index].blu_radios.findIndex(radios => radios.radio == Number(radio))
-            // console.log('radio index', radio_index)
-            // console.log('blustation poll interval', this.blu_stations.getAllBluStations[all_on_index].blu_receivers[all_on_index].blu_radios[radio_index])
             radio.poll_interval = Number(cmd.data.poll_interval)
             this.blu_receivers[all_on_index] = all_on_blustation
-            // this.config.data.blu_receivers = this.blu_receivers
             all_on_blustation.updateConfig(all_on_blustation, radio.radio, cmd.data.poll_interval)
             all_on_blustation.radioOn(radio.radio, cmd.data.poll_interval)
 
@@ -236,10 +230,8 @@ class BaseStation {
           })
           break;
         case ('blu_radio_all_off'):
-          console.log('blu radio all off blustations', this.blu_stations.getAllBluStations)
           let all_off_index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.port === Number(cmd.data.port))
           let all_off_blustation = this.blu_stations.getAllBluStations[all_off_index]
-          console.log('blu radio all off', all_off_blustation)
           const radios_off = Promise.all(all_off_blustation.blu_receivers.blu_radios.map(radio => {
             console.log('blu radio all off radio', radio)
             all_off_blustation.radioOff(radio)
@@ -250,9 +242,11 @@ class BaseStation {
           })
           break
         case ('blu_led_all'):
-          let all_led_index = this.findBluPort(cmd.data.port)
-          const all_leds = Promise.all(Object.keys(this.blu_receivers[all_led_index].blu_radios).map(radio => {
-            this.setBluConfig(Number(radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
+          let all_led_index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.port === Number(cmd.data.port))
+          let all_led_blustation = this.blu_stations.getAllBluStations[all_led_index]
+
+          const all_leds = Promise.all(all_led_blustation.blu_receivers.blu_radios.map(radio => {
+            all_led_blustation.setBluConfig(Number(radio.radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
           })).then((values) => {
             console.log('turning radio leds on', values)
           }).catch((e) => {
