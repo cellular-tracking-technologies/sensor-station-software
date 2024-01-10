@@ -299,7 +299,7 @@ class BluStation extends BluReceiver {
   }
 
   /**
-   * @param {Number} radio_channel 
+   * @param {Object} radio 
    */
   async stopDetections(radio) {
     console.log('stop detections radio', radio)
@@ -405,15 +405,16 @@ class BluStation extends BluReceiver {
 
   /**
    * 
-   * @param {*} radio_channel Radio Channel to turn off 
+   * @param {Object} radio_object Radio Channel to turn off 
    */
-  async radioOff(radio_channel) {
-    console.log('blu radio off', radio_channel)
-    await this.stopDetections(radio_channel)
-    let key = radio_channel.toString()
+  async radioOff(radio_object) {
+    console.log('blu radio off', radio_object)
+    await this.stopDetections(radio_object)
+    // let key = radio_channel.toString()
     // clearInterval(this.blu_radios[key]) // changes timers _destroyed key to true
-    let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
-    clearInterval(this.blu_receivers.blu_radios[radio_index])
+    // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
+    // clearInterval(this.blu_receivers.blu_radios[radio_index])
+    clearInterval(radio_object)
   }
 
   async updateBluFirmware(radio_channel, firmware_file, poll_interval) {
