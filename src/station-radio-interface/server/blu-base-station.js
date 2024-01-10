@@ -234,17 +234,18 @@ class BluStation extends BluReceiver {
 
   /**
    * 
-   * @param {Number} radio_channel 
+   * @param {Object} radio_object 
    */
-  async rebootBluReceiver(radio_channel, poll_interval) {
-    await this.setLogoFlash(radio_channel, { led_state: 2, blink_rate: 100, blink_count: 10 })
-    await this.stopDetections(radio_channel)
+  async rebootBluReceiver(radio_object, poll_interval) {
+    console.log('reboot blu receiver radio object', radio_object)
+    await this.setLogoFlash(radio_object.radio, { led_state: 2, blink_rate: 100, blink_count: 10 })
+    await this.stopDetections(radio_object)
     this.schedule({
       task: BluReceiverTask.REBOOT,
-      radio_channel: radio_channel
+      radio_channel: radio_object.radio
     })
 
-    await this.getDetections(radio_channel, poll_interval)
+    await this.getDetections(radio_object.radio, poll_interval)
 
     // restart radio with poll interval of 10s
 
@@ -294,7 +295,7 @@ class BluStation extends BluReceiver {
       let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
       this.blu_receivers.blu_radios[radio_index] = {
         radio: radio_channel,
-        polling_interval: buffer_interval,
+        poll_interval: buffer_interval,
         beeps: this.beeps,
         dropped: this.dropped,
       }
@@ -314,17 +315,17 @@ class BluStation extends BluReceiver {
   }
 
   /**
-   * @param {Object} radio 
+   * @param {Object} radio_object
    */
-  async stopDetections(radio) {
+  async stopDetections(radio_object) {
     // console.log('stop detections radio', radio)
     // const key = radio_channel.toString()
     // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
-    this.setBluConfig(radio.radio, { scan: 0, rx_blink: 0, })
-    this.setLogoFlash(radio.radio, { led_state: 0, blink_rate: 0, blink_count: 0, })
+    this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
+    this.setLogoFlash(radio_object.radio, { led_state: 0, blink_rate: 0, blink_count: 0, })
     // console.log('stop detections radio', radio)
-    clearInterval(radio.beeps)
-    clearInterval(radio.dropped)
+    clearInterval(radio_object.beeps)
+    clearInterval(radio_object.dropped)
   }
 
   /**
@@ -553,6 +554,7 @@ class BluStation extends BluReceiver {
           break
         case BluReceiverTask.DETECTIONS:
           try {
+            // console.log('blu detections job', job)
             console.log('Port', this.port, 'radio', job.radio_channel, 'has', job.data.length, 'detections')
             // console.log('blu receiver detections', this.blu_channels)
             job.data.forEach((beep) => {
@@ -570,7 +572,7 @@ class BluStation extends BluReceiver {
               )
 
               // console.log('beep radio', beep.radio_index, 'beep receiver', this.blu_receivers.blu_radios[beep.radio_index])
-              beep.poll_interval = this.blu_receivers.blu_radios[beep.radio_index].polling_interval
+              beep.poll_interval = this.blu_receivers.blu_radios[beep.radio_index].poll_interval
               // console.log('beep poll interval', beep.poll_interval)
               beep.port = this.port
               this.data_manager.handleBluBeep(beep)
@@ -605,6 +607,7 @@ class BluStation extends BluReceiver {
           console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.STATS:
+          console.log('blu stats job', job)
           try {
 
             let blu_stats = {

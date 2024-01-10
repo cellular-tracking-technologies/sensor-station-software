@@ -254,20 +254,25 @@ class BaseStation {
           })
           break
         case ('blu_reboot_all'):
-          let reboot_index_all = this.findBluPort(cmd.data.port)
-          let radios_reboot = Promise.all(Object.keys(this.blu_receivers[reboot_index_all].blu_radios).forEach((radio) => {
-            let reboot_default_poll = this.blu_receivers[cmd.data.port].blu_radios[radio].values.default
-            this.blu_receivers[reboot_index_all].blu_radios[radio].values.current = reboot_default_poll
+          console.log('blu reboot all cmd', cmd)
+          let reboot_index_all = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.port === Number(cmd.data.port))
+          let all_reboot_blustation = this.blu_stations.getAllBluStations[reboot_index_all]
+
+          const all_reboot = Promise.all(all_reboot_blustation.blu_receivers.blu_radios.map(radio => {
+            radio.poll_interval = 10000
+            console.log('all reboot radio', radio)
+            this.blu_receivers[reboot_index_all] = all_reboot_blustation
+            all_reboot_blustation.updateConfig(all_reboot_blustation, radio.radio, radio.poll_interval)
 
             this.poll_data = {
-              channel: radio,
-              poll_interval: this.blu_receivers[reboot_index_all].blu_radios[radio].values.default,
+              channel: radio.radio,
+              poll_interval: radio.poll_interval,
               msg_type: 'poll_interval',
             }
 
-            this.broadcast(JSON.stringify(this.poll_data))
-            this.rebootBluReceiver(Number(radio), this.poll_data.poll_interval)
-            this.updateConfig(this.blu_receivers)
+            all_reboot_blustation.broadcast(JSON.stringify(this.poll_data))
+            all_reboot_blustation.rebootBluReceiver(radio, this.poll_data.poll_interval)
+            // this.updateConfig(this.blu_receivers)
 
           })).then((values) => {
             console.log('all radios rebooting', values)
