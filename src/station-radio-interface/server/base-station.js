@@ -207,7 +207,7 @@ class BaseStation {
             radio.poll_interval = Number(cmd.data.poll_interval)
             this.blu_receivers[all_on_index] = all_on_blustation
             this.config.data.blu_receivers = this.blu_receivers
-            all_on_blustation.updateConfig(this.config.data)
+            // all_on_blustation.updateConfig(this.config.data)
             all_on_blustation.radioOn(radio.radio, cmd.data.poll_interval)
 
           })).then((values) => {
@@ -217,7 +217,7 @@ class BaseStation {
           })
           break;
         case ('blu_radio_all_off'):
-          console.log('blustations', this.blu_stations.getAllBluStations)
+          console.log('blu radio all off blustations', this.blu_stations.getAllBluStations)
           let all_off_index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.port === Number(cmd.data.port))
           let all_off_blustation = this.blu_stations.getAllBluStations[all_off_index]
           console.log('blu radio all off', all_off_blustation)

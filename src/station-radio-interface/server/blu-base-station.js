@@ -302,6 +302,7 @@ class BluStation extends BluReceiver {
    * @param {Number} radio_channel 
    */
   async stopDetections(radio) {
+    console.log('stop detections radio', radio)
     // const key = radio_channel.toString()
     // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
     this.setBluConfig(radio.radio, { scan: 0, rx_blink: 0, })
@@ -407,6 +408,7 @@ class BluStation extends BluReceiver {
    * @param {*} radio_channel Radio Channel to turn off 
    */
   async radioOff(radio_channel) {
+    console.log('blu radio off', radio_channel)
     await this.stopDetections(radio_channel)
     let key = radio_channel.toString()
     // clearInterval(this.blu_radios[key]) // changes timers _destroyed key to true
