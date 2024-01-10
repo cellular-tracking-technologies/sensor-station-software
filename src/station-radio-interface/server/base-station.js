@@ -206,8 +206,8 @@ class BaseStation {
             // console.log('blustation poll interval', this.blu_stations.getAllBluStations[all_on_index].blu_receivers[all_on_index].blu_radios[radio_index])
             radio.poll_interval = Number(cmd.data.poll_interval)
             this.blu_receivers[all_on_index] = all_on_blustation
-            this.config.data.blu_receivers = this.blu_receivers
-            // all_on_blustation.updateConfig(this.config.data)
+            // this.config.data.blu_receivers = this.blu_receivers
+            all_on_blustation.updateConfig(all_on_blustation, radio.radio, cmd.data.poll_interval)
             all_on_blustation.radioOn(radio.radio, cmd.data.poll_interval)
 
           })).then((values) => {

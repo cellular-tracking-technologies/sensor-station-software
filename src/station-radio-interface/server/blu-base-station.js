@@ -302,12 +302,12 @@ class BluStation extends BluReceiver {
    * @param {Object} radio 
    */
   async stopDetections(radio) {
-    console.log('stop detections radio', radio)
+    // console.log('stop detections radio', radio)
     // const key = radio_channel.toString()
     // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
     this.setBluConfig(radio.radio, { scan: 0, rx_blink: 0, })
     this.setLogoFlash(radio.radio, { led_state: 0, blink_rate: 0, blink_count: 0, })
-    console.log('stop detections radio', radio)
+    // console.log('stop detections radio', radio)
     clearInterval(radio.beeps)
     clearInterval(radio.dropped)
   }
@@ -443,9 +443,16 @@ class BluStation extends BluReceiver {
     }
   }
 
-  async updateConfig(config_obj) {
+  async updateConfig(blustation, blu_radio, poll_interval) {
+    let station_config = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json'))
+    console.log('update config station config', station_config)
+    let receiver_index = station_config.blu_receivers.findIndex(receiver => receiver.channel == blustation.port)
+    let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio)
+
+    station_config.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval = poll_interval
+
     fs.writeFileSync('/etc/ctt/station-config.json',
-      JSON.stringify(config_obj, null, 2),
+      JSON.stringify(station_config, null, 2),
       { encoding: 'utf8', flag: 'w', },
       err => {
         if (err) throw err;
