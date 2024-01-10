@@ -345,7 +345,7 @@ class BluStation extends BluReceiver {
     console.log('set blu config radio channel', radio_channel)
     return this.schedule({
       task: BluReceiverTask.CONFIG,
-      radio_channel: radio_channel.radio,
+      radio_channel,
       data: {
         scan: opts.scan,
         rx_blink: opts.rx_blink,
