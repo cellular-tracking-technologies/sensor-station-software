@@ -282,28 +282,29 @@ class BaseStation {
 
           break
         case ('all_change_poll'):
-          let change_poll_all_port = cmd.data.port.toString()
-          let change_poll_all_index = this.findBluPort(change_poll_all_port)
+          let change_poll_all = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.port === Number(cmd.data.port))
+          let all_poll_blustation = this.blu_stations.getAllBluStations[change_poll_all]
 
           this.poll_interval = Number(cmd.data.poll_interval)
 
           // set current poll interval in default-config
-          let radios_all_poll = Promise.all(Object.keys(this.blu_receivers[change_poll_all_index].blu_radios).forEach((radio) => {
-            this.blu_receivers[change_poll_all_index].blu_radios[radio].values.current = this.poll_interval
+          let radios_all_poll = Promise.all(all_poll_blustation.blu_receivers.blu_radios.map(radio => {
+            radio.poll_interval = Number(cmd.data.poll_interval)
+            this.blu_receivers[change_poll_all] = all_poll_blustation
+            all_poll_blustation.updateConfig(all_poll_blustation, radio.radio, cmd.data.poll_interval)
+            // all_on_blustation.radioOn(radio.radio, cmd.data.poll_interval)
+
             this.poll_data = {
               port: cmd.data.port,
-              channel: radio,
+              channel: radio.radio,
               poll_interval: this.poll_interval,
               msg_type: 'poll_interval',
             }
+            all_poll_blustation.broadcast(JSON.stringify(this.poll_data))
 
-            this.updateConfig(this.blu_receivers)
-
-            this.broadcast(JSON.stringify(this.poll_data))
-
-            this.stopDetections(Number(radio))
-            this.setBluConfig(Number(radio), { scan: 1, rx_blink: 1, })
-            this.getDetections(Number(radio), this.poll_interval)
+            all_poll_blustation.stopDetections(radio)
+            all_poll_blustation.setBluConfig(radio.radio, { scan: 1, rx_blink: 1, })
+            all_poll_blustation.getDetections(radio.radio, this.poll_interval)
           })).then((values) => {
             console.log('all radios change poll', values)
           }).catch((e) => {
