@@ -1,6 +1,7 @@
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import fs from 'fs'
+import { StationConfig } from './station-config.js'
 // import blu_receivers from '../../../system/radios/v2-blu-radio-map.js'
 // import blu_receivers from '../../../../../../../../etc/ctt/station-config.json'
 
@@ -25,9 +26,23 @@ class BluStation extends BluReceiver {
     this.blu_receivers = opts.blu_receivers
     this.blu_radios
     this.blu_reader
+    // this.blu_config
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+
     console.log('a new blu station is born!', this)
   }
+
+  // createBluConfig() {
+  //   if (revision.revision >= 3) {
+  //     let radio_map_filepath = '/lib/ctt/sensor-station-software/system/radios/v3-blu-radio-map.js'
+  //   } else {
+  //     let radio_map_filepath = '/lib/ctt/sensor-station-software/system/radios/v2-blu-radio-map.js'
+  //   }
+  //   this.blu_config = new StationConfig({
+  //     config_filepath: '/etc/ctt/station-config.json',
+  //     radio_map_filepath: opts.radio_map_filepath
+  //   })
+  // }
 
   /**
   * start web socket server

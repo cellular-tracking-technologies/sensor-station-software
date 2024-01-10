@@ -64,7 +64,25 @@ class BaseStation {
     this.poll_data
     this.dongle_port
     this.blu_stations = new BluStations()
+    this.blu_config
+    this.blu_radio_filemap
 
+  }
+
+  createBluConfig() {
+    if (revision.revision >= 3) {
+      this.blu_radio_filemap = '/lib/ctt/sensor-station-software/system/radios/v3-blu-radio-map.js'
+    } else {
+      this.blu_radio_filemap = '/lib/ctt/sensor-station-software/system/radios/v2-blu-radio-map.js'
+    }
+    this.blu_config = new StationConfig({
+      config_filepath: '/etc/ctt/station-config.json',
+      radio_map_filepath: this.blu_radio_filemap,
+    })
+    this.blu_config.load()
+    // this.blu_config.save()
+
+    // return this.blu_config
   }
 
   /**
@@ -87,7 +105,7 @@ class BaseStation {
 
     // save the config to disk
     this.config.save()
-    console.log('base station config in init function', this.config)
+    // console.log('base station config in init function', this.config)
     this.blu_receivers = this.config.data.blu_receivers
 
 
@@ -111,6 +129,7 @@ class BaseStation {
     this.gps_client.start()
     this.stationLog('initializing base station')
     this.startWebsocketServer()
+    this.createBluConfig()
     this.directoryWatcher()
 
     this.startTimers()
@@ -643,6 +662,8 @@ class BaseStation {
   startBluStations(path) {
     let blu_receiver_index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
     console.log('startBluStations blu receiver', this.blu_receivers[blu_receiver_index])
+    console.log('blu config', this.blu_config)
+
     this.blu_stations.newBluStation({
       path: path,
       blu_receivers: this.blu_receivers[blu_receiver_index],

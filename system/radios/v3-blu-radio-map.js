@@ -1,4 +1,4 @@
-export default [
+[
   {
     channel: 1,
     path: "/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7:1.0-port0",

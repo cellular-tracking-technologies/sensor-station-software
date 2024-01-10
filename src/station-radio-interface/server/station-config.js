@@ -56,10 +56,11 @@ class StationConfig {
     }
     // load radio mapping
     let radio_map_contents = fs.readFileSync(this.radio_map_filepath).toString()
+    console.log('radio map contents', JSON.parse(radio_map_contents))
     let radio_map = JSON.parse(radio_map_contents)
     // check if config file exists
     file_exists = await this.checkIfFileExists(this.config_filepath)
-    console.log('station config /etc/ctt/ file exists', file_exists)
+    // console.log('station config /etc/ctt/ file exists', file_exists)
     let config
     if (file_exists != true) {
       config = this.loadDefaultConfig()
