@@ -607,7 +607,7 @@ class BluStation extends BluReceiver {
           console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.STATS:
-          console.log('blu stats job', job)
+          // console.log('blu stats job', job)
           try {
 
             let blu_stats = {

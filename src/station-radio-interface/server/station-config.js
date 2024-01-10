@@ -47,6 +47,23 @@ class StationConfig {
     return opts.config
   }
 
+  /**
+ * opts.radio_map
+ * opts.config
+ **/
+  threadBluRadioMapWithConfig(opts) {
+    let radios = opts.config.blu_receivers
+    let found_radio
+    radios.forEach(radio => {
+      found_radio = opts.radio_map.find(map_info => radio.channel == map_info.channel)
+      if (found_radio) {
+        // identified the radio in the radio map
+        radio.path = found_radio.path
+      }
+    })
+    return opts.config
+  }
+
   async load() {
     let config_file
     // make sure the radio map file exists or we can't do much...
@@ -70,6 +87,36 @@ class StationConfig {
       config = JSON.parse(config)
     }
     let merged_config = this.threadRadioMapWithConfig({
+      radio_map: radio_map,
+      config: config
+    })
+    this.data = merged_config
+    return merged_config
+  }
+
+  async blu_load() {
+    let config_file
+    // make sure the radio map file exists or we can't do much...
+    let file_exists = await this.checkIfFileExists(this.radio_map_filepath)
+    if (file_exists != true) {
+      throw new Error('cannot open the radio filepath')
+    }
+    // load radio mapping
+    let radio_map_contents = fs.readFileSync(this.radio_map_filepath).toString()
+    console.log('radio map contents', JSON.parse(radio_map_contents))
+    let radio_map = JSON.parse(radio_map_contents)
+    // check if config file exists
+    file_exists = await this.checkIfFileExists(this.config_filepath)
+    // console.log('station config /etc/ctt/ file exists', file_exists)
+    let config
+    if (file_exists != true) {
+      config = this.loadDefaultConfig()
+      console.log('loading default config')
+    } else {
+      config = fs.readFileSync(this.config_filepath).toString()
+      config = JSON.parse(config)
+    }
+    let merged_config = this.threadBluRadioMapWithConfig({
       radio_map: radio_map,
       config: config
     })

@@ -66,7 +66,6 @@ class BaseStation {
     this.blu_stations = new BluStations()
     this.blu_config
     this.blu_radio_filemap
-
   }
 
   createBluConfig() {
@@ -79,7 +78,9 @@ class BaseStation {
       config_filepath: '/etc/ctt/station-config.json',
       radio_map_filepath: this.blu_radio_filemap,
     })
-    this.blu_config.load()
+
+
+
     // this.blu_config.save()
 
     // return this.blu_config
@@ -106,7 +107,13 @@ class BaseStation {
     // save the config to disk
     this.config.save()
     // console.log('base station config in init function', this.config)
-    this.blu_receivers = this.config.data.blu_receivers
+
+    this.createBluConfig()
+    await this.blu_config.blu_load()
+    console.log('blu config blu receivers', this.blu_config.data)
+    this.blu_receivers = this.blu_config.data.blu_receivers
+
+    console.log('blu receivers from merged config', this.blu_receivers)
 
 
     // pull out config options to start everythign
@@ -129,7 +136,8 @@ class BaseStation {
     this.gps_client.start()
     this.stationLog('initializing base station')
     this.startWebsocketServer()
-    this.createBluConfig()
+    // this.createBluConfig()
+
     this.directoryWatcher()
 
     this.startTimers()
