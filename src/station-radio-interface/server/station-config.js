@@ -120,9 +120,16 @@ class StationConfig {
   save() {
     // strip radio path from config to be threaded dynamically on load
     let cloned_config = JSON.parse(JSON.stringify(this.data))
+    console.log('station-config cloned config', cloned_config)
     cloned_config.radios.forEach(radio => {
       if (radio.path) {
         delete radio.path
+      }
+    })
+
+    cloned_config.blu_receivers.forEach(receiver => {
+      if (receiver.path) {
+        delete receiver.path
       }
     })
     let contents = JSON.stringify(cloned_config, null, 2)
