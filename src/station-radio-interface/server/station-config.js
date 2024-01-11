@@ -53,7 +53,7 @@ class StationConfig {
  * opts.config
  **/
   threadBluRadioMapWithConfig(opts) {
-    console.log('thread blu radio map opts config', opts.radio_map)
+    // console.log('thread blu radio map opts config', opts.radio_map)
     let radios = opts.config.blu_receivers
     let found_radio
     radios.forEach(radio => {
@@ -63,7 +63,7 @@ class StationConfig {
         radio.path = found_radio.path
       }
     })
-    console.log('blu radios merged', radios)
+    // console.log('blu radios merged', radios)
     return radios
   }
 
@@ -120,7 +120,7 @@ class StationConfig {
   save() {
     // strip radio path from config to be threaded dynamically on load
     let cloned_config = JSON.parse(JSON.stringify(this.data))
-    console.log('station-config cloned config', cloned_config)
+    // console.log('station-config cloned config', cloned_config)
     cloned_config.radios.forEach(radio => {
       if (radio.path) {
         delete radio.path

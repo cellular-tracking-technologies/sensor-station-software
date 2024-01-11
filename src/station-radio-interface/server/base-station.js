@@ -66,7 +66,7 @@ class BaseStation {
     this.dongle_port
     // this.blu_stations = new BluStations()
     this.blu_radio_filemap
-    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+    // this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
 
   }
 
@@ -90,7 +90,7 @@ class BaseStation {
 
     // save the config to disk
     this.config.save()
-    console.log('base station config in init function', this.config)
+    // console.log('base station config in init function', this.config)
     this.blu_receivers = this.config.data.blu_receivers
 
     // pull out config options to start everythign
@@ -113,11 +113,9 @@ class BaseStation {
     this.gps_client.start()
     this.stationLog('initializing base station')
     this.startWebsocketServer()
-
     this.blu_stations = new BluStations({
       websocket: this.sensor_socket_server
     })
-
     this.directoryWatcher()
     this.startTimers()
   }
@@ -413,7 +411,7 @@ class BaseStation {
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
       const blu_stations_exit = Promise.all(this.blu_stations.getAllBluStations
         .map((station) => {
-          console.log('proces on sigint station', station)
+          // console.log('proces on sigint station', station)
           station.blu_receivers.blu_radios.forEach(radio => station.radioOff(radio))
           station.destroy_receiver()
         })).then((values) => {
@@ -423,7 +421,7 @@ class BaseStation {
         })
 
       setTimeout(() => {
-        console.log('Closed blu readers', this.blu_stations.getAllBluStations)
+        // console.log('Closed blu readers', this.blu_stations.getAllBluStations)
         process.exit(0)
       }, 7000)
     })
@@ -485,6 +483,7 @@ class BaseStation {
       broadcast: this.broadcast,
       websocket: this.sensor_socket_server,
     })
+    console.log('blu stations initialization', this.blu_stations)
 
     let add_index = this.findBluPath(path)
     this.blu_stations.getAllBluStations[add_index].startBluRadios(path)
