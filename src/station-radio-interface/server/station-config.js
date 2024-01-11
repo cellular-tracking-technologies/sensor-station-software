@@ -12,6 +12,7 @@ class StationConfig {
     this.blu_map_filepath = opts.blu_map_filepath
     this.default_config = default_config
     this.data
+    console.log('station config opts', opts)
   }
 
   pretty() {

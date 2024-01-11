@@ -15,8 +15,8 @@ import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
-// import blu_radios from '../../../system/radios/v2-blu-radio-map.js'
 import revision from '../../revision.js'
+import blu_filemap from './blu-radio-version.js'
 
 /**
  * manager class for controlling / reading radios
@@ -32,7 +32,7 @@ class BaseStation {
     this.config = new StationConfig({
       config_filepath: opts.config_filepath,
       radio_map_filepath: opts.radio_map_filepath,
-      blu_map_filepath: '/lib/ctt/sensor-station-software/system/radios/v2-blu-radio-map.js'
+      blu_map_filepath: blu_filemap,
     })
     // console.log('base station config', this.config)
     // this.blu_radios = this.config.default_config.blu_radios
