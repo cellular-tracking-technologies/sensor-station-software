@@ -31,14 +31,15 @@ class BaseStation {
   constructor(opts) {
     this.config = new StationConfig({
       config_filepath: opts.config_filepath,
-      radio_map_filepath: opts.radio_map_filepath
+      radio_map_filepath: opts.radio_map_filepath,
+      blu_map_filepath: '/lib/ctt/sensor-station-software/system/radios/v2-blu-radio-map.js'
     })
     // console.log('base station config', this.config)
     // this.blu_radios = this.config.default_config.blu_radios
     // this.blu_radios = blu_radios
     this.blu_reader
     // this.blu_station
-    this.blu_receiver = []
+    this.blu_receivers = []
     this.active_radios = {}
     this.station_leds = new StationLeds()
     this.gps_client = new GpsClient({
@@ -64,7 +65,6 @@ class BaseStation {
     this.poll_data
     this.dongle_port
     this.blu_stations = new BluStations()
-    this.blu_config
     this.blu_radio_filemap
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
 
@@ -108,15 +108,8 @@ class BaseStation {
 
     // save the config to disk
     this.config.save()
-    // console.log('base station config in init function', this.config)
-
-    this.createBluConfig()
-    await this.blu_config.blu_load()
-    console.log('blu config blu receivers', this.blu_config.data)
-    this.blu_receivers = this.blu_config.data.blu_receivers
-
-    console.log('blu receivers from merged config', this.blu_receivers)
-
+    console.log('base station config in init function', this.config)
+    this.blu_receivers = this.config.data.blu_receivers
 
     // pull out config options to start everythign
     this.date_format = this.config.data.record.date_format
@@ -138,8 +131,6 @@ class BaseStation {
     this.gps_client.start()
     this.stationLog('initializing base station')
     this.startWebsocketServer()
-    // this.createBluConfig()
-
     this.directoryWatcher()
 
     this.startTimers()
@@ -347,6 +338,9 @@ class BaseStation {
 
           if (cmd.data.type === 'blu_on') {
             console.log('turning blu radio on')
+
+            let update_all_index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.port === Number(cmd.data.port))
+            let all_update_blustation = this.blu_stations.getAllBluStations[update_all_index]
             let br_index = this.findBluPort(cmd.data.port)
             let radio_on = cmd.data.channel
 
@@ -681,7 +675,6 @@ class BaseStation {
   startBluStations(path) {
     let blu_receiver_index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
     console.log('startBluStations blu receiver', this.blu_receivers[blu_receiver_index])
-    console.log('blu config', this.blu_config)
 
     this.blu_stations.newBluStation({
       path: path,
