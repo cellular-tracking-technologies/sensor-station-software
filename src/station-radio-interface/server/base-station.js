@@ -390,21 +390,25 @@ class BaseStation {
           reboot.station.rebootBluReceiver(radio, reboot_interval)
           break
         case ('change_poll'):
-          let br_index = this.findBluPort(cmd.data.port)
-          let poll_radio = cmd.data.channel
-          this.poll_interval = Number(cmd.data.poll_interval)
-          this.blu_receivers[br_index].blu_radios[poll_radio].values.current = this.poll_interval
+          let change_poll = this.blu_stations.findBluStation(cmd)
+          let { station: change_station, radio: change_radio, } = change_poll
+
+          let change_channel = change_radio.radio
+          let poll_change = change_radio.poll_interval
+          console.log('change poll radio channel', change_channel, 'change poll poll interval', poll_change)
+          // this.poll_interval = Number(cmd.data.poll_interval)
+          // this.blu_receivers[br_index].blu_radios[poll_radio].values.current = this.poll_interval
           this.poll_data = {
             port: cmd.data.port,
-            channel: poll_radio,
-            poll_interval: this.poll_interval,
+            channel: change_channel,
+            poll_interval: poll_change,
             msg_type: 'poll_interval',
           }
-          this.updateConfig(this.blu_receivers)
-          this.broadcast(JSON.stringify(this.poll_data))
-          this.stopDetections(Number(poll_radio))
-          this.setBluConfig(Number(poll_radio), { scan: 1, rx_blink: 1, })
-          this.getDetections(Number(poll_radio), this.poll_interval)
+          change_station.updateConfig(change_station, change_radio, poll_change)
+          change_station.broadcast(JSON.stringify(this.poll_data))
+          change_station.stopDetections(change_radio)
+          change_station.setBluConfig(change_channel, { scan: 1, rx_blink: 1, })
+          change_station.getDetections(change_channel, poll_change)
           // })
           break
         case ('update-blu-firmware'):

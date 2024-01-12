@@ -136,7 +136,7 @@ class BluStation extends BluReceiver {
    * @param {Object} radio_object Radio Object that contains radio number and poll interval in ms
    */
   async stopDetections(radio_object) {
-    // console.log('stop detections radio', radio)
+    console.log('stop detections radio', radio_object)
     // const key = radio_channel.toString()
     // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
     this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
@@ -287,7 +287,7 @@ class BluStation extends BluReceiver {
     let receiver_index = station_config.blu_receivers.findIndex(receiver => receiver.channel == blustation.port)
     console.log('receiver index', station_config.blu_receivers[receiver_index])
     let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio.radio)
-    console.log('radio index', station_config.blu_receivers[receiver_index].blu_radios[radio_index])
+    // console.log('radio index', station_config.blu_receivers[receiver_index].blu_radios[radio_index])
     station_config.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval = poll_interval
 
     fs.writeFileSync('/etc/ctt/station-config.json',
