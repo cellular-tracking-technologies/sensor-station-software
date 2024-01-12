@@ -28,7 +28,7 @@ class BluStation extends BluReceiver {
   }
 
   /**
-  * 
+  * this.firmware
   * @param  {...any} msgs wrapper for data logger
   */
   stationLog(...msgs) {
@@ -171,12 +171,14 @@ class BluStation extends BluReceiver {
   /**
    * 
    * @param {Number} radio_channel Radio Channel
+   * @param {Object} opts
    * @param {Boolean} opts.scan Radio scanning for tags
    * @param {Boolean} opts.rx_blink Sets radio LED to blink if tag is detected
    * @returns 
    */
   async setBluConfig(radio_channel, opts) {
     console.log('set blu config radio channel', radio_channel)
+    const { scan, rx_blink } = opts
     return this.schedule({
       task: BluReceiverTask.CONFIG,
       radio_channel,
@@ -240,7 +242,7 @@ class BluStation extends BluReceiver {
 
   /**
    * 
-   * @param {Object} radio_object Radio Channel to turn off 
+   * @object {Object} radio_object Radio Channel to turn off 
    */
   async radioOff(radio_object) {
     // console.log('blu radio off', radio_object)
@@ -283,8 +285,9 @@ class BluStation extends BluReceiver {
     let station_config = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json'))
     console.log('update config station config', station_config)
     let receiver_index = station_config.blu_receivers.findIndex(receiver => receiver.channel == blustation.port)
-    let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio)
-
+    console.log('receiver index', station_config.blu_receivers[receiver_index])
+    let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio.radio)
+    console.log('radio index', station_config.blu_receivers[receiver_index].blu_radios[radio_index])
     station_config.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval = poll_interval
 
     fs.writeFileSync('/etc/ctt/station-config.json',
@@ -595,6 +598,23 @@ class BluStations {
 
   get getAllBluStations() {
     return this.blu_stations
+  }
+
+  findBluStation(cmd) {
+    let { data: { port, channel, poll_interval }
+    } = cmd
+    let station = this.getAllBluStations.find(station => station.port === Number(port))
+    let radio = station.blu_receivers.blu_radios.find(radio => radio.radio === Number(channel))
+    radio.poll_interval = poll_interval ? poll_interval : radio.poll_interval
+
+    // if (poll_interval) {
+    //   radio.poll_interval = Number(poll_interval)
+    // }
+    // let radio_index = station.blu_receivers.blu_radios.findIndex(radio => radio.radio === Number(cmd.data.channel))
+    // station.blu_receivers.blu_radios[radio_index].poll_interval = Number(cmd.data.poll_interval)
+    // let radio = station.blu_receivers.blu_radios[radio_index]
+
+    return { station, radio }
   }
 
 
