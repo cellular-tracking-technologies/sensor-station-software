@@ -601,6 +601,24 @@ class BluStations {
   }
 
   findBluStation(cmd) {
+    let { data: { port }
+    } = cmd
+    console.log('find blu station only cmd', cmd)
+    let station = this.getAllBluStations.find(station => station.port === Number(port))
+    // let radio = station.blu_receivers.blu_radios.find(radio => radio.radio === Number(channel))
+    // radio.poll_interval = poll_interval ? poll_interval : radio.poll_interval
+
+    // if (poll_interval) {
+    //   radio.poll_interval = Number(poll_interval)
+    // }
+    // let radio_index = station.blu_receivers.blu_radios.findIndex(radio => radio.radio === Number(cmd.data.channel))
+    // station.blu_receivers.blu_radios[radio_index].poll_interval = Number(cmd.data.poll_interval)
+    // let radio = station.blu_receivers.blu_radios[radio_index]
+
+    return { station }
+  }
+
+  findBluStationAndRadio(cmd) {
     let { data: { port, channel, poll_interval }
     } = cmd
     let station = this.getAllBluStations.find(station => station.port === Number(port))
