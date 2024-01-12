@@ -170,7 +170,7 @@ class BluStation extends BluReceiver {
 
   /**
    * 
-   * @param {Number} radio_channel 
+   * @param {Number} radio_channel Radio Channel
    * @param {Boolean} opts.scan Radio scanning for tags
    * @param {Boolean} opts.rx_blink Sets radio LED to blink if tag is detected
    * @returns 
@@ -229,10 +229,11 @@ class BluStation extends BluReceiver {
    *  @param {Number} poll_interval // Time in ms between emptying ring buffer
    */
   async radioOn(radio, poll_interval) {
-    console.log('blu radio on radio', radio)
-    await this.setBluConfig(radio, { scan: 1, rx_blink: 1, })
-    await this.getBluVersion(radio)
-    await this.getDetections(radio, poll_interval)
+    let radio_channel = radio.radio
+    console.log('blu radio on radio', radio_channel)
+    await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+    await this.getBluVersion(radio_channel)
+    await this.getDetections(radio_channel, poll_interval)
     // await this.getDetections(radio, poll_interval)
 
   }
@@ -460,7 +461,7 @@ class BluStation extends BluReceiver {
       .map((radio) => {
         console.log('radios start radio', radio)
         let radio_key = radio.radio
-        this.radioOn(radio_key, radio.poll_interval)
+        this.radioOn(radio, radio.poll_interval)
       })).then((values) => {
         console.log('radios started')
       }).catch((e) => {
