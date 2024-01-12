@@ -412,10 +412,10 @@ class BaseStation {
           // })
           break
         case ('update-blu-firmware'):
-          let update_index = this.findBluPort(cmd.data.port)
-          let update_radio = cmd.data.channel
-          let poll_interval = this.blu_receivers[update_index].blu_radios[update_radio].values.current
-          this.updateBluFirmware(Number(update_radio), this.firmware, poll_interval)
+          let update = this.blu_stations.findBluStation(cmd)
+          let { station: update_station, radio: update_radio, } = update
+          let update_channel = update_radio.radio
+          update_station.updateBluFirmware(update_radio, this.firmware, update_radio.poll_interval, update_station.port)
           break
         default:
           break
