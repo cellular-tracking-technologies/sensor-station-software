@@ -303,7 +303,7 @@ class BluStation {
           radio_channel,
         })
       }, buffer_interval)
-      this.blu_receiver.getDroppedDetections(radio_channel, buffer_interval)
+      this.getDroppedDetections(radio_channel, buffer_interval)
 
       let radio_index = this.blu_receiver.blu_radios.findIndex(radio => radio.radio == radio_channel)
       this.blu_receivers.blu_radios[radio_index] = {
