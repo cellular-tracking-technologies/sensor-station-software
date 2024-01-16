@@ -409,11 +409,11 @@ class BaseStation {
 
     process.on('SIGINT', () => {
 
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)")
-      const blu_stations_exit = Promise.all(this.blu_stations.getAllBluStations
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_stations)
+      const blu_stations_exit = Promise.all(this.blu_stations
         .map((station) => {
-          // console.log('proces on sigint station', station)
-          station.blu_receivers.blu_radios.forEach(radio => station.radioOff(radio))
+          console.log('proces on sigint station', station)
+          station.blu_receiver.blu_radios.forEach(radio => station.blu_receiver.radioOff(radio))
           station.destroy_receiver()
         })).then((values) => {
           console.log(values)
@@ -422,7 +422,7 @@ class BaseStation {
         })
 
       setTimeout(() => {
-        // console.log('Closed blu readers', this.blu_stations.getAllBluStations)
+        console.log('Closed blu readers', this.blu_stations)
         process.exit(0)
       }, 7000)
     })
