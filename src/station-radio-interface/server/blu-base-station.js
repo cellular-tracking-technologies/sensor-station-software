@@ -546,7 +546,7 @@ class BluStation {
     // this.blu_receiver = undefined
     // this.path = this.blu_receivers.path
 
-    // console.log('blu receiver this.blu_radios', this.blu_receivers.blu_radios)
+    console.log('blu receiver this.blu_radios', this.blu_receiver)
 
     setTimeout(() => {
 
@@ -588,12 +588,12 @@ class BluStation {
               beep.received_at = moment(new Date(beep.time)).utc()
               // beep.receiver = this.blu_receivers.find(receiver => receiver.channel === this.port)
               // console.log('beep receiver')
-              beep.radio_index = this.blu_receivers.blu_radios.findIndex(radio =>
+              beep.radio_index = this.blu_receiver.blu_radios.findIndex(radio =>
                 radio.radio == beep.channel
               )
 
               // console.log('beep radio', beep.radio_index, 'beep receiver', this.blu_receivers.blu_radios[beep.radio_index])
-              beep.poll_interval = this.blu_receivers.blu_radios[beep.radio_index].poll_interval
+              beep.poll_interval = this.blu_receiver.blu_radios[beep.radio_index].poll_interval
               // console.log('beep poll interval', beep.poll_interval)
               beep.port = this.port
               this.data_manager.handleBluBeep(beep)
