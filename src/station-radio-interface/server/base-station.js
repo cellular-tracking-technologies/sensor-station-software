@@ -443,15 +443,15 @@ class BaseStation {
           console.error('no port to closed in destroyed blu receiver', e)
         })
 
-      // const blu_station_destroy = new Promise((resolve, reject) => {
-      //   this.blu_station.destroy_station()
-      //   resolve('promise is fulfilled')
-      //   reject('promise failed')
-      // }).then(resolve)
-      //   .catch(reject)
+      const blu_station_destroy = new Promise((resolve, reject) => {
+        this.blu_station.destroy_station()
+        resolve('promise is fulfilled')
+        reject('promise failed')
+      }).then((result) => { console.log('blu station destroyed', result) })
+        .catch((e) => { console.error('blu station not destroyed', e) })
 
       setTimeout(() => {
-        console.log('Closed blu readers', this.blu_station.blu_receivers[0].blu_radios)
+        console.log('Closed blu station', this.blu_station)
         process.exit(0)
       }, 7000)
     })
