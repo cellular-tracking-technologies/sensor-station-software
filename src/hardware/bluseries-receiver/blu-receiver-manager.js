@@ -8,8 +8,11 @@ class BluReceiverManager extends BluReceiver {
         super({
             path: opts.path,
         })
-        this.beeps
-        this.dropped
+        // this.beeps,
+        // this.dropped,
+        this.path = opts.path,
+            this.port = opts.port
+        this.blu_radios = opts.blu_radios
     }
 
     /**
@@ -24,6 +27,7 @@ class BluReceiverManager extends BluReceiver {
             })
         } catch (e) {
             console.error('GET BLU VERSION ERROR', e)
+            // getBluVersion(radio_channel)
         }
     }
 
@@ -36,19 +40,20 @@ class BluReceiverManager extends BluReceiver {
     async getDetections(radio_channel, buffer_interval) {
         console.log('blu get detections radio channel', radio_channel)
         try {
+            let beeps
             // added this so radio polls immediately on startup
             this.schedule({
                 task: BluReceiverTask.DETECTIONS,
                 radio_channel,
             })
             setInterval(() => {
-                this.beeps = this.schedule({
+                beeps = this.schedule({
                     task: BluReceiverTask.DETECTIONS,
                     radio_channel,
                 })
             }, buffer_interval)
             // this.getDroppedDetections(radio_channel, buffer_interval)
-            return this.beeps
+            return beeps
         } catch (e) {
             console.log('getDetections error', e)
         }
@@ -117,7 +122,7 @@ class BluReceiverManager extends BluReceiver {
             console.log('reboot blu receiver radio object', radio_channel)
             // await this.setLogoFlash(radio_object.radio, { led_state: 2, blink_rate: 100, blink_count: 10 })
             // await this.blu_receiver.stopDetections(radio_object)
-            return await this.schedule({
+            return this.schedule({
                 task: BluReceiverTask.REBOOT,
                 radio_channel,
             })
@@ -160,17 +165,22 @@ class BluReceiverManager extends BluReceiver {
  * @returns Dropped Detections
  */
     async getBluStats(radio_channel, buffer_interval) {
-        this.schedule({
-            task: BluReceiverTask.STATS,
-            radio_channel,
-        })
-        this.dropped = setInterval(() => {
-            this.blu_receiver.schedule({
+        try {
+
+            this.schedule({
                 task: BluReceiverTask.STATS,
                 radio_channel,
             })
-        }, buffer_interval)
-        return this.dropped
+            this.dropped = setInterval(() => {
+                this.schedule({
+                    task: BluReceiverTask.STATS,
+                    radio_channel,
+                })
+            }, buffer_interval)
+            return this.dropped
+        } catch (e) {
+            console.error('could not get dropped detections')
+        }
     }
     /**End of Blu Receiver Functions, New functions generated below */
 
@@ -234,6 +244,7 @@ class BluReceiverManager extends BluReceiver {
         await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         await this.getBluVersion(radio_channel)
         await this.getDetections(radio_channel, poll_interval)
+        await this.getBluStats(radio_channel, poll_interval)
         // await this.getDetections(radio, poll_interval)
     }
 
@@ -248,7 +259,7 @@ class BluReceiverManager extends BluReceiver {
         // clearInterval(this.blu_radios[key]) // changes timers _destroyed key to true
         // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
         // clearInterval(this.blu_receivers.blu_radios[radio_index])
-        clearInterval(radio_object)
+        clearInterval(radio_object.dropped)
     }
 
     async updateBluFirmware(radio_object, firmware_file) {
@@ -305,24 +316,6 @@ class BluReceiverManager extends BluReceiver {
         radio.dropped.destroyed = true
     }
 
-    destroy_receiver() {
-
-        delete this.polling
-        delete this.dropped
-        delete this.firmware
-        delete this.blu_fw
-        delete this.blu_channels
-        delete this.blu_radios
-        delete this.blu_receivers
-        delete this.data_manager
-        delete this.broadcast
-        delete this.sensor_socket_server
-        this.destroyed_port = this.port
-        delete this.port
-        delete this.path
-        delete this.beeps
-        // delete this
-    }
 
 
 }

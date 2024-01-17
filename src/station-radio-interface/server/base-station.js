@@ -39,7 +39,7 @@ class BaseStation {
     // this.blu_radios = blu_radios
     // this.blu_reader
     this.blu_station
-    this.blu_stations = []
+    // this.blu_stations = []
     this.blu_receivers = []
     this.active_radios = {}
     this.station_leds = new StationLeds()
@@ -114,9 +114,19 @@ class BaseStation {
     this.gps_client.start()
     this.stationLog('initializing base station')
     this.startWebsocketServer()
-    // this.blu_stations = new BluStations({
-    //   websocket: this.sensor_socket_server
-    // })
+
+    this.blu_station = new BluStation({
+      // path: path,
+      // port: this.blu_receivers[blu_receiver_index].channel,
+      // blu_receivers: this.blu_receivers[blu_receiver_index], // this is overwriting blu_receivers in blu base station!!!
+      blu_receivers: this.blu_receivers,
+      // blu_radios: this.blu_receivers[blu_receiver_index].blu_radios,
+      data_manager: this.data_manager,
+      broadcast: this.broadcast,
+      websocket: this.sensor_socket_server,
+      blu_firmware: this.firmware,
+    })
+
     this.directoryWatcher()
     this.startTimers()
   }
@@ -409,20 +419,35 @@ class BaseStation {
 
     process.on('SIGINT', () => {
 
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_stations)
-      const blu_stations_exit = Promise.all(this.blu_stations
-        .map((station) => {
-          console.log('proces on sigint station', station)
-          station.blu_receiver.blu_radios.forEach(radio => station.blu_receiver.radioOff(radio))
-          station.destroy_receiver()
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
+      // const blu_stations_exit = new Promise((resolve, reject) => {
+      //   this.blu_station.stopBluRadios()
+      //   this.blu_station.destroy_receiver()
+      // })
+      const blu_radios_stop = Promise.all(this.blu_station.blu_receivers
+        .map((receiver) => {
+          console.log('proces on sigint station', receiver)
+
+          if (receiver.receiver) {
+            this.blu_station.stopBluRadios(receiver.path)
+            // receiver.blu_receivers.blu_radios.forEach(radio => station.blu_receivers.blu_radios.radioOff(radio))
+            // receiver.stopBluRadios(receiver.path)  
+          }
+          console.log('proces on sigint station after stop blu radios', receiver)
+
         })).then((values) => {
-          console.log(values)
+          console.log('stations are being destroyed??', values)
         }).catch((e) => {
           console.error('no port to closed in destroyed blu receiver', e)
         })
 
+      const blu_station_destroy = new Promise((resolve, reject) => {
+        resolve(this.blu_station.destroy_receiver())
+        reject('cannot destroy blu staiton')
+
+      })
       setTimeout(() => {
-        console.log('Closed blu readers', this.blu_stations)
+        console.log('Closed blu readers', this.blu_station)
         process.exit(0)
       }, 7000)
     })
@@ -433,7 +458,7 @@ class BaseStation {
       // V3 Radio Paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
 
-        this.startBluStations(path)
+        this.startBluStation(path)
 
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
@@ -442,7 +467,7 @@ class BaseStation {
       // V2 Radio Paths
       if (path.includes('-port0')) {
 
-        this.startBluStations(path)
+        this.startBluStation(path)
 
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
@@ -455,7 +480,7 @@ class BaseStation {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
 
-        this.unlinkBluStations(path)
+        this.unlinkBluStation(path)
 
       } else if (!path.includes('-port0')) {
         this.unlinkDongleRadio(path)
@@ -465,7 +490,7 @@ class BaseStation {
       // V2 Radio Paths
       if (path.includes('-port0')) {
 
-        this.unlinkBluStations(path)
+        this.unlinkBluStation(path)
 
       } else if (!path.includes('-port0')) {
         this.unlinkDongleRadio(path)
@@ -473,19 +498,12 @@ class BaseStation {
     }
   }
 
-  startBluStations(path) {
-    let blu_receiver_index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
-    console.log('startBluStations blu receiver', this.blu_receivers[blu_receiver_index])
+  startBluStation(path) {
+    // don't index here, leave that for blu base station
+    // let blu_receiver_index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
+    // console.log('startBluStations blu receiver', this.blu_receivers[blu_receiver_index])
 
-    this.blu_station = new BluStation({
-      path: path,
-      port: this.blu_receivers[blu_receiver_index].channel,
-      blu_receivers: this.blu_receivers[blu_receiver_index],
-      blu_radios: this.blu_receivers[blu_receiver_index].blu_radios,
-      data_manager: this.data_manager,
-      broadcast: this.broadcast,
-      websocket: this.sensor_socket_server,
-    })
+
 
     this.blu_station.startBluRadios(path.substring(17))
     // let index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.path === path)
@@ -499,8 +517,8 @@ class BaseStation {
     // this.blu_stations.startWebsocketServer()
   }
 
-  unlinkBluStations(path) {
-    let unlink_index = this.blu_stations.findIndex(receiver => receiver.path === path.substring(17))
+  unlinkBluStation(path) {
+    let unlink_index = this.blu_station.findIndex(receiver => receiver.path === path.substring(17))
     let unlink_obj = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
     let unlink_port = unlink_obj.channel
     let unlink_receiver = {
@@ -508,9 +526,9 @@ class BaseStation {
       port: unlink_port,
     }
     this.broadcast(JSON.stringify(unlink_receiver))
-    this.blu_stations[unlink_index].stopBluRadios(path)
-    this.blu_stations[unlink_index].destroy_receiver()
-    console.log('destroyed blu station', this.blu_stations[unlink_index])
+    this.blu_station[unlink_index].stopBluRadios(path)
+    this.blu_station[unlink_index].destroy_receiver()
+    console.log('destroyed blu station', this.blu_station[unlink_index])
   }
 
   unlinkDongleRadio(path) {
