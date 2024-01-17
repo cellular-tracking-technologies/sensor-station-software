@@ -88,10 +88,6 @@ class BluReceiverManager extends BluReceiver {
     async setBluDfu(radio_channel, firmware_file) {
         // console.log('update firmware', firmware_file)
         try {
-
-            // await this.blu_receiver.getBluVersion(radio_object.radio)
-            // await this.blu_receiver.stopDetections(radio_object)
-            // await this.blu_receiver.setLogoFlash(Number(radio_object.radio), { led_state: 2, blink_rate: 100, blink_count: -1, })
             this.schedule({
                 task: BluReceiverTask.DFU,
                 radio_channel,
@@ -99,13 +95,7 @@ class BluReceiverManager extends BluReceiver {
                     file: fs.readFileSync(firmware_file),
                 }
             })
-            // await this.blu_receiver.rebootBluReceiver(radio_object, poll_interval)
-            // setTimeout(() => {
-            //     this.schedule({
-            //         task: BluReceiverTask.VERSION,
-            //         radio_channel: radio_object.radio,
-            //     })
-            // }, 20000)
+
         } catch (e) {
             console.error('Update firmware error', e)
         }
@@ -119,8 +109,6 @@ class BluReceiverManager extends BluReceiver {
         try {
 
             console.log('reboot blu receiver radio object', radio_channel)
-            // await this.setLogoFlash(radio_object.radio, { led_state: 2, blink_rate: 100, blink_count: 10 })
-            // await this.blu_receiver.stopDetections(radio_object)
             return this.schedule({
                 task: BluReceiverTask.REBOOT,
                 radio_channel,
@@ -128,9 +116,6 @@ class BluReceiverManager extends BluReceiver {
         } catch (e) {
             console.error('Reboot Blu Radio Error', e)
         }
-
-        // await this.getDetections(radio_object.radio, poll_interval)
-        // restart radio with poll interval of 10s
     }
 
     /**
@@ -190,15 +175,14 @@ class BluReceiverManager extends BluReceiver {
         console.log('stop detections radio object', radio_object)
         let radio_channel = radio_object.radio
         let beeps = radio_object.beeps
-        console.log('stop detections beeps', beeps)
-        // let poll_interval = radio_object.poll_interval
-        // const key = radio_channel.toString()
-        // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
+
         await this.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
         await this.setLogoFlash(radio_channel, { led_state: 0, blink_rate: 0, blink_count: 0, })
         // console.log('stop detections radio', radio)
         clearInterval(await radio_object.beeps)
         clearInterval(await radio_object.dropped)
+        console.log('stop detections beeps after clear interval', beeps)
+
     }
 
     /**
@@ -239,14 +223,11 @@ class BluReceiverManager extends BluReceiver {
      *  @param {Number} poll_interval // Time in ms between emptying ring buffer
      */
     async radioOn(radio_object, poll_interval) {
-        console.log('blu radio on radio object', radio_object)
         let radio_channel = radio_object.radio
-        console.log('blu radio on radio', radio_channel)
         await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         await this.getBluVersion(radio_channel)
         let beeps = await this.getDetections(radio_channel, poll_interval)
         let dropped = await this.getBluStats(radio_channel, poll_interval)
-        // await this.getDetections(radio, poll_interval)
         return { beeps, dropped }
     }
 
@@ -257,10 +238,6 @@ class BluReceiverManager extends BluReceiver {
     async radioOff(radio_object) {
         console.log('blu radio off', radio_object)
         await this.stopDetections(radio_object)
-        // let key = radio_channel.toString()
-        // clearInterval(this.blu_radios[key]) // changes timers _destroyed key to true
-        // let radio_index = this.blu_receivers.blu_radios.findIndex(radio => radio.radio == radio_channel)
-        // clearInterval(this.blu_receivers.blu_radios[radio_index])
     }
 
     async updateBluFirmware(radio_object, firmware_file) {
@@ -271,14 +248,6 @@ class BluReceiverManager extends BluReceiver {
             await this.stopDetections(radio_object)
             await this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
             await this.setBluDfu(radio_channel, firmware_file)
-            // this.schedule({
-            //     task: BluReceiverTask.DFU,
-            //     radio_channel: radio_object.radio,
-            //     port: station_port,
-            //     data: {
-            //         file: fs.readFileSync(firmware_file),
-            //     }
-            // })
             await this.rebootBluRadio(radio_channel)
             setTimeout(() => {
                 // this.schedule({
@@ -291,14 +260,20 @@ class BluReceiverManager extends BluReceiver {
             console.error('Update firmware error', e)
         }
     }
-
-    async updateConfig(blustation, blu_radio, poll_interval) {
+    /**
+     * 
+     * @param {Class} blu_receiver Blu receiver class
+     * @param {Number} blu_radio Radio number that has radio channel number and poll interval
+     * @param {Number} poll_interval Polling interval in ms
+     */
+    async updateConfig(blu_receiver, blu_radio, poll_interval) {
+        console.log('blu receiver', blu_receiver, 'blu radio', blu_radio, 'poll_interval', poll_interval)
         let station_config = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json'))
-        console.log('update config station config', station_config)
-        let receiver_index = station_config.blu_receivers.findIndex(receiver => receiver.channel == blustation.port)
+        let receiver_index = station_config.blu_receivers.findIndex(receiver => receiver.channel == blu_receiver.port)
         console.log('receiver index', station_config.blu_receivers[receiver_index])
-        let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio.radio)
-        // console.log('radio index', station_config.blu_receivers[receiver_index].blu_radios[radio_index])
+
+        let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio)
+        console.log('radio index', station_config.blu_receivers[receiver_index].blu_radios[radio_index])
         station_config.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval = poll_interval
 
         fs.writeFileSync('/etc/ctt/station-config.json',
@@ -316,9 +291,6 @@ class BluReceiverManager extends BluReceiver {
         radio.polling.destroyed = true
         radio.dropped.destroyed = true
     }
-
-
-
 }
 
 export default BluReceiverManager

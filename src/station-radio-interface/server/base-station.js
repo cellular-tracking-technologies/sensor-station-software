@@ -1,5 +1,5 @@
 import { RadioReceiver } from './radio-receiver.js'
-import { BluStation, BluStations } from './blu-base-station.js'
+import BluStation from './blu-base-station.js'
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
@@ -420,35 +420,24 @@ class BaseStation {
     process.on('SIGINT', () => {
 
       console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
-      // const blu_stations_exit = new Promise((resolve, reject) => {
-      //   this.blu_station.stopBluRadios()
-      //   this.blu_station.destroy_receiver()
-      // })
+
       const blu_radios_stop = Promise.all(this.blu_station.blu_receivers
         .map((receiver) => {
           console.log('process on sigint station', receiver)
 
-          // if (receiver.receiver) {
           receiver.blu_radios.forEach((radio) => {
             receiver.radioOff(radio)
           })
-          // receiver.blu_receivers.blu_radios.forEach(radio => station.blu_receivers.blu_radios.radioOff(radio))
-          // receiver.stopBluRadios(receiver.path)  
-          // }
+
           console.log('proces on sigint station after stop blu radios', receiver)
 
         })).then((values) => {
           console.log('stations are being destroyed??', values)
         }).catch((e) => {
           console.error('no port to closed in destroyed blu receiver', e)
+        }).finally(() => {
+          this.blu_station.destroy_station()
         })
-
-      const blu_station_destroy = new Promise((resolve, reject) => {
-        this.blu_station.destroy_station()
-        resolve('promise is fulfilled')
-        reject('promise failed')
-      }).then((result) => { console.log('blu station destroyed', result) })
-        .catch((e) => { console.error('blu station not destroyed', e) })
 
       setTimeout(() => {
         console.log('Closed blu station', this.blu_station)
@@ -503,22 +492,9 @@ class BaseStation {
   }
 
   startBluStation(path) {
-    // don't index here, leave that for blu base station
-    // let blu_receiver_index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
-    // console.log('startBluStations blu receiver', this.blu_receivers[blu_receiver_index])
 
+    this.blu_station.bluInit(path.substring(17))
 
-
-    this.blu_station.startBluRadios(path.substring(17))
-    // let index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.path === path)
-
-    // console.log('blu stations initialization', this.blu_stations)
-    // this.blu_stations.push(this.blu_station)
-
-    // let add_index = this.findBluPath(path)
-    // this.blu_stations[add_index].startBluRadios(path)
-    // this.blu_station = undefined
-    // this.blu_stations.startWebsocketServer()
   }
 
   unlinkBluStation(path) {
