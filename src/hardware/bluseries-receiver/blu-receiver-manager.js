@@ -127,7 +127,7 @@ class BluReceiverManager extends BluReceiver {
      * @returns 
      */
     async setBluConfig(radio_channel, opts) {
-        console.log('set blu config radio channel', radio_channel)
+        // console.log('set blu config radio channel', radio_channel)
         const { scan, rx_blink } = opts
         return this.schedule({
             task: BluReceiverTask.CONFIG,

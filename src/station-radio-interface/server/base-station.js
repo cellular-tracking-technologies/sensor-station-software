@@ -419,17 +419,17 @@ class BaseStation {
 
     process.on('SIGINT', () => {
 
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
+      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
 
       const blu_radios_stop = Promise.all(this.blu_station.blu_receivers
         .map((receiver) => {
-          console.log('process on sigint station', receiver)
+          // console.log('process on sigint station', receiver)
 
           receiver.blu_radios.forEach((radio) => {
             receiver.radioOff(radio)
           })
 
-          console.log('proces on sigint station after stop blu radios', receiver)
+          // console.log('proces on sigint station after stop blu radios', receiver)
 
         })).then((values) => {
           console.log('stations are being destroyed??', values)

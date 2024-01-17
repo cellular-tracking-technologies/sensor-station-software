@@ -1325,14 +1325,16 @@ const handle_blu_dropped = function (data) {
 }
 
 const handle_poll = function (data) {
+  console.log('handle poll', data)
   poll_interval = data.poll_interval
   render_poll_interval(data)
 }
 
 const render_poll_interval = function (data) {
+  console.log('render poll interval', data)
   poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
-  document.querySelector(poll_interval_info).textContent = (Number(poll_interval) / 1000);
+  document.querySelector(poll_interval_info).textContent = (poll_interval / 1000);
 }
 
 const render_channel_stats = function (channel_stats) {
