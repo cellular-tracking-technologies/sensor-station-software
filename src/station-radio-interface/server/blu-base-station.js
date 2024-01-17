@@ -357,15 +357,30 @@ class BluStation {
         console.log('radios start radio', radio)
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
-        // this.blu_receivers[br_index].radioOn(radio, radio.poll_interval)        
+        // let radio_on_receiver = this.blu_receivers[br_index].radioOn(radio, poll_interval)
+        //   .then((result) => { console.log('radios start radio on receiver', result) })
+        //   .catch((e) => { console.error(e) })
+        // console.log('radios start radio on receiver', radio_on_receiver)
+        // radio.beeps = radio_on_receiver.beeps
+        // radio.dropped = radio_on_receiver.dropped
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         this.blu_receivers[br_index].getBluVersion(radio_channel)
+        // // this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
+        // // this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
         radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
+          .then((result) => { return result })
+          .catch((e) => { console.error(e) })
         radio.dropped = this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
+          .then((result) => { return result })
+          .catch((e) => { console.error(e) })
+        // radio.beeps.then((values) => console.log(values))
+        // radio.dropped.then((values) => console.log(values))
+
         console.log('blu radios after radios start', this.blu_receivers)
 
+
       })).then((values) => {
-        console.log('radios started', radios_start)
+        console.log('radios started', values)
       }).catch((e) => {
         console.error('radios could not start properly', e)
       })
@@ -374,6 +389,7 @@ class BluStation {
 
     this.blu_receivers[br_index].on('close', () => {
       console.log('blu receiver closing within startBluRadios')
+      this.destroy_station()
     })
   } // end of startBluRadios
 
@@ -404,19 +420,25 @@ class BluStation {
   }
 
 
-  destroy_receiver() {
+  async destroy_station() {
+    try {
 
-    // delete this.beeps
-    // delete this.dropped
-    delete this.firmware
-    delete this.blu_fw
-    delete this.blu_receivers
-    delete this.data_manager
-    delete this.broadcast
-    delete this.sensor_socket_server
-    // this.destroyed_port = this.blu_receivers[br_index].channel
-    delete this.path
-    // delete this
+
+      // delete this.beeps
+      // delete this.dropped
+      delete this.firmware
+      delete this.blu_fw
+      delete this.blu_paths
+      delete this.blu_receivers
+      delete this.data_manager
+      delete this.broadcast
+      delete this.sensor_socket_server
+      // this.destroyed_port = this.blu_receivers[br_index].channel
+      delete this.path
+      // delete this
+    } catch (e) {
+      console.error('problem with destroying blustation')
+    }
   }
   /**
    * 

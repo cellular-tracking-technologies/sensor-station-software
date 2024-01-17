@@ -426,13 +426,15 @@ class BaseStation {
       // })
       const blu_radios_stop = Promise.all(this.blu_station.blu_receivers
         .map((receiver) => {
-          console.log('proces on sigint station', receiver)
+          console.log('process on sigint station', receiver)
 
-          if (receiver.receiver) {
-            this.blu_station.stopBluRadios(receiver.path)
-            // receiver.blu_receivers.blu_radios.forEach(radio => station.blu_receivers.blu_radios.radioOff(radio))
-            // receiver.stopBluRadios(receiver.path)  
-          }
+          // if (receiver.receiver) {
+          receiver.blu_radios.forEach((radio) => {
+            receiver.radioOff(radio)
+          })
+          // receiver.blu_receivers.blu_radios.forEach(radio => station.blu_receivers.blu_radios.radioOff(radio))
+          // receiver.stopBluRadios(receiver.path)  
+          // }
           console.log('proces on sigint station after stop blu radios', receiver)
 
         })).then((values) => {
@@ -441,13 +443,15 @@ class BaseStation {
           console.error('no port to closed in destroyed blu receiver', e)
         })
 
-      const blu_station_destroy = new Promise((resolve, reject) => {
-        resolve(this.blu_station.destroy_receiver())
-        reject('cannot destroy blu staiton')
+      // const blu_station_destroy = new Promise((resolve, reject) => {
+      //   this.blu_station.destroy_station()
+      //   resolve('promise is fulfilled')
+      //   reject('promise failed')
+      // }).then(resolve)
+      //   .catch(reject)
 
-      })
       setTimeout(() => {
-        console.log('Closed blu readers', this.blu_station)
+        console.log('Closed blu readers', this.blu_station.blu_receivers[0].blu_radios)
         process.exit(0)
       }, 7000)
     })
