@@ -66,36 +66,45 @@ class BluStation {
           console.log('blu reboot all cmd', cmd)
 
           let all_reboot_receiver = this.findBluReceiver(cmd)
+          // let reboot_index = this.findBluPort(cmd.data.port)
 
           const all_reboot = Promise.all(all_reboot_receiver.blu_radios.map(radio => {
+            // const all_reboot = Promise.all(this.blu_receivers[reboot_index].blu_radios.map(radio => {
             all_reboot_receiver.stopDetections(radio)
           })).then(() => {
-            all_reboot_receiver.blu_radios.map(radio => {
+
+            all_reboot_receiver.blu_radios.forEach(radio => {
               // reset polling interval to 10 s on reboot
               let radio_channel = radio.radio
-              let poll_interval = 10000
+              radio.poll_interval = 10000
               console.log('all reboot radio', radio)
               // this.blu_paths[reboot_index_all] = all_reboot_receiver
-              all_reboot_receiver.updateConfig(all_reboot_receiver, radio_channel, poll_interval)
-              let reboot_index = this.findBluPort(all_reboot_receiver.port)
-              this.blu_receivers[reboot_index] = all_reboot_receiver
+              all_reboot_receiver.updateConfig(all_reboot_receiver, radio_channel, radio.poll_interval)
+              // let reboot_index = this.findBluPort(this.blu_receivers[reboot_index].port)
+              // this.blu_receivers[reboot_index] = this.blu_receivers[reboot_index]
 
               let poll_data = {
+                port: all_reboot_receiver.port,
                 channel: radio_channel,
-                poll_interval: poll_interval,
+                poll_interval: radio.poll_interval,
                 msg_type: 'poll_interval',
               }
 
               this.broadcast(JSON.stringify(poll_data))
-              all_reboot_receiver.rebootBluRadio(radio_channel, poll_interval)
-              all_reboot_receiver.getDetections(radio_channel, poll_interval)
-
+              all_reboot_receiver.rebootBluRadio(radio_channel, radio.poll_interval)
+              // all_reboot_receiver.getDetections(radio_channel, radio.poll_interval)
+              // all_reboot_receiver.getBluStats(radio_channel, radio.poll_interval)
               // this.updateConfig(this.blu_paths)
+
+              // }).then(() => {
+              //   all_reboot_receiver.blu_radios.map(radio => {
+              //     all_reboot_receiver.getDetections(radio.radio, 10000)
             })
-            // }).then(() => {
-            //   all_reboot_receiver.blu_radios.map(radio => {
-            //     all_reboot_receiver.getDetections(radio.radio, 10000)
-            //   })
+          }).then(() => {
+            all_reboot_receiver.blu_radios.map(radio => {
+
+              all_reboot_receiver.radioOn(radio, radio.poll_interval)
+            })
           }).then((values) => {
             console.log('all radios rebooting', values)
           }).catch((e) => {
@@ -105,26 +114,27 @@ class BluStation {
           break
         case ('all_change_poll'):
 
-          let all_poll_receiver = this.find(receiver => receiver.port === Number(cmd.data.port))
+          let all_poll_receiver = this.findBluReceiver(cmd)
           // let poll_interval = Number(cmd.data.poll_interval)
           // set current poll interval in default-config
-          let radios_all_poll = Promise.all(all_poll_receiver.blu_paths.blu_radios.map(radio => {
+          let radios_all_poll = Promise.all(all_poll_receiver.blu_radios.map(radio => {
             radio.poll_interval = Number(cmd.data.poll_interval)
             // this.blu_paths[change_poll_all] = all_poll_receiver
-            all_poll_receiver.updateConfig(all_poll_receiver, radio.radio, cmd.data.poll_interval)
+            all_poll_receiver.updateConfig(all_poll_receiver, radio.radio, radio.poll_interval)
             // all_on_receiver.radioOn(radio.radio, cmd.data.poll_interval)
 
-            this.poll_data = {
-              port: cmd.data.port,
+            let poll_data = {
+              port: all_poll_receiver.port,
               channel: radio.radio,
               poll_interval: radio.poll_interval,
               msg_type: 'poll_interval',
             }
-            all_poll_receiver.broadcast(JSON.stringify(this.poll_data))
+            this.broadcast(JSON.stringify(poll_data))
 
             all_poll_receiver.stopDetections(radio)
             all_poll_receiver.setBluConfig(radio.radio, { scan: 1, rx_blink: 1, })
-            all_poll_receiver.getDetections(radio.radio, this.poll_interval)
+            all_poll_receiver.radioOn(radio, radio.poll_interval)
+
           })).then((values) => {
             console.log('all radios change poll', values)
           }).catch((e) => {
@@ -437,7 +447,7 @@ class BluStation {
    * @returns 
    */
   findBluPort(port) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.channel === Number(port))
+    let index = this.blu_receivers.findIndex(receiver => receiver.port === Number(port))
     return index
   }
 

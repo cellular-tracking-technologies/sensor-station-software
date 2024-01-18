@@ -419,7 +419,7 @@ class BaseStation {
 
     process.on('SIGINT', () => {
 
-      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
 
       const blu_radios_stop = Promise.all(this.blu_station.blu_receivers
         .map((receiver) => {

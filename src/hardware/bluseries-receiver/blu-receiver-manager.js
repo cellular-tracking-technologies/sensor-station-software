@@ -174,14 +174,16 @@ class BluReceiverManager extends BluReceiver {
     async stopDetections(radio_object) {
         console.log('stop detections radio object', radio_object)
         let radio_channel = radio_object.radio
-        let beeps = radio_object.beeps
+        // let beeps = radio_object.beeps
 
         await this.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
         await this.setLogoFlash(radio_channel, { led_state: 0, blink_rate: 0, blink_count: 0, })
         // console.log('stop detections radio', radio)
         clearInterval(await radio_object.beeps)
         clearInterval(await radio_object.dropped)
-        console.log('stop detections beeps after clear interval', beeps)
+        radio_object.beeps = undefined
+        radio_object.dropped = undefined
+        // console.log('stop detections beeps after clear interval', beeps)
 
     }
 
