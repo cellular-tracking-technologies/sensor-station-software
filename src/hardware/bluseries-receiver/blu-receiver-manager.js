@@ -176,14 +176,23 @@ class BluReceiverManager extends BluReceiver {
         // let radio_channel = radio_object.radio
         // let beeps = radio_object.beeps
 
+        // console.log(`${typeof radio_object.beeps}`)
+        // console.log(`${typeof radio_object.dropped}`)
+
         await this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
-        await this.setLogoFlash(radio_object.radio, { led_state: 0, blink_rate: 0, blink_count: 0, })
+        // await this.setLogoFlash(radio_object.radio, { led_state: 0, blink_rate: 0, blink_count: 0, })
         // console.log('stop detections radio', radio)
+        // console.log(`${typeof radio_object.beeps}`)
+        // console.log(`${typeof radio_object.dropped}`)
         clearInterval(await radio_object.beeps)
+        console.log('stop detections beeps after clear interval', radio_object.beeps)
+
         clearInterval(await radio_object.dropped)
-        delete radio_object.beeps
-        delete radio_object.dropped
-        // console.log('stop detections beeps after clear interval', beeps)
+        console.log('stop detections droppeed after clear interval', radio_object.dropped)
+
+        delete await radio_object.beeps
+        delete await radio_object.dropped
+        return radio_object
 
     }
 
@@ -238,8 +247,10 @@ class BluReceiverManager extends BluReceiver {
      * @object {Object} radio_object Radio Channel to turn off 
      */
     async radioOff(radio_object) {
-        console.log('blu radio off', radio_object)
-        await this.stopDetections(radio_object)
+        // console.log('blu radio off', radio_object)
+        let radio_off = await this.stopDetections(radio_object)
+        console.log('blu radio off', radio_off)
+        return radio_off
     }
 
     async updateBluFirmware(radio_object, firmware_file) {
@@ -258,6 +269,7 @@ class BluReceiverManager extends BluReceiver {
                 // })
             }, 20000)
             await this.getBluVersion(radio_channel)
+            await this.radioOn(radio_object, radio_object.poll_interval)
         } catch (e) {
             console.error('Update firmware error', e)
         }
@@ -287,11 +299,16 @@ class BluReceiverManager extends BluReceiver {
             })
     }
 
-    destroy(radio) {
-        clearInterval(radio.polling)
-        clearInterval(radio.dropped)
-        radio.polling.destroyed = true
-        radio.dropped.destroyed = true
+    async destroy_radio(radio) {
+        try {
+
+            clearInterval(radio.beeps)
+            clearInterval(radio.dropped)
+            radio.beeps.destroyed = true
+            radio.dropped.destroyed = true
+        } catch (e) {
+            console.error(e)
+        }
     }
 }
 

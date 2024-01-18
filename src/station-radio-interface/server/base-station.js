@@ -162,7 +162,50 @@ class BaseStation {
 
     })
     this.sensor_socket_server.on('cmd', (cmd) => {
+      console.log('sensor socket server cmd', cmd)
       switch (cmd.cmd) {
+        case ('blu_radio_all_on'):
+
+          // let all_on_receiver = this.findBluReceiver(cmd)
+          let on_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
+
+          // const radios_on = Promise.all(all_on_receiver.blu_radios.map(radio => {
+          //   radio.poll_interval = Number(cmd.data.poll_interval)
+          //   all_on_receiver.updateConfig(all_on_receiver, radio.radio, radio.poll_interval)
+          //   all_on_receiver.radioOn(radio, cmd.data.poll_interval)
+          console.log('indexed blu receiver', this.blu_station.blu_receivers[on_index].blu_radios)
+          const radios_on = Promise.all(this.blu_station.blu_receivers[on_index].blu_radios.map(radio => {
+            radio.poll_interval = Number(cmd.data.poll_interval)
+            this.blu_station.blu_receivers[on_index].updateConfig(this.blu_station.blu_receivers[on_index], radio.radio, radio.poll_interval)
+            // this.blu_receivers[on_index].radioOn(radio, cmd.data.poll_interval)
+            radio.beeps = this.blu_station.blu_receivers[on_index].getDetections(radio.radio, radio.poll_interval)
+              .then((result) => { return result })
+              .catch((e) => { console.error(e) })
+            radio.dropped = this.blu_station.blu_receivers[on_index].getBluStats(radio.radio, radio.poll_interval)
+              .then((result) => { return result })
+              .catch((e) => { console.error(e) })
+            this.blu_station.blu_receivers[on_index].setBluConfig(radio.radio, { scan: 1, rx_blink: 1 })
+          })).then((values) => {
+            console.log('all radios on', values)
+          }).catch((e) => {
+            console.error('all radios on error', e)
+          })
+          break;
+        case ('blu_radio_all_off'):
+          // let all_off_receiver = this.findBluReceiver(cmd)
+          let off_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
+
+          // console.log('all off receiver', all_off_receiver)
+          const radios_off = Promise.all(this.blu_station.blu_receivers[off_index].blu_radios.map(radio => {
+            console.log('blu radio all off radio', radio)
+            // all_off_receiver.radioOff(radio)
+            this.blu_station.blu_receivers[off_index].stopDetections(radio)
+          })).then((values) => {
+            console.log('turning blu radio off', values)
+          }).catch((e) => {
+            console.error('all radios off error', e)
+          })
+          break
         case ('toggle_radio'):
           let channel = cmd.data.channel
           this.toggleRadioMode({
@@ -419,30 +462,39 @@ class BaseStation {
 
     process.on('SIGINT', () => {
 
-      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
+      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
+      const promises = this.blu_station.blu_receivers.map((receiver) => {
+        console.log('process on sigint receiver', receiver)
 
-      const blu_radios_stop = Promise.all(this.blu_station.blu_receivers
-        .map((receiver) => {
-          // console.log('process on sigint station', receiver)
+        // receiver.blu_radios.forEach((radio) => {
+        //   receiver.stopDetections(radio)
+        // })
 
-          receiver.blu_radios.forEach((radio) => {
-            receiver.radioOff(radio)
-          })
+        this.blu_station.stopBluRadios(receiver.path)
 
-          // console.log('proces on sigint station after stop blu radios', receiver)
-
-        })).then((values) => {
-          console.log('stations are being destroyed??', values)
-        }).catch((e) => {
-          console.error('no port to closed in destroyed blu receiver', e)
-        }).finally(() => {
-          this.blu_station.destroy_station()
-        })
-
-      setTimeout(() => {
+        this.blu_station.destroy_receiver(receiver)
+      })
+      try {
+        const blu_radios_stop = Promise.all(promises)
+        console.log('stations are being destroyed??', blu_radios_stop)
+        this.blu_station.destroy_station()
         console.log('Closed blu station', this.blu_station)
-        process.exit(0)
-      }, 7000)
+      } catch (e) {
+        console.error('no port to closed in destroyed blu receiver', e)
+        try {
+          blu_radios_stop(promises)
+          process.exit(0)
+        } catch (e) {
+          console.error('what the hell is happening', e)
+          this.blu_station.destroy_station()
+          console.log('Closed blu station', this.blu_station)
+          process.exit(0)
+        }
+      } finally {
+        setTimeout(() => {
+          process.exit(0)
+        }, 5000)
+      }
     })
   }
 
@@ -507,6 +559,11 @@ class BaseStation {
     }
     this.broadcast(JSON.stringify(unlink_receiver))
     this.blu_station.stopBluRadios(path.substring(17))
+
+    this.blu_station.blu_receivers.forEach((receiver) => {
+      this.blu_station.destroy_receiver(receiver)
+    })
+
     // this.blu_station.destroy_station()
     // console.log('destroyed blu station', this.blu_station)
   }

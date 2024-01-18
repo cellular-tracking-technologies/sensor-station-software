@@ -1307,7 +1307,9 @@ const build_blu_stats = function (port, channel) {
 }
 
 const handle_blu_stats = function (data) {
+  console.log('handle blu stats data', data, 'blu_stats', blu_stats)
   let port_key = data.port.toString()
+  console.log('handle blu stats port key', port_key)
   let channel_key = data.channel.toString()
   let blu_beeps = data.blu_beeps
   blu_stats[port_key].channels[channel_key].blu_beeps += blu_beeps
@@ -1879,12 +1881,8 @@ const build_blu_receiver = function (port) {
   button.textContent = 'All Radios On'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
-  // row.appendChild(div) // this needs to go under #blu-receiver-1-row
 
   // Create All Radios Off Button
-  // div = document.createElement('div')
-  // div.setAttribute('class', 'row')
   col_sm = document.createElement('div')
   col_sm.setAttribute('class', 'col-sm')
   button = document.createElement('button')
@@ -1894,7 +1892,6 @@ const build_blu_receiver = function (port) {
   button.textContent = 'All Radios Off'
   col_sm.appendChild(button)
   div.appendChild(col_sm)
-  // document.querySelector(`#blu-receiver-${port}`).appendChild(div)
 
   // Create All Radio Leds On Button
   col_sm = document.createElement('div')
@@ -1929,27 +1926,27 @@ const build_blu_receiver = function (port) {
   col_sm.appendChild(button)
   div.appendChild(col_sm)
 
-  // Create All Radio Change Polling Interval Button
-  col_sm = document.createElement('div')
-  col_sm.setAttribute('class', 'col-sm')
-  button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-lg btn-primary')
-  button.setAttribute('name', 'all_radios_poll')
-  button.setAttribute('value', port)
-  button.textContent = 'All Radios Change Poll'
-  col_sm.appendChild(button)
-  div.appendChild(col_sm)
+  // // Create All Radio Change Polling Interval Button
+  // col_sm = document.createElement('div')
+  // col_sm.setAttribute('class', 'col-sm')
+  // button = document.createElement('button')
+  // button.setAttribute('class', 'btn btn-lg btn-primary')
+  // button.setAttribute('name', 'all_radios_poll')
+  // button.setAttribute('value', port)
+  // button.textContent = 'All Radios Change Poll'
+  // col_sm.appendChild(button)
+  // div.appendChild(col_sm)
 
-  // Create All Radio Update Firmware
-  col_sm = document.createElement('div')
-  col_sm.setAttribute('class', 'col-sm')
-  button = document.createElement('button')
-  button.setAttribute('class', 'btn btn-lg btn-primary')
-  button.setAttribute('name', 'all_radios_update')
-  button.setAttribute('value', port)
-  button.textContent = 'All Radios Update Firmware'
-  col_sm.appendChild(button)
-  div.appendChild(col_sm)
+  // // Create All Radio Update Firmware
+  // col_sm = document.createElement('div')
+  // col_sm.setAttribute('class', 'col-sm')
+  // button = document.createElement('button')
+  // button.setAttribute('class', 'btn btn-lg btn-primary')
+  // button.setAttribute('name', 'all_radios_update')
+  // button.setAttribute('value', port)
+  // button.textContent = 'All Radios Update Firmware'
+  // col_sm.appendChild(button)
+  // div.appendChild(col_sm)
 
   // row.appendChild(component)
 

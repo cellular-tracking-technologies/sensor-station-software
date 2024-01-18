@@ -41,11 +41,11 @@ class BluReceiver extends EventEmitter {
    * @param {Number} opts.radio_channel
    * @param {Number} opts.data
    */
-  schedule(opts) {
+  async schedule(opts) {
     this.#data.queue.push(opts)
     if (this.#data.processing === false) {
       this.#data.processing = true
-      this.run_schedule()
+      await this.run_schedule()
     }
   }
   async run_schedule() {
