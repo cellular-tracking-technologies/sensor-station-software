@@ -498,7 +498,7 @@ class BaseStation {
   }
 
   unlinkBluStation(path) {
-    let unlink_index = this.blu_station.findIndex(receiver => receiver.path === path.substring(17))
+    let unlink_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
     let unlink_obj = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
     let unlink_port = unlink_obj.channel
     let unlink_receiver = {
@@ -506,9 +506,9 @@ class BaseStation {
       port: unlink_port,
     }
     this.broadcast(JSON.stringify(unlink_receiver))
-    this.blu_station[unlink_index].stopBluRadios(path)
-    this.blu_station[unlink_index].destroy_receiver()
-    console.log('destroyed blu station', this.blu_station[unlink_index])
+    this.blu_station.stopBluRadios(path.substring(17))
+    // this.blu_station.destroy_station()
+    // console.log('destroyed blu station', this.blu_station)
   }
 
   unlinkDongleRadio(path) {

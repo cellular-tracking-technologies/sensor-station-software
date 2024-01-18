@@ -172,17 +172,17 @@ class BluReceiverManager extends BluReceiver {
      * @param {Object} radio_object Radio Object that contains radio channel number and poll interval in ms
      */
     async stopDetections(radio_object) {
-        console.log('stop detections radio object', radio_object)
-        let radio_channel = radio_object.radio
+        // console.log('stop detections radio object', radio_object)
+        // let radio_channel = radio_object.radio
         // let beeps = radio_object.beeps
 
-        await this.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
-        await this.setLogoFlash(radio_channel, { led_state: 0, blink_rate: 0, blink_count: 0, })
+        await this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
+        await this.setLogoFlash(radio_object.radio, { led_state: 0, blink_rate: 0, blink_count: 0, })
         // console.log('stop detections radio', radio)
         clearInterval(await radio_object.beeps)
         clearInterval(await radio_object.dropped)
-        radio_object.beeps = undefined
-        radio_object.dropped = undefined
+        delete radio_object.beeps
+        delete radio_object.dropped
         // console.log('stop detections beeps after clear interval', beeps)
 
     }
@@ -269,13 +269,13 @@ class BluReceiverManager extends BluReceiver {
      * @param {Number} poll_interval Polling interval in ms
      */
     async updateConfig(blu_receiver, blu_radio, poll_interval) {
-        console.log('blu receiver', blu_receiver, 'blu radio', blu_radio, 'poll_interval', poll_interval)
+        // console.log('blu receiver', blu_receiver, 'blu radio', blu_radio, 'poll_interval', poll_interval)
         let station_config = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json'))
         let receiver_index = station_config.blu_receivers.findIndex(receiver => receiver.channel == blu_receiver.port)
-        console.log('receiver index', station_config.blu_receivers[receiver_index])
+        // console.log('receiver index', station_config.blu_receivers[receiver_index])
 
         let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio)
-        console.log('radio index', station_config.blu_receivers[receiver_index].blu_radios[radio_index])
+        // console.log('radio index', station_config.blu_receivers[receiver_index].blu_radios[radio_index])
         station_config.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval = poll_interval
 
         fs.writeFileSync('/etc/ctt/station-config.json',

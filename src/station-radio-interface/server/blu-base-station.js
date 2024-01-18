@@ -66,49 +66,53 @@ class BluStation {
           console.log('blu reboot all cmd', cmd)
 
           let all_reboot_receiver = this.findBluReceiver(cmd)
+          console.log('all reboot receiver radios', all_reboot_receiver.blu_radios)
           // let reboot_index = this.findBluPort(cmd.data.port)
 
           const all_reboot = Promise.all(all_reboot_receiver.blu_radios.map(radio => {
             // const all_reboot = Promise.all(this.blu_receivers[reboot_index].blu_radios.map(radio => {
             all_reboot_receiver.stopDetections(radio)
-          })).then(() => {
+            // })).then(() => {
 
-            all_reboot_receiver.blu_radios.forEach(radio => {
-              // reset polling interval to 10 s on reboot
-              let radio_channel = radio.radio
-              radio.poll_interval = 10000
-              console.log('all reboot radio', radio)
-              // this.blu_paths[reboot_index_all] = all_reboot_receiver
-              all_reboot_receiver.updateConfig(all_reboot_receiver, radio_channel, radio.poll_interval)
-              // let reboot_index = this.findBluPort(this.blu_receivers[reboot_index].port)
-              // this.blu_receivers[reboot_index] = this.blu_receivers[reboot_index]
+            // all_reboot_receiver.blu_radios.forEach(radio => {
+            // reset polling interval to 10 s on reboot
+            let radio_channel = radio.radio
+            radio.poll_interval = 10000
+            // console.log('all reboot radio', radio)
+            // this.blu_paths[reboot_index_all] = all_reboot_receiver
+            all_reboot_receiver.updateConfig(all_reboot_receiver, radio_channel, radio.poll_interval)
+            // let reboot_index = this.findBluPort(this.blu_receivers[reboot_index].port)
+            // this.blu_receivers[reboot_index] = this.blu_receivers[reboot_index]
 
-              let poll_data = {
-                port: all_reboot_receiver.port,
-                channel: radio_channel,
-                poll_interval: radio.poll_interval,
-                msg_type: 'poll_interval',
-              }
+            let poll_data = {
+              port: all_reboot_receiver.port,
+              channel: radio_channel,
+              poll_interval: radio.poll_interval,
+              msg_type: 'poll_interval',
+            }
 
-              this.broadcast(JSON.stringify(poll_data))
-              all_reboot_receiver.rebootBluRadio(radio_channel, radio.poll_interval)
-              // all_reboot_receiver.getDetections(radio_channel, radio.poll_interval)
-              // all_reboot_receiver.getBluStats(radio_channel, radio.poll_interval)
-              // this.updateConfig(this.blu_paths)
+            this.broadcast(JSON.stringify(poll_data))
+            all_reboot_receiver.rebootBluRadio(radio_channel, radio.poll_interval)
+            all_reboot_receiver.radioOn(radio, radio.poll_interval)
 
-              // }).then(() => {
-              //   all_reboot_receiver.blu_radios.map(radio => {
-              //     all_reboot_receiver.getDetections(radio.radio, 10000)
-            })
-          }).then(() => {
-            all_reboot_receiver.blu_radios.map(radio => {
+            // all_reboot_receiver.getDetections(radio_channel, radio.poll_interval)
+            // all_reboot_receiver.getBluStats(radio_channel, radio.poll_interval)
+            // this.updateConfig(this.blu_paths)
 
-              all_reboot_receiver.radioOn(radio, radio.poll_interval)
-            })
-          }).then((values) => {
+            // }).then(() => {
+            //   all_reboot_receiver.blu_radios.map(radio => {
+            //     all_reboot_receiver.getDetections(radio.radio, 10000)
+            // })
+
+          })).then((values) => {
             console.log('all radios rebooting', values)
           }).catch((e) => {
             console.error('all radios reboot error', e)
+            // }).finally(() => {
+            //   all_reboot_receiver.blu_radios.map(radio => {
+            //     console.log('all radios reboot radio', radio)
+            //     all_reboot_receiver.radioOn(radio, radio.poll_interval)
+            //   })
           })
 
           break
