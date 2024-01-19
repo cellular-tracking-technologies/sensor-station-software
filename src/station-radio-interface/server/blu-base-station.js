@@ -304,14 +304,14 @@ class BluStation {
               beep.temp = beep.payload.parsed.temp
               this.broadcast(JSON.stringify(beep))
             })
-            console.log('blu beeps sum port number', this.blu_receivers[br_index].port)
+            // console.log('blu beeps sum port number', this.blu_receivers[br_index].port)
             let blu_sum = {
               port: this.blu_receivers[br_index].port,
               channel: job.radio_channel,
               blu_beeps: job.data.length == null ? 0 : job.data.length,
               msg_type: "blu_stats",
             }
-            console.log('blu beeps sum object', blu_sum)
+            // console.log('blu beeps sum object', blu_sum)
 
             this.broadcast(JSON.stringify(blu_sum))
           } catch (e) {
@@ -345,7 +345,7 @@ class BluStation {
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
               msg_type: "blu_dropped",
             }
-            console.log('blu stats', blu_stats)
+            // console.log('blu stats', blu_stats)
             console.log('Port', this.blu_receivers[br_index].port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
 
             this.broadcast(JSON.stringify(blu_stats))
@@ -356,6 +356,37 @@ class BluStation {
           }
           break
         default:
+          try {
+            this.blu_receivers[br_index].blu_radios.forEach((radio) => {
+              // console.log('blu reader beep', beep)
+              let no_beep = {
+                channel: radio.radio,
+                msg_type: "blu",
+                port: this.blu_receivers[br_index].port,
+              }
+              // beep.data = { id: beep.id }
+              // beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
+              // beep.msg_type = "blu"
+              // beep.protocol = "1.0.0"
+              // beep.received_at = moment(new Date(beep.time)).utc()
+              // // beep.receiver = this.blu_receivers.find(receiver => receiver.channel === this.blu_receiver[br_index].channel)
+              // // console.log('beep receiver')
+              // beep.radio_index = this.blu_receivers[br_index].blu_radios.findIndex(radio =>
+              //   radio.radio == beep.channel
+              // )
+
+              // // console.log('beep radio', beep.radio_index, 'beep receiver', this.blu_receivers.blu_radios[beep.radio_index])
+              // beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.radio_index].poll_interval
+              // // console.log('beep poll interval', beep.poll_interval)
+              // beep.port = this.blu_receivers[br_index].port
+              // this.data_manager.handleBluBeep(beep)
+              // beep.vcc = beep.payload.parsed.solar
+              // beep.temp = beep.payload.parsed.temp
+              this.broadcast(JSON.stringify(no_beep))
+            })
+          } catch (e) {
+
+          }
           break
       }
     })
@@ -387,6 +418,7 @@ class BluStation {
         console.log('radios start radio', radio)
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
+
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         this.blu_receivers[br_index].getBluVersion(radio_channel)
         // this.blu_receivers[br_index].setBluDfu(radio_channel, this.firmware)

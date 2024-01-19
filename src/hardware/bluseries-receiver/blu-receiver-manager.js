@@ -185,7 +185,7 @@ class BluReceiverManager extends BluReceiver {
         // console.log(`${typeof radio_object.beeps}`)
         // console.log(`${typeof radio_object.dropped}`)
         clearInterval(await radio_object.beeps)
-        console.log('stop detections beeps after clear interval', radio_object.beeps)
+        // console.log('stop detections beeps after clear interval', radio_object.beeps)
 
         clearInterval(await radio_object.dropped)
         console.log('stop detections droppeed after clear interval', radio_object.dropped)
@@ -249,7 +249,7 @@ class BluReceiverManager extends BluReceiver {
     async radioOff(radio_object) {
         // console.log('blu radio off', radio_object)
         let radio_off = await this.stopDetections(radio_object)
-        console.log('blu radio off', radio_off)
+        // console.log('blu radio off', radio_off)
         return radio_off
     }
 
