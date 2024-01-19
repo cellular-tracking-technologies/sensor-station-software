@@ -196,7 +196,7 @@ class BaseStation {
 
           // console.log('all off receiver', all_off_receiver)
           const radios_off = Promise.all(this.blu_station.blu_receivers[off_index].blu_radios.map(radio => {
-            console.log('blu radio all off radio', radio)
+            // console.log('blu radio all off radio', radio)
             // all_off_receiver.radioOff(radio)
             this.blu_station.blu_receivers[off_index].stopDetections(radio)
           })).then((values) => {
@@ -204,6 +204,44 @@ class BaseStation {
           }).catch((e) => {
             console.error('all radios off error', e)
           })
+          break
+        case ('toggle_blu'):
+
+          if (cmd.data.type === 'blu_on') {
+
+            let on = this.blu_station.findBluReceiverAndRadio(cmd)
+            on.receiver.updateConfig(on.receiver, on.radio.radio, on.radio.poll_interval)
+            on.receiver.radioOn(on.radio, on.radio.poll_interval)
+
+          } else if (cmd.data.type === "blu_off") {
+
+            let off = this.blu_station.findBluReceiverAndRadio(cmd)
+
+            off.receiver.radioOff(off.radio)
+          }
+          break
+        case ('toggle_blu_led'):
+
+          let { data: { scan, rx_blink } } = cmd
+          let led = this.blu_station.findBluReceiverAndRadio(cmd)
+          led.receiver.setBluConfig(led.radio, { scan, rx_blink })
+
+          break
+        case ('reboot_blu_radio'):
+
+          let reboot = this.blu_station.findBluReceiverAndRadio(cmd)
+          let { receiver, radio } = reboot
+          let radio_channel = radio.radio
+          let reboot_interval = 10000
+
+          this.poll_data = {
+            channel: radio_channel,
+            poll_interval: reboot_interval,
+            msg_type: 'poll_interval',
+          }
+          reboot.receiver.broadcast(JSON.stringify(this.poll_data))
+          reboot.receiver.updateConfig(receiver, radio, reboot_interval)
+          reboot.receiver.rebootBluReceiver(radio, reboot_interval)
           break
         case ('toggle_radio'):
           let channel = cmd.data.channel

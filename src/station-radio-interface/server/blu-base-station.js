@@ -161,44 +161,44 @@ class BluStation {
         //     console.error(`Can't update all radios on port ${cmd.data.port}`)
         //   })
         //   break
-        case ('toggle_blu'):
+        // case ('toggle_blu'):
 
-          if (cmd.data.type === 'blu_on') {
+        //   if (cmd.data.type === 'blu_on') {
 
-            let on = this.blu_receivers.find(receiver => receiver.port === Number(cmd.data.port))
-            on.station.updateConfig(on.station, on.radio.radio, on.radio.poll_interval)
-            on.station.radioOn(on.radio, on.radio.poll_interval)
+        //     let on = this.blu_receivers.find(receiver => receiver.port === Number(cmd.data.port))
+        //     on.station.updateConfig(on.station, on.radio.radio, on.radio.poll_interval)
+        //     on.station.radioOn(on.radio, on.radio.poll_interval)
 
-          } else if (cmd.data.type === "blu_off") {
+        //   } else if (cmd.data.type === "blu_off") {
 
-            let off = this.blu_receivers.find(receiver => receiver.port === Number(cmd.data.port))
+        //     let off = this.blu_receivers.find(receiver => receiver.port === Number(cmd.data.port))
 
-            off.station.radioOff(off.radio)
-          }
-          break
-        case ('toggle_blu_led'):
+        //     off.station.radioOff(off.radio)
+        //   }
+        //   break
+        // case ('toggle_blu_led'):
 
-          let { data: { scan, rx_blink } } = cmd
-          let led = this.blu_receivers.find(receiver => receiver.port === Number(cmd.data.port))
-          led.station.setBluConfig(led.radio, { scan, rx_blink })
+        //   let { data: { scan, rx_blink } } = cmd
+        //   let led = this.blu_receivers.find(receiver => receiver.port === Number(cmd.data.port))
+        //   led.station.setBluConfig(led.radio, { scan, rx_blink })
 
-          break
-        case ('reboot_blu_radio'):
+        //   break
+        // case ('reboot_blu_radio'):
 
-          let reboot = this.blu_stations.findReceiverAndRadio(cmd)
-          let { station, radio } = reboot
-          let radio_channel = radio.radio
-          let reboot_interval = 10000
+        //   let reboot = this.blu_stations.findReceiverAndRadio(cmd)
+        //   let { station, radio } = reboot
+        //   let radio_channel = radio.radio
+        //   let reboot_interval = 10000
 
-          this.poll_data = {
-            channel: radio_channel,
-            poll_interval: reboot_interval,
-            msg_type: 'poll_interval',
-          }
-          reboot.station.broadcast(JSON.stringify(this.poll_data))
-          reboot.station.updateConfig(station, radio, reboot_interval)
-          reboot.station.rebootBluReceiver(radio, reboot_interval)
-          break
+        //   this.poll_data = {
+        //     channel: radio_channel,
+        //     poll_interval: reboot_interval,
+        //     msg_type: 'poll_interval',
+        //   }
+        //   reboot.station.broadcast(JSON.stringify(this.poll_data))
+        //   reboot.station.updateConfig(station, radio, reboot_interval)
+        //   reboot.station.rebootBluReceiver(radio, reboot_interval)
+        //   break
         // case ('change_poll'):
         //   let change_poll = this.blu_stations.findreceiverAndRadio(cmd)
         //   let { station: change_station, radio: change_radio, } = change_poll
@@ -553,7 +553,7 @@ class BluStation {
     let { data: { port, channel, poll_interval }
     } = cmd
     let receiver = this.blu_receivers.find(receiver => receiver.port === Number(port))
-    let radio = this.blu_receivers.blu_radios.find(radio => radio.radio === Number(channel))
+    let radio = receiver.blu_radios.find(radio => radio.radio === Number(channel))
     radio.poll_interval = poll_interval ? poll_interval : radio.poll_interval
 
     return { receiver, radio }
