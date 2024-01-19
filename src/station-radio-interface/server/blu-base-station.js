@@ -151,37 +151,6 @@ class BluStation {
           }
           break
         default:
-          try {
-            this.blu_receivers[br_index].blu_radios.forEach((radio) => {
-              // console.log('blu reader beep', beep)
-              let no_beep = {
-                channel: radio.radio,
-                msg_type: "blu",
-                port: this.blu_receivers[br_index].port,
-              }
-              // beep.data = { id: beep.id }
-              // beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
-              // beep.msg_type = "blu"
-              // beep.protocol = "1.0.0"
-              // beep.received_at = moment(new Date(beep.time)).utc()
-              // // beep.receiver = this.blu_receivers.find(receiver => receiver.channel === this.blu_receiver[br_index].channel)
-              // // console.log('beep receiver')
-              // beep.radio_index = this.blu_receivers[br_index].blu_radios.findIndex(radio =>
-              //   radio.radio == beep.channel
-              // )
-
-              // // console.log('beep radio', beep.radio_index, 'beep receiver', this.blu_receivers.blu_radios[beep.radio_index])
-              // beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.radio_index].poll_interval
-              // // console.log('beep poll interval', beep.poll_interval)
-              // beep.port = this.blu_receivers[br_index].port
-              // this.data_manager.handleBluBeep(beep)
-              // beep.vcc = beep.payload.parsed.solar
-              // beep.temp = beep.payload.parsed.temp
-              this.broadcast(JSON.stringify(no_beep))
-            })
-          } catch (e) {
-
-          }
           break
       }
     })
@@ -452,9 +421,9 @@ class BluStation {
       poll_interval: reboot_interval,
       msg_type: 'poll_interval',
     }
-    reboot.receiver.broadcast(JSON.stringify(this.poll_data))
+    this.broadcast(JSON.stringify(this.poll_data))
     reboot.receiver.updateConfig(receiver, radio, reboot_interval)
-    reboot.receiver.rebootBluReceiver(radio, reboot_interval)
+    reboot.receiver.rebootBluRadio(radio, reboot_interval)
   }
 }
 
