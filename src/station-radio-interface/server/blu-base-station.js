@@ -342,13 +342,14 @@ class BluStation {
               blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
               msg_type: "blu_dropped",
             }
+            console.log('blu stats', blu_stats)
             console.log('Port', this.blu_receivers[br_index].port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
 
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
             console.log('base station stats error:', 'receiver', this.blu_receivers[br_index].port, 'radio', job.radio_channel, e)
-            blu_stats.blu_dropped = 0
-            this.broadcast(JSON.stringify(blu_stats))
+            // blu_stats.blu_dropped = 0
+            // this.broadcast(JSON.stringify(blu_stats))
           }
           break
         default:

@@ -1318,6 +1318,7 @@ const handle_blu_stats = function (data) {
 }
 
 const handle_blu_dropped = function (data) {
+  console.log('handle blu dropped', data)
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
   let dropped = data.blu_dropped ?? 0
@@ -1590,7 +1591,7 @@ const initialize_websocket = function () {
         // handle_ble(data);
         break;
       case ('blu_stats'):
-        // console.log('blu stats event', data)
+        console.log('blu stats event', data)
         handle_blu_stats(data);
       case ('blu_dropped'):
         // console.log('blu dropped event', data)
