@@ -18,11 +18,6 @@ fi
 
 # handle versioning - radio map / rtc boot config
 if test $version -ge 3; then
-	# V3 station
-	# link appropriate radio map
-	echo 'linking v3 radio map'
-	ln -s /lib/ctt/sensor-station-software/system/radios/v3-radio-map.js $RADIO_MAP
-
 	# boot config for rtc
 	if grep -qz $V2_RTC $BOOT_CONFIG; then
 		# detected v2 rtc - need to update and reboot
@@ -34,10 +29,6 @@ if test $version -ge 3; then
 	fi
 else
 	# V2 station
-	# link appropriate radio map
-	echo 'linking v2 radio map'
-	ln -s /lib/ctt/sensor-station-software/system/radios/v2-radio-map.js $RADIO_MAP
-
 	# boot config for rtc
 	if grep -qz $V3_RTC $BOOT_CONFIG; then
 		echo 'replacing v3 rtc with v2 rtc'

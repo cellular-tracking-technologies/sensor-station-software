@@ -16,7 +16,6 @@ import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
 import revision from '../../revision.js'
-import blu_filemap from './blu-radio-version.js'
 
 /**
  * manager class for controlling / reading radios
@@ -25,21 +24,11 @@ import blu_filemap from './blu-radio-version.js'
 class BaseStation {
   /**
    * 
-   * @param {*} opts.config_filepath - string filename used to persist changes / control behaviour
-   * @param {*} otps.radio_map_filepath - string filename used for radio channel mapping
+   * @param {String} config_filepath - string filename used to persist changes / control behaviour
    */
-  constructor(opts) {
-    this.config = new StationConfig({
-      config_filepath: opts.config_filepath,
-      radio_map_filepath: opts.radio_map_filepath,
-      blu_map_filepath: blu_filemap,
-    })
-    // console.log('base station config', this.config)
-    // this.blu_radios = this.config.default_config.blu_radios
-    // this.blu_radios = blu_radios
-    // this.blu_reader
+  constructor(config_filepath) {
+    this.config = new StationConfig(config_filepath)
     this.blu_station
-    // this.blu_stations = []
     this.blu_receivers = []
     this.active_radios = {}
     this.station_leds = new StationLeds()
