@@ -168,57 +168,32 @@ class BaseStation {
           this.blu_station.bluRadiosAllOn(cmd)
           break;
         case ('blu_radio_all_off'):
-          // let all_off_receiver = this.findBluReceiver(cmd)
-          let off_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
-
-          // console.log('all off receiver', all_off_receiver)
-          const radios_off = Promise.all(this.blu_station.blu_receivers[off_index].blu_radios.map(radio => {
-            // console.log('blu radio all off radio', radio)
-            // all_off_receiver.radioOff(radio)
-            this.blu_station.blu_receivers[off_index].stopDetections(radio)
-          })).then((values) => {
-            console.log('turning blu radio off', values)
-          }).catch((e) => {
-            console.error('all radios off error', e)
-          })
+          this.blu_station.bluRadiosAllOff(cmd)
           break
+        case ('blu_led_all'):
+          this.blu_station.bluRadiosAllLed(cmd)
+          break
+        case ('blu_reboot_all'):
+          this.blu_station.bluRadiosAllReboot(cmd)
         case ('toggle_blu'):
 
           if (cmd.data.type === 'blu_on') {
 
-            let on = this.blu_station.findBluReceiverAndRadio(cmd)
-            on.receiver.updateConfig(on.receiver, on.radio.radio, on.radio.poll_interval)
-            on.receiver.radioOn(on.radio, on.radio.poll_interval)
+            this.blu_station.bluRadioOn(cmd)
 
           } else if (cmd.data.type === "blu_off") {
 
-            let off = this.blu_station.findBluReceiverAndRadio(cmd)
-
-            off.receiver.radioOff(off.radio)
+            this.blu_station.bluRadioOff(cmd)
           }
           break
         case ('toggle_blu_led'):
 
-          let { data: { scan, rx_blink } } = cmd
-          let led = this.blu_station.findBluReceiverAndRadio(cmd)
-          led.receiver.setBluConfig(led.radio, { scan, rx_blink })
+          this.blu_station.bluLed(cmd)
 
           break
         case ('reboot_blu_radio'):
 
-          let reboot = this.blu_station.findBluReceiverAndRadio(cmd)
-          let { receiver, radio } = reboot
-          let radio_channel = radio.radio
-          let reboot_interval = 10000
-
-          this.poll_data = {
-            channel: radio_channel,
-            poll_interval: reboot_interval,
-            msg_type: 'poll_interval',
-          }
-          reboot.receiver.broadcast(JSON.stringify(this.poll_data))
-          reboot.receiver.updateConfig(receiver, radio, reboot_interval)
-          reboot.receiver.rebootBluReceiver(radio, reboot_interval)
+          this.blu_station.bluReboot(cmd)
           break
         case ('toggle_radio'):
           let channel = cmd.data.channel
