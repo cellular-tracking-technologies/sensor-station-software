@@ -153,45 +153,35 @@ class BaseStation {
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
 
-          // let all_on_receiver = this.findBluReceiver(cmd)
-          let on_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
-
-          // const radios_on = Promise.all(all_on_receiver.blu_radios.map(radio => {
-          //   radio.poll_interval = Number(cmd.data.poll_interval)
-          //   all_on_receiver.updateConfig(all_on_receiver, radio.radio, radio.poll_interval)
-          //   all_on_receiver.radioOn(radio, cmd.data.poll_interval)
-          console.log('indexed blu receiver', this.blu_station.blu_receivers[on_index].blu_radios)
-          const radios_on = Promise.all(this.blu_station.blu_receivers[on_index].blu_radios.map(radio => {
-            radio.poll_interval = Number(cmd.data.poll_interval)
-            this.blu_station.blu_receivers[on_index].updateConfig(this.blu_station.blu_receivers[on_index], radio.radio, radio.poll_interval)
-            // this.blu_receivers[on_index].radioOn(radio, cmd.data.poll_interval)
-            radio.beeps = this.blu_station.blu_receivers[on_index].getDetections(radio.radio, radio.poll_interval)
-              .then((result) => { return result })
-              .catch((e) => { console.error(e) })
-            radio.dropped = this.blu_station.blu_receivers[on_index].getBluStats(radio.radio, radio.poll_interval)
-              .then((result) => { return result })
-              .catch((e) => { console.error(e) })
-            this.blu_station.blu_receivers[on_index].setBluConfig(radio.radio, { scan: 1, rx_blink: 1 })
-          })).then((values) => {
-            console.log('all radios on', values)
-          }).catch((e) => {
-            console.error('all radios on error', e)
-          })
+          this.blu_station.bluRadiosAllOn(cmd)
           break;
         case ('blu_radio_all_off'):
-          // let all_off_receiver = this.findBluReceiver(cmd)
-          let off_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
+          this.blu_station.bluRadiosAllOff(cmd)
+          break
+        case ('blu_led_all'):
+          this.blu_station.bluRadiosAllLed(cmd)
+          break
+        case ('blu_reboot_all'):
+          this.blu_station.bluRadiosAllReboot(cmd)
+        case ('toggle_blu'):
 
-          // console.log('all off receiver', all_off_receiver)
-          const radios_off = Promise.all(this.blu_station.blu_receivers[off_index].blu_radios.map(radio => {
-            console.log('blu radio all off radio', radio)
-            // all_off_receiver.radioOff(radio)
-            this.blu_station.blu_receivers[off_index].stopDetections(radio)
-          })).then((values) => {
-            console.log('turning blu radio off', values)
-          }).catch((e) => {
-            console.error('all radios off error', e)
-          })
+          if (cmd.data.type === 'blu_on') {
+
+            this.blu_station.bluRadioOn(cmd)
+
+          } else if (cmd.data.type === "blu_off") {
+
+            this.blu_station.bluRadioOff(cmd)
+          }
+          break
+        case ('toggle_blu_led'):
+
+          this.blu_station.bluLed(cmd)
+
+          break
+        case ('reboot_blu_radio'):
+
+          this.blu_station.bluReboot(cmd)
           break
         case ('toggle_radio'):
           let channel = cmd.data.channel

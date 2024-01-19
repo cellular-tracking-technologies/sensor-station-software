@@ -1245,9 +1245,9 @@ const handle_stats = function (stats) {
 };
 
 const handle_add_port = function (data) {
-  // console.log('handle add port data', data)
-  let add_port = data.port
-  // console.log('handle add port add_port', add_port)
+  console.log('handle add port data', data)
+  let add_port = data.port.toString()
+  console.log('handle add port add_port', add_port)
 
   if (blu_ports.includes(add_port)) {
     // console.log('handle add port, port is present', add_port)
