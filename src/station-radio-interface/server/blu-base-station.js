@@ -228,7 +228,7 @@ class BluStation {
    */
   startBluRadios(path) {
     let blu_path = this.blu_paths.find(receiver => receiver.path === path)
-    console.log('startreceivers blu receiver', blu_path)
+    console.log('start receivers blu receiver', blu_path)
 
     let blu_receiver = new BluReceiverManager({
       path: path,

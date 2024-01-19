@@ -560,9 +560,7 @@ class BaseStation {
     this.broadcast(JSON.stringify(unlink_receiver))
     this.blu_station.stopBluRadios(path.substring(17))
 
-    this.blu_station.blu_receivers.forEach((receiver) => {
-      this.blu_station.destroy_receiver(receiver)
-    })
+    this.blu_station.destroy_receiver(this.blu_station.blu_receivers[unlink_index])
 
     // this.blu_station.destroy_station()
     // console.log('destroyed blu station', this.blu_station)
