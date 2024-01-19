@@ -16,14 +16,21 @@ class BluStation {
     this.firmware = opts.blu_firmware
   }
 
+  bluServerBound() {
+    this.bluStartWebSocketServer.bind(this)
+  }
+
   bluInit(path) {
-    this.bluStartWebSocketServer()
+    // this.bluStartWebSocketServer()
+    this.bluServerBound()
     this.startBluRadios(path)
   }
 
   bluStartWebSocketServer() {
 
     this.sensor_socket_server.on('cmd', (cmd) => {
+      console.log('blu sensor socket server cmd', cmd)
+
       switch (cmd.cmd) {
         // case ('blu_radio_all_on'):
 
@@ -240,6 +247,7 @@ class BluStation {
     let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path)
     console.log('blu receivers array', this.blu_receivers, 'indexed blu receivers array', this.blu_receivers[br_index])
 
+    // this.bluServerBound(this.blu_receivers[br_index])
     blu_receiver = undefined
 
     setTimeout(() => {
@@ -255,7 +263,7 @@ class BluStation {
             this.blu_fw = {
               msg_type: 'blu-firmware',
               firmware: {
-                [this.blu_receivers[br_index].channel]: {
+                [this.blu_receivers[br_index].port]: {
                   channels: {
                     [job.radio_channel]: job.data.version,
                   }

@@ -162,7 +162,6 @@ class BaseStation {
 
     })
     this.sensor_socket_server.on('cmd', (cmd) => {
-      console.log('sensor socket server cmd', cmd)
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
 
