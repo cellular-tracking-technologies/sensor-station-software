@@ -304,12 +304,15 @@ class BluStation {
               beep.temp = beep.payload.parsed.temp
               this.broadcast(JSON.stringify(beep))
             })
+            console.log('blu beeps sum port number', this.blu_receivers[br_index].port)
             let blu_sum = {
               port: this.blu_receivers[br_index].port,
               channel: job.radio_channel,
               blu_beeps: job.data.length == null ? 0 : job.data.length,
               msg_type: "blu_stats",
             }
+            console.log('blu beeps sum object', blu_sum)
+
             this.broadcast(JSON.stringify(blu_sum))
           } catch (e) {
             console.error(`base station get detections error on Port ${this.blu_receivers[br_index].port}`, e)
@@ -359,7 +362,8 @@ class BluStation {
 
     this.blu_receivers[br_index].startUpFlashLogo()
 
-    this.sendBluVersion(this.blu_receivers[br_index], 10000)
+
+    // this.sendBluVersion(this.blu_receivers[br_index], 10000)
 
     // setInterval(() => {
     //   this.blu_receivers[br_index].blu_radios.forEach((radio) => {
@@ -385,6 +389,8 @@ class BluStation {
         let poll_interval = radio.poll_interval
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         this.blu_receivers[br_index].getBluVersion(radio_channel)
+        // this.blu_receivers[br_index].setBluDfu(radio_channel, this.firmware)
+
 
         radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
           .then((result) => { return result })

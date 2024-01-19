@@ -881,7 +881,7 @@ let DONGLES_ENABLED = false;
 let MAX_ROW_COUNT = 1000;
 
 const handle_blu_beep = function (beep) {
-  // console.log('handle blu beep', beep)
+  console.log('handle blu beep', beep)
   let tag_id = beep.tag_id.toUpperCase();
   let port = beep.port.toString()
   let channel = beep.channel.toString()
