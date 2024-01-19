@@ -1291,6 +1291,7 @@ const handle_dongle_unlink = function (data) {
 }
 
 const build_blu_stats = function (port, channel) {
+  console.log('build blu stats', blu_stats, 'port', port, 'channel', channel)
   if (Object.keys(blu_stats).includes(port)) {
     // if port exists within blu stats object, add blu_dropped to existing value
     if (Object.keys(blu_stats[port].channels).includes(channel)) {
