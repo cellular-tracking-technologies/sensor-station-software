@@ -6,7 +6,6 @@ import { StationConfig } from './station-config.js'
 import { DataManager } from './data/data-manager.js'
 import { ServerApi } from './http/server-api.js'
 import { StationLeds } from './led/station-leds.js'
-import { QaqcReport } from './qaqc/report.js'
 import fetch from 'node-fetch'
 import { spawn } from 'child_process'
 import fs from 'fs'
@@ -221,9 +220,6 @@ class BaseStation {
             firmware: this.radio_fw,
           }))
           break
-        case ('qaqc'):
-          this.qaqc()
-          break
         case ('about'):
           fetch('http://localhost:3000/about')
             .then(res => res.json())
@@ -278,31 +274,6 @@ class BaseStation {
       console.error('command error')
       console.error(err)
       this.stationLog('command error', err.toString())
-    })
-  }
-
-  /**
-   * run qaqc - send diagnostics over radio
-   */
-  qaqc() {
-    this.log('init QAQC report')
-    // use radio 1
-    let radio = this.active_radios[1]
-    let stats = this.data_manager.stats.stats
-    let report = new QaqcReport({
-      station_id: this.station_id,
-      stats: stats.channels
-    })
-    report.getResults().then((results) => {
-      let packets = report.generatePackets(results)
-      let cmds = []
-
-      Object.keys(packets).forEach((key) => {
-        let packet = packets[key]
-        let msg = packet.packet.base64()
-        cmds.push('tx:' + msg)
-      })
-      radio.issueCommands(cmds)
     })
   }
 
@@ -388,7 +359,6 @@ class BaseStation {
     // start data rotation timer
     // checkin after 5 seconds of station running
     setTimeout(this.checkin.bind(this), 10 * 1000)
-    // this.heartbeat.createEvent(5, this.qaqc.bind(this))
     this.heartbeat.createEvent(this.config.data.record.rotation_frequency_minutes * 60, this.rotateDataFiles.bind(this))
     this.heartbeat.createEvent(this.config.data.record.sensor_data_frequency_minutes * 60, this.pollSensors.bind(this))
     this.heartbeat.createEvent(this.config.data.record.checkin_frequency_minutes * 60, this.checkin.bind(this))
