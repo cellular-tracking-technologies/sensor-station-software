@@ -21,8 +21,8 @@ class BluStation {
   }
 
   bluInit(path) {
-    // this.bluStartWebSocketServer()
-    this.bluServerBound()
+    this.bluStartWebSocketServer()
+    // this.bluServerBound()
     this.startBluRadios(path)
   }
 
@@ -557,6 +557,29 @@ class BluStation {
     radio.poll_interval = poll_interval ? poll_interval : radio.poll_interval
 
     return { receiver, radio }
+  }
+
+  bluRadiosAllOn(cmd) {
+    // let all_on_receiver = this.findBluReceiver(cmd)
+    let on_index = this.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
+
+    console.log('indexed blu receiver', this.blu_receivers[on_index].blu_radios)
+    const radios_on = Promise.all(this.blu_receivers[on_index].blu_radios.map(radio => {
+      radio.poll_interval = Number(cmd.data.poll_interval)
+      this.blu_receivers[on_index].updateConfig(this.blu_receivers[on_index], radio.radio, radio.poll_interval)
+      // this.blu_receivers[on_index].radioOn(radio, cmd.data.poll_interval)
+      radio.beeps = this.blu_receivers[on_index].getDetections(radio.radio, radio.poll_interval)
+        .then((result) => { return result })
+        .catch((e) => { console.error(e) })
+      radio.dropped = this.blu_receivers[on_index].getBluStats(radio.radio, radio.poll_interval)
+        .then((result) => { return result })
+        .catch((e) => { console.error(e) })
+      this.blu_receivers[on_index].setBluConfig(radio.radio, { scan: 1, rx_blink: 1 })
+    })).then((values) => {
+      console.log('all radios on', values)
+    }).catch((e) => {
+      console.error('all radios on error', e)
+    })
   }
 }
 
