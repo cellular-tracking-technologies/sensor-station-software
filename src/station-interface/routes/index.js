@@ -19,6 +19,10 @@ router.get('/', function (req, res, next) {
   res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
 })
 
+router.get('/blu', function (req, res, next) {
+  res.render('main-blu', { title: 'CTT Sensor Station BluSeries Receiver Control', message: 'pug' })
+})
+
 router.get('/update-station', function (req, res, next) {
   res.render('station-update')
 })
