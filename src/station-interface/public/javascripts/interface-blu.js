@@ -869,16 +869,16 @@ const build_blu_receiver = function (port) {
     col_sm.appendChild(button)
     div.appendChild(col_sm)
 
-    // // Create All Radio Change Poll Button
-    // col_sm = document.createElement('div')
-    // col_sm.setAttribute('class', 'col-sm')
-    // button = document.createElement('button')
-    // button.setAttribute('class', 'btn btn-lg btn-primary')
-    // button.setAttribute('name', 'all_radios_poll')
-    // button.setAttribute('value', port)
-    // button.textContent = 'All Radios Change Poll'
-    // col_sm.appendChild(button)
-    // div.appendChild(col_sm)
+    // Create All Radio Change Poll Button
+    col_sm = document.createElement('div')
+    col_sm.setAttribute('class', 'col-sm')
+    button = document.createElement('button')
+    button.setAttribute('class', 'btn btn-lg btn-primary')
+    button.setAttribute('name', 'all_radios_poll')
+    button.setAttribute('value', port)
+    button.textContent = 'All Radios Change Poll'
+    col_sm.appendChild(button)
+    div.appendChild(col_sm)
 
     // Create All Radio Reboot Button
     col_sm = document.createElement('div')
@@ -1008,6 +1008,19 @@ const build_blu_buttons = function (port, radio) {
     div.appendChild(col_sm)
     document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
+    // Change Polling Interval
+    col_sm = document.createElement('div')
+    col_sm.setAttribute('class', 'col-sm')
+    button = document.createElement('button')
+    button.setAttribute('class', 'btn btn-sm btn-info')
+    button.setAttribute('name', 'radio_polling')
+    button.setAttribute('value', `${port}-${radio}`)
+    button.textContent = `Change Polling Interval`
+    col_sm.appendChild(button)
+    div.appendChild(col_sm)
+    document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
+
+    // Reboot Radio
     col_sm = document.createElement('div')
     col_sm.setAttribute('class', 'col-sm')
     button = document.createElement('button')
@@ -1019,16 +1032,6 @@ const build_blu_buttons = function (port, radio) {
     div.appendChild(col_sm)
     document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
-    // col_sm = document.createElement('div')
-    // col_sm.setAttribute('class', 'col-sm')
-    // button = document.createElement('button')
-    // button.setAttribute('class', 'btn btn-sm btn-info')
-    // button.setAttribute('name', 'radio_polling')
-    // button.setAttribute('value', `${port}-${radio}`)
-    // button.textContent = `Change Polling Interval`
-    // col_sm.appendChild(button)
-    // div.appendChild(col_sm)
-    // document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
     // col_sm = document.createElement('div')
     // col_sm.setAttribute('class', 'col-sm')
