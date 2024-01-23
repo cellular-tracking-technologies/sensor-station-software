@@ -144,15 +144,15 @@ class BluStation {
         console.log('radios start radio', radio)
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
+        this.blu_receivers[br_index].radioOn(radio, poll_interval)
+        // this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+        // this.blu_receivers[br_index].getBluVersion(radio_channel)
 
-        this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-        this.blu_receivers[br_index].getBluVersion(radio_channel)
-
-        radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
-        radio.dropped = this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
+        // radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
+        // radio.dropped = this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
         console.log('blu radios start', radio)
       })).then((values) => {
-        console.log('radios started', values)
+        console.log('radios started', this.blu_receivers[br_index].blu_radios)
       }).catch((e) => {
         console.error('radios could not start properly', e)
       })
@@ -268,7 +268,7 @@ class BluStation {
     console.log('indexed blu receiver', this.blu_receivers[on_index].blu_radios)
     const radios_on = Promise.all(this.blu_receivers[on_index].blu_radios.map(radio => {
       radio.poll_interval = Number(cmd.data.poll_interval)
-      this.blu_receivers[on_index].radioOn(radio, cmd.data.poll_interval)
+      this.blu_receivers[on_index].radioOn(radio, radio.poll_interval)
 
     })).then((values) => {
       console.log('all radios on', values)
@@ -340,6 +340,9 @@ class BluStation {
 
     const all_poll = Promise.all(this.blu_receivers[poll_index].blu_radios.map(radio => {
       this.blu_receivers[poll_index].radioOff(radio)
+      radio.beeps = undefined
+      radio.dropped = undefined
+
       this.blu_receivers[poll_index].radioOn(radio, radio.poll_interval)
 
       let radio_channel = radio.radio
@@ -356,7 +359,7 @@ class BluStation {
     })).then((values) => {
       console.log('all radios poll intervals changed', values)
     }).catch((e) => {
-      console.error(e)
+      // console.error(e)
       console.error('all radios poll interval change error', e)
     })
   }
