@@ -33,7 +33,7 @@ class BluReceiverManager extends BluReceiver {
      * 
      * @param {Number} radio_channel Blu Radio Channel
      * @param {Number} buffer_interval Time in milliseconds between ring buffer is cleared of tags
-     * @returns BLE tag detections
+     * @returns beeps timeout object
      */
     async getDetections(radio_channel, buffer_interval) {
         console.log('blu get detections radio channel', radio_channel)
@@ -169,9 +169,10 @@ class BluReceiverManager extends BluReceiver {
     /**
 //  *  @param {Number} radio_channel // Radio Channel to turn on
  *  @param {Object} radio_object
- *  @param {Number} poll_interval // Time in ms between emptying ring buffer
+ *  @param {Number} radio_poll // Time in ms between emptying ring buffer
  */
-    async radioOn(radio_object, poll_interval) {
+    async radioOn(radio_object, radio_poll) {
+        let poll_interval = radio_poll ? radio_poll : 10000
         let radio_channel = radio_object.radio
         await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
@@ -188,9 +189,10 @@ class BluReceiverManager extends BluReceiver {
         clearInterval(await radio_object.beeps)
         clearInterval(await radio_object.dropped)
 
-        delete await radio_object.beeps
-        delete await radio_object.dropped
-        await console.log('radio object after clear interval', radio_object)
+        // delete await radio_object.beeps
+        // delete await radio_object.dropped
+
+        console.log('radio object after clear interval', radio_object)
 
         // return radio_object
 
