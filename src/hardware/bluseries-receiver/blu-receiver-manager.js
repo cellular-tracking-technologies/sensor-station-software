@@ -167,19 +167,32 @@ class BluReceiverManager extends BluReceiver {
     /**End of Blu Receiver Functions, New functions generated below */
 
     /**
+//  *  @param {Number} radio_channel // Radio Channel to turn on
+ *  @param {Object} radio_object
+ *  @param {Number} poll_interval // Time in ms between emptying ring buffer
+ */
+    async radioOn(radio_object, poll_interval) {
+        let radio_channel = radio_object.radio
+        await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+        radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
+        radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
+        // return { beeps, dropped }
+    }
+
+    /**
      * @param {Object} radio_object Radio Object that contains radio channel number and poll interval in ms
      */
-    async stopDetections(radio_object) {
+    async radioOff(radio_object) {
 
         await this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
         clearInterval(await radio_object.beeps)
-
         clearInterval(await radio_object.dropped)
-        console.log('stop detections droppeed after clear interval', radio_object.dropped)
 
         delete await radio_object.beeps
         delete await radio_object.dropped
-        return radio_object
+        await console.log('radio object after clear interval', radio_object)
+
+        // return radio_object
 
     }
 
@@ -215,37 +228,14 @@ class BluReceiverManager extends BluReceiver {
         })
     }
 
-    /**
-    //  *  @param {Number} radio_channel // Radio Channel to turn on
-     *  @param {Object} radio_object
-     *  @param {Number} poll_interval // Time in ms between emptying ring buffer
-     */
-    async radioOn(radio_object, poll_interval) {
-        let radio_channel = radio_object.radio
-        await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-        await this.getBluVersion(radio_channel)
-        let beeps = await this.getDetections(radio_channel, poll_interval)
-        let dropped = await this.getBluStats(radio_channel, poll_interval)
-        return { beeps, dropped }
-    }
 
-    /**
-     * 
-     * @object {Object} radio_object Radio Channel to turn off 
-     */
-    async radioOff(radio_object) {
-        // console.log('blu radio off', radio_object)
-        let radio_off = await this.stopDetections(radio_object)
-        // console.log('blu radio off', radio_off)
-        return radio_off
-    }
 
     async updateBluFirmware(radio_object, firmware_file) {
         console.log('update blu firmware', radio_object)
         let { radio: radio_channel, poll_interval } = radio_object
         try {
             await this.getBluVersion(radio_channel)
-            await this.stopDetections(radio_object)
+            await this.radioOff(radio_object)
             await this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
             await this.setBluDfu(radio_channel, firmware_file)
             await this.rebootBluRadio(radio_channel)

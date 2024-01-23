@@ -152,7 +152,6 @@ class BaseStation {
     this.sensor_socket_server.on('cmd', (cmd) => {
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
-
           this.blu_station.bluRadiosAllOn(cmd)
           break;
         case ('blu_radio_all_off'):
@@ -163,25 +162,24 @@ class BaseStation {
           break
         case ('blu_reboot_all'):
           this.blu_station.bluRadiosAllReboot(cmd)
+          break
+        case ('all_change_poll'):
+          this.blu_station.bluRadiosAllChangePoll(cmd)
         case ('toggle_blu'):
-
           if (cmd.data.type === 'blu_on') {
-
             this.blu_station.bluRadioOn(cmd)
-
           } else if (cmd.data.type === "blu_off") {
-
             this.blu_station.bluRadioOff(cmd)
           }
           break
         case ('toggle_blu_led'):
-
           this.blu_station.bluLed(cmd)
-
           break
         case ('reboot_blu_radio'):
-
           this.blu_station.bluReboot(cmd)
+          break
+        case ('change_poll'):
+          this.blu_station.bluChangePoll(cmd)
           break
         case ('toggle_radio'):
           let channel = cmd.data.channel
@@ -412,14 +410,7 @@ class BaseStation {
 
       // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
       const promises = this.blu_station.blu_receivers.map((receiver) => {
-        console.log('process on sigint receiver', receiver)
-
-        // receiver.blu_radios.forEach((radio) => {
-        //   receiver.stopDetections(radio)
-        // })
-
         this.blu_station.stopBluRadios(receiver.path)
-
         this.blu_station.destroy_receiver(receiver)
       })
       try {
