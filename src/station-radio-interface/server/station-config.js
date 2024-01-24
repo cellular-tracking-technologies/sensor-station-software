@@ -44,7 +44,6 @@ class StationConfig {
     })
     // thread blu radio hardware maps inside config
     if (!blu_receivers) {
-      console.log('bluseries receivers not detected - loading default bluseries settings')
       config.blu_receivers = this.default_config.blu_receivers
     }
     config.blu_receivers.forEach(radio => {
@@ -89,6 +88,10 @@ class StationConfig {
     cloned_config.blu_receivers.forEach(receiver => {
       if (receiver.path) {
         delete receiver.path
+        receiver.blu_radios.forEach((radio) => {
+          delete radio.beeps
+          delete radio.dropped
+        })
       }
     })
     let contents = JSON.stringify(cloned_config, null, 2)
@@ -96,12 +99,23 @@ class StationConfig {
   }
 
   toggleRadioMode(opts) {
+    console.log('toggle radio mode opts', opts)
     this.data.radios.forEach((radio) => {
       if (radio.channel == opts.channel) {
         console.log('setting radio mode')
         radio.config = [
           opts.cmd
         ]
+      }
+    })
+    let receiver = this.data.blu_receivers.findIndex(receiver => receiver.channel == opts.receiver_channel)
+    console.log('station config blu receivers', this.data.blu_receivers, 'indexed', this.data.blu_receivers[receiver])
+    this.data.blu_receivers[receiver].blu_radios.forEach((radio) => {
+      if (opts.poll_interval) {
+        radio.poll_interval = opts.poll_interval
+        radio.radio_state = opts.radio_state
+      } else {
+        radio.radio_state = opts.radio_state
       }
     })
     try {
