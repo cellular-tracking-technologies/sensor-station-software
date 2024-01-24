@@ -140,6 +140,28 @@ class BaseStation {
   }
 
   /**
+ * 
+ * @param {Object} opts 
+ * @param {Number} opts.receiver_channel
+ * @param {Number} opts.poll_interval
+ * @param {String} opts.radio_state
+ */
+  toggleBluState(opts) {
+    // if (opts.receiver_channel in Object.keys(this.active_radios)) {
+    // this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
+    // let radio = this.active_radios[opts.channel]
+    this.config.toggleRadioMode({
+      receiver_channel: opts.receiver_channel,
+      poll_interval: opts.poll_interval,
+      radio_state: opts.radio_state,
+    })
+    // radio.issuePresetCommand(opts.mode)
+    // } else {
+    //   this.stationLog(`invalid radio channel ${opts.channel}`)
+    // }
+  }
+
+  /**
    * start web socket server
    */
   startWebsocketServer() {
@@ -152,10 +174,13 @@ class BaseStation {
     this.sensor_socket_server.on('cmd', (cmd) => {
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
+
           this.blu_station.bluRadiosAllOn(cmd)
+          this.setBluRadioState(cmd)
           break;
         case ('blu_radio_all_off'):
           this.blu_station.bluRadiosAllOff(cmd)
+          this.setBluRadioState(cmd)
           break
         case ('blu_led_all'):
           this.blu_station.bluRadiosAllLed(cmd)
@@ -165,6 +190,8 @@ class BaseStation {
           break
         case ('all_change_poll'):
           this.blu_station.bluRadiosAllChangePoll(cmd)
+          this.setBluRadioState(cmd)
+          break
         case ('toggle_blu'):
           if (cmd.data.type === 'blu_on') {
             this.blu_station.bluRadioOn(cmd)
@@ -173,13 +200,17 @@ class BaseStation {
           }
           break
         case ('toggle_blu_led'):
+
           this.blu_station.bluLed(cmd)
+
           break
         case ('reboot_blu_radio'):
+
           this.blu_station.bluReboot(cmd)
           break
         case ('change_poll'):
           this.blu_station.bluChangePoll(cmd)
+          this.setBluRadioState(cmd)
           break
         case ('toggle_radio'):
           let channel = cmd.data.channel
@@ -273,13 +304,13 @@ class BaseStation {
       }))
   }
 
-  getBluFirmware() {
-    return Object.keys(this.blu_fw)
-      .map((channel) => ({
-        channel: channel,
-        version: this.blu_fw[channel],
-      }))
-  }
+  // getBluFirmware() {
+  //   return Object.keys(this.blu_fw)
+  //     .map((channel) => ({
+  //       channel: channel,
+  //       version: this.blu_fw[channel],
+  //     }))
+  // }
 
   /**
    * checkin to the server
@@ -410,7 +441,14 @@ class BaseStation {
 
       // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
       const promises = this.blu_station.blu_receivers.map((receiver) => {
+        console.log('process on sigint receiver', receiver)
+
+        // receiver.blu_radios.forEach((radio) => {
+        //   receiver.stopDetections(radio)
+        // })
+
         this.blu_station.stopBluRadios(receiver.path)
+
         this.blu_station.destroy_receiver(receiver)
       })
       try {
@@ -485,7 +523,17 @@ class BaseStation {
   startBluStation(path) {
 
     this.blu_station.bluInit(path.substring(17))
+    let start_receiver = this.findBluReceiveryByPath(path)
 
+    start_receiver.blu_radios.forEach((radio) => {
+
+      this.toggleBluState({
+        receiver_channel: start_receiver.port,
+        radio_state: 1,
+        poll_interval: radio.poll_interval,
+      })
+    })
+    console.log('config after startBluStation', this.config.data.blu_receivers[1].blu_radios)
   }
 
   unlinkBluStation(path) {
@@ -498,11 +546,18 @@ class BaseStation {
     }
     this.broadcast(JSON.stringify(unlink_receiver))
     this.blu_station.stopBluRadios(path.substring(17))
+    this.blu_station.blu_receivers[unlink_index].blu_radios.forEach((radio) => {
 
+      this.toggleBluState({
+        receiver_channel: unlink_port,
+        radio_state: 0,
+        poll_interval: radio.poll_interval,
+      })
+    })
+    console.log('config after unlinkBluStation', this.config.data.blu_receivers[1].blu_radios)
     this.blu_station.destroy_receiver(this.blu_station.blu_receivers[unlink_index])
 
-    // this.blu_station.destroy_station()
-    // console.log('destroyed blu station', this.blu_station)
+
   }
 
   unlinkDongleRadio(path) {
@@ -582,10 +637,30 @@ class BaseStation {
  * @param {String} path 
  * @returns 
  */
-  findBluPath(path) {
-    let index = this.blu_stations.getAllBluStations.findIndex(receiver => receiver.path === path)
-    console.log('findBluPath index', index)
-    return index
+  findBluReceiveryByPath(path) {
+    let receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
+    console.log('findBluPath index', receiver)
+    return receiver
+  }
+
+  /**
+   * @param {Object} cmd Websocket command object
+   * @param {Object} cmd.data Data object containing port number, and blu radio configurations
+   * @param {String} cmd.data.port Port number in string format
+   * @param {String} cmd.data.poll_interval Polling interval for the radio
+   * @param {String} cmd.data.scan Scan variable, determines if radios is scanning for tags, using for radio state
+   */
+  setBluRadioState(cmd) {
+    // this.blu_station.bluRadiosAllOn(cmd)
+    let receiver_channel = Number(cmd.data.port)
+    if (cmd.data.poll_interval) {
+      let poll_interval = Number(cmd.data.poll_interval)
+      let radio_state = cmd.data.scan ? Number(cmd.data.scan) : 1
+      this.toggleBluState({ receiver_channel, poll_interval, radio_state })
+    } else {
+      let radio_state = cmd.data.scan ? Number(cmd.data.scan) : 1
+      this.toggleBluState({ receiver_channel, radio_state })
+    }
   }
 
 

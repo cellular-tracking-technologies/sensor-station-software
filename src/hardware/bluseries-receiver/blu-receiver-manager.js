@@ -47,6 +47,7 @@ class BluReceiverManager extends BluReceiver {
      */
     async getDetections(radio_channel, buffer_interval) {
         console.log('blu get detections radio channel', radio_channel)
+        let poll_interval = buffer_interval ? buffer_interval : 10000
         try {
 
             // added this so radio polls immediately on startup
@@ -59,7 +60,7 @@ class BluReceiverManager extends BluReceiver {
                     task: BluReceiverTask.DETECTIONS,
                     radio_channel,
                 })
-            }, buffer_interval)
+            }, poll_interval)
             return beeps
         } catch (e) {
             console.log('getDetections error', e)
@@ -71,7 +72,7 @@ class BluReceiverManager extends BluReceiver {
                             task: BluReceiverTask.DETECTIONS,
                             radio_channel,
                         })
-                    }, buffer_interval)
+                    }, poll_interval)
                     return beeps
                 }
             } catch (e) {
@@ -205,6 +206,7 @@ class BluReceiverManager extends BluReceiver {
  * @returns Dropped Detections
  */
     async getBluStats(radio_channel, buffer_interval) {
+        let poll_interval = buffer_interval ? buffer_interval : 10000
         try {
             let dropped
             // this.schedule({
@@ -216,7 +218,7 @@ class BluReceiverManager extends BluReceiver {
                     task: BluReceiverTask.STATS,
                     radio_channel,
                 })
-            }, buffer_interval)
+            }, poll_interval)
             return dropped
         } catch (e) {
             console.error('could not get dropped detections')
