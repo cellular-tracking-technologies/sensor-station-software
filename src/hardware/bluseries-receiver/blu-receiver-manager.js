@@ -25,7 +25,17 @@ class BluReceiverManager extends BluReceiver {
             })
         } catch (e) {
             console.error('GET BLU VERSION ERROR', e)
-            // getBluVersion(radio_channel)
+            try {
+
+                for (i = 1; i < 3; i++) {
+                    return this.schedule({
+                        task: BluReceiverTask.VERSION,
+                        radio_channel: radio_channel,
+                    })
+                }
+            } catch (e) {
+                console.error('Something is wrong with receiver, trying plugging it into a different usb port')
+            }
         }
     }
 
@@ -53,6 +63,20 @@ class BluReceiverManager extends BluReceiver {
             return beeps
         } catch (e) {
             console.log('getDetections error', e)
+            try {
+
+                for (i = 1; i < 3; i++) {
+                    let beeps = setInterval(() => {
+                        this.schedule({
+                            task: BluReceiverTask.DETECTIONS,
+                            radio_channel,
+                        })
+                    }, buffer_interval)
+                    return beeps
+                }
+            } catch (e) {
+                console.error('Something is wrong with receiver, trying plugging it into a different usb port')
+            }
         }
     }
 
@@ -113,6 +137,17 @@ class BluReceiverManager extends BluReceiver {
             })
         } catch (e) {
             console.error('Reboot Blu Radio Error', e)
+            try {
+
+                for (i = 1; i < 3; i++) {
+                    return this.schedule({
+                        task: BluReceiverTask.REBOOT,
+                        radio_channel,
+                    })
+                }
+            } catch (e) {
+                console.error('Something is wrong with receiver, trying plugging it into a different usb port')
+            }
         }
     }
 
@@ -125,25 +160,48 @@ class BluReceiverManager extends BluReceiver {
      * @returns 
      */
     async setBluConfig(radio_channel, opts) {
-        // console.log('set blu config radio channel', radio_channel)
         const { scan, rx_blink } = opts
-        return this.schedule({
-            task: BluReceiverTask.CONFIG,
-            radio_channel,
-            data: {
-                scan,
-                rx_blink,
-            },
-            status: {
-                scan,
-                rx_blink,
+        try {
+
+            return this.schedule({
+                task: BluReceiverTask.CONFIG,
+                radio_channel,
+                data: {
+                    scan,
+                    rx_blink,
+                },
+                status: {
+                    scan,
+                    rx_blink,
+                }
+            })
+        } catch (e) {
+            console.error('error in setting blu configuration', e)
+            try {
+                for (i = 1; i < 3; i++) {
+                    return this.schedule({
+                        task: BluReceiverTask.CONFIG,
+                        radio_channel,
+                        data: {
+                            scan,
+                            rx_blink,
+                        },
+                        status: {
+                            scan,
+                            rx_blink,
+                        }
+                    })
+                }
+            } catch (e) {
+                console.error('cannot set blu config, will need to hard restart the receiver', e)
             }
-        })
+        }
     }
 
     /**
  * 
- * @param {Number} radio_channel 
+ * @param {Number} radio_channel Radio channel number
+ * @param {Number} buffer_interval Poll interval number in ms
  * @returns Dropped Detections
  */
     async getBluStats(radio_channel, buffer_interval) {
@@ -177,7 +235,7 @@ class BluReceiverManager extends BluReceiver {
         await this.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
         radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
-        // return { beeps, dropped }
+        // return radio_object
     }
 
     /**
@@ -188,14 +246,21 @@ class BluReceiverManager extends BluReceiver {
         await this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
         clearInterval(await radio_object.beeps)
         clearInterval(await radio_object.dropped)
+        console.log('radio off radio object', radio_object)
+        // radio_object.beeps._destroyed = true
+        // radio_object.dropped._destroyed = true
 
-        // delete await radio_object.beeps
-        // delete await radio_object.dropped
+        return radio_object
+    }
 
-        console.log('radio object after clear interval', radio_object)
+    async stopDetections(radio_object) {
+        clearInterval(await radio_object.beeps)
+        return radio_object.beeps
+    }
 
-        // return radio_object
-
+    async stopStats(radio_object) {
+        clearInterval(await radio_object.dropped)
+        return radio_object.dropped
     }
 
     /**
