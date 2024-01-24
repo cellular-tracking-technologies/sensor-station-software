@@ -248,9 +248,6 @@ class BluReceiverManager extends BluReceiver {
         await this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
         clearInterval(await radio_object.beeps)
         clearInterval(await radio_object.dropped)
-        console.log('radio off radio object', radio_object)
-        // radio_object.beeps._destroyed = true
-        // radio_object.dropped._destroyed = true
 
         return radio_object
     }

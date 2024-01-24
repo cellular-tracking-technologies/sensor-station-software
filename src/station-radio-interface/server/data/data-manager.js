@@ -169,8 +169,18 @@ class DataManager {
   handleBluBeep(beep) {
     let record
     record = this.loggers.blu.addRecord(beep)
-    // this.stats.addBluBeep(record)
-    // }
+    this.stats.addBluBeep(record)
+  }
+
+  /**
+   * 
+   * @param {Object} opts 
+   * @param {Number} opts.port USB port receiver is plugged into
+   * @param {Number} opts.radio_channel Radio channel
+   * @param {Number} opts.dropped_detections Number of detections dropped from ring buffer
+   */
+  handleBluDroppedDetections(opts) {
+    this.stats.addBluDroppedDetections(opts)
   }
 
   /**

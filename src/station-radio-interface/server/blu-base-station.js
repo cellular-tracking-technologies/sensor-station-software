@@ -124,7 +124,12 @@ class BluStation {
               msg_type: "blu_dropped",
             }
             console.log('Port', this.blu_receivers[br_index].port, 'radio', job.radio_channel, 'has', blu_stats.blu_dropped, 'detections dropped')
-
+            this.data_manager.handleBluDroppedDetections(
+              {
+                port: blu_stats.port,
+                radio_channel: blu_stats.channel,
+                dropped_detections: blu_stats.blu_dropped
+              })
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
             console.log('base station stats error:', 'receiver', this.blu_receivers[br_index].port, 'radio', job.radio_channel, e)
