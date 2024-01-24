@@ -364,7 +364,11 @@ class BluStation {
       console.log('blu radios change poll radio', radio)
 
       radio.beeps = this.blu_receivers[poll_index].stopDetections(radio)
+        .then((values) => { console.log('stop detection values', values); return values })
+        .catch((e) => { console.error('could not stop detections', e) })
       radio.dropped = this.blu_receivers[poll_index].stopStats(radio)
+        .then((values) => { console.log('stop stats values', values); return values })
+        .catch((e) => { console.error('could not stop stats', e) })
 
       console.log('change poll radio after radio off', radio)
 
@@ -392,8 +396,11 @@ class BluStation {
       this.blu_receivers[poll_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
       radio.beeps = this.blu_receivers[poll_index].getDetections(radio_channel, Number(cmd.data.poll_interval))
         .then((values) => { console.log('get detection values', values); return values })
+        .catch((e) => { console.error('get detections could not start', e) })
       radio.dropped = this.blu_receivers[poll_index].getBluStats(radio_channel, Number(cmd.data.poll_interval))
         .then((values) => { console.log('get detection values', values); return values })
+        .catch((e) => { console.error('get stats could not start', e) })
+
       console.log('change poll radio after radio on', radio)
 
     })).then((values) => {
