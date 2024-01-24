@@ -445,11 +445,6 @@ class BaseStation {
 
       // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
       const promises = this.blu_station.blu_receivers.map((receiver) => {
-        console.log('process on sigint receiver', receiver)
-
-        // receiver.blu_radios.forEach((radio) => {
-        //   receiver.stopDetections(radio)
-        // })
 
         this.blu_station.stopBluRadios(receiver.path)
 
@@ -457,9 +452,7 @@ class BaseStation {
       })
       try {
         const blu_radios_stop = Promise.all(promises)
-        console.log('stations are being destroyed??', blu_radios_stop)
         this.blu_station.destroy_station()
-        console.log('Closed blu station', this.blu_station)
       } catch (e) {
         console.error('no port to closed in destroyed blu receiver', e)
         try {
@@ -468,7 +461,6 @@ class BaseStation {
         } catch (e) {
           console.error('what the hell is happening', e)
           this.blu_station.destroy_station()
-          console.log('Closed blu station', this.blu_station)
           process.exit(0)
         }
       } finally {
@@ -538,7 +530,6 @@ class BaseStation {
         poll_interval: radio.poll_interval,
       })
     })
-    console.log('config after startBluStation', this.config.data.blu_receivers[1].blu_radios)
   }
 
   unlinkBluStation(path) {
@@ -560,7 +551,6 @@ class BaseStation {
         poll_interval: radio.poll_interval,
       })
     })
-    console.log('config after unlinkBluStation', this.config.data.blu_receivers[1].blu_radios)
     this.blu_station.destroy_receiver(this.blu_station.blu_receivers[unlink_index])
 
 
