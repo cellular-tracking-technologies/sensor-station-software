@@ -266,6 +266,16 @@ class BluStation {
     return { receiver, radio }
   }
 
+  findBluReceiverAndRadioIndex(cmd) {
+    let { data: { port, channel, poll_interval }
+    } = cmd
+    let receiver_index = this.blu_receivers.findIndex(receiver => receiver.port === Number(port))
+    let radio_index = this.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio === Number(channel))
+    this.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval = poll_interval ? poll_interval : this.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval
+
+    return { receiver_index, radio_index }
+  }
+
   bluRadiosAllOn(cmd) {
     // let all_on_receiver = this.findBluReceiver(cmd)
     let on_index = this.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
@@ -446,10 +456,14 @@ class BluStation {
   }
 
   bluChangePoll(cmd) {
+    console.log('blu change poll cmd', cmd)
+    // let poll = this.findBluReceiverAndRadio(cmd)
+    // let { receiver, radio } = poll
+    let { receiver_index, radio_index } = this.findBluReceiverAndRadioIndex(cmd)
+    // let radio_channel = radio.radio
+    let radio = this.blu_receivers[receiver_index].blu_radios[radio_index]
 
-    let poll = this.findBluReceiverAndRadio(cmd)
-    let { receiver, radio } = poll
-    let radio_channel = radio.radio
+    let radio_channel = this.blu_receivers[receiver_index].blu_radios[radio_index].radio
     let poll_interval = cmd.data.poll_interval
 
     let poll_data = {
@@ -457,8 +471,24 @@ class BluStation {
       poll_interval: poll_interval,
       msg_type: "poll_interval",
     }
-    poll.receiver.radioOff(radio)
-    poll.receiver.radioOn(radio, radio.poll_interval)
+    // poll.receiver.radioOff(radio)
+    radio.beeps = this.blu_receivers[receiver_index].stopDetections(this.blu_receivers[receiver_index].blu_radios[radio_index])
+      .then((values) => { console.log(values); return values })
+      .catch((e) => { 'could not change poll on radio', e })
+    radio.dropped = this.blu_receivers[receiver_index].stopStats(this.blu_receivers[receiver_index].blu_radios[radio_index])
+      .then((values) => { console.log(values); return values })
+      .catch((e) => { 'could not change poll on radio', e })
+    this.blu_receivers[receiver_index].radioOn(radio, radio.poll_interval)
+      .then((values) => { console.log(values); return values })
+      .catch((e) => { 'could not change poll on radio', e })
+
+    // this.blu_receivers[poll_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+    // radio.beeps = this.blu_receivers[poll_index].getDetections(radio_channel, Number(cmd.data.poll_interval))
+    //   .then((values) => { console.log('get detection values', values); return values })
+    //   .catch((e) => { console.error('get detections could not start', e) })
+    // radio.dropped = this.blu_receivers[poll_index].getBluStats(radio_channel, Number(cmd.data.poll_interval))
+    //   .then((values) => { console.log('get detection values', values); return values })
+    //   .catch((e) => { console.error('get stats could not start', e) })
   }
 }
 

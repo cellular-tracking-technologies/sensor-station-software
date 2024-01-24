@@ -109,15 +109,26 @@ class StationConfig {
       }
     })
     let receiver = this.data.blu_receivers.findIndex(receiver => receiver.channel == opts.receiver_channel)
-    console.log('station config blu receivers', this.data.blu_receivers, 'indexed', this.data.blu_receivers[receiver])
-    this.data.blu_receivers[receiver].blu_radios.forEach((radio) => {
+    if (opts.blu_radio_channel) {
+      let radio = this.data.blu_receivers[receiver].blu_radios.findIndex(radio => radio.radio == opts.blu_radio_channel)
+      console.log('station config blu receivers', this.data.blu_receivers, 'indexed', this.data.blu_receivers[receiver])
       if (opts.poll_interval) {
-        radio.poll_interval = opts.poll_interval
-        radio.radio_state = opts.radio_state
+        this.data.blu_receivers[receiver].blu_radios[radio].poll_interval = opts.poll_interval
+        this.data.blu_receivers[receiver].blu_radios[radio].radio_state = opts.radio_state
       } else {
-        radio.radio_state = opts.radio_state
+        this.data.blu_receivers[receiver].blu_radios[radio].radio_state = opts.radio_state
       }
-    })
+    } else {
+      console.log('station config blu receivers', this.data.blu_receivers, 'indexed', this.data.blu_receivers[receiver])
+      this.data.blu_receivers[receiver].blu_radios.forEach((radio) => {
+        if (opts.poll_interval) {
+          radio.poll_interval = opts.poll_interval
+          radio.radio_state = opts.radio_state
+        } else {
+          radio.radio_state = opts.radio_state
+        }
+      })
+    }
     try {
       this.save(this.filename)
     } catch (err) {
