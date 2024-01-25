@@ -349,7 +349,7 @@ class BaseStation {
 
       console.log('blu station blu fw', this.blu_station.blu_fw.firmware[port].channels)
       console.log('blu station blu stats', this.data_manager.stats.blu_stats.blu_ports[port].channels)
-      this.server_api.healthCheckin(this.data_manager.stats.blu_stats.blu_ports[port].channels, this.blu_station.getBluFirmware())
+      this.server_api.healthCheckin(this.data_manager.stats.blu_stats.blu_ports[port], this.blu_station.getBluFirmware())
         .then((response) => {
           if (response == true) {
             this.stationLog('server checkin success')

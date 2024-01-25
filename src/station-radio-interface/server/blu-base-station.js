@@ -86,7 +86,7 @@ class BluStation {
 
             this.blu_fw_checkin[job.radio_channel] = job.data.version
 
-            console.log('blu firmware', this.blu_fw_checkin)
+            // console.log('blu firmware', this.blu_fw_checkin)
             this.broadcast(JSON.stringify(this.blu_fw))
           } catch (e) {
             console.error('basestation getBluVersion error:', e)

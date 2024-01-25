@@ -36,18 +36,35 @@ class ServerApi {
     console.log('filter stats', stats)
     Object.keys(stats.channels).forEach((channel) => {
       let channel_data = stats.channels[channel]
-      Object.keys(channel_data.beeps).forEach((tag) => {
-        let cnt = channel_data.beeps[tag]
-        if (cnt < 5) {
-          delete channel_data.beeps[tag]
-        }
-      })
-      Object.keys(channel_data.nodes.beeps).forEach((tag) => {
-        let cnt = channel_data.nodes.beeps[tag]
-        if (cnt < 5) {
-          delete channel_data.nodes.beeps[tag]
-        }
-      })
+      console.log('filter stats channel data', channel_data)
+      if (channel_data.beeps) {
+
+        Object.keys(channel_data.beeps).forEach((tag) => {
+          let cnt = channel_data.beeps[tag]
+          if (cnt < 5) {
+            delete channel_data.beeps[tag]
+          }
+        })
+        Object.keys(channel_data.nodes.beeps).forEach((tag) => {
+          let cnt = channel_data.nodes.beeps[tag]
+          if (cnt < 5) {
+            delete channel_data.nodes.beeps[tag]
+          }
+        })
+      } else if (channel_data.blu_beeps) {
+        Object.keys(channel_data.blu_beeps).forEach((tag) => {
+          let cnt = channel_data.blu_beeps[tag]
+          if (cnt < 5) {
+            delete channel_data.blu_beeps[tag]
+          }
+        })
+        // Object.keys(channel_data.nodes.blu_beeps).forEach((tag) => {
+        //   let cnt = channel_data.nodes.blu_beeps[tag]
+        //   if (cnt < 5) {
+        //     delete channel_data.nodes.blu_beeps[tag]
+        //   }
+        // })
+      }
     })
     return stats
   }
@@ -88,7 +105,12 @@ class ServerApi {
   }
 
   healthCheckin(stats, radio_fw) {
+    let blu_fw
     console.log('health check in stats', stats, 'radio fw', radio_fw)
+    if (Object.keys(stats.channels)[0].blu_beeps) {
+      blu_fw = radio_fw
+    }
+    console.log('server api blu fw', blu_fw)
     return new Promise((resolve, reject) => {
       let promises = []
       // generate list of promises to post requests to hardware server
@@ -107,7 +129,7 @@ class ServerApi {
             'software': responses[5],
             'revision': responses[6],
             'radio': radio_fw,
-            // 'blu': blu_fw
+            'blu': blu_fw
           }
         })
         .then((data) => {
@@ -116,6 +138,9 @@ class ServerApi {
           data.gps = this.cleanGps(data)
           data.sensor = this.sensor_data
           data.stats = this.filterStats(stats)
+          console.log('server data stats', data.stats)
+          console.log('stringified server data stats', JSON.stringify(data))
+
           // initialize server checkin
           fetch(this.endpoint, {
             method: 'POST',
