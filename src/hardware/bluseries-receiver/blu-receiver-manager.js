@@ -36,6 +36,17 @@ class BluReceiverManager extends BluReceiver {
             } catch (e) {
                 console.error('Something is wrong with receiver, trying plugging it into a different usb port')
             }
+            try {
+
+                for (i = 1; i < 3; i++) {
+                    return this.schedule({
+                        task: BluReceiverTask.VERSION,
+                        radio_channel: radio_channel,
+                    })
+                }
+            } catch (e) {
+                console.error('Something is wrong with receiver, trying plugging it into a different usb port')
+            }
         }
     }
 
@@ -248,6 +259,7 @@ class BluReceiverManager extends BluReceiver {
         await this.setBluConfig(radio_object.radio, { scan: 0, rx_blink: 0, })
         clearInterval(await radio_object.beeps)
         clearInterval(await radio_object.dropped)
+        console.log('stop detections droppeed after clear interval', radio_object.dropped)
 
         return radio_object
     }
