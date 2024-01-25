@@ -74,19 +74,23 @@ class BeepStatManager {
     let port = record.UsbPort.toString()
     let channel = record.RadioId.toString()
 
-    console.log('get blu port and channel this.blu_stats', this.blu_stats.blu_ports[port])
 
     if (Object.keys(this.blu_stats.blu_ports).includes(port)) {
 
       if (Object.keys(this.blu_stats.blu_ports[port].channels).includes(channel)) {
-        console.log('get blu port and channel id', this.blu_stats.blu_ports[port].channels[channel])
         return this.blu_stats.blu_ports[port].channels[channel]
 
       } else {
         return this.addBluStatChannel(port, channel)
       }
     } else {
-      return this.blu_stats.blu_ports[port] = { channels: {}, }
+      this.blu_stats.blu_ports[port] = { channels: {}, }
+      if (Object.keys(this.blu_stats.blu_ports[port].channels).includes(channel)) {
+        return this.blu_stats.blu_ports[port].channels[channel]
+
+      } else {
+        return this.addBluStatChannel(port, channel)
+      }
     }
   }
 
@@ -140,10 +144,9 @@ class BeepStatManager {
     let port = record.UsbPort.toString()
     let channel = record.RadioId.toString()
     let blu_id = record.TagId.toString()
-    console.log('add blu beep port', port, 'channel', channel, 'blu radio id', blu_id)
 
     let stats_obj = this.getBluPortAndChannel(record) // channel is not being produced?
-    console.log('add blu beep channel', stats_obj)
+
     let blu_stats
     if (record.NodeId.length > 0) {
       // from a node
@@ -151,13 +154,11 @@ class BeepStatManager {
     } else {
       blu_stats = stats_obj.blu_beeps ? stats_obj.blu_beeps : 0
     }
-    console.log('blu stats after node check', blu_stats)
     if (Object.keys(blu_stats).includes(blu_id)) {
       blu_stats[blu_id] += 1
     } else {
       blu_stats[blu_id] = 1
     }
-    console.log('add blu beep function blu_stats', blu_stats, 'global blu stats', this.blu_stats.blu_ports[port].channels[channel].blu_beeps)
   }
 
   /**
@@ -167,26 +168,19 @@ class BeepStatManager {
     let port = stats.port.toString()
     let channel = stats.radio_channel.toString()
     let blu_dropped = stats.dropped_detections
-    console.log('add blu beep port', port, 'channel', channel, 'blu radio id', blu_dropped)
+    console.log('add blu beep port', port, 'channel', channel, 'blu dropped', blu_dropped)
 
     let stats_obj = this.getBluPortAndChannel({ UsbPort: port, RadioId: channel }) // channel is not being produced?
     console.log('add blu beep channel blu dropped', stats_obj)
-    let blu_stats = stats_obj.blu_beeps ? stats_obj.blu_beeps : 0
-    // if (record.NodeId.length > 0) {
-    //   // from a node
-    //   blu_stats = stats_obj.nodes.blu_dropped
-    // } else {
-    //   blu_stats = stats_obj.blu_beeps ? stats_obj.blu_dropped : 0
-    // }
-    // console.log('blu stats after node check', blu_stats)
-    blu_stats += blu_dropped
-    // if (Object.keys(blu_stats).includes(blu_id)) {
-    //   blu_stats[blu_id] += 1
-    // } else {
-    //   blu_stats[blu_id] = 1
-    // }
-    // this.blu_stats.blu_ports[port].channels[channel] = blu_stats
-    console.log('add blu beep function blu_stats', blu_stats, 'global blu dropped', this.blu_stats.blu_ports[port].channels[channel].blu_dropped)
+    let blu_stats = stats_obj.blu_dropped ? stats_obj.blu_dropped : 0
+    console.log('add blu dropped before addition', blu_stats)
+
+    // blu_stats += blu_dropped
+    this.blu_stats.blu_ports[port].channels[channel].blu_dropped += blu_dropped
+    console.log('add blu dropped after addition', blu_stats)
+
+
+    console.log('add blu dropped function blu_stats', blu_stats, 'global blu dropped', this.blu_stats.blu_ports[port].channels[channel].blu_dropped)
   }
   /**
    * 
