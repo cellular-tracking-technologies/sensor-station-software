@@ -33,6 +33,7 @@ class ServerApi {
   }
 
   filterStats(stats) {
+    console.log('filter stats', stats)
     Object.keys(stats.channels).forEach((channel) => {
       let channel_data = stats.channels[channel]
       Object.keys(channel_data.beeps).forEach((tag) => {
@@ -87,6 +88,7 @@ class ServerApi {
   }
 
   healthCheckin(stats, radio_fw) {
+    console.log('health check in stats', stats, 'radio fw', radio_fw)
     return new Promise((resolve, reject) => {
       let promises = []
       // generate list of promises to post requests to hardware server
@@ -105,6 +107,7 @@ class ServerApi {
             'software': responses[5],
             'revision': responses[6],
             'radio': radio_fw,
+            // 'blu': blu_fw
           }
         })
         .then((data) => {

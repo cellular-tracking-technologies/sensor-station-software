@@ -53,7 +53,6 @@ class BaseStation {
     this.poll_interval
     this.poll_data
     this.dongle_port
-    // this.blu_stations = new BluStations()
     this.blu_radio_filemap
     this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
 
@@ -104,15 +103,12 @@ class BaseStation {
     this.startWebsocketServer()
 
     this.blu_station = new BluStation({
-      // path: path,
-      // port: this.blu_receivers[blu_receiver_index].channel,
-      // blu_receivers: this.blu_receivers[blu_receiver_index], // this is overwriting blu_receivers in blu base station!!!
       blu_receivers: this.blu_receivers,
-      // blu_radios: this.blu_receivers[blu_receiver_index].blu_radios,
       data_manager: this.data_manager,
       broadcast: this.broadcast,
       websocket: this.sensor_socket_server,
       blu_firmware: this.firmware,
+      server_api: this.server_api,
     })
 
     this.directoryWatcher()
@@ -148,20 +144,13 @@ class BaseStation {
  * @param {String} opts.radio_state
  */
   toggleBluState(opts) {
-    console.log('toggle blu state opts', opts)
-    // if (opts.receiver_channel in Object.keys(this.active_radios)) {
-    // this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
-    // let radio = this.active_radios[opts.channel]
+
     this.config.toggleRadioMode({
       receiver_channel: opts.receiver_channel,
       poll_interval: opts.poll_interval,
       blu_radio_channel: opts.blu_radio_channel,
       radio_state: opts.radio_state,
     })
-    // radio.issuePresetCommand(opts.mode)
-    // } else {
-    //   this.stationLog(`invalid radio channel ${opts.channel}`)
-    // }
   }
 
   /**
@@ -230,6 +219,7 @@ class BaseStation {
           break
         case ('checkin'):
           this.checkin()
+          this.blu_checkin()
           break
         case ('upload'):
           this.runCommand('upload-station-data')
@@ -308,13 +298,13 @@ class BaseStation {
       }))
   }
 
-  // getBluFirmware() {
-  //   return Object.keys(this.blu_fw)
-  //     .map((channel) => ({
-  //       channel: channel,
-  //       version: this.blu_fw[channel],
-  //     }))
-  // }
+  getBluFirmware() {
+    return Object.keys(this.blu_fw)
+      .map((channel) => ({
+        channel: channel,
+        version: this.blu_fw[channel],
+      }))
+  }
 
   /**
    * checkin to the server
@@ -332,6 +322,46 @@ class BaseStation {
       .catch((err) => {
         this.stationLog('server checkin error', err.toString())
       })
+
+    // console.log('blu station blu fw', this.blu_station.blu_fw)
+    // console.log('blu station blu stats', this.data_manager.stats)
+    // this.server_api.healthCheckin(this.data_manager.stats.blu_stats, this.blu_station.blu_fw)
+    //   .then((response) => {
+    //     if (response == true) {
+    //       this.stationLog('server checkin success')
+    //     } else {
+    //       this.stationLog('checkin failed')
+    //     }
+    //   })
+    //   .catch((err) => {
+    //     console.error('blu checkin error', err)
+    //     this.stationLog('server checkin error', err.toString())
+    //   })
+
+  }
+
+  /**
+ * checkin to the server
+ */
+  blu_checkin() {
+    this.stationLog('server checkin initiated')
+    Object.keys(this.data_manager.stats.blu_stats.blu_ports).forEach((port) => {
+
+      console.log('blu station blu fw', this.blu_station.blu_fw.firmware[port].channels)
+      console.log('blu station blu stats', this.data_manager.stats.blu_stats.blu_ports[port].channels)
+      this.server_api.healthCheckin(this.data_manager.stats.blu_stats.blu_ports[port].channels, this.blu_station.getBluFirmware())
+        .then((response) => {
+          if (response == true) {
+            this.stationLog('server checkin success')
+          } else {
+            this.stationLog('checkin failed')
+          }
+        })
+        .catch((err) => {
+          console.error('blu checkin error', err)
+          this.stationLog('server checkin error', err.toString())
+        })
+    })
   }
 
   /**
@@ -382,6 +412,7 @@ class BaseStation {
     // start data rotation timer
     // checkin after 5 seconds of station running
     setTimeout(this.checkin.bind(this), 10 * 1000)
+    setTimeout(this.blu_checkin.bind(this), 10 * 3000)
     this.heartbeat.createEvent(this.config.data.record.rotation_frequency_minutes * 60, this.rotateDataFiles.bind(this))
     this.heartbeat.createEvent(this.config.data.record.sensor_data_frequency_minutes * 60, this.pollSensors.bind(this))
     this.heartbeat.createEvent(this.config.data.record.checkin_frequency_minutes * 60, this.checkin.bind(this))
@@ -516,9 +547,14 @@ class BaseStation {
     }
   }
 
+  getBluFw(radio_channel) {
+    return new Promise((resolve, reject) => {
+
+    })
+  }
   startBluStation(path) {
 
-    this.blu_station.bluInit(path.substring(17))
+    this.blu_station.startBluRadios(path.substring(17))
     let start_receiver = this.findBluReceiveryByPath(path)
 
     start_receiver.blu_radios.forEach((radio) => {
@@ -635,7 +671,7 @@ class BaseStation {
  */
   findBluReceiveryByPath(path) {
     let receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    console.log('findBluPath index', receiver)
+    // console.log('findBluPath index', receiver)
     return receiver
   }
 
