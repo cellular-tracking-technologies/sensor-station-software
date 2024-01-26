@@ -219,7 +219,6 @@ class BaseStation {
           break
         case ('checkin'):
           this.checkin()
-          // this.blu_checkin()
           break
         case ('upload'):
           this.runCommand('upload-station-data')
@@ -310,71 +309,24 @@ class BaseStation {
    * checkin to the server
    */
   checkin() {
-
-    Object.keys(this.data_manager.stats.blu_stats.blu_ports).forEach((port) => {
-
-      console.log('blu station blu fw', this.blu_station.blu_fw.firmware[port].channels)
-      console.log('blu station blu stats', this.data_manager.stats.blu_stats.blu_ports[port].channels)
-      // this.server_api.healthCheckin(this.data_manager.stats.blu_stats.blu_ports[port], this.blu_station.getBluFirmware())
-      this.stationLog('server checkin initiated')
-      this.server_api.healthCheckin(
-        this.data_manager.stats.stats,
-        this.getRadioFirmware(),
-        this.data_manager.stats.blu_stats.blu_ports[port],
-        this.blu_station.getBluFirmware()
-      )
-        .then((response) => {
-          if (response == true) {
-            this.stationLog('server checkin success')
-          } else {
-            this.stationLog('checkin failed')
-          }
-        })
-        .catch((err) => {
-          this.stationLog('server checkin error', err.toString())
-        })
-    })
-
-    // console.log('blu station blu fw', this.blu_station.blu_fw)
-    // console.log('blu station blu stats', this.data_manager.stats)
-    // this.server_api.healthCheckin(this.data_manager.stats.blu_stats, this.blu_station.blu_fw)
-    //   .then((response) => {
-    //     if (response == true) {
-    //       this.stationLog('server checkin success')
-    //     } else {
-    //       this.stationLog('checkin failed')
-    //     }
-    //   })
-    //   .catch((err) => {
-    //     console.error('blu checkin error', err)
-    //     this.stationLog('server checkin error', err.toString())
-    //   })
-
+    this.stationLog('server checkin initiated')
+    this.server_api.healthCheckin(
+      this.data_manager.stats.stats,
+      this.getRadioFirmware(),
+      this.data_manager.stats.blu_stats,
+      this.blu_station.getBluFirmware()
+    )
+      .then((response) => {
+        if (response == true) {
+          this.stationLog('server checkin success')
+        } else {
+          this.stationLog('checkin failed')
+        }
+      })
+      .catch((err) => {
+        this.stationLog('server checkin error', err.toString())
+      })
   }
-
-  //   /**
-  //  * checkin to the server
-  //  */
-  //   blu_checkin() {
-  //     this.stationLog('server checkin initiated')
-  //     Object.keys(this.data_manager.stats.blu_stats.blu_ports).forEach((port) => {
-
-  //       console.log('blu station blu fw', this.blu_station.blu_fw.firmware[port].channels)
-  //       console.log('blu station blu stats', this.data_manager.stats.blu_stats.blu_ports[port].channels)
-  //       this.server_api.healthCheckin(this.data_manager.stats.blu_stats.blu_ports[port], this.blu_station.getBluFirmware())
-  //         .then((response) => {
-  //           if (response == true) {
-  //             this.stationLog('server checkin success')
-  //           } else {
-  //             this.stationLog('checkin failed')
-  //           }
-  //         })
-  //         .catch((err) => {
-  //           console.error('blu checkin error', err)
-  //           this.stationLog('server checkin error', err.toString())
-  //         })
-  //     })
-  //   }
 
   /**
    * control on-board LEDs
@@ -424,7 +376,6 @@ class BaseStation {
     // start data rotation timer
     // checkin after 5 seconds of station running
     setTimeout(this.checkin.bind(this), 10 * 1000)
-    // setTimeout(this.blu_checkin.bind(this), 10 * 3000)
     this.heartbeat.createEvent(this.config.data.record.rotation_frequency_minutes * 60, this.rotateDataFiles.bind(this))
     this.heartbeat.createEvent(this.config.data.record.sensor_data_frequency_minutes * 60, this.pollSensors.bind(this))
     this.heartbeat.createEvent(this.config.data.record.checkin_frequency_minutes * 60, this.checkin.bind(this))

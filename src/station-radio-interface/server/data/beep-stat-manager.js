@@ -143,7 +143,7 @@ class BeepStatManager {
 
     let port = record.UsbPort.toString()
     let channel = record.RadioId.toString()
-    let blu_id = record.TagId.toString()
+    let blu_id = record.TagId.toString().toUpperCase();
 
     let stats_obj = this.getBluPortAndChannel(record) // channel is not being produced?
 
