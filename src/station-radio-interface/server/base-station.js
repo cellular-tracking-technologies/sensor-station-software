@@ -163,6 +163,7 @@ class BaseStation {
           this.setBluReceiverState(cmd)
           break;
         case ('blu_radio_all_off'):
+          console.log('blu radio all off cmd', cmd)
           this.blu_station.bluRadiosAllOff(cmd)
           this.setBluReceiverState(cmd)
           break
@@ -428,10 +429,23 @@ class BaseStation {
       })
 
     process.on('SIGINT', () => {
-
+      console.log('sigint blu station blu receivers', this.blu_station.blu_receivers)
+      // const promises = this.blu_station.blu_receivers.map((receiver) => {
       const promises = this.blu_station.blu_receivers.map((receiver) => {
-        this.blu_station.stopBluRadios(receiver.path)
-        this.blu_station.destroy_receiver(receiver)
+        if(receiver.path) {
+
+          this.toggleBluState({
+            receiver_channel: receiver.port,
+            radio_state: 0,
+          })
+          console.log('sigint receiver', receiver)
+          
+          // let close_receiver = this.findBluReceiveryByPath(receiver.path)
+          // let close_receiver = this.blu_station.blu_receivers.find(e => e.path === receiver.path)
+          // console.log('close receiver', close_receiver)
+          this.blu_station.stopBluRadios(receiver.path)
+          this.blu_station.destroy_receiver(receiver)
+        }
       })
       try {
         const blu_radios_stop = Promise.all(promises)
@@ -626,10 +640,10 @@ class BaseStation {
     let receiver_channel = Number(cmd.data.port)
     if (cmd.data.poll_interval) {
       let poll_interval = Number(cmd.data.poll_interval)
-      let radio_state = cmd.data.scan ? Number(cmd.data.scan) : 1
+      let radio_state = Number(cmd.data.scan)
       this.toggleBluState({ receiver_channel, poll_interval, radio_state })
     } else {
-      let radio_state = cmd.data.scan ? Number(cmd.data.scan) : 1
+      let radio_state = Number(cmd.data.scan)
       this.toggleBluState({ receiver_channel, radio_state })
     }
   }

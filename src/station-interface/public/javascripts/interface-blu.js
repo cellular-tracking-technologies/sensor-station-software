@@ -169,6 +169,8 @@ const initialize_blu_controls = function () {
                     data: {
                         type: 'reboot_blu_radio',
                         port: port,
+                        scan: 1,
+                        rx_blink: 1,
                     }
                 }));
             }
@@ -192,6 +194,8 @@ const initialize_blu_controls = function () {
                         type: 'change_poll',
                         poll_interval: res,
                         port: port,
+                        scan: 1,
+                        rx_blink: 1,
                     }
                 }));
             }
@@ -210,6 +214,8 @@ const initialize_blu_controls = function () {
                         type: 'update-firmware',
                         port: port,
                         poll_interval: 10000,
+                        scan: 1,
+                        rx_blink: 1,
                     }
                 }));
             }
@@ -255,7 +261,6 @@ const initialize_blu_controls = function () {
                         type: 'blu_off',
                         channel: radio_id,
                         port: port,
-
                         scan: 0,
                         rx_blink: 0,
                     }
@@ -318,6 +323,8 @@ const initialize_blu_controls = function () {
                         type: 'reboot_blu_radio',
                         channel: radio_id,
                         port: port,
+                        scan: 1,
+                        rx_blink: 1,
                     }
                 }));
             }
@@ -342,6 +349,8 @@ const initialize_blu_controls = function () {
                         poll_interval: res,
                         port: port,
                         channel: radio_id,
+                        scan: 1,
+                        rx_blink: 1,
                     }
                 }));
             }

@@ -95,6 +95,7 @@ class StationConfig {
   }
 
   toggleRadioMode(opts) {
+    console.log('toggleRadioMode opts', opts)
     this.data.radios.forEach((radio) => {
       if (radio.channel == opts.channel) {
         console.log('setting radio mode')
@@ -103,17 +104,18 @@ class StationConfig {
         ]
       }
     })
-    let receiver = this.data.blu_receivers.findIndex(receiver => receiver.channel == opts.receiver_channel)
+    let receiver = this.data.blu_receivers.find(receiver => receiver.channel == opts.receiver_channel)
+    console.log('station config receiver', receiver)
     if (opts.blu_radio_channel) {
-      let radio = this.data.blu_receivers[receiver].blu_radios.findIndex(radio => radio.radio == opts.blu_radio_channel)
+      let radio = receiver.blu_radios.find(radio => radio.radio == opts.blu_radio_channel)
       if (opts.poll_interval) {
-        this.data.blu_receivers[receiver].blu_radios[radio].poll_interval = opts.poll_interval
-        this.data.blu_receivers[receiver].blu_radios[radio].radio_state = opts.radio_state
+        radio.radio_state = opts.radio_state
+        radio.poll_interval = opts.poll_interval
       } else {
-        this.data.blu_receivers[receiver].blu_radios[radio].radio_state = opts.radio_state
+        radio.radio_state = opts.radio_state
       }
     } else {
-      this.data.blu_receivers[receiver].blu_radios.forEach((radio) => {
+      receiver.blu_radios.forEach((radio) => {
         if (opts.poll_interval) {
           radio.poll_interval = opts.poll_interval
           radio.radio_state = opts.radio_state
