@@ -106,9 +106,6 @@ class DataManager {
       switch (beep.meta.data_type) {
         case 'blu_tag': {
           record = this.loggers.blu.addRecord(beep)
-          // console.log('blu record', record)
-          // this.stats.addBluBeep(record)
-          // this.stats.getDroppedDetections()
           break
         }
         case 'coded_id': {

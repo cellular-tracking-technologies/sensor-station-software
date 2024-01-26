@@ -24,7 +24,6 @@ class BeepStatManager {
       // msg_type: 'blu_stats',
     }
     this.blu_stats.blu_ports[port].channels[channel] = blu_channel_data
-    // console.log('add blu stat channel blu data', blu_channel_data, 'blu stats', this.blu_stats.blu_ports[port].channels[channel].blu_beeps)
     return blu_channel_data
   }
 
@@ -69,8 +68,6 @@ class BeepStatManager {
  *  get in memory stat document for a given record by channel id - create the entry if does not exist
  */
   getBluPortAndChannel(record) {
-    // Object.keys(this.stats.blu_ports).forEach((port) => {
-    // console.log('get blu channel port', record.UsbPort)
     let port = record.UsbPort.toString()
     let channel = record.RadioId.toString()
 
@@ -101,9 +98,7 @@ class BeepStatManager {
    *  bump tag stats for beep
    */
   addBeep(record) {
-    // console.log('regular beep record', record)
     let channel = this.getChannel(record)
-    // console.log('add beep channel', channel)
 
     let beep_stats
     if (record.NodeId.length > 0) {
@@ -117,7 +112,6 @@ class BeepStatManager {
     } else {
       beep_stats[record.TagId] = 1
     }
-    // console.log('add radio beep beep stats', beep_stats, 'global beep stats', this.stats)
   }
 
   /**
@@ -168,19 +162,10 @@ class BeepStatManager {
     let port = stats.port.toString()
     let channel = stats.radio_channel.toString()
     let blu_dropped = stats.dropped_detections
-    // console.log('add blu beep port', port, 'channel', channel, 'blu dropped', blu_dropped)
 
     let stats_obj = this.getBluPortAndChannel({ UsbPort: port, RadioId: channel }) // channel is not being produced?
-    // console.log('add blu beep channel blu dropped', stats_obj)
     let blu_stats = stats_obj.blu_dropped ? stats_obj.blu_dropped : 0
-    // console.log('add blu dropped before addition', blu_stats)
-
-    // blu_stats += blu_dropped
     this.blu_stats.blu_ports[port].channels[channel].blu_dropped += blu_dropped
-    // console.log('add blu dropped after addition', blu_stats)
-
-
-    // console.log('add blu dropped function blu_stats', blu_stats, 'global blu dropped', this.blu_stats.blu_ports[port].channels[channel].blu_dropped)
   }
   /**
    * 

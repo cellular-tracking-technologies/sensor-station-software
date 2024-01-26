@@ -87,7 +87,6 @@ class BeepFormatter {
         ]
       } else {
         console.error(`i don't know what to do ${record}`)
-        console.log(record)
         fields = null
       }
     }

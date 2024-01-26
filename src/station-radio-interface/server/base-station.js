@@ -44,7 +44,6 @@ class BaseStation {
     this.date_format
     this.gps_logger
     this.data_manager
-    // record the date/time the station is started
     this.begin = moment(new Date()).utc()
     this.heartbeat = heartbeats.createHeart(1000)
     this.server_api = new ServerApi()
@@ -54,8 +53,6 @@ class BaseStation {
     this.poll_data
     this.dongle_port
     this.blu_radio_filemap
-    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
-
   }
 
   /**
@@ -78,7 +75,6 @@ class BaseStation {
 
     // save the config to disk
     this.config.save()
-    // console.log('base station config in init function', this.config)
     this.blu_receivers = this.config.data.blu_receivers
 
     // pull out config options to start everythign
@@ -92,8 +88,6 @@ class BaseStation {
       date_format: this.date_format,
       flush_data_cache_seconds: this.config.data.record.flush_data_cache_seconds
     })
-
-
 
     this.log_filename = `sensor-station-${this.station_id}.log`
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
@@ -110,7 +104,6 @@ class BaseStation {
       blu_firmware: this.firmware,
       server_api: this.server_api,
     })
-
     this.directoryWatcher()
     this.startTimers()
   }
@@ -166,7 +159,6 @@ class BaseStation {
     this.sensor_socket_server.on('cmd', (cmd) => {
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
-
           this.blu_station.bluRadiosAllOn(cmd)
           this.setBluReceiverState(cmd)
           break;
@@ -437,11 +429,8 @@ class BaseStation {
 
     process.on('SIGINT', () => {
 
-      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
       const promises = this.blu_station.blu_receivers.map((receiver) => {
-
         this.blu_station.stopBluRadios(receiver.path)
-
         this.blu_station.destroy_receiver(receiver)
       })
       try {
@@ -491,19 +480,14 @@ class BaseStation {
     if (revision.revision >= 3) {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
-
         this.unlinkBluStation(path)
-
       } else if (!path.includes('-port0')) {
         this.unlinkDongleRadio(path)
-
       }
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
-
         this.unlinkBluStation(path)
-
       } else if (!path.includes('-port0')) {
         this.unlinkDongleRadio(path)
       }
@@ -521,7 +505,6 @@ class BaseStation {
     let start_receiver = this.findBluReceiveryByPath(path)
 
     start_receiver.blu_radios.forEach((radio) => {
-
       this.toggleBluState({
         receiver_channel: start_receiver.port,
         blu_radio_channel: radio.radio,
@@ -551,8 +534,6 @@ class BaseStation {
       })
     })
     this.blu_station.destroy_receiver(this.blu_station.blu_receivers[unlink_index])
-
-
   }
 
   unlinkDongleRadio(path) {
@@ -563,8 +544,6 @@ class BaseStation {
     }
     this.broadcast(JSON.stringify(unlink_dongle))
   }
-
-
 
   /**
    * 
@@ -608,7 +587,6 @@ class BaseStation {
       this.stationLog(`writing message to radio ${msg.channel}: ${msg.msg}`)
     })
     beep_reader.on('error', (err) => {
-      console.log('reader error', err, radio.channel)
       console.error(err)
       // error on the radio - probably a path error
       beep_reader.stopPollingFirmware()
@@ -634,7 +612,6 @@ class BaseStation {
  */
   findBluReceiveryByPath(path) {
     let receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    // console.log('findBluPath index', receiver)
     return receiver
   }
 
@@ -646,8 +623,6 @@ class BaseStation {
    * @param {String} cmd.data.scan Scan variable, determines if radios is scanning for tags, using for radio state
    */
   setBluReceiverState(cmd) {
-    console.log('set blu radio state cmd', cmd)
-    // this.blu_station.bluRadiosAllOn(cmd)
     let receiver_channel = Number(cmd.data.port)
     if (cmd.data.poll_interval) {
       let poll_interval = Number(cmd.data.poll_interval)
@@ -668,8 +643,6 @@ class BaseStation {
  * @param {String} cmd.data.scan Scan variable, determines if radios is scanning for tags, using for radio state
  */
   setBluRadioState(cmd) {
-    console.log('set blu radio state cmd', cmd)
-    // this.blu_station.bluRadiosAllOn(cmd)
     let receiver_channel = Number(cmd.data.port)
     let blu_radio_channel = Number(cmd.data.channel)
     if (cmd.data.poll_interval) {

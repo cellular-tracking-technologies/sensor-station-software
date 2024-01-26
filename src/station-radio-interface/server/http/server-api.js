@@ -33,7 +33,6 @@ class ServerApi {
   }
 
   filterStats(stats) {
-    console.log('filter stats', stats)
     Object.keys(stats.channels).forEach((channel) => {
       let channel_data = stats.channels[channel]
 
@@ -119,8 +118,8 @@ class ServerApi {
           data.sensor = this.sensor_data
           data.stats = this.filterStats(stats)
           data.blu_stats = blu_stats
-          console.log('server data stats', data.stats)
-          console.log('stringified server data stats', JSON.stringify(data, null, 2))
+          // console.log('server data stats', data.stats)
+          // console.log('stringified server data stats', JSON.stringify(data, null, 2))
 
           // initialize server checkin
           fetch(this.endpoint, {
@@ -131,12 +130,12 @@ class ServerApi {
           })
             .then((res) => {
               if (res.ok) {
-                console.log('successful response', res)
+                // console.log('successful response', res)
                 // we have a successful server checkin - clear sensor data
                 this.sensor_data = []
                 resolve(true)
               } else {
-                console.log('bad response', res)
+                // console.log('bad response', res)
 
                 console.error('did not receive a valid checkin response from the server')
                 resolve(false)

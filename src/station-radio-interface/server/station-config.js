@@ -58,16 +58,13 @@ class StationConfig {
 
   async load() {
     // check if config file exists
-    console.log('loading', this.config_filepath)
     const file_exists = await this.checkIfFileExists(this.config_filepath)
 
     let config
     if (file_exists != true) {
-      console.log('loading default config')
       config = this.default_config
     } else {
       // load config from file
-      console.log('loading config from file', this.config_filepath)
       config = JSON.parse(fs.readFileSync(this.config_filepath).toString())
     }
 
@@ -78,7 +75,6 @@ class StationConfig {
   save() {
     // strip radio path from config to be threaded dynamically on load
     let cloned_config = JSON.parse(JSON.stringify(this.data))
-    // console.log('station-config cloned config', cloned_config)
     cloned_config.radios.forEach(radio => {
       if (radio.path) {
         delete radio.path
@@ -99,7 +95,6 @@ class StationConfig {
   }
 
   toggleRadioMode(opts) {
-    // console.log('toggle radio mode opts', opts)
     this.data.radios.forEach((radio) => {
       if (radio.channel == opts.channel) {
         console.log('setting radio mode')
@@ -111,7 +106,6 @@ class StationConfig {
     let receiver = this.data.blu_receivers.findIndex(receiver => receiver.channel == opts.receiver_channel)
     if (opts.blu_radio_channel) {
       let radio = this.data.blu_receivers[receiver].blu_radios.findIndex(radio => radio.radio == opts.blu_radio_channel)
-      // console.log('station config blu receivers', this.data.blu_receivers, 'indexed', this.data.blu_receivers[receiver])
       if (opts.poll_interval) {
         this.data.blu_receivers[receiver].blu_radios[radio].poll_interval = opts.poll_interval
         this.data.blu_receivers[receiver].blu_radios[radio].radio_state = opts.radio_state
@@ -119,7 +113,6 @@ class StationConfig {
         this.data.blu_receivers[receiver].blu_radios[radio].radio_state = opts.radio_state
       }
     } else {
-      // console.log('station config blu receivers', this.data.blu_receivers, 'indexed', this.data.blu_receivers[receiver])
       this.data.blu_receivers[receiver].blu_radios.forEach((radio) => {
         if (opts.poll_interval) {
           radio.poll_interval = opts.poll_interval

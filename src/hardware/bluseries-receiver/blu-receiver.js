@@ -14,7 +14,6 @@ class BluReceiverTask {
 class BluReceiver extends EventEmitter {
   #data
   constructor(opts) {
-    // console.log('blu receiver opts', opts)
     super()
     this.#data = {
       io: new BluReceiverIo({ path: opts.path }),
@@ -24,15 +23,13 @@ class BluReceiver extends EventEmitter {
     }
 
     this.#data.io.on('open', () => {
-      // console.log('blu radio is opening')
       this.#data.connected = true
       this.run_schedule()
     })
     this.#data.io.on('close', () => {
-      console.log('blu radio is closing')
 
       this.#data.connected = false
-      // process.exit(0)
+      process.exit(0)
     })
   }
   /**
@@ -118,7 +115,6 @@ class BluReceiver extends EventEmitter {
 
         try {
           const data = await this.#data.io.dfu(job.radio_channel, job.data.file)
-          console.log('blu receiver dfu data', data)
           this.finalize({
             task: BluReceiverTask.DFU,
             radio_channel: job.radio_channel,

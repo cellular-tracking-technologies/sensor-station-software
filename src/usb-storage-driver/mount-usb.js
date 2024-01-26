@@ -9,7 +9,6 @@ class MountUsb {
   }
 
   async mount(device) {
-    console.log('mount-usb mounting USB drive', device)
     // check if the mount directory exists
     if (fs.existsSync(this.dir) == false) {
       // make the mount directory
@@ -20,7 +19,7 @@ class MountUsb {
   }
 
   async unmount() {
-		console.log('mount-usb unmounting USB drive', this.dir)
+    console.log('mount-usb unmounting USB drive', this.dir)
     if (fs.existsSync(this.dir) == false) {
       // the path does not exist - 
       return

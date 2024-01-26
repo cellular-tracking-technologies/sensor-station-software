@@ -313,7 +313,6 @@ const initialize_controls = function () {
 
   document.querySelectorAll('#mainRadiosSwitch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
-      console.log('display main radio switch clicked', document.querySelector('#mainRadiosSwitch'))
       if (document.querySelector('#main-radios').style.display !== 'none') {
         document.querySelector('#main-radios').style.display = 'none'
 
@@ -326,8 +325,6 @@ const initialize_controls = function () {
 
   document.querySelectorAll('#dongleRadioSwitch').forEach((btn) => {
     btn.addEventListener('click', (e) => {
-      console.log('display dongle radio switch clicked', document.querySelector('#dongleRadiosSwitch'))
-      // if (document.querySelector('#dongles').style.display !== 'none') {
 
       if (document.querySelector('#dongles').style.display !== 'none') {
         document.querySelector('#dongles').style.display = 'none'
@@ -350,26 +347,18 @@ const initialize_controls = function () {
         // e.stopPropagation()
         e.preventDefault()
       }
-      // console.log('enter button pressed', e)
     }, false)
 
-    console.log('tag filter input', input)
     filter = input.value.toUpperCase()
-    console.log('tag filter value', filter)
 
-    // table = document.getElementsByClassName('table table-sm table-bordered table-dark radio')
     Object.values(document.getElementsByClassName('table table-sm table-bordered table-dark radio')).forEach((table) => {
-      console.log('tag filter tables', table)
 
       tr = table.getElementsByTagName('tr')
-      // console.log('tag filter tr', tr)
 
       for (i = 0; i < tr.length; i++) {
         td = tr[i].getElementsByTagName('td')[1]
-        // console.log('tag filter td', td)
         if (td) {
           txtValue = td.textContent || td.innterText
-          // console.log('tag filter txtValue', txtValue)
 
           if (txtValue.toUpperCase().indexOf(filter) > -1) {
             tr[i].style.display = ""
@@ -384,15 +373,12 @@ const initialize_controls = function () {
 
 
 const format_beep = function (beep) {
-  // console.log('format beep', beep)
   if (beep.data) {
     let tag_id, rssi, node_id, tag_at, blu_channel, data_type, port, vcc, temp, poll_interval;
     let beep_at = moment(new Date(beep.received_at)).utc();
     tag_at = beep_at;
     if (beep.protocol) {
       if (beep.meta.data_type == 'blu_tag') {
-        // console.log('blu tag is being formatted')
-        // blu_channel = beep.blu_channel;
         blu_channel = beep.channel;
         poll_interval = beep.poll_interval;
         tag_id = beep.id;
@@ -403,7 +389,6 @@ const format_beep = function (beep) {
         vcc = beep.vcc
         temp = beep.temp
       }
-      // new protocol
       if (beep.meta.data_type == 'node_coded_id') {
         node_id = beep.meta.source.id;
         rssi = beep.data.rssi;
@@ -421,8 +406,7 @@ const format_beep = function (beep) {
         tag_at = moment(new Date(beep.data.time * 1000)).utc();
       }
     }
-    // console.log('wtf is beep data', beep.data)
-    // console.log('blu channel', blu_channel)
+
     if (beep.data.tag) {
       tag_id = beep.data.tag.id;
       rssi = beep.rssi;
@@ -450,7 +434,6 @@ const format_beep = function (beep) {
       temp: temp ?? null,
     }
 
-    // console.log('format beep data', data)
     return data
   }
 }
@@ -496,7 +479,6 @@ const format_node_health = function (msg) {
 
 
 const handle_beep = function (beep) {
-  // console.log('handle beep beep', beep)
   if (beep.protocol) {
     switch (beep.meta.data_type) {
       case 'coded_id':
@@ -533,7 +515,6 @@ let DONGLES_ENABLED = false;
 let MAX_ROW_COUNT = 1000;
 
 const handle_blu_beep = function (beep) {
-  // console.log('handle blu beep', beep)
   let tag_id = beep.tag_id.toUpperCase();
   let port = beep.port.toString()
   let channel = beep.channel.toString()
@@ -542,14 +523,11 @@ const handle_blu_beep = function (beep) {
   build_blu_stats(port, channel)
 
   let BLU_TABLE = document.querySelector('#blu-radio_' + port + '-' + beep.blu_channel);
-  // // console.log('blu table', BLU_TABLE)
-  // BLU_PORT.appendChild(BlU_TABLE)
 
   let tr = document.createElement('tr');
   tr.style.border = "2px solid #22dd22"; // all blu beeps are validated so green outline
   let td = document.createElement('td');
   td.textContent = beep.tag_at.format(DATE_FMT);
-  // console.log('blu beep date', td.textContent)
   tr.appendChild(td);
   let alias = localStorage.getItem(tag_id);
   if (alias) {
@@ -557,14 +535,10 @@ const handle_blu_beep = function (beep) {
   } else {
     tr.appendChild(createElement(tag_id));
   }
-  // console.log('handle blu beep filter', filter)
 
   let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
-  // console.log('regex filter', regex_filter)
   if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
-    // } else if (tag_id == filter) {
-    //   tr.style.display = ''
 
   } else {
     tr.style.display = "none"
@@ -583,7 +557,6 @@ const handle_blu_beep = function (beep) {
   BLU_TABLE.insertBefore(tr, BLU_TABLE.firstChild.nextSibling);
 
   let beep_count = beep_hist[tag_id];
-  // console.log('beep count', beep_count)
   if (tags.has(tag_id)) {
     beep_hist[tag_id] += 1;
     document.querySelector('#cnt_' + tag_id).textContent = beep_hist[tag_id];
@@ -661,7 +634,6 @@ const clip_beep_tables = function () {
 }
 
 const handle_tag_beep = function (beep) {
-  // console.log('handle tag beep', beep)
   let validated = false;
   let tag_id = beep.tag_id;
 
@@ -679,16 +651,12 @@ const handle_tag_beep = function (beep) {
   }
 
   if (beep.channel > 5 && dongle_radios.includes(beep.channel)) {
-    console.log('dongle radio is present', beep.channel)
   } else if (beep.channel > 5) {
-    console.log('dongle radio is not present, adding it to array', beep.channel)
     dongle_radios.push(beep.channel)
   }
 
-  // console.log('blu ports', blu_ports)
   dongle_radios.forEach((radio) => {
     document.querySelector(`#dongle-radio-${radio}`).style.display = ''
-    // document.querySelector(`#poll_interval_${port}-${data.channel}`).textContent = data.poll_interval
   })
 
   let BEEP_TABLE = document.querySelector('#radio_' + beep.channel); // creates table for individual beeps
@@ -710,9 +678,7 @@ const handle_tag_beep = function (beep) {
   } else {
     tr.appendChild(createElement(tag_id));
   }
-  // console.log('handle tag beep filter', filter)
   let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
-  // console.log('regex filter', regex_filter)
   if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
     tr.style.display = ""
   } else {
@@ -725,10 +691,8 @@ const handle_tag_beep = function (beep) {
   if (BEEP_TABLE.children.length > MAX_ROW_COUNT) {
     BEEP_TABLE.removeChild(BEEP_TABLE.lastElementChild)
   }
-  // console.log('regular radio', BEEP_TABLE)
   BEEP_TABLE.insertBefore(tr, BEEP_TABLE.firstChild.nextSibling);
   beeps.push(beep);
-  // console.log('regular beeps', beeps)
   let beep_count = beep_hist[tag_id];
   if (tags.has(tag_id)) {
     beep_hist[tag_id] += 1;
@@ -801,18 +765,15 @@ const createElement = function (text) {
 };
 
 const handle_stats = function (stats) {
-  // console.log('handle stats', stats)
   let record;
   let reports = {};
   let received_at, old_received_at;
   let n = 0;
   let channel_stats = {}
-  // let blu_stats = {}
   if (stats.channels) {
 
     Object.keys(stats.channels).forEach(function (channel) {
       let channel_data = stats.channels[channel];
-      // console.log('handle stats channel data', channel_data)
       Object.keys(channel_data.nodes.health).forEach(function (node_id) {
         record = channel_data.nodes.health[node_id];
         received_at = moment(record.Time);
@@ -848,68 +809,45 @@ const handle_stats = function (stats) {
         beeps: beeps,
         node_beeps: node_beeps,
         telemetry_beeps: telemetry_beeps,
-        // blu_beeps: blu_beeps,
-        // blu_dropped: blu_dropped,
       };
 
     });
   };
   nodes = reports;
-  // console.log('handle stats channel stats', channel_stats)
 
   render_nodes(reports);
   render_channel_stats(channel_stats);
-  // render_blu_stats(channel_stats);
 };
 
 const handle_add_port = function (data) {
-  console.log('handle add port data', data)
   let add_port = data.port.toString()
-  console.log('handle add port add_port', add_port)
 
   if (blu_ports.includes(add_port)) {
-    // console.log('handle add port, port is present', add_port)
+
   } else {
-    // console.log('handle add port adding unique port', add_port)
     blu_ports.push(add_port)
   }
 
-  // console.log('blu ports', blu_ports)
   blu_ports.forEach((port) => {
     document.querySelector(`#blu-receiver-${port}`).style.display = ''
-    // document.querySelector(`#poll_interval_${port}-${data.channel}`).textContent = data.poll_interval
   })
 }
 
 const handle_blu_unlink = function (data) {
-  console.log('handle unlink port data', data)
   let unlink_port = data.port
   document.querySelector(`#blu-receiver-${unlink_port}`).style.display = 'none'
   let unlink_index = blu_ports.findIndex(port => port === unlink_port)
-  console.log('handle blu beep unlink index', unlink_index)
-  console.log('handle blu beep unlink blu ports', blu_ports)
   blu_ports.splice(unlink_index, 1)
-  console.log('handle blu beep unlink blu ports', blu_ports)
-  // unlink_port = null
-  console.log('handle blu beep unlink port after null', unlink_port)
-
 }
 
 const handle_dongle_unlink = function (data) {
-  console.log('handle unlink port data', data)
   let unlink_port = data.port
   document.querySelector(`#dongle-radio-${unlink_port}`).style.display = 'none'
   let unlink_index = dongle_radios.findIndex(port => port === unlink_port)
-  console.log('handle dongle unlink index', unlink_index)
-  console.log('handle dongle radios unlink', dongle_radios)
   dongle_radios.splice(unlink_index, 1)
-  console.log('handle dongle radio unlink after splice', dongle_radios)
-  // unlink_port = null
-  // console.log('handle dongle unlink port after splice', unlink_port)
 }
 
 const build_blu_stats = function (port, channel) {
-  console.log('build blu stats', blu_stats, 'port', port, 'channel', channel)
   if (Object.keys(blu_stats).includes(port)) {
     // if port exists within blu stats object, add blu_dropped to existing value
     if (Object.keys(blu_stats[port].channels).includes(channel)) {
@@ -926,9 +864,7 @@ const build_blu_stats = function (port, channel) {
 }
 
 const handle_blu_stats = function (data) {
-  console.log('handle blu stats data', data, 'blu_stats', blu_stats)
   let port_key = data.port.toString()
-  console.log('handle blu stats port key', port_key)
   let channel_key = data.channel.toString()
   let blu_beeps = data.blu_beeps
   blu_stats[port_key].channels[channel_key].blu_beeps += blu_beeps
@@ -937,7 +873,6 @@ const handle_blu_stats = function (data) {
 }
 
 const handle_blu_dropped = function (data) {
-  console.log('handle blu dropped', data)
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
   let dropped = data.blu_dropped ?? 0
@@ -947,28 +882,23 @@ const handle_blu_dropped = function (data) {
 }
 
 const handle_poll = function (data) {
-  console.log('handle poll', data)
   poll_interval = data.poll_interval
   render_poll_interval(data)
 }
 
 const render_poll_interval = function (data) {
-  console.log('render poll interval', data)
   poll_interval = data.poll_interval
   let poll_interval_info = `#poll_interval_${data.port}-${data.channel}`
   document.querySelector(poll_interval_info).textContent = (Number(poll_interval) / 1000);
 }
 
 const render_channel_stats = function (channel_stats) {
-  // console.log('render channel stats1', channel_stats)
   let beep_info, node_beep_info, telemetry_beep_info;
-  //blu_beep_info;
   Object.keys(channel_stats).forEach(function (channel) {
     beep_info = `#beep_count_${channel}`;
     node_beep_info = `#node_beep_count_${channel}`;
     telemetry_beep_info = `#telemetry_beep_count_${channel}`;
     let stats = channel_stats[channel];
-    // console.log('render channel stats2', stats)
     document.querySelector(beep_info).textContent = stats.beeps;
     document.querySelector(node_beep_info).textContent = stats.node_beeps;
     document.querySelector(telemetry_beep_info).textContent = stats.telemetry_beeps;
@@ -977,18 +907,13 @@ const render_channel_stats = function (channel_stats) {
 
 const render_blu_stats = function (blu_stats) {
   if (blu_stats) {
-    // console.log('render blu stats channel stats', blu_stats)
     let blu_beep_info, blu_node_beep_info, blu_telemetry_beep_info;
     Object.keys(blu_stats).forEach((port) => {
-      // console.log('render blu stats port', port)
       Object.keys(blu_stats[port].channels).forEach((channel) => {
         if (channel > 0) {
           blu_beep_info = `#blu_beep_count_${port}-${channel}`
           let stats = blu_stats[Number(port)].channels[Number(channel)].blu_beeps;
-          // console.log('blu stats', blu_beep_info, stats)
-          // if (stats.blu_beeps) {
           document.querySelector(blu_beep_info).textContent = stats > 0 ? stats : 0
-          // }
         }
       })
     })
@@ -997,20 +922,15 @@ const render_blu_stats = function (blu_stats) {
 
 
 const render_dropped_detections = function (blu_stats) {
-  // console.log('render dropped detections blu stats', blu_stats)
   let blu_stat_info;
 
   Object.keys(blu_stats).forEach((port) => {
-    // console.log('render dropped detections port', port)
     Object.keys(blu_stats[port].channels).forEach((channel) => {
-      // console.log('render dropped detections channel', channel)
       if (channel > 0) {
 
         blu_stat_info = `#blu_dropped_count_${port}-${channel}`;
-        // console.log('render dropped detections port and channel', port, channel)
 
         let stats_blu = blu_stats[Number(port)].channels[Number(channel)].blu_dropped;
-        // console.log('render dropped detections', stats_blu)
         document.querySelector(blu_stat_info).textContent = stats_blu > 0 ? stats_blu : 0
       }
     })
@@ -1181,51 +1101,37 @@ const initialize_websocket = function () {
     console.log('socket on open event', event)
   }
   socket.onmessage = function (msg) {
-    // console.log('message', msg);
     let data = JSON.parse(msg.data);
-    // console.log('data', data)
     let tr, td;
     switch (data.msg_type) {
       case ('beep'):
         handle_beep(data);
         break;
       case ('blu'):
-        // console.log('blu tag')
         handle_beep(data);
         poll_interval = data.poll_interval
-        // console.log('poll interval', poll_interval)
         handle_poll(data);
-        // handle_ble(data);
         break;
       case ('blu_stats'):
-        console.log('blu stats event', data)
         handle_blu_stats(data);
       case ('blu_dropped'):
-        // console.log('blu dropped event', data)
         handle_blu_dropped(data);
         break;
       case ('poll_interval'):
-        // console.log('blu radio poll interval', data)
         handle_poll(data)
         break;
       case ('add_port'):
-        // console.log('add port', data)
-        // handle_add_port(data)
+        handle_add_port(data)
         break;
       case ('unlink_port'):
-        console.log('unlink port', data)
         handle_blu_unlink(data)
-        // unlink_port = data.port
-        // console.log('unlink port event', unlink_port)
         break;
       case ('unlink_dongle'):
         unlink_dongle = data.port
         handle_dongle_unlink(data)
         break;
       case ('stats'):
-        // console.log('handle stats data', data)
         handle_stats(data);
-        // handle_blu_stats(data.blu_ports)
         break;
       case ('about'):
         let about = data;
@@ -1272,17 +1178,13 @@ const initialize_websocket = function () {
         document.querySelector('#raw_log').value += data.data
         break
       case ('radio-firmware'):
-        // console.log('setting radio firwmare', data)
         Object.keys(data.firmware).forEach((channel) => {
           const firmware = data.firmware[channel]
           document.querySelector(`#radio-firmware-version-${channel}`).textContent = firmware
         })
         break
       case ('blu-firmware'):
-        // console.log('setting blu firmware', data)
         Object.keys(data.firmware).forEach((port) => {
-          // console.log('blu firmware port', port)
-
           Object.keys(data.firmware[port].channels).forEach((channel) => {
             const firmware = data.firmware[port].channels[channel]
             document.querySelector(`#blu-firmware-version-${port}-${channel}`).textContent = firmware
@@ -1291,8 +1193,6 @@ const initialize_websocket = function () {
         break
       default:
         console.log('WTF dunno', data);
-
-      //      document.querySelector('#raw_gps').textContent = JSON.stringify(data, null, 2);
     }
   };
 };
@@ -1317,7 +1217,6 @@ const get_config = function () {
       let i = 0;
       let radio_id, value;
       contents.radios.forEach(function (radio) {
-        // console.log('radio', radio)
         i++;
         radio_id = "#config_radio_" + i;
         switch (radio.config[0]) {
@@ -1452,10 +1351,8 @@ const build_radio_component = function (n) {
 
 const build_blu_receiver = function (port) {
   let wrapper = document.createElement('div')
-  // console.log('build blu receiver blu ports', blu_ports, 'port', port)
 
   if (blu_ports.includes(port)) {
-    console.log('build blu receiver blu ports', blu_ports, 'port', port)
     wrapper.setAttribute('style', 'display:\'\'')
 
   } else {
@@ -1684,7 +1581,6 @@ const build_sg_tag_file_upload = function () {
 const init_sg = () => {
   document.querySelector('#upload-sensorgnome-tag-db').addEventListener('click', (evt) => {
     let tag_file = document.querySelector('#tag-db-file').files[0]
-    console.log('uploading tag file', tag_file.name)
     const file_ext = tag_file.name.split('.').pop()
     const valid_exts = ['csv', 'sqlite']
     if (!valid_exts.includes(file_ext.toLowerCase())) {
@@ -1723,7 +1619,6 @@ const init_sg = () => {
 
     window.onload = function () {
       document.getElementById('tag-filter-input').value = '';
-      console.log('tag filter reset value', document.getElementById('tag-filter-input').value = '')
     }
 
     document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
@@ -1756,7 +1651,6 @@ const init_sg = () => {
     }
 
     for (let i = 1; i <= 7; i++) {
-      console.log('blu ports, let\'s see if it\'s full', blu_ports)
       blu_receiver = build_blu_receiver(i)
 
       document.querySelector('#blu-receiver').appendChild(blu_receiver)

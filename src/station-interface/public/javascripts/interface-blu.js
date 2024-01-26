@@ -81,7 +81,6 @@ const initialize_blu_controls = function () {
     document.querySelectorAll('button[name="all_radios_on"]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             let port = e.target.getAttribute('value')
-            console.log('turn on all radios on port', port)
             let res = window.prompt(`Turn on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`)
             res = Number(res) * 1000
             if (isNaN(res) === true || res === 0) {
@@ -222,7 +221,6 @@ const initialize_blu_controls = function () {
         btn.addEventListener('click', function (e) {
             let port = e.target.getAttribute('value').substring(0, 1)
             let radio_id = e.target.getAttribute('value').substring(2)
-            console.log('toggle radio on value', port, radio_id)
             let res = window.prompt(`Turning on all Bl${umacr} Radios on USB Port ${port} and setting polling interval as:`);
             res = Number(res) * 1000
             if (isNaN(res) === true || res === 0) {
@@ -371,7 +369,6 @@ const initialize_blu_controls = function () {
 
     document.querySelectorAll('#bluRadioSwitch').forEach((btn) => {
         btn.addEventListener('click', (e) => {
-            console.log('display blu radio switch clicked', document.querySelector('#blu-switch'))
             if (document.querySelector('#blu-receiver').style.display !== 'none') {
                 document.querySelector('#blu-receiver').style.display = 'none'
 
@@ -393,26 +390,18 @@ const initialize_blu_controls = function () {
                 // e.stopPropagation()
                 e.preventDefault()
             }
-            // console.log('enter button pressed', e)
         }, false)
 
-        console.log('tag filter input', input)
         filter = input.value.toUpperCase()
-        console.log('tag filter value', filter)
 
-        // table = document.getElementsByClassName('table table-sm table-bordered table-dark radio')
         Object.values(document.getElementsByClassName('table table-sm table-bordered table-dark radio')).forEach((table) => {
-            console.log('tag filter tables', table)
 
             tr = table.getElementsByTagName('tr')
-            // console.log('tag filter tr', tr)
 
             for (i = 0; i < tr.length; i++) {
                 td = tr[i].getElementsByTagName('td')[1]
-                // console.log('tag filter td', td)
                 if (td) {
                     txtValue = td.textContent || td.innterText
-                    // console.log('tag filter txtValue', txtValue)
 
                     if (txtValue.toUpperCase().indexOf(filter) > -1) {
                         tr[i].style.display = ""
@@ -486,8 +475,6 @@ const format_beep = function (beep) {
             vcc: vcc ?? null,
             temp: temp ?? null,
         }
-
-        // console.log('format beep data', data)
         return data
     }
 }
@@ -533,7 +520,6 @@ const format_node_health = function (msg) {
 
 
 const handle_beep = function (beep) {
-    // console.log('handle beep beep', beep)
     if (beep.protocol) {
         switch (beep.meta.data_type) {
             case 'blu_tag':
@@ -571,7 +557,6 @@ const handle_blu_beep = function (beep) {
     } else {
         tr.appendChild(createElement(tag_id));
     }
-    // console.log('handle blu beep filter', filter)
 
     let regex_filter = filter !== '' ? new RegExp(filter) : new RegExp(undefined)
     if (tag_id == filter || filter === undefined || filter === '' || regex_filter.test(tag_id)) {
@@ -618,9 +603,7 @@ const createElement = function (text) {
 };
 
 const handle_add_port = function (data) {
-    console.log('handle add port data', data)
     let add_port = data.port.toString()
-    console.log('handle add port add_port', add_port)
 
     if (blu_ports.includes(add_port)) {
     } else {
@@ -647,7 +630,6 @@ const handle_dongle_unlink = function (data) {
 }
 
 const build_blu_stats = function (port, channel) {
-    console.log('build blu stats', blu_stats, 'port', port, 'channel', channel)
     if (Object.keys(blu_stats).includes(port)) {
         // if port exists within blu stats object, add blu_dropped to existing value
         if (Object.keys(blu_stats[port].channels).includes(channel)) {
@@ -755,7 +737,6 @@ const initialize_websocket = function () {
                 handle_poll(data);
                 break;
             case ('blu_stats'):
-                console.log('blu stats event', data)
                 handle_blu_stats(data);
                 break
             case ('blu_dropped'):
@@ -763,12 +744,9 @@ const initialize_websocket = function () {
                 break;
             case ('poll_interval'):
                 handle_poll(data)
-
                 break;
             case ('unlink_port'):
-                console.log('unlink port', data)
                 handle_blu_unlink(data)
-
                 break;
             case ('blu-firmware'):
                 Object.keys(data.firmware).forEach((port) => {
@@ -1202,7 +1180,6 @@ const init_sg = () => {
 
         window.onload = function () {
             document.getElementById('tag-filter-input').value = '';
-            console.log('tag filter reset value', document.getElementById('tag-filter-input').value = '')
         }
 
         let blu_receiver, blu_radio, component, col, row, div
@@ -1214,7 +1191,6 @@ const init_sg = () => {
         }
 
         for (let i = 1; i <= 7; i++) {
-            console.log('blu ports, let\'s see if it\'s full', blu_ports)
             blu_receiver = build_blu_receiver(i)
 
             document.querySelector('#blu-receiver').appendChild(blu_receiver)
