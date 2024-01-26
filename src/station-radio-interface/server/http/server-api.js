@@ -36,35 +36,50 @@ class ServerApi {
     console.log('filter stats', stats)
     Object.keys(stats.channels).forEach((channel) => {
       let channel_data = stats.channels[channel]
-      console.log('filter stats channel data', channel_data)
-      if (channel_data.beeps) {
+      // console.log('filter stats channel data', channel_data)
+      // if (channel_data.beeps) {
 
-        Object.keys(channel_data.beeps).forEach((tag) => {
-          let cnt = channel_data.beeps[tag]
-          if (cnt < 5) {
-            delete channel_data.beeps[tag]
-          }
-        })
-        Object.keys(channel_data.nodes.beeps).forEach((tag) => {
-          let cnt = channel_data.nodes.beeps[tag]
-          if (cnt < 5) {
-            delete channel_data.nodes.beeps[tag]
-          }
-        })
-      } else if (channel_data.blu_beeps) {
-        Object.keys(channel_data.blu_beeps).forEach((tag) => {
-          let cnt = channel_data.blu_beeps[tag]
-          if (cnt < 5) {
-            delete channel_data.blu_beeps[tag]
-          }
-        })
-        // Object.keys(channel_data.nodes.blu_beeps).forEach((tag) => {
-        //   let cnt = channel_data.nodes.blu_beeps[tag]
-        //   if (cnt < 5) {
-        //     delete channel_data.nodes.blu_beeps[tag]
-        //   }
-        // })
-      }
+      Object.keys(channel_data.beeps).forEach((tag) => {
+        let cnt = channel_data.beeps[tag]
+        if (cnt < 5) {
+          delete channel_data.beeps[tag]
+        }
+      })
+      Object.keys(channel_data.nodes.beeps).forEach((tag) => {
+        let cnt = channel_data.nodes.beeps[tag]
+        if (cnt < 5) {
+          delete channel_data.nodes.beeps[tag]
+        }
+      })
+      // } else if (channel_data.blu_beeps) {
+      //   Object.keys(channel_data.blu_beeps).forEach((tag) => {
+      //     let cnt = channel_data.blu_beeps[tag]
+      //     if (cnt < 5) {
+      //       delete channel_data.blu_beeps[tag]
+      //     }
+      //   })
+      // Object.keys(channel_data.nodes.blu_beeps).forEach((tag) => {
+      //   let cnt = channel_data.nodes.blu_beeps[tag]
+      //   if (cnt < 5) {
+      //     delete channel_data.nodes.blu_beeps[tag]
+      //   }
+      // })
+      // }
+    })
+    return stats
+  }
+
+  filterBluStats(stats) {
+    console.log('filter blu stats', stats)
+    Object.keys(stats.channels).forEach((channel) => {
+      let channel_data = stats.channels[channel]
+
+      Object.keys(channel_data.beeps).forEach((tag) => {
+        let cnt = channel_data.beeps[tag]
+        if (cnt < 5) {
+          delete channel_data.beeps[tag]
+        }
+      })
     })
     return stats
   }
@@ -104,7 +119,7 @@ class ServerApi {
     return gps
   }
 
-  healthCheckin(stats, radio_fw) {
+  healthCheckin(stats, radio_fw, blu_stats, blu_fw) {
 
     return new Promise((resolve, reject) => {
       let promises = []
@@ -124,7 +139,7 @@ class ServerApi {
             'software': responses[5],
             'revision': responses[6],
             'radio': radio_fw,
-            // 'blu': blu_fw
+            'blu': blu_fw
           }
         })
         .then((data) => {
@@ -133,8 +148,9 @@ class ServerApi {
           data.gps = this.cleanGps(data)
           data.sensor = this.sensor_data
           data.stats = this.filterStats(stats)
+          data.blu_stats = this.filterBluStats(blu_stats)
           console.log('server data stats', data.stats)
-          console.log('stringified server data stats', JSON.stringify(data))
+          console.log('stringified server data stats', JSON.stringify(data, null, 2))
 
           // initialize server checkin
           fetch(this.endpoint, {
@@ -145,10 +161,13 @@ class ServerApi {
           })
             .then((res) => {
               if (res.ok) {
+                console.log('successful response', res)
                 // we have a successful server checkin - clear sensor data
                 this.sensor_data = []
                 resolve(true)
               } else {
+                console.log('bad response', res)
+
                 console.error('did not receive a valid checkin response from the server')
                 resolve(false)
               }

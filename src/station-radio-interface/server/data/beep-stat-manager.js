@@ -19,7 +19,7 @@ class BeepStatManager {
    */
   addBluStatChannel(port, channel) {
     let blu_channel_data = {
-      blu_beeps: {},
+      beeps: {},
       blu_dropped: 0,
       // msg_type: 'blu_stats',
     }
@@ -150,9 +150,9 @@ class BeepStatManager {
     let blu_stats
     if (record.NodeId.length > 0) {
       // from a node
-      blu_stats = stats_obj.nodes.blu_beeps
+      blu_stats = stats_obj.nodes.beeps
     } else {
-      blu_stats = stats_obj.blu_beeps ? stats_obj.blu_beeps : 0
+      blu_stats = stats_obj.beeps ? stats_obj.beeps : 0
     }
     if (Object.keys(blu_stats).includes(blu_id)) {
       blu_stats[blu_id] += 1
