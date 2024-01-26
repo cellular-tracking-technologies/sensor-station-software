@@ -105,12 +105,7 @@ class ServerApi {
   }
 
   healthCheckin(stats, radio_fw) {
-    let blu_fw
-    console.log('health check in stats', stats, 'radio fw', radio_fw)
-    if (Object.keys(stats.channels)[0].blu_beeps) {
-      blu_fw = radio_fw
-    }
-    console.log('server api blu fw', blu_fw)
+
     return new Promise((resolve, reject) => {
       let promises = []
       // generate list of promises to post requests to hardware server
@@ -129,7 +124,7 @@ class ServerApi {
             'software': responses[5],
             'revision': responses[6],
             'radio': radio_fw,
-            'blu': blu_fw
+            // 'blu': blu_fw
           }
         })
         .then((data) => {
