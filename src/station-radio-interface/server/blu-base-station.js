@@ -20,7 +20,7 @@ class BluStation {
 
   /**
    * 
-   * @returns {Object} blu firmware object with key:value pairs of channel and firmware version
+   * @returns {Object} key:value pairs of blu radio channels and their respective firmware number
    */
   getBluFirmware() {
     return Object.keys(this.blu_fw_checkin)

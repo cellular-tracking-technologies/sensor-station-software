@@ -290,14 +290,6 @@ class BaseStation {
       }))
   }
 
-  getBluFirmware() {
-    return Object.keys(this.blu_fw)
-      .map((channel) => ({
-        channel: channel,
-        version: this.blu_fw[channel],
-      }))
-  }
-
   /**
    * checkin to the server
    */
@@ -438,11 +430,7 @@ class BaseStation {
             receiver_channel: receiver.port,
             radio_state: 0,
           })
-          console.log('sigint receiver', receiver)
 
-          // let close_receiver = this.findBluReceiveryByPath(receiver.path)
-          // let close_receiver = this.blu_station.blu_receivers.find(e => e.path === receiver.path)
-          // console.log('close receiver', close_receiver)
           this.blu_station.stopBluRadios(receiver.path)
           this.blu_station.destroy_receiver(receiver)
         }
@@ -468,6 +456,10 @@ class BaseStation {
     })
   }
 
+  /**
+   * 
+   * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
+   */
   addPath(path) {
     if (revision.revision >= 3) {
       // V3 Radio Paths
@@ -490,6 +482,10 @@ class BaseStation {
     }
   }
 
+  /**
+ * 
+ * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
+ */
   unlinkPath(path) {
     if (revision.revision >= 3) {
       // V3 Radio paths
@@ -508,11 +504,10 @@ class BaseStation {
     }
   }
 
-  getBluFw(radio_channel) {
-    return new Promise((resolve, reject) => {
-
-    })
-  }
+  /**
+   * 
+   * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
+   */
   startBluStation(path) {
 
     this.blu_station.startBluRadios(path.substring(17))
@@ -532,17 +527,20 @@ class BaseStation {
     })
   }
 
+  /**
+   * 
+   * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
+   */
   unlinkBluStation(path) {
-    let unlink_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
-    let unlink_obj = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    let unlink_port = unlink_obj.channel
-    let unlink_receiver = {
+    let unlink_receiver = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
+    let unlink_port = unlink_receiver.channel
+    let unlink_obj = {
       msg_type: "unlink_port",
       port: unlink_port,
     }
-    this.broadcast(JSON.stringify(unlink_receiver))
+    this.broadcast(JSON.stringify(unlink_obj))
     this.blu_station.stopBluRadios(path.substring(17))
-    this.blu_station.blu_receivers[unlink_index].blu_radios.forEach((radio) => {
+    unlink_receiver.blu_radios.forEach((radio) => {
 
       this.toggleBluState({
         receiver_channel: unlink_port,
@@ -551,9 +549,13 @@ class BaseStation {
         poll_interval: radio.poll_interval,
       })
     })
-    this.blu_station.destroy_receiver(this.blu_station.blu_receivers[unlink_index])
+    this.blu_station.destroy_receiver(unlink_receiver)
   }
 
+  /**
+ * 
+ * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
+ */
   unlinkDongleRadio(path) {
     let unlink_dongle = {
       msg_type: "unlink_dongle",
