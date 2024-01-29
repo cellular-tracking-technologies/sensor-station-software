@@ -657,9 +657,24 @@ const build_blu_stats = function (port, channel) {
 const handle_blu_stats = function (data) {
     let port_key = data.port.toString()
     let channel_key = data.channel.toString()
-    let blu_beeps = data.blu_beeps
-    blu_stats[port_key].channels[channel_key].blu_beeps += blu_beeps
+
+    let n = 0;
+
+    if (blu_stats[port_key].channels[channel_key]) {
+        blu_stats[port_key].channels[channel_key].beeps = data.blu_beeps
+
+        Object.keys(blu_stats[port_key].channels[channel_key].beeps).forEach((tag_id) => {
+            n += blu_stats[port_key].channels[channel_key].beeps[tag_id];
+        });
+        blu_beeps = n;
+
+        blu_stats[port_key].channels[channel_key] = {
+            blu_beeps: blu_beeps,
+        };
+
+    };
     render_blu_stats(blu_stats)
+
 }
 
 const handle_blu_dropped = function (data) {
