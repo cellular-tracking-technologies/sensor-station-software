@@ -44,7 +44,6 @@ class BaseStation {
     this.date_format
     this.gps_logger
     this.data_manager
-    // record the date/time the station is started
     this.begin = moment(new Date()).utc()
     this.heartbeat = heartbeats.createHeart(1000)
     this.server_api = new ServerApi()
@@ -53,10 +52,7 @@ class BaseStation {
     this.poll_interval
     this.poll_data
     this.dongle_port
-    // this.blu_stations = new BluStations()
     this.blu_radio_filemap
-    this.firmware = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
-
   }
 
   /**
@@ -79,7 +75,6 @@ class BaseStation {
 
     // save the config to disk
     this.config.save()
-    // console.log('base station config in init function', this.config)
     this.blu_receivers = this.config.data.blu_receivers
 
     // pull out config options to start everythign
@@ -94,8 +89,6 @@ class BaseStation {
       flush_data_cache_seconds: this.config.data.record.flush_data_cache_seconds
     })
 
-
-
     this.log_filename = `sensor-station-${this.station_id}.log`
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
@@ -104,17 +97,13 @@ class BaseStation {
     this.startWebsocketServer()
 
     this.blu_station = new BluStation({
-      // path: path,
-      // port: this.blu_receivers[blu_receiver_index].channel,
-      // blu_receivers: this.blu_receivers[blu_receiver_index], // this is overwriting blu_receivers in blu base station!!!
       blu_receivers: this.blu_receivers,
-      // blu_radios: this.blu_receivers[blu_receiver_index].blu_radios,
       data_manager: this.data_manager,
       broadcast: this.broadcast,
       websocket: this.sensor_socket_server,
       blu_firmware: this.firmware,
+      server_api: this.server_api,
     })
-
     this.directoryWatcher()
     this.startTimers()
   }
@@ -148,20 +137,13 @@ class BaseStation {
  * @param {String} opts.radio_state
  */
   toggleBluState(opts) {
-    console.log('toggle blu state opts', opts)
-    // if (opts.receiver_channel in Object.keys(this.active_radios)) {
-    // this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
-    // let radio = this.active_radios[opts.channel]
+
     this.config.toggleRadioMode({
       receiver_channel: opts.receiver_channel,
       poll_interval: opts.poll_interval,
       blu_radio_channel: opts.blu_radio_channel,
       radio_state: opts.radio_state,
     })
-    // radio.issuePresetCommand(opts.mode)
-    // } else {
-    //   this.stationLog(`invalid radio channel ${opts.channel}`)
-    // }
   }
 
   /**
@@ -177,11 +159,11 @@ class BaseStation {
     this.sensor_socket_server.on('cmd', (cmd) => {
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
-
           this.blu_station.bluRadiosAllOn(cmd)
           this.setBluReceiverState(cmd)
           break;
         case ('blu_radio_all_off'):
+          console.log('blu radio all off cmd', cmd)
           this.blu_station.bluRadiosAllOff(cmd)
           this.setBluReceiverState(cmd)
           break
@@ -308,20 +290,17 @@ class BaseStation {
       }))
   }
 
-  // getBluFirmware() {
-  //   return Object.keys(this.blu_fw)
-  //     .map((channel) => ({
-  //       channel: channel,
-  //       version: this.blu_fw[channel],
-  //     }))
-  // }
-
   /**
    * checkin to the server
    */
   checkin() {
     this.stationLog('server checkin initiated')
-    this.server_api.healthCheckin(this.data_manager.stats.stats, this.getRadioFirmware())
+    this.server_api.healthCheckin(
+      this.data_manager.stats.stats,
+      this.getRadioFirmware(),
+      this.data_manager.stats.blu_stats,
+      this.blu_station.getBluFirmware()
+    )
       .then((response) => {
         if (response == true) {
           this.stationLog('server checkin success')
@@ -442,13 +421,19 @@ class BaseStation {
       })
 
     process.on('SIGINT', () => {
-
-      // console.log("\nGracefully shutting down from SIGINT (Ctrl-C)", this.blu_station)
+      console.log('sigint blu station blu receivers', this.blu_station.blu_receivers)
+      // const promises = this.blu_station.blu_receivers.map((receiver) => {
       const promises = this.blu_station.blu_receivers.map((receiver) => {
+        if (receiver.path) {
 
-        this.blu_station.stopBluRadios(receiver.path)
+          this.toggleBluState({
+            receiver_channel: receiver.port,
+            radio_state: 0,
+          })
 
-        this.blu_station.destroy_receiver(receiver)
+          this.blu_station.stopBluRadios(receiver.path)
+          this.blu_station.destroy_receiver(receiver)
+        }
       })
       try {
         const blu_radios_stop = Promise.all(promises)
@@ -471,6 +456,10 @@ class BaseStation {
     })
   }
 
+  /**
+   * 
+   * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
+   */
   addPath(path) {
     if (revision.revision >= 3) {
       // V3 Radio Paths
@@ -493,36 +482,42 @@ class BaseStation {
     }
   }
 
+  /**
+ * 
+ * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
+ */
   unlinkPath(path) {
     if (revision.revision >= 3) {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
-
         this.unlinkBluStation(path)
-
       } else if (!path.includes('-port0')) {
         this.unlinkDongleRadio(path)
-
       }
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
-
         this.unlinkBluStation(path)
-
       } else if (!path.includes('-port0')) {
         this.unlinkDongleRadio(path)
       }
     }
   }
 
+  /**
+   * 
+   * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
+   */
   startBluStation(path) {
 
-    this.blu_station.bluInit(path.substring(17))
+    this.blu_station.startBluRadios(path.substring(17))
     let start_receiver = this.findBluReceiveryByPath(path)
-
+    let add_port = {
+      msg_type: 'add_port',
+      port: start_receiver.port
+    }
+    this.broadcast(JSON.stringify(add_port))
     start_receiver.blu_radios.forEach((radio) => {
-
       this.toggleBluState({
         receiver_channel: start_receiver.port,
         blu_radio_channel: radio.radio,
@@ -532,17 +527,20 @@ class BaseStation {
     })
   }
 
+  /**
+   * 
+   * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
+   */
   unlinkBluStation(path) {
-    let unlink_index = this.blu_station.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
-    let unlink_obj = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    let unlink_port = unlink_obj.channel
-    let unlink_receiver = {
+    let unlink_receiver = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
+    let unlink_port = unlink_receiver.channel
+    let unlink_obj = {
       msg_type: "unlink_port",
       port: unlink_port,
     }
-    this.broadcast(JSON.stringify(unlink_receiver))
+    this.broadcast(JSON.stringify(unlink_obj))
     this.blu_station.stopBluRadios(path.substring(17))
-    this.blu_station.blu_receivers[unlink_index].blu_radios.forEach((radio) => {
+    unlink_receiver.blu_radios.forEach((radio) => {
 
       this.toggleBluState({
         receiver_channel: unlink_port,
@@ -551,11 +549,13 @@ class BaseStation {
         poll_interval: radio.poll_interval,
       })
     })
-    this.blu_station.destroy_receiver(this.blu_station.blu_receivers[unlink_index])
-
-
+    this.blu_station.destroy_receiver(unlink_receiver)
   }
 
+  /**
+ * 
+ * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
+ */
   unlinkDongleRadio(path) {
     let unlink_dongle = {
       msg_type: "unlink_dongle",
@@ -564,8 +564,6 @@ class BaseStation {
     }
     this.broadcast(JSON.stringify(unlink_dongle))
   }
-
-
 
   /**
    * 
@@ -609,7 +607,6 @@ class BaseStation {
       this.stationLog(`writing message to radio ${msg.channel}: ${msg.msg}`)
     })
     beep_reader.on('error', (err) => {
-      console.log('reader error', err, radio.channel)
       console.error(err)
       // error on the radio - probably a path error
       beep_reader.stopPollingFirmware()
@@ -635,7 +632,6 @@ class BaseStation {
  */
   findBluReceiveryByPath(path) {
     let receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    console.log('findBluPath index', receiver)
     return receiver
   }
 
@@ -647,15 +643,13 @@ class BaseStation {
    * @param {String} cmd.data.scan Scan variable, determines if radios is scanning for tags, using for radio state
    */
   setBluReceiverState(cmd) {
-    console.log('set blu radio state cmd', cmd)
-    // this.blu_station.bluRadiosAllOn(cmd)
     let receiver_channel = Number(cmd.data.port)
     if (cmd.data.poll_interval) {
       let poll_interval = Number(cmd.data.poll_interval)
-      let radio_state = cmd.data.scan ? Number(cmd.data.scan) : 1
+      let radio_state = Number(cmd.data.scan)
       this.toggleBluState({ receiver_channel, poll_interval, radio_state })
     } else {
-      let radio_state = cmd.data.scan ? Number(cmd.data.scan) : 1
+      let radio_state = Number(cmd.data.scan)
       this.toggleBluState({ receiver_channel, radio_state })
     }
   }
@@ -669,8 +663,6 @@ class BaseStation {
  * @param {String} cmd.data.scan Scan variable, determines if radios is scanning for tags, using for radio state
  */
   setBluRadioState(cmd) {
-    console.log('set blu radio state cmd', cmd)
-    // this.blu_station.bluRadiosAllOn(cmd)
     let receiver_channel = Number(cmd.data.port)
     let blu_radio_channel = Number(cmd.data.channel)
     if (cmd.data.poll_interval) {
