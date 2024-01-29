@@ -673,6 +673,7 @@ const handle_blu_stats = function (data) {
         };
 
     };
+    // console.log('handle blu stats blu stats after calc', blu_stats)
     render_blu_stats(blu_stats)
 
 }
@@ -680,8 +681,8 @@ const handle_blu_stats = function (data) {
 const handle_blu_dropped = function (data) {
     let port_key = data.port.toString()
     let channel_key = data.channel.toString()
-    let dropped = data.blu_dropped ?? 0
-    blu_stats[port_key].channels[channel_key].blu_dropped += dropped
+    let dropped = data.blu_dropped
+    blu_stats[port_key].channels[channel_key].blu_dropped = dropped
     render_dropped_detections(blu_stats);
 }
 
@@ -769,6 +770,9 @@ const initialize_websocket = function () {
             case ('poll_interval'):
                 handle_poll(data)
                 break;
+            case ('add_port'):
+                handle_add_port(data)
+                break
             case ('unlink_port'):
                 handle_blu_unlink(data)
                 break;
@@ -781,7 +785,8 @@ const initialize_websocket = function () {
                 })
                 break
             default:
-                console.log('WTF dunno', data);
+                // console.log('WTF dunno', data);
+                break
         };
     };
 }

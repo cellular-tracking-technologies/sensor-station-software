@@ -130,19 +130,26 @@ class BluStation {
         case BluReceiverTask.STATS:
           try {
 
+            let port_key = this.blu_receivers[br_index].port.toString()
+            let channel_key = job.radio_channel.toString()
+
+            this.data_manager.handleBluDroppedDetections(
+              {
+                port: port_key,
+                radio_channel: channel_key,
+                dropped_detections: job.data.det_dropped,
+              })
+
+
+            let blu_dropped = this.data_manager.stats.blu_stats.blu_ports[port_key].channels[channel_key].blu_dropped
             let blu_stats = {
               port: this.blu_receivers[br_index].port,
               channel: job.radio_channel,
-              blu_dropped: job.data.det_dropped == null ? 0 : job.data.det_dropped,
+              blu_dropped: blu_dropped,
               msg_type: "blu_dropped",
             }
             console.log(`BluReceiverTask.STATS  Port ${this.blu_receivers[br_index].port} radio ${job.radio_channel} has ${blu_stats.blu_dropped} detections dropped`)
-            this.data_manager.handleBluDroppedDetections(
-              {
-                port: blu_stats.port,
-                radio_channel: blu_stats.channel,
-                dropped_detections: blu_stats.blu_dropped
-              })
+
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
             console.log('base station stats error:', 'receiver', this.blu_receivers[br_index].port, 'radio', job.radio_channel, e)
@@ -162,6 +169,11 @@ class BluStation {
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+        let blu_add = {
+          port: this.blu_receivers[br_index].port,
+
+          msg_type: "add_port",
+        }
 
         radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
           .then((values) => { return values })
@@ -206,6 +218,12 @@ class BluStation {
       receiver.getBluVersion(2)
       receiver.getBluVersion(3)
       receiver.getBluVersion(4)
+      let blu_add = {
+        port: receiver.port,
+
+        msg_type: "add_port",
+      }
+      this.broadcast(JSON.stringify(blu_add))
     }, poll_interval)
   }
 
