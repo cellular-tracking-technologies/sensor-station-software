@@ -55,9 +55,9 @@ class BluReceiverManager extends BluReceiver {
     /**
    * 
    * @param {Number} radio_channel Radio Channel
-   * @param {Number} led_state Led State {Blink|On|Off}
-   * @param {Number} blink_rate Blink per ms
-   * @param {Number} blink_count Number of blinks before turning off
+   * @param {Number} opts.led_state Led State {Blink|On|Off}
+   * @param {Number} opts.blink_rate Blink per ms
+   * @param {Number} opts.blink_count Number of blinks before turning off
    */
     async setLogoFlash(radio_channel, opts) {
 
@@ -75,8 +75,8 @@ class BluReceiverManager extends BluReceiver {
 
     /**
      * 
-     * @param {Number} radio_channel 
-     * @param {String} firmware_file
+     * @param {Number} radio_channel Radio channel on bluseries receiver
+     * @param {String} firmware_file filepath of blu firmware.bin file
      */
     async setBluDfu(radio_channel, firmware_file) {
         // console.log('update firmware', firmware_file)
@@ -96,7 +96,7 @@ class BluReceiverManager extends BluReceiver {
 
     /**
      * 
-     * @param {Number} radio_channel Radio channel number 
+     * @param {Number} radio_channel Radio channel number on bluseries receiver
      */
     async rebootBluRadio(radio_channel) {
         try {
@@ -174,7 +174,7 @@ class BluReceiverManager extends BluReceiver {
     /**End of Blu Receiver Functions, New functions generated below */
 
     /**
- *  @param {Object} radio_object
+ *  @param {Object} radio_object Blu radio object containing radio channel number, poll interval, beeps, and dropped timeout events
  *  @param {Number} radio_poll // Time in ms between emptying ring buffer
  */
     async radioOn(radio_object, radio_poll) {
@@ -186,7 +186,7 @@ class BluReceiverManager extends BluReceiver {
     }
 
     /**
-     * @param {Object} radio_object Radio Object that contains radio channel number and poll interval in ms
+     * @param {Object} radio_object Blu radio object containing radio channel number, poll interval, beeps, and dropped timeout events
      */
     async radioOff(radio_object) {
 
@@ -196,11 +196,19 @@ class BluReceiverManager extends BluReceiver {
         return radio_object
     }
 
+    /**
+ * @param {Object} radio_object Radio Object that contains radio channel number and poll interval in ms
+ * @param {Timeout Object} radio_object.beeps timeout object that controls the bluseries receiver detections
+ */
     async stopDetections(radio_object) {
         clearInterval(await radio_object.beeps)
         return radio_object.beeps
     }
 
+    /**
+ * @param {Object} radio_object Radio Object that contains radio channel number and poll interval in ms
+ *  @param {Timeout Object} radio_object.dropped timeout object that controls the bluseries receiver stats
+ */
     async stopStats(radio_object) {
         clearInterval(await radio_object.dropped)
         return radio_object.dropped
@@ -217,6 +225,9 @@ class BluReceiverManager extends BluReceiver {
         });
     }
 
+    /**
+     * blinks the bluseries receiver butterfly logo on/off on initialization
+     */
     async startUpFlashLogo() {
 
         let blu_leds = [1, 2, 3, 4]
@@ -238,6 +249,11 @@ class BluReceiverManager extends BluReceiver {
         })
     }
 
+    /**
+     * @param {Object} radio_object Object containing the radio channel, poll interval, beeps and dropped timeout objects
+     * @param {Number} radio_channel Radio channel
+     * @param {Number} poll_interval Poll interval in ms for blu radios
+     */
     async updateBluFirmware(radio_object, firmware_file) {
         let { radio: radio_channel, poll_interval } = radio_object
         try {
@@ -253,7 +269,9 @@ class BluReceiverManager extends BluReceiver {
                 // })
             }, 20000)
             await this.getBluVersion(radio_channel)
-            await this.radioOn(radio_object, radio_object.poll_interval)
+            radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
+            radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
+
         } catch (e) {
             console.error('Update firmware error', e)
         }
@@ -280,6 +298,10 @@ class BluReceiverManager extends BluReceiver {
             })
     }
 
+    /**
+     * 
+     * @param {Object} radio Radio object containing radio channel, poll interval, beeps and dropped timeout events 
+     */
     async destroy_radio(radio) {
         try {
 
