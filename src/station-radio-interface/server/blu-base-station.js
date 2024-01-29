@@ -2,8 +2,6 @@ import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 // import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import { BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import BluReceiverManager from '../../hardware/bluseries-receiver/blu-receiver-manager.js'
-import { ServerApi } from './http/server-api.js'
-
 import fs from 'fs'
 import moment from 'moment'
 
@@ -93,18 +91,24 @@ class BluStation {
               )
               beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.radio_index].poll_interval
               beep.port = this.blu_receivers[br_index].port
-              this.data_manager.handleBluBeep(beep)
               beep.vcc = beep.payload.parsed.solar
               beep.temp = beep.payload.parsed.temp
               this.broadcast(JSON.stringify(beep))
+              this.data_manager.handleBluBeep(beep)
+              let blu_beep_sum = this.data_manager.stats.blu_stats.blu_ports[beep.port.toString()].channels[beep.channel.toString()].beeps
+              // console.log('beep stat manager blu stats', this.data_manager.stats.blu_stats.blu_ports[beep.port.toString()].channels[beep.channel.toString()].beeps)
+              let blu_sum = {
+                port: this.blu_receivers[br_index].port,
+                channel: job.radio_channel,
+                // blu_beeps: job.data.length == null ? 0 : job.data.length,
+                blu_beeps: blu_beep_sum,
+
+                msg_type: "blu_stats",
+              }
+              this.broadcast(JSON.stringify(blu_sum))
+
             })
-            let blu_sum = {
-              port: this.blu_receivers[br_index].port,
-              channel: job.radio_channel,
-              blu_beeps: job.data.length == null ? 0 : job.data.length,
-              msg_type: "blu_stats",
-            }
-            this.broadcast(JSON.stringify(blu_sum))
+
           } catch (e) {
             console.error(`base station get detections error on Port ${this.blu_receivers[br_index].port}`, e)
           }
