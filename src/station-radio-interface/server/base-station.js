@@ -198,6 +198,9 @@ class BaseStation {
           this.blu_station.bluChangePoll(cmd)
           this.setBluRadioState(cmd)
           break
+        case ('update-firmware'):
+          // this.blu_station.
+          break
         case ('toggle_radio'):
           let channel = cmd.data.channel
           this.toggleRadioMode({

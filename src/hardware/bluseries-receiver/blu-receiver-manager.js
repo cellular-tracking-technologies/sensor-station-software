@@ -1,5 +1,6 @@
 import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
+import BluFirmwareUpdater from '../../hardware/bluseries-receiver/blu-firmware-updater.js'
 import fs from 'fs'
 import moment from 'moment'
 
@@ -11,6 +12,7 @@ class BluReceiverManager extends BluReceiver {
         this.path = opts.path,
             this.port = opts.port
         this.blu_radios = opts.blu_radios
+        this.blu_updater = new BluFirmwareUpdater({})
     }
 
     /**
@@ -256,6 +258,8 @@ class BluReceiverManager extends BluReceiver {
      */
     async updateBluFirmware(radio_object, firmware_file) {
         let { radio: radio_channel, poll_interval } = radio_object
+        this.blu_updater.readFirmwareFiles()
+
         try {
             await this.getBluVersion(radio_channel)
             await this.radioOff(radio_object)

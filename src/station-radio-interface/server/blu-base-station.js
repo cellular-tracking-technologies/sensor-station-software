@@ -16,6 +16,7 @@ class BluStation {
     this.firmware = opts.blu_firmware
     this.blu_fw
     this.blu_fw_checkin = {}
+    this.firmware_file = './lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.1+0 .bin'
   }
 
   /**
@@ -179,6 +180,7 @@ class BluStation {
       .map((radio) => {
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
+        this.blu_receivers[br_index].updateBluFirmware(radio, this.firmware_file)
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         let blu_add = {
           port: this.blu_receivers[br_index].port,
