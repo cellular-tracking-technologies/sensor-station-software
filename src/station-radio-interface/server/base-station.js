@@ -432,14 +432,14 @@ class BaseStation {
       console.log('sigint blu station blu receivers', this.blu_station.blu_receivers)
       // const promises = this.blu_station.blu_receivers.map((receiver) => {
       const promises = this.blu_station.blu_receivers.map((receiver) => {
-        if(receiver.path) {
+        if (receiver.path) {
 
           this.toggleBluState({
             receiver_channel: receiver.port,
             radio_state: 0,
           })
           console.log('sigint receiver', receiver)
-          
+
           // let close_receiver = this.findBluReceiveryByPath(receiver.path)
           // let close_receiver = this.blu_station.blu_receivers.find(e => e.path === receiver.path)
           // console.log('close receiver', close_receiver)
@@ -517,7 +517,11 @@ class BaseStation {
 
     this.blu_station.startBluRadios(path.substring(17))
     let start_receiver = this.findBluReceiveryByPath(path)
-
+    let add_port = {
+      msg_type: 'add_port',
+      port: start_receiver.port
+    }
+    this.broadcast(JSON.stringify(add_port))
     start_receiver.blu_radios.forEach((radio) => {
       this.toggleBluState({
         receiver_channel: start_receiver.port,

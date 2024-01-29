@@ -53,6 +53,9 @@ class BluStation {
 
     let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path)
     blu_receiver = undefined
+
+    setTimeout(() => {}, 5000)
+    
     this.blu_receivers[br_index].on('complete', (job) => {
 
       switch (job.task) {
