@@ -123,7 +123,7 @@ class BluReceiverIo extends EventEmitter {
 
         try {
           let o = JSON.parse(data)
-          // console.log('dfu o', o)
+          console.log('dfu o', o)
           switch (o.type) {
             case this.#commands.DFU_START:
               this.send_command(this.#data.dfu.fragment(this.#commands.DFU_FRAGMENT))

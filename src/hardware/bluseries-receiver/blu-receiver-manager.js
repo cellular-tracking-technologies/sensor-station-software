@@ -81,7 +81,7 @@ class BluReceiverManager extends BluReceiver {
      * @param {String} firmware_file filepath of blu firmware.bin file
      */
     async setBluDfu(radio_channel, firmware_file) {
-        // console.log('update firmware', firmware_file)
+        console.log('set blu dfu firmware', firmware_file)
         try {
             this.schedule({
                 task: BluReceiverTask.DFU,
@@ -256,15 +256,22 @@ class BluReceiverManager extends BluReceiver {
      * @param {Number} radio_channel Radio channel
      * @param {Number} poll_interval Poll interval in ms for blu radios
      */
-    async updateBluFirmware(radio_object, firmware_file) {
+    async updateBluFirmware(radio_object) {
         let { radio: radio_channel, poll_interval } = radio_object
-        this.blu_updater.readFirmwareFiles()
 
         try {
+            let firmware_list = this.blu_updater.readFirmwareFiles()
+            console.log('firmware file list from blu firmware updater class', firmware_list)
+
+            let firmware_file = await this.blu_updater.getMostRecentFirmware(firmware_list).then((value) => { return value }).catch((e) => { console.error(e) })
+            let full_path = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + firmware_file
+            console.log('firmware file from blu firmware updater class', full_path)
             await this.getBluVersion(radio_channel)
-            await this.radioOff(radio_object)
+            // // await this.radioOff(radio_object)
+            // radio_object.beeps = await this.stopDetections(radio_object)
+            // radio_object.dropped = await this.stopStats(radio_object)
             await this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
-            await this.setBluDfu(radio_channel, firmware_file)
+            await this.setBluDfu(radio_channel, full_path)
             await this.rebootBluRadio(radio_channel)
             setTimeout(() => {
                 // this.schedule({

@@ -2,6 +2,8 @@ import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 // import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import { BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import BluReceiverManager from '../../hardware/bluseries-receiver/blu-receiver-manager.js'
+import BluFirmwareUpdater from '../../hardware/bluseries-receiver/blu-firmware-updater.js'
+
 import fs from 'fs'
 import moment from 'moment'
 
@@ -16,7 +18,10 @@ class BluStation {
     this.firmware = opts.blu_firmware
     this.blu_fw
     this.blu_fw_checkin = {}
-    this.firmware_file = './lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.1+0 .bin'
+    this.blu_updater = new BluFirmwareUpdater({})
+    // this.firmware_file = this.blu_updater.getMostRecentFirmware()
+    // console.log('firmware file from blu firmware updater class', this.firmware_file)
+    // this.firmware_file = './lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
   }
 
   /**
@@ -180,7 +185,7 @@ class BluStation {
       .map((radio) => {
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
-        this.blu_receivers[br_index].updateBluFirmware(radio, this.firmware_file)
+        // this.blu_receivers[br_index].updateBluFirmware(radio, this.firmware_file)
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         let blu_add = {
           port: this.blu_receivers[br_index].port,
@@ -635,6 +640,40 @@ class BluStation {
     radio = receiver.radioOn(radio, radio.poll_interval)
       .then((values) => { console.log(values); return values })
       .catch((e) => { console.error('could not change poll on radio', e) })
+  }
+
+  /**
+* 
+* @param {Object} cmd websocket command object
+*/
+  updateBluRadio(cmd) {
+
+    // let { receiver_index, radio_index } = this.findBluReceiverAndRadioIndex(cmd)
+    // let radio = this.blu_receivers[receiver_index].blu_radios[radio_index]
+
+    // let radio_channel = this.blu_receivers[receiver_index].blu_radios[radio_index].radio
+    let { receiver, radio } = this.findBluReceiverAndRadio(cmd)
+    let radio_channel = radio.radio
+    let poll_interval = cmd.data.poll_interval
+
+    let poll_data = {
+      channel: radio_channel,
+      poll_interval: poll_interval,
+      msg_type: "poll_interval",
+    }
+    radio.beeps = receiver.stopDetections(radio)
+      .then((values) => { console.log(values); return values })
+      .catch((e) => { console.error('could not change poll on radio', e) })
+    radio.dropped = receiver.stopStats(radio)
+      .then((values) => { console.log(values); return values })
+      .catch((e) => { console.error('could not change poll on radio', e) })
+
+    receiver.updateBluFirmware(radio, this.firmware_file)
+
+
+    // radio = receiver.radioOn(radio, radio.poll_interval)
+    //   .then((values) => { console.log(values); return values })
+    //   .catch((e) => { console.error('could not change poll on radio', e) })
   }
 }
 

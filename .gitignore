@@ -2,3 +2,4 @@ node_modules/*
 lib/*
 *.swp
 src/station-radio-interface/server/data/blu-parser.js
+src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.1+0.bin
