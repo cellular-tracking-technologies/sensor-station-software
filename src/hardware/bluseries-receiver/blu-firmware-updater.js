@@ -1,14 +1,13 @@
 import fs from 'fs'
-// import bin from './driver/bin/blu_adapter_v1.0.0+.bin'
-import path from 'path'
-
-// import BluReceiver from '../blu-receiver'
 
 class BluFirmwareUpdater {
 
 	constructor() {
 		this.file_list = []
-
+		this.current_verison
+		this.new_version
+		this.current_firmware
+		this.new_firmware
 		// this.current_firmware = bin
 		// this.new_firmware = './lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.1+0 .bin'
 	}
@@ -29,22 +28,37 @@ class BluFirmwareUpdater {
 		this.file_list = fs.readdirSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin')
 		console.log('firmware file list', this.file_list)
 		return this.file_list
-		// fs.readdir('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin', (err, files) => {
-		// 	if (err) {
-		// 		return console.log('unable to scan directory: ' + err)
-		// 	} else {
-		// 		files.forEach((file) => {
-		// 			console.log('bin files', file)
-		// 			this.file_list.push(file)
-		// 		})
-		// 		console.log('file list', this.file_list)
-		// 		return this.file_list
-		// 	}
-		// })
-
 	}
 
-	async getMostRecentFirmware(file_list) {
+	async getCurrentFirmware() {
+		try {
+			let file_list = this.readFirmwareFiles()
+			console.log('firmware file list', file_list)
+			for (let i = 0; i < file_list.length; i++) {
+				for (let j = 1; j < file_list.length; j++) {
+					if (file_list[j] < file_list[i]) {
+						console.log('file list i', file_list[i], 'file list j', file_list[j])
+						console.log('current firmware second in array', file_list[j])
+						this.current_firmware = file_list[j]
+					} else if (file_list[i] < file_list[j]) {
+						console.log('current firmware 1st in array', file_list[i])
+						this.current_firmware = file_list[i]
+					} else {
+						console.log('most recent file is current firmware file', file_list[i])
+						this.current_firmware = file_list[i]
+					}
+				}
+				return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.current_firmware
+
+			}
+		} catch (e) {
+			console.error(e)
+		}
+	}
+
+	async getMostRecentFirmware() {
+		let file_list = this.readFirmwareFiles()
+
 		try {
 			console.log('firmware file list', file_list)
 			for (let i = 0; i < file_list.length; i++) {
@@ -52,18 +66,33 @@ class BluFirmwareUpdater {
 					if (file_list[j] > file_list[i]) {
 						console.log('file list i', file_list[i], 'file list j', file_list[j])
 						console.log('most recent firmware second in array', file_list[j])
-						return file_list[j]
+						this.new_firmware = file_list[j]
+						// return this.new_firmware
 					} else if (file_list[i] > file_list[j]) {
 						console.log('most recent firmware 1st in array', file_list[i])
-						return file_list[i]
+						this.new_firmware = file_list[i]
+						// return this.new_firmware
 					} else {
 						console.log('most recent file is oldest file', file_list[i])
-						return file_list[i]
+						this.new_firmware = file_list[j]
+						// return this.new_firmware
 					}
 				}
+				return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.new_firmware
+
 			}
 		} catch (e) {
 			console.error(e)
+		}
+	}
+
+	bluVersionComparison() {
+
+		// let new_fw = this.new_firmware.substring(13, 20)
+		if (this.new_firmware !== this.current_firmware) {
+			return false
+		} else {
+			return true
 		}
 	}
 }

@@ -18,6 +18,7 @@ class BluStation {
     this.firmware = opts.blu_firmware
     this.blu_fw
     this.blu_fw_checkin = {}
+    this.blu_version
     this.blu_updater = new BluFirmwareUpdater({})
     // this.firmware_file = this.blu_updater.getMostRecentFirmware()
     // console.log('firmware file from blu firmware updater class', this.firmware_file)
@@ -68,8 +69,7 @@ class BluStation {
     let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path)
     blu_receiver = undefined
 
-    setTimeout(() => { }, 5000)
-
+    // Blu Event Emitter
     this.blu_receivers[br_index].on('complete', (job) => {
 
       switch (job.task) {
@@ -89,6 +89,7 @@ class BluStation {
             }
 
             this.blu_fw_checkin[job.radio_channel] = job.data.version
+            this.blu_version = job.data.version
             this.broadcast(JSON.stringify(this.blu_fw))
           } catch (e) {
             console.error('basestation getBluVersion error:', e)
@@ -186,6 +187,10 @@ class BluStation {
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
         // this.blu_receivers[br_index].updateBluFirmware(radio, this.firmware_file)
+
+        // console.log('blu_fw', this.blu_version)
+
+        this.blu_receivers[br_index].updateBluFirmware(radio)
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         let blu_add = {
           port: this.blu_receivers[br_index].port,
