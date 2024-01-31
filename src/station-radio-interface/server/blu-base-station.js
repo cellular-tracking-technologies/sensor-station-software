@@ -87,10 +87,12 @@ class BluStation {
                 }
               }
             }
-            console.log('blu_fw', this.blu_fw, 'blu_fw_checkin', this.blu_fw_checkin)
+            // console.log('blu_fw', this.blu_fw, 'blu_fw_checkin', this.blu_fw_checkin)
             this.blu_fw_checkin[job.radio_channel] = job.data.version
             this.blu_version = job.data.version
             this.broadcast(JSON.stringify(this.blu_fw))
+
+            // this.blu_updater.checkFirmware(job.data.version)
           } catch (e) {
             console.error('basestation getBluVersion error:', e)
           }
@@ -179,18 +181,27 @@ class BluStation {
     })
 
     this.blu_receivers[br_index].startUpFlashLogo()
-
     this.sendBluVersion(this.blu_receivers[br_index], 10000)
+    // console.log('blu_fw', this.getBluFirmware())
+
+    // const radios_fw = Promise.all(this.blu_receivers[br_index].forEach((radio) => {
+    //   console.log('blu_fw', this.blu_fw_checkin)
+
+    //   updateBluFirmware(radio, this.blu_fw_checkin)
+    // })).then((values) => {
+    //   console.log('radios started values', values)
+    //   return values
+    // }).catch((e) => {
+    //   console.error('radios could not start properly', e)
+    // })
 
     const radios_start = Promise.all(this.blu_receivers[br_index].blu_radios
       .map((radio) => {
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
-        // this.blu_receivers[br_index].updateBluFirmware(radio, this.firmware_file)
+        this.blu_receivers[br_index].updateBluFirmware(radio)
+        // this.blu_receivers[br_index].getBluVersion(radio_channel)
 
-        // console.log('blu_fw', this.blu_version)
-
-        // this.blu_receivers[br_index].updateBluFirmware(radio)
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         let blu_add = {
           port: this.blu_receivers[br_index].port,

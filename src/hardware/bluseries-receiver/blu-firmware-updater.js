@@ -27,10 +27,16 @@ class BluFirmwareUpdater {
 		return this.file_list
 	}
 
+	// async getCurrentFirmware(version) {
 	async getCurrentFirmware() {
 		try {
 			let file_list = this.readFirmwareFiles()
-			console.log('firmware file list', file_list)
+			// console.log('firmware file list', file_list)
+			// this.current_firmware = file_list.find(file => file.substring(13, 20) == version)
+			// console.log('get current firmware version', version, 'first file', file_list[0].substring(13, 20))
+			// console.log('current firmware', this.current_firmware)
+			// return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.current_firmware
+
 			for (let i = 0; i < file_list.length; i++) {
 				for (let j = 1; j < file_list.length; j++) {
 					if (file_list[j] < file_list[i]) {
@@ -53,7 +59,7 @@ class BluFirmwareUpdater {
 		}
 	}
 
-	async getMostRecentFirmware() {
+	async getNewFirmware() {
 		let file_list = this.readFirmwareFiles()
 
 		try {
@@ -85,16 +91,33 @@ class BluFirmwareUpdater {
 		}
 	}
 
-	revertFirmwareUpdate(file) {
-		console.log('incoming firmware file', file.substring(14, 19))
-		if (file.substring(14, 19) != this.previous_firmware) {
-			return this.previous_firmware
-		}
+	revertFirmwareUpdate(version) {
+		console.log('incoming firmware file', version)
+		this.readFirmwareFiles()
+		this.previous_firmware = this.file_list.find(e => e.substring(14, 19) < version)
+		console.log('revert firmware previous firmware', this.previous_firmware)
+		return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.previous_firmware
 	}
 
 	async updateFirmwareFiles() {
 		this.previous_firmware = this.current_firmware
 		this.current_firmware = this.new_firmware
+	}
+
+	async checkFirmware(version) {
+		console.log('check firmware version', version)
+		this.readFirmwareFiles()
+		console.log('first fw file substring', this.file_list[0].substring(13, 20))
+
+		this.previous_firmware = this.file_list.find(e => e.substring(13, 20) < version)
+		console.log('previous firmware', this.previous_firmware)
+
+		this.current_firmware = this.file_list.find(e => e.substring(13, 20) == version)
+		console.log('current firmware', this.current_firmware)
+
+		this.new_firmware = this.file_list.find(e => e.substring(13, 20) > version)
+		console.log('new firmware', this.new_firmware)
+
 	}
 }
 
