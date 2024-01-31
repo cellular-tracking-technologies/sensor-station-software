@@ -8,8 +8,8 @@ class BluReceiverManager extends BluReceiver {
         super({
             path: opts.path,
         })
-        this.path = opts.path,
-            this.port = opts.port
+        this.path = opts.path
+        this.port = opts.port
         this.blu_radios = opts.blu_radios
     }
 
@@ -18,15 +18,17 @@ class BluReceiverManager extends BluReceiver {
  * @param {Number} radio_channel 
  */
     async getBluVersion(radio_channel) {
+        let blu_version
         try {
-            let blu_version = await this.schedule({
+            blu_version = await this.schedule({
                 task: BluReceiverTask.VERSION,
                 radio_channel: radio_channel,
             })
             return blu_version
         } catch (e) {
             console.error('GET BLU VERSION ERROR', e)
-            await getBluVersion(radio_channel)
+            clear(blu_version)
+            blu_version = await getBluVersion(radio_channel)
         }
     }
 
