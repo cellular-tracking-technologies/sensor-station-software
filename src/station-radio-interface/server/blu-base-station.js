@@ -87,7 +87,7 @@ class BluStation {
                 }
               }
             }
-
+            console.log('blu_fw', this.blu_fw, 'blu_fw_checkin', this.blu_fw_checkin)
             this.blu_fw_checkin[job.radio_channel] = job.data.version
             this.blu_version = job.data.version
             this.broadcast(JSON.stringify(this.blu_fw))
@@ -190,7 +190,7 @@ class BluStation {
 
         // console.log('blu_fw', this.blu_version)
 
-        this.blu_receivers[br_index].updateBluFirmware(radio)
+        // this.blu_receivers[br_index].updateBluFirmware(radio)
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
         let blu_add = {
           port: this.blu_receivers[br_index].port,
@@ -673,7 +673,8 @@ class BluStation {
       .then((values) => { console.log(values); return values })
       .catch((e) => { console.error('could not change poll on radio', e) })
 
-    receiver.updateBluFirmware(radio, this.firmware_file)
+    // receiver.updateBluFirmware(radio, this.firmware_file)
+    receiver.revertBluFirmware(radio, this.blu_fw_checkin)
 
 
     // radio = receiver.radioOn(radio, radio.poll_interval)
