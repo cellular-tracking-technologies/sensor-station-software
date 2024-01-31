@@ -4,12 +4,9 @@ class BluFirmwareUpdater {
 
 	constructor() {
 		this.file_list = []
-		this.current_verison
-		this.new_version
+		this.previous_firmware
 		this.current_firmware
 		this.new_firmware
-		// this.current_firmware = bin
-		// this.new_firmware = './lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/blu_adapter_v1.0.1+0 .bin'
 	}
 
 	async checkIfFileExists(filepath) {
@@ -78,6 +75,8 @@ class BluFirmwareUpdater {
 						// return this.new_firmware
 					}
 				}
+
+				console.log('current firmware', this.current_firmware, 'new firmware', this.new_firmware)
 				return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.new_firmware
 
 			}
@@ -86,14 +85,16 @@ class BluFirmwareUpdater {
 		}
 	}
 
-	bluVersionComparison() {
-
-		// let new_fw = this.new_firmware.substring(13, 20)
-		if (this.new_firmware !== this.current_firmware) {
-			return false
-		} else {
-			return true
+	revertFirmwareUpdate(file) {
+		console.log('incoming firmware file', file.substring(14, 19))
+		if (file.substring(14, 19) != this.previous_firmware) {
+			return this.previous_firmware
 		}
+	}
+
+	async updateFirmwareFiles() {
+		this.previous_firmware = this.current_firmware
+		this.current_firmware = this.new_firmware
 	}
 }
 

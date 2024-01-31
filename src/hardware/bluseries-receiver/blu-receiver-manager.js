@@ -285,6 +285,7 @@ class BluReceiverManager extends BluReceiver {
                 await this.getBluVersion(radio_channel)
                 radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
                 radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
+                await this.blu_updater.updateFirmwareFiles()
             } else {
                 console.log('Current firmware is latest version')
             }
@@ -294,6 +295,45 @@ class BluReceiverManager extends BluReceiver {
             console.error('Update firmware error', e)
         }
     }
+
+    // async revertBluFirmware(radio_object) {
+    //     let { radio: radio_channel, poll_interval } = radio_object
+    //     let firmware_list = this.blu_updater.readFirmwareFiles()
+    //     let new_firmware = await this.blu_updater.getMostRecentFirmware().then((value) => { return value }).catch((e) => { console.error(e) })
+
+    //     let previous_firmware = this.blu_updater.previous_firmware
+    //     try {
+    //         if (this.blu_updater.new_firmware !== this.blu_updater.current_firmware) {
+    //             // console.log('firmware file list from blu firmware updater class', firmware_list)
+    //             console.log('Need to update blu firmware')
+
+    //             // let firmware_file = await this.blu_updater.getMostRecentFirmware().then((value) => { return value }).catch((e) => { console.error(e) })
+    //             // let full_path = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + firmware_file
+    //             console.log('firmware file from blu firmware updater class', new_firmware)
+    //             await this.getBluVersion(radio_channel)
+    //             // // await this.radioOff(radio_object)
+    //             // radio_object.beeps = await this.stopDetections(radio_object)
+    //             // radio_object.dropped = await this.stopStats(radio_object)
+    //             await this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
+    //             await this.setBluDfu(radio_channel, new_firmware)
+    //             await this.rebootBluRadio(radio_channel)
+    //             setTimeout(() => {
+    //                 // this.schedule({
+    //                 //     task: BluReceiverTask.VERSION,
+    //                 //     radio_channel: radio_object.radio,
+    //                 // })
+    //             }, 20000)
+    //             await this.getBluVersion(radio_channel)
+    //             radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
+    //             radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
+    //             await this.blu_updater.updateFirmwareFiles()
+    //         } else {
+    //             console.log('Current firmware is latest version')
+    //         }
+    //     } catch (e) {
+    //         console.error(e)
+    //     }
+    // }
     /**
      * 
      * @param {Class} blu_receiver Blu receiver class
