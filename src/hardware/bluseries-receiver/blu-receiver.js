@@ -31,6 +31,8 @@ class BluReceiver extends EventEmitter {
       this.#data.connected = false
       // process.exit(0) // shuts down program if usb adapter is removed
     })
+
+    console.log('blu receiver opts', opts)
   }
   /**
    * 

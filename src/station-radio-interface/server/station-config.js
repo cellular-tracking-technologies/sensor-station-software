@@ -95,7 +95,6 @@ class StationConfig {
   }
 
   toggleRadioMode(opts) {
-    console.log('toggleRadioMode opts', opts)
     this.data.radios.forEach((radio) => {
       if (radio.channel == opts.channel) {
         console.log('setting radio mode')
@@ -105,7 +104,6 @@ class StationConfig {
       }
     })
     let receiver = this.data.blu_receivers.find(receiver => receiver.channel == opts.receiver_channel)
-    console.log('station config receiver', receiver)
     if (opts.blu_radio_channel) {
       let radio = receiver.blu_radios.find(radio => radio.radio == opts.blu_radio_channel)
       if (opts.poll_interval) {

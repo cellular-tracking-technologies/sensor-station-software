@@ -27,7 +27,7 @@ class BluReceiverManager extends BluReceiver {
             return blu_version
         } catch (e) {
             console.error('GET BLU VERSION ERROR', e)
-            clear(blu_version)
+            clearInterval(blu_version)
             blu_version = await getBluVersion(radio_channel)
         }
     }
@@ -50,6 +50,8 @@ class BluReceiverManager extends BluReceiver {
             return beeps
         } catch (e) {
             console.log('getDetections error', e)
+            clearInterval(beeps)
+            beeps = undefined
             await getDetections(radio_channel, buffer_interval)
         }
     }
