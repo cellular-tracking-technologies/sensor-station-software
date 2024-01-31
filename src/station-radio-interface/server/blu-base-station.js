@@ -159,7 +159,7 @@ class BluStation {
               blu_dropped: blu_dropped,
               msg_type: "blu_dropped",
             }
-            console.log(`BluReceiverTask.STATS  Port ${this.blu_receivers[br_index].port} radio ${job.radio_channel} has ${blu_stats.blu_dropped} detections dropped`)
+            console.log(`BluReceiverTask.STATS  Port ${this.blu_receivers[br_index].port} radio ${job.radio_channel} has ${job.data.det_dropped} detections dropped`)
 
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
