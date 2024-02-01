@@ -50,7 +50,10 @@ class BluReceiverManager extends BluReceiver {
             return beeps
         } catch (e) {
             console.log('getDetections error', e)
-            await getDetections(radio_channel, buffer_interval)
+
+            let beeps = await getDetections(radio_channel, buffer_interval)
+            return beeps
+
         }
     }
 

@@ -382,25 +382,29 @@ class BluStation {
    * @param {Object} cmd websocket command object
    * @param {Number} cmd.data.poll_interval poll inteval
    */
-  bluRadiosAllOn(cmd) {
+  async bluRadiosAllOn(cmd) {
     let all_on = this.findBluReceiver(cmd)
 
-    const radios_on = Promise.all(all_on.blu_radios.map(radio => {
+    const radios_on = await Promise.all(all_on.blu_radios.map(async (radio) => {
 
       radio.poll_interval = Number(cmd.data.poll_interval)
       let poll_interval = radio.poll_interval
       let radio_channel = radio.radio
       all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-      console.log('radio beeps object', radio.beeps)
-      // if (radio.beeps._destroyed == true) {
+      console.log('radio beeps before on', radio.beeps)
 
-      radio.beeps = all_on.getDetections(radio_channel, poll_interval)
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get detections could not start', e) })
-      radio.dropped = all_on.getBluStats(radio_channel, poll_interval)
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get stats could not start', e) })
-      // }
+      if (radio.beeps._destroyed == true) {
+
+        radio.beeps = await all_on.getDetections(radio_channel, poll_interval)
+        // .then((values) => { console.log('get detection values', values); return values })
+        // .catch((e) => { console.error('get detections could not start', e) })
+        radio.dropped = await all_on.getBluStats(radio_channel, poll_interval)
+        // .then((values) => { console.log('get detection values', values); return values })
+        // .catch((e) => { console.error('get stats could not start', e) })
+
+        console.log('radio beeps after on', radio.beeps)
+        return radio
+      }
     })).then((values) => {
       console.log('all radios on', values)
     }).catch((e) => {
@@ -412,19 +416,21 @@ class BluStation {
    * 
    * @param {Object} cmd websocket command object
    */
-  bluRadiosAllOff(cmd) {
+  async bluRadiosAllOff(cmd) {
     let all_off = this.findBluReceiver(cmd)
-    const radios_off = Promise.all(all_off.blu_radios.map(radio => {
+    const radios_off = await Promise.all(all_off.blu_radios.map(async (radio) => {
       let radio_channel = radio.radio
       all_off.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
       console.log('radio beeps object', radio.beeps)
 
-      radio.beeps = all_off.stopDetections(radio)
-        .then((values) => { console.log('stop detection values', values); return values })
-        .catch((e) => { console.error('could not stop detections', e) })
-      radio.dropped = all_off.stopStats(radio)
-        .then((values) => { console.log('stop stats values', values); return values })
-        .catch((e) => { console.error('could not stop stats', e) })
+      radio.beeps = await all_off.stopDetections(radio)
+      // .then((values) => { console.log('stop detection values', values); return values })
+      // .catch((e) => { console.error('could not stop detections', e) })
+      radio.dropped = await all_off.stopStats(radio)
+      // .then((values) => { console.log('stop stats values', values); return values })
+      // .catch((e) => { console.error('could not stop stats', e) })
+
+      return radio
     })).then((values) => {
       console.log('turning blu radio off', values)
     }).catch((e) => {
@@ -551,19 +557,19 @@ class BluStation {
    * 
    * @param {Object} cmd websocket command object
    */
-  bluRadioOn(cmd) {
+  async bluRadioOn(cmd) {
     let on = this.findBluReceiverAndRadio(cmd)
     let { receiver, radio } = on
     let radio_channel = radio.radio
     radio.poll_interval = Number(cmd.data.poll_interval)
     receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
-    radio.beeps = receiver.getDetections(radio_channel, radio.poll_interval)
-      .then((values) => { console.log('stop detection values', values); return values })
-      .catch((e) => { console.error('could not stop detections', e) })
-    radio.dropped = receiver.getBluStats(radio_channel, radio.poll_interval)
-      .then((values) => { console.log('stop stats values', values); return values })
-      .catch((e) => { console.error('could not stop stats', e) })
+    radio.beeps = await receiver.getDetections(radio_channel, radio.poll_interval)
+    // .then((values) => { console.log('stop detection values', values); return values })
+    // .catch((e) => { console.error('could not stop detections', e) })
+    radio.dropped = await receiver.getBluStats(radio_channel, radio.poll_interval)
+    // .then((values) => { console.log('stop stats values', values); return values })
+    // .catch((e) => { console.error('could not stop stats', e) })
     // on.receiver.radioOn(on.radio, on.radio.poll_interval)
   }
 

@@ -156,7 +156,7 @@ class BaseStation {
     this.sensor_socket_server.on('open', (event) => {
 
     })
-    this.sensor_socket_server.on('cmd', (cmd) => {
+    this.sensor_socket_server.on('cmd', async (cmd) => {
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
           this.blu_station.bluRadiosAllOn(cmd)
@@ -179,7 +179,7 @@ class BaseStation {
           break
         case ('toggle_blu'):
           if (cmd.data.type === 'blu_on') {
-            this.blu_station.bluRadioOn(cmd)
+            await this.blu_station.bluRadioOn(cmd)
             this.setBluRadioState(cmd)
           } else if (cmd.data.type === "blu_off") {
             this.blu_station.bluRadioOff(cmd)
