@@ -212,7 +212,7 @@ class BluStation {
         radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
           .then((values) => { return values })
 
-        console.log('radio beeps object', radio.beeps)
+        // console.log('radio beeps object', radio.beeps)
 
         radio.dropped = this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
           .then((values) => { return values })
@@ -332,7 +332,7 @@ class BluStation {
     } = cmd
     // console.log('find blu station only cmd', cmd)
     let receiver = this.blu_receivers.find(receiver => receiver.port === Number(port))
-    console.log('find blu receiver', receiver)
+    // console.log('find blu receiver', receiver)
 
     return receiver
   }
@@ -390,8 +390,8 @@ class BluStation {
       radio.poll_interval = Number(cmd.data.poll_interval)
       let poll_interval = radio.poll_interval
       let radio_channel = radio.radio
-      all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-      console.log('radio beeps before on', radio.beeps)
+      await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+      // console.log('radio beeps before on', radio.beeps)
 
       if (radio.beeps._destroyed == true) {
 
@@ -402,11 +402,12 @@ class BluStation {
         // .then((values) => { console.log('get detection values', values); return values })
         // .catch((e) => { console.error('get stats could not start', e) })
 
-        console.log('radio beeps after on', radio.beeps)
+        console.log('radio beeps after on')
         return radio
       }
     })).then((values) => {
-      console.log('all radios on', values)
+      // console.log('all radios on', values)
+      console.log('all radios on')
     }).catch((e) => {
       console.error('all radios on error', e)
     })
@@ -420,8 +421,8 @@ class BluStation {
     let all_off = this.findBluReceiver(cmd)
     const radios_off = await Promise.all(all_off.blu_radios.map(async (radio) => {
       let radio_channel = radio.radio
-      all_off.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
-      console.log('radio beeps object', radio.beeps)
+      await all_off.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
+      // console.log('radio beeps object', radio.beeps)
 
       radio.beeps = await all_off.stopDetections(radio)
       // .then((values) => { console.log('stop detection values', values); return values })
@@ -432,7 +433,8 @@ class BluStation {
 
       return radio
     })).then((values) => {
-      console.log('turning blu radio off', values)
+      // console.log('turning blu radio off', values)
+      console.log('blu radios off')
     }).catch((e) => {
       console.error('all radios off error', e)
     })
@@ -562,7 +564,7 @@ class BluStation {
     let { receiver, radio } = on
     let radio_channel = radio.radio
     radio.poll_interval = Number(cmd.data.poll_interval)
-    receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+    await receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
     radio.beeps = await receiver.getDetections(radio_channel, radio.poll_interval)
     // .then((values) => { console.log('stop detection values', values); return values })
