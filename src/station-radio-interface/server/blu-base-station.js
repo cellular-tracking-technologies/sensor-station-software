@@ -199,7 +199,7 @@ class BluStation {
       .map((radio) => {
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
-        this.blu_receivers[br_index].updateBluFirmware(radio)
+        // this.blu_receivers[br_index].updateBluFirmware(radio)
         // this.blu_receivers[br_index].getBluVersion(radio_channel)
 
         this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
@@ -211,6 +211,9 @@ class BluStation {
 
         radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
           .then((values) => { return values })
+
+        console.log('radio beeps object', radio.beeps)
+
         radio.dropped = this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
           .then((values) => { return values })
       })).then((values) => {
@@ -388,6 +391,8 @@ class BluStation {
       let poll_interval = radio.poll_interval
       let radio_channel = radio.radio
       all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+      console.log('radio beeps object', radio.beeps)
+      // if (radio.beeps._destroyed == true) {
 
       radio.beeps = all_on.getDetections(radio_channel, poll_interval)
         .then((values) => { console.log('get detection values', values); return values })
@@ -395,6 +400,7 @@ class BluStation {
       radio.dropped = all_on.getBluStats(radio_channel, poll_interval)
         .then((values) => { console.log('get detection values', values); return values })
         .catch((e) => { console.error('get stats could not start', e) })
+      // }
     })).then((values) => {
       console.log('all radios on', values)
     }).catch((e) => {
@@ -411,6 +417,7 @@ class BluStation {
     const radios_off = Promise.all(all_off.blu_radios.map(radio => {
       let radio_channel = radio.radio
       all_off.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
+      console.log('radio beeps object', radio.beeps)
 
       radio.beeps = all_off.stopDetections(radio)
         .then((values) => { console.log('stop detection values', values); return values })
