@@ -151,7 +151,7 @@ class BluReceiverManager extends BluReceiver {
             })
         } catch (e) {
             console.error('error in setting blu configuration', e)
-            await setBluConfig(radio_channel, opts)
+            return await setBluConfig(radio_channel, opts)
         }
     }
 

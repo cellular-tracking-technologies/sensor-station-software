@@ -288,7 +288,7 @@ class BluStation {
       // delete this.blu_paths
       // delete this.blu_receivers
       delete this.data_manager
-      delete this.broadcast
+      // delete this.broadcast
       delete this.sensor_socket_server
       // delete this.path
     } catch (e) {
@@ -384,23 +384,26 @@ class BluStation {
 
     const radios_on = await Promise.all(all_on.blu_radios.map(async (radio) => {
 
-      radio.poll_interval = Number(cmd.data.poll_interval)
-      let poll_interval = radio.poll_interval
-      let radio_channel = radio.radio
-      await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-      console.log('radio beeps before on', radio.beeps)
-
       if (radio.beeps._destroyed == true) {
+        console.log('radio beeps before on', radio.beeps)
+        radio.poll_interval = Number(cmd.data.poll_interval)
+        let poll_interval = radio.poll_interval
+        let radio_channel = radio.radio
+        await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
+        console.log('radio beeps is destroyed', radio.beeps)
         radio.beeps = await all_on.getDetections(radio_channel, poll_interval)
-        // .then((values) => { console.log('get detection values', values); return values })
-        // .catch((e) => { console.error('get detections could not start', e) })
         radio.dropped = await all_on.getBluStats(radio_channel, poll_interval)
-        // .then((values) => { console.log('get detection values', values); return values })
-        // .catch((e) => { console.error('get stats could not start', e) })
+        radio.radio_state = 1
 
         console.log('radio beeps after on')
+
+        // return all_on
         // return radio
+      } else {
+        radio.beeps = radio.beeps
+        radio.dropped = radio.dropped
+        radio.radio_state = 1
       }
     })).then((values) => {
       // console.log('all radios on', values)
@@ -423,17 +426,21 @@ class BluStation {
 
       radio.beeps = await all_off.stopDetections(radio)
       radio.dropped = await all_off.stopStats(radio)
+      radio.radio_state = 0
+
       // radio.beeps = undefined
       // radio.dropped = undefined
 
 
-      return radio
+      // return radio
+      // return all_off
     })).then((values) => {
       // console.log('turning blu radio off', values)
       console.log('blu radios off')
     }).catch((e) => {
       console.error('all radios off error', e)
     })
+    return radios_off
   }
 
   /**

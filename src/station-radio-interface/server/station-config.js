@@ -72,7 +72,7 @@ class StationConfig {
     return this.data
   }
 
-  async save() {
+  save() {
     // strip radio path from config to be threaded dynamically on load
     let cloned_config = JSON.parse(JSON.stringify(this.data))
     cloned_config.radios.forEach(radio => {
@@ -105,28 +105,28 @@ class StationConfig {
       }
     })
     let receiver = this.data.blu_receivers.find(receiver => receiver.channel == opts.receiver_channel)
-    if (opts.blu_radio_channel) {
-      let radio = receiver.blu_radios.find(radio => radio.radio == opts.blu_radio_channel)
-      console.log('station config radio', radio, 'blu_radio_channel', opts.blu_radio_channel)
-      if (opts.poll_interval) {
-        radio.radio_state = opts.radio_state
-        radio.poll_interval = opts.poll_interval
-      } else {
-        radio.radio_state = opts.radio_state
-      }
-    } else {
-      receiver.blu_radios.forEach((radio) => {
-        console.log('station config receiver radio', radio)
-        if (opts.poll_interval) {
-          radio.poll_interval = opts.poll_interval
-          radio.radio_state = opts.radio_state
-        } else {
-          radio.radio_state = opts.radio_state
-        }
-      })
-    }
+    // if (opts.blu_radio_channel) {
+    let radio = receiver.blu_radios.find(radio => radio.radio == opts.blu_radio_channel)
+    console.log('station config radio', radio, 'blu_radio_channel', opts.blu_radio_channel)
+    // if (opts.poll_interval) {
+    radio.radio_state = opts.radio_state
+    radio.poll_interval = opts.poll_interval
+    // } else {
+    //   radio.radio_state = opts.radio_state
+    // }
+    // } else {
+    //   receiver.blu_radios.forEach((radio) => {
+    //     console.log('station config receiver radio', radio)
+    //     if (opts.poll_interval) {
+    //       radio.poll_interval = opts.poll_interval
+    //       radio.radio_state = opts.radio_state
+    //     } else {
+    //       radio.radio_state = opts.radio_state
+    // }
+    // })
+    // }
     try {
-      await this.save(this.filename)
+      this.save(this.filename)
     } catch (err) {
       console.log('ERROR saving config file')
       console.error(err)

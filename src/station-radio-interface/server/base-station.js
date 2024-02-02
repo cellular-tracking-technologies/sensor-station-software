@@ -159,13 +159,17 @@ class BaseStation {
     this.sensor_socket_server.on('cmd', async (cmd) => {
       switch (cmd.cmd) {
         case ('blu_radio_all_on'):
-          this.blu_station.bluRadiosAllOn(cmd)
-          await this.setBluReceiverState(cmd)
+          await this.blu_station.bluRadiosAllOn(cmd)
+          let on_receiver = this.blu_station.blu_receivers.find(receiver => receiver.port == Number(cmd.data.port))
+          console.log('on receiver', on_receiver)
+          await this.setBluReceiverState(on_receiver)
           break;
         case ('blu_radio_all_off'):
           console.log('blu radio all off cmd', cmd)
-          this.blu_station.bluRadiosAllOff(cmd)
-          await this.setBluReceiverState(cmd)
+          await this.blu_station.bluRadiosAllOff(cmd)
+          let off_receiver = this.blu_station.blu_receivers.find(receiver => receiver.port == Number(cmd.data.port))
+          console.log('off receiver', off_receiver)
+          await this.setBluReceiverState(off_receiver)
           break
         case ('blu_led_all'):
           this.blu_station.bluRadiosAllLed(cmd)
@@ -645,16 +649,28 @@ class BaseStation {
    * @param {String} cmd.data.poll_interval Polling interval for the radio
    * @param {String} cmd.data.scan Scan variable, determines if radios is scanning for tags, using for radio state
    */
-  async setBluReceiverState(cmd) {
-    let receiver_channel = Number(cmd.data.port)
-    if (cmd.data.poll_interval) {
-      let poll_interval = Number(cmd.data.poll_interval)
-      let radio_state = Number(cmd.data.scan)
-      await this.toggleBluState({ receiver_channel, poll_interval, radio_state })
-    } else {
-      let radio_state = Number(cmd.data.scan)
-      await this.toggleBluState({ receiver_channel, radio_state })
-    }
+  async setBluReceiverState(receiver) {
+    console.log('set blu receiver state opts', receiver)
+
+    let receiver_channel = receiver.port
+
+    receiver.blu_radios.forEach(async (radio) => {
+      let blu_radio_channel = radio.radio
+      let poll_interval = radio.poll_interval
+      let radio_state = radio.radio_state
+      await this.toggleBluState({ receiver_channel, blu_radio_channel, poll_interval, radio_state })
+    })
+
+
+    // let receiver_channel = Number(cmd.data.port)
+    // if (cmd.data.poll_interval) {
+    //   let poll_interval = Number(cmd.data.poll_interval)
+    //   let radio_state = Number(cmd.data.scan)
+    //   await this.toggleBluState({ receiver_channel, poll_interval, radio_state })
+    // } else {
+    //   let radio_state = Number(cmd.data.scan)
+    //   await this.toggleBluState({ receiver_channel, radio_state })
+    // }
   }
 
   /**
