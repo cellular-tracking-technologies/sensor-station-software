@@ -230,8 +230,10 @@ class BluStation {
 
       const exit_promises = this.blu_receivers[br_index].blu_radios
         .map(async (radio) => {
+          await this.blu_receivers[br_index].setBluConfig(radio.radio, { scan: 0, rx_blink: 0 })
           radio.beeps = await this.blu_receivers[br_index].stopDetections(radio)
           radio.dropped = await this.blu_receivers[br_index].stopStats(radio)
+
         })
 
       try {
@@ -251,17 +253,23 @@ class BluStation {
    * @param {Number} poll_interval Poll interval number
    */
   async sendBluVersion(receiver, poll_interval) {
+    console.log('send blu version receiver', receiver)
+
     setInterval(async () => {
       await receiver.getBluVersion(1)
       await receiver.getBluVersion(2)
       await receiver.getBluVersion(3)
       await receiver.getBluVersion(4)
-      let blu_add = {
-        port: receiver.port,
 
-        msg_type: "add_port",
+      if (receiver.port) {
+
+        let blu_add = {
+          port: receiver.port,
+
+          msg_type: "add_port",
+        }
+        this.broadcast(JSON.stringify(blu_add))
       }
-      this.broadcast(JSON.stringify(blu_add))
     }, poll_interval)
   }
 
@@ -272,8 +280,8 @@ class BluStation {
   async destroy_receiver(receiver) {
     delete receiver.path
     receiver.destroyed_port = receiver.port
-    // delete receiver.blu_radios
-    // delete receiver.port
+    delete receiver.blu_radios
+    delete receiver.port
   }
 
 

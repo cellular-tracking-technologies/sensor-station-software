@@ -137,7 +137,7 @@ class BaseStation {
  * @param {String} opts.radio_state
  */
   async toggleBluState(opts) {
-    console.log('toggle blu state', opts)
+    // console.log('toggle blu state', opts)
     await this.config.toggleRadioMode({
       receiver_channel: opts.receiver_channel,
       poll_interval: opts.poll_interval,
@@ -545,8 +545,9 @@ class BaseStation {
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
    */
   unlinkBluStation(path) {
-    let unlink_receiver = this.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    let unlink_port = unlink_receiver.channel
+    let unlink_receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
+    // let unlink_port = unlink_receiver.channel
+    let unlink_port = unlink_receiver.port
     let unlink_obj = {
       msg_type: "unlink_port",
       port: unlink_port,
@@ -563,7 +564,8 @@ class BaseStation {
       })
     })
     // this.blu_station.stopBluRadios()
-    // this.blu_station.destroy_receiver(unlink_receiver)
+    this.blu_station.destroy_receiver(unlink_receiver)
+    console.log('unlink receiver after destruction', unlink_receiver)
   }
 
   /**
