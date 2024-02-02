@@ -442,12 +442,12 @@ class BaseStation {
 
           })
           await this.blu_station.stopBluRadios(receiver.path)
-          // await this.blu_station.destroy_receiver(receiver)
+          await this.blu_station.destroy_receiver(receiver)
         }
       })
       try {
         const blu_radios_stop = await Promise.all(promises)
-        await this.blu_station.destroy_station()
+        // await this.blu_station.destroy_station()
       } catch (e) {
         console.error('no port to closed in destroyed blu receiver', e)
         try {
