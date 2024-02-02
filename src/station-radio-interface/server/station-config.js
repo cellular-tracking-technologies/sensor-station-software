@@ -95,7 +95,7 @@ class StationConfig {
   }
 
   async toggleRadioMode(opts) {
-    console.log('station config toggle radio mode opts', opts)
+    // console.log('station config toggle radio mode opts', opts)
     this.data.radios.forEach((radio) => {
       if (radio.channel == opts.channel) {
         console.log('setting radio mode')
@@ -105,26 +105,11 @@ class StationConfig {
       }
     })
     let receiver = this.data.blu_receivers.find(receiver => receiver.channel == opts.receiver_channel)
-    // if (opts.blu_radio_channel) {
     let radio = receiver.blu_radios.find(radio => radio.radio == opts.blu_radio_channel)
-    console.log('station config radio', radio, 'blu_radio_channel', opts.blu_radio_channel)
-    // if (opts.poll_interval) {
+
     radio.radio_state = opts.radio_state
     radio.poll_interval = opts.poll_interval
-    // } else {
-    //   radio.radio_state = opts.radio_state
-    // }
-    // } else {
-    //   receiver.blu_radios.forEach((radio) => {
-    //     console.log('station config receiver radio', radio)
-    //     if (opts.poll_interval) {
-    //       radio.poll_interval = opts.poll_interval
-    //       radio.radio_state = opts.radio_state
-    //     } else {
-    //       radio.radio_state = opts.radio_state
-    // }
-    // })
-    // }
+
     try {
       this.save(this.filename)
     } catch (err) {
