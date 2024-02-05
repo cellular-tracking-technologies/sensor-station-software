@@ -99,6 +99,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get detections error', e)
 
           const { error, data } = e
           this.finalize({
@@ -158,6 +159,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get leds error', e)
 
           this.finalize({
             task: BluReceiverTask.LEDS,
@@ -184,6 +186,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get reboot error', e)
 
           this.finalize({
             task: BluReceiverTask.REBOOT,
@@ -211,6 +214,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('set config error', e)
 
           this.finalize({
             task: BluReceiverTask.CONFIG,
@@ -237,6 +241,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get stats error', e)
 
           this.finalize({
             task: BluReceiverTask.STATS,
@@ -269,6 +274,10 @@ class BluReceiver extends EventEmitter {
       error,
       data,
     })
+  }
+
+  clear_listener(eventType) {
+    this.#data.io.clearlistener(eventType)
   }
 }
 

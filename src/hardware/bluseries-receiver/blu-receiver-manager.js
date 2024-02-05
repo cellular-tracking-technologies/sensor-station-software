@@ -26,6 +26,7 @@ class BluReceiverManager extends BluReceiver {
                 task: BluReceiverTask.VERSION,
                 radio_channel: radio_channel,
             })
+
             return blu_version
         } catch (e) {
             console.error('GET BLU VERSION ERROR', e)
@@ -54,7 +55,7 @@ class BluReceiverManager extends BluReceiver {
             console.log('getDetections error', e)
             clearInterval(beeps)
             beeps = undefined
-            await getDetections(radio_channel, buffer_interval)
+            await this.getDetections(radio_channel, buffer_interval)
         }
     }
 
@@ -65,7 +66,8 @@ class BluReceiverManager extends BluReceiver {
    * @param {Number} opts.blink_rate Blink per ms
    * @param {Number} opts.blink_count Number of blinks before turning off
    */
-    async setLogoFlash(radio_channel, opts) {
+    async setBluLed(radio_channel, opts) {
+
 
         return this.schedule({
             task: BluReceiverTask.LEDS,
@@ -137,7 +139,7 @@ class BluReceiverManager extends BluReceiver {
     async setBluConfig(radio_channel, opts) {
         const { scan, rx_blink } = opts
         try {
-
+            console.log('turning blu radio', radio_channel, opts.scan)
             return this.schedule({
                 task: BluReceiverTask.CONFIG,
                 radio_channel,
@@ -153,7 +155,7 @@ class BluReceiverManager extends BluReceiver {
         } catch (e) {
             console.error('error in setting blu configuration', e)
             while (e) {
-                return await setBluConfig(radio_channel, opts)
+                return await this.setBluConfig(radio_channel, opts)
             }
         }
     }
@@ -174,7 +176,7 @@ class BluReceiverManager extends BluReceiver {
             }, poll_interval)
             return dropped
         } catch (e) {
-            console.error('could not get dropped detections')
+            console.error('could not get dropped detections', e)
             await getBluStats(radio_channel, buffer_interval)
         }
     }
@@ -240,7 +242,7 @@ class BluReceiverManager extends BluReceiver {
         let blu_leds = [1, 2, 3, 4]
         const logo_start = await Promise.all(blu_leds.map((led) => {
             this.delay(1000)
-            this.setLogoFlash(led, { led_state: 1, blink_rate: null, blink_count: null, })
+            this.setBluLed(led, { led_state: 1, blink_rate: null, blink_count: null, })
         })).then((value) => {
             console.log('logo led is turning on', value)
         }).catch((e) => {
@@ -248,7 +250,7 @@ class BluReceiverManager extends BluReceiver {
         })
 
         const logo_flash = await Promise.all(blu_leds.map((led) => {
-            this.setLogoFlash(led, { led_state: 2, blink_rate: 500, blink_count: 6, })
+            this.setBluLed(led, { led_state: 2, blink_rate: 500, blink_count: 6, })
         })).then((value) => {
             console.log('logo leds are flashing', value)
         }).catch((e) => {
@@ -284,7 +286,7 @@ class BluReceiverManager extends BluReceiver {
                 // // await this.radioOff(radio_object)
                 // radio_object.beeps = await this.stopDetections(radio_object)
                 // radio_object.dropped = await this.stopStats(radio_object)
-                await this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
+                await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
                 await this.setBluDfu(radio_channel, new_firmware)
                 await this.rebootBluRadio(radio_channel)
                 setTimeout(() => {
@@ -325,7 +327,7 @@ class BluReceiverManager extends BluReceiver {
             // // await this.radioOff(radio_object)
             // radio_object.beeps = await this.stopDetections(radio_object)
             // radio_object.dropped = await this.stopStats(radio_object)
-            await this.setLogoFlash(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
+            await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
             await this.setBluDfu(radio_channel, previous_firmware)
             await this.rebootBluRadio(radio_channel)
             setTimeout(() => {

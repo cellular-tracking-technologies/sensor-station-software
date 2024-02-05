@@ -39,20 +39,27 @@ class BluReceiverIo extends EventEmitter {
     }
 
     this.#data.usb.connect()
-    this.#data.usb.on('open', (data) => {
+    this.#data.usb.on('open', async (data) => {
       /** 
        * Power must be applied to the upstream device AFTER a usb connection 
        * has been established.
        */
-      this.power_on()
+
+      // if (this.#data.usb.dtr == false || this.#data.usb.dtr == undefined) {
+      //   await this.power_off()
+      // }
+
+      await this.power_on()
       /**
        * Wait for the device to boot before sending commands
        */
       setTimeout(() => {
         this.emit('open')
-      }, 1500)
+      }, 1500) // initial value was 1500
     })
-    this.#data.usb.on('close', (data) => {
+    this.#data.usb.on('close', async (data) => {
+      await this.power_off()
+
       this.emit('close')
     })
   }
@@ -60,10 +67,10 @@ class BluReceiverIo extends EventEmitter {
   /**
    * 
    */
-  power_off() {
+  async power_off() {
     this.#data.usb.dtr = true
   }
-  power_on() {
+  async power_on() {
     console.log('Booting Device...')
     this.#data.usb.dtr = false
   }

@@ -67,7 +67,7 @@ class BluStation {
     blu_receiver = undefined
 
     // Blu Event Emitter
-    this.blu_receivers[br_index].on('complete', (job) => {
+    this.blu_receivers[br_index].on('complete', async (job) => {
 
       switch (job.task) {
         case BluReceiverTask.VERSION:
@@ -122,11 +122,14 @@ class BluStation {
                 msg_type: "blu_stats",
               }
               this.broadcast(JSON.stringify(blu_sum))
-
             })
 
           } catch (e) {
             console.error(`base station get detections error on Port ${this.blu_receivers[br_index].port}`, e)
+            let bad_radio = this.blu_receivers[br_index].blu_radios.find(radio => radio.radio == job.radio_channel)
+            bad_radio.beeps = await this.blu_receivers[br_index].stopDetections(bad_radio)
+            // bad_radio.beeps = await this.blu_receivers[br_index].getDetections(bad_radio.radio)
+
           }
           break
         case BluReceiverTask.DFU:
@@ -139,6 +142,9 @@ class BluStation {
           break
         case BluReceiverTask.LEDS:
           console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
+          if (job.error == 'timeout') {
+            this.blu_receivers[br_index].setBluConfig(job.radio_channel, { scan: 0, rx_blink: 0 })
+          }
           break
         case BluReceiverTask.CONFIG:
           console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
@@ -168,6 +174,10 @@ class BluStation {
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
             console.log('base station stats error:', 'receiver', this.blu_receivers[br_index].port, 'radio', job.radio_channel, e)
+            let bad_radio = this.blu_receivers[br_index].blu_radios.find(radio => radio.radio == job.radio_channel)
+            bad_radio.dropped = await this.blu_receivers[br_index].stopStats(bad_radio)
+            // bad_radio.dropped = await this.blu_receivers[br_index].getBluStats(bad_radio.radio)
+
           }
           break
         default:
@@ -175,7 +185,7 @@ class BluStation {
       }
     })
 
-    this.blu_receivers[br_index].startUpFlashLogo()
+    await this.blu_receivers[br_index].startUpFlashLogo()
     await this.sendBluVersion(this.blu_receivers[br_index], 10000)
     // console.log('blu_fw', this.getBluFirmware())
 
@@ -254,23 +264,29 @@ class BluStation {
    */
   async sendBluVersion(receiver, poll_interval) {
     console.log('send blu version receiver', receiver)
+    if (receiver.port) {
 
-    setInterval(async () => {
-      await receiver.getBluVersion(1)
-      await receiver.getBluVersion(2)
-      await receiver.getBluVersion(3)
-      await receiver.getBluVersion(4)
+      setInterval(async () => {
+        // receiver.blu_radios.forEach(async (radio) => {
 
-      if (receiver.port) {
+        // await receiver.getBluVersion(radio.radio)
+        await receiver.getBluVersion(1)
+        await receiver.getBluVersion(2)
+        await receiver.getBluVersion(3)
+        await receiver.getBluVersion(4)
 
-        let blu_add = {
-          port: receiver.port,
-
-          msg_type: "add_port",
+        if (receiver.port) {
+          let blu_add = {
+            port: receiver.port,
+            msg_type: "add_port",
+          }
+          this.broadcast(JSON.stringify(blu_add))
         }
-        this.broadcast(JSON.stringify(blu_add))
-      }
-    }, poll_interval)
+        // })
+      }, poll_interval)
+    }
+    // return version
+
   }
 
   /**

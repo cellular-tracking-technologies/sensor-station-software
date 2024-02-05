@@ -104,7 +104,7 @@ class BaseStation {
       blu_firmware: this.firmware,
       server_api: this.server_api,
     })
-    this.directoryWatcher()
+    await this.directoryWatcher()
     this.startTimers()
   }
 
@@ -419,13 +419,13 @@ class BaseStation {
   /**
   * file watcher using chokidar
   */
-  directoryWatcher() {
+  async directoryWatcher() {
     chokidar.watch('../../../../../../dev/serial/by-path')
-      .on('add', path => {
-        this.addPath(path)
+      .on('add', async path => {
+        await this.addPath(path)
       })
-      .on('unlink', path => {
-        this.unlinkPath(path)
+      .on('unlink', async path => {
+        await this.unlinkPath(path)
       })
 
     process.on('SIGINT', async () => {
@@ -472,12 +472,12 @@ class BaseStation {
    * 
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
    */
-  addPath(path) {
+  async addPath(path) {
     if (revision.revision >= 3) {
       // V3 Radio Paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
 
-        this.startBluStation(path)
+        await this.startBluStation(path)
 
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
@@ -486,7 +486,7 @@ class BaseStation {
       // V2 Radio Paths
       if (path.includes('-port0')) {
 
-        this.startBluStation(path)
+        await this.startBluStation(path)
 
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
@@ -498,20 +498,20 @@ class BaseStation {
  * 
  * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
  */
-  unlinkPath(path) {
+  async unlinkPath(path) {
     if (revision.revision >= 3) {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
-        this.unlinkBluStation(path)
+        await this.unlinkBluStation(path)
       } else if (!path.includes('-port0')) {
-        this.unlinkDongleRadio(path)
+        await this.unlinkDongleRadio(path)
       }
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
-        this.unlinkBluStation(path)
+        await this.unlinkBluStation(path)
       } else if (!path.includes('-port0')) {
-        this.unlinkDongleRadio(path)
+        await this.unlinkDongleRadio(path)
       }
     }
   }
@@ -525,7 +525,7 @@ class BaseStation {
     await this.blu_station.startBluRadios(path.substring(17))
     let start_receiver = await this.findBluReceiveryByPath(path)
 
-    start_receiver.blu_radios.forEach(async (radio) => {
+    await start_receiver.blu_radios.forEach(async (radio) => {
       let add_port = {
         msg_type: 'add_port',
         poll_interval: radio.poll_interval,
@@ -546,7 +546,7 @@ class BaseStation {
    * 
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
    */
-  unlinkBluStation(path) {
+  async unlinkBluStation(path) {
     let unlink_receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
     // let unlink_port = unlink_receiver.channel
     let unlink_port = unlink_receiver.port
@@ -555,7 +555,7 @@ class BaseStation {
       port: unlink_port,
     }
     this.broadcast(JSON.stringify(unlink_obj))
-    this.blu_station.stopBluRadios(path.substring(17))
+    await this.blu_station.stopBluRadios(path.substring(17))
     unlink_receiver.blu_radios.forEach(async (radio) => {
 
       await this.toggleBluState({
@@ -566,7 +566,7 @@ class BaseStation {
       })
     })
     // this.blu_station.stopBluRadios()
-    this.blu_station.destroy_receiver(unlink_receiver)
+    await this.blu_station.destroy_receiver(unlink_receiver)
     console.log('unlink receiver after destruction', unlink_receiver)
   }
 
@@ -574,7 +574,7 @@ class BaseStation {
  * 
  * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
  */
-  unlinkDongleRadio(path) {
+  async unlinkDongleRadio(path) {
     let unlink_dongle = {
       msg_type: "unlink_dongle",
       path: path.substring(17),
