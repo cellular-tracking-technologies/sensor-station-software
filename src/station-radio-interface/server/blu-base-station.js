@@ -226,7 +226,7 @@ class BluStation {
    */
   async stopBluRadios(path) {
     if (path !== undefined) {
-      let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path)
+      let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path || receiver.path == path.substring(17))
 
       const exit_promises = this.blu_receivers[br_index].blu_radios
         .map(async (radio) => {
@@ -278,6 +278,7 @@ class BluStation {
    * @param {Object} receiver BluReceiver with timeout events
    */
   async destroy_receiver(receiver) {
+    await this.stopBluRadios(receiver.path)
     delete receiver.path
     receiver.destroyed_port = receiver.port
     delete receiver.blu_radios

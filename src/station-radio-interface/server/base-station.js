@@ -429,7 +429,9 @@ class BaseStation {
       })
 
     process.on('SIGINT', async () => {
+      console.log('sigint, manually closing down program')
       const promises = this.blu_station.blu_receivers.map(async (receiver) => {
+        console.log('receiver path', receiver.path)
         if (receiver.path) {
           receiver.blu_radios.forEach(async (radio) => {
 
@@ -441,7 +443,7 @@ class BaseStation {
             })
 
           })
-          await this.blu_station.stopBluRadios(receiver.path)
+          // await this.blu_station.stopBluRadios(receiver.path)
           await this.blu_station.destroy_receiver(receiver)
         }
       })
