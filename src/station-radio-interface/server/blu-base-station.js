@@ -2,6 +2,8 @@ import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
 // import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import { BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
 import BluReceiverManager from '../../hardware/bluseries-receiver/blu-receiver-manager.js'
+import BluFirmwareUpdater from '../../hardware/bluseries-receiver/blu-firmware-updater.js'
+
 import fs from 'fs'
 import moment from 'moment'
 
@@ -16,6 +18,8 @@ class BluStation {
     this.firmware = opts.blu_firmware
     this.blu_fw
     this.blu_fw_checkin = {}
+    this.blu_version
+    this.blu_updater = new BluFirmwareUpdater({})
   }
 
   /**
@@ -50,7 +54,7 @@ class BluStation {
    * 
    * @param {String} path Radio path from chokidar, already substringed 17 spaces 
    */
-  startBluRadios(path) {
+  async startBluRadios(path) {
     let blu_path = this.blu_paths.find(receiver => receiver.path === path)
     let blu_receiver = new BluReceiverManager({
       path: path,
@@ -62,8 +66,7 @@ class BluStation {
     let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path)
     blu_receiver = undefined
 
-    setTimeout(() => { }, 5000)
-
+    // Blu Event Emitter
     this.blu_receivers[br_index].on('complete', (job) => {
 
       switch (job.task) {
@@ -81,11 +84,14 @@ class BluStation {
                 }
               }
             }
-
             this.blu_fw_checkin[job.radio_channel] = job.data.version
+            this.blu_version = job.data.version
             this.broadcast(JSON.stringify(this.blu_fw))
+
+            // this.blu_updater.checkFirmware(job.data.version)
           } catch (e) {
             console.error('basestation getBluVersion error:', e)
+            this.blu_receivers[br_index].getBluVersion(job.radio_channel)
           }
           break
         case BluReceiverTask.DETECTIONS:
@@ -107,7 +113,6 @@ class BluStation {
               this.broadcast(JSON.stringify(beep))
               this.data_manager.handleBluBeep(beep)
               let blu_beep_sum = this.data_manager.stats.blu_stats.blu_ports[beep.port.toString()].channels[beep.channel.toString()].beeps
-              // console.log('beep stat manager blu stats', this.data_manager.stats.blu_stats.blu_ports[beep.port.toString()].channels[beep.channel.toString()].beeps)
               let blu_sum = {
                 port: this.blu_receivers[br_index].port,
                 channel: job.radio_channel,
@@ -151,7 +156,6 @@ class BluStation {
                 dropped_detections: job.data.det_dropped,
               })
 
-
             let blu_dropped = this.data_manager.stats.blu_stats.blu_ports[port_key].channels[channel_key].blu_dropped
             let blu_stats = {
               port: this.blu_receivers[br_index].port,
@@ -172,24 +176,36 @@ class BluStation {
     })
 
     this.blu_receivers[br_index].startUpFlashLogo()
+    await this.sendBluVersion(this.blu_receivers[br_index], 10000)
+    // console.log('blu_fw', this.getBluFirmware())
 
-    this.sendBluVersion(this.blu_receivers[br_index], 10000)
+    // const radios_fw = Promise.all(this.blu_receivers[br_index].forEach((radio) => {
+    //   console.log('blu_fw', this.blu_fw_checkin)
 
-    const radios_start = Promise.all(this.blu_receivers[br_index].blu_radios
-      .map((radio) => {
+    //   updateBluFirmware(radio, this.blu_fw_checkin)
+    // })).then((values) => {
+    //   console.log('radios started values', values)
+    //   return values
+    // }).catch((e) => {
+    //   console.error('radios could not start properly', e)
+    // })
+
+    const radios_start = await Promise.all(this.blu_receivers[br_index].blu_radios
+      .map(async (radio) => {
         let radio_channel = radio.radio
         let poll_interval = radio.poll_interval
-        this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+
+        await this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+
         let blu_add = {
           port: this.blu_receivers[br_index].port,
-
           msg_type: "add_port",
         }
+        this.broadcast(JSON.stringify(blu_add))
 
-        radio.beeps = this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
-          .then((values) => { return values })
-        radio.dropped = this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
-          .then((values) => { return values })
+        radio.beeps = await this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
+        radio.dropped = await this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
+
       })).then((values) => {
         console.log('radios started values', values)
         return values
@@ -198,25 +214,30 @@ class BluStation {
       })
 
 
-    this.blu_receivers[br_index].on('close', () => {
-      this.destroy_station()
+    this.blu_receivers[br_index].on('close', async () => {
+      await this.stopBluRadios(receiver.path)
+      await this.destroy_receiver(this.blu_receivers[br_index])
+      await this.destroy_station()
     })
   }
 
   /**
    * @param {String} path Full path, not subsetted
    */
-  stopBluRadios(path) {
+  async stopBluRadios(path) {
     if (path !== undefined) {
       let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path)
 
       const exit_promises = this.blu_receivers[br_index].blu_radios
-        .map((radio) => {
-          this.blu_receivers[br_index].radioOff(radio)
+        .map(async (radio) => {
+          await this.blu_receivers[br_index].setBluConfig(radio.radio, { scan: 0, rx_blink: 0 })
+          radio.beeps = await this.blu_receivers[br_index].stopDetections(radio)
+          radio.dropped = await this.blu_receivers[br_index].stopStats(radio)
+
         })
 
       try {
-        const radios_exit = Promise.all(exit_promises)
+        const radios_exit = await Promise.all(exit_promises)
       } catch (e) {
         console.error('radios exit error', e)
         radios_exit()
@@ -231,18 +252,24 @@ class BluStation {
    * @param {Object} receiver BluReceiver with timeout events
    * @param {Number} poll_interval Poll interval number
    */
-  sendBluVersion(receiver, poll_interval) {
-    setInterval(() => {
-      receiver.getBluVersion(1)
-      receiver.getBluVersion(2)
-      receiver.getBluVersion(3)
-      receiver.getBluVersion(4)
-      let blu_add = {
-        port: receiver.port,
+  async sendBluVersion(receiver, poll_interval) {
+    console.log('send blu version receiver', receiver)
 
-        msg_type: "add_port",
+    setInterval(async () => {
+      await receiver.getBluVersion(1)
+      await receiver.getBluVersion(2)
+      await receiver.getBluVersion(3)
+      await receiver.getBluVersion(4)
+
+      if (receiver.port) {
+
+        let blu_add = {
+          port: receiver.port,
+
+          msg_type: "add_port",
+        }
+        this.broadcast(JSON.stringify(blu_add))
       }
-      this.broadcast(JSON.stringify(blu_add))
     }, poll_interval)
   }
 
@@ -250,7 +277,7 @@ class BluStation {
    * 
    * @param {Object} receiver BluReceiver with timeout events
    */
-  destroy_receiver(receiver) {
+  async destroy_receiver(receiver) {
     delete receiver.path
     receiver.destroyed_port = receiver.port
     delete receiver.blu_radios
@@ -262,12 +289,12 @@ class BluStation {
     try {
       delete this.firmware
       delete this.blu_fw
-      delete this.blu_paths
-      delete this.blu_receivers
+      // delete this.blu_paths
+      // delete this.blu_receivers
       delete this.data_manager
-      delete this.broadcast
+      // delete this.broadcast
       delete this.sensor_socket_server
-      delete this.path
+      // delete this.path
     } catch (e) {
       console.error('problem with destroying blustation')
     }
@@ -306,7 +333,7 @@ class BluStation {
     } = cmd
     // console.log('find blu station only cmd', cmd)
     let receiver = this.blu_receivers.find(receiver => receiver.port === Number(port))
-    console.log('find blu receiver', receiver)
+    // console.log('find blu receiver', receiver)
 
     return receiver
   }
@@ -356,24 +383,30 @@ class BluStation {
    * @param {Object} cmd websocket command object
    * @param {Number} cmd.data.poll_interval poll inteval
    */
-  bluRadiosAllOn(cmd) {
+  async bluRadiosAllOn(cmd) {
     let all_on = this.findBluReceiver(cmd)
 
-    const radios_on = Promise.all(all_on.blu_radios.map(radio => {
+    const radios_on = await Promise.all(all_on.blu_radios.map(async (radio) => {
 
-      radio.poll_interval = Number(cmd.data.poll_interval)
-      let poll_interval = radio.poll_interval
-      let radio_channel = radio.radio
-      all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+      if (radio.beeps._destroyed == true) {
+        radio.poll_interval = Number(cmd.data.poll_interval)
+        let poll_interval = radio.poll_interval
+        let radio_channel = radio.radio
 
-      radio.beeps = all_on.getDetections(radio_channel, poll_interval)
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get detections could not start', e) })
-      radio.dropped = all_on.getBluStats(radio_channel, poll_interval)
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get stats could not start', e) })
+        await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+
+        radio.beeps = await all_on.getDetections(radio_channel, poll_interval)
+        radio.dropped = await all_on.getBluStats(radio_channel, poll_interval)
+        radio.radio_state = 1
+
+      } else {
+        radio.beeps = radio.beeps
+        radio.dropped = radio.dropped
+        radio.radio_state = 1
+      }
     })).then((values) => {
-      console.log('all radios on', values)
+      // console.log('all radios on', values)
+      console.log('all radios on')
     }).catch((e) => {
       console.error('all radios on error', e)
     })
@@ -383,23 +416,23 @@ class BluStation {
    * 
    * @param {Object} cmd websocket command object
    */
-  bluRadiosAllOff(cmd) {
+  async bluRadiosAllOff(cmd) {
     let all_off = this.findBluReceiver(cmd)
-    const radios_off = Promise.all(all_off.blu_radios.map(radio => {
+    const radios_off = await Promise.all(all_off.blu_radios.map(async (radio) => {
       let radio_channel = radio.radio
-      all_off.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
+      await all_off.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
 
-      radio.beeps = all_off.stopDetections(radio)
-        .then((values) => { console.log('stop detection values', values); return values })
-        .catch((e) => { console.error('could not stop detections', e) })
-      radio.dropped = all_off.stopStats(radio)
-        .then((values) => { console.log('stop stats values', values); return values })
-        .catch((e) => { console.error('could not stop stats', e) })
+      radio.beeps = await all_off.stopDetections(radio)
+      radio.dropped = await all_off.stopStats(radio)
+      radio.radio_state = 0
+
     })).then((values) => {
-      console.log('turning blu radio off', values)
+      // console.log('turning blu radio off', values)
+      console.log('blu radios off')
     }).catch((e) => {
       console.error('all radios off error', e)
     })
+    return radios_off
   }
 
   /**
@@ -408,10 +441,10 @@ class BluStation {
    * @param {Boolean} cmd.data.scan scan value, 1 is scanning, 0 is off
    * @param {Boolean} cmd.data.rx_blink blink value, 1 is blink, 0 is off
    */
-  bluRadiosAllLed(cmd) {
+  async bluRadiosAllLed(cmd) {
     let all_led_receiver = this.findBluReceiver(cmd)
-    const all_leds = Promise.all(all_led_receiver.blu_radios.map(radio => {
-      all_led_receiver.setBluConfig(Number(radio.radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
+    const all_leds = Promise.all(all_led_receiver.blu_radios.map(async (radio) => {
+      return await all_led_receiver.setBluConfig(Number(radio.radio), { scan: cmd.data.scan, rx_blink: cmd.data.rx_blink, })
     })).then((values) => {
       console.log('turning radio leds on', values)
     }).catch((e) => {
@@ -424,18 +457,14 @@ class BluStation {
    * @param {Object} cmd websocket command object
    * @param {Number} cmd.data.port blu receiver port number
    */
-  bluRadiosAllReboot(cmd) {
+  async bluRadiosAllReboot(cmd) {
 
-    // let reboot_index = this.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
     let all_reboot_receiver = this.findBluReceiver(cmd)
 
-    const all_reboot = Promise.all(all_reboot_receiver.blu_radios.map(radio => {
-      radio.beeps = all_reboot_receiver.stopDetections(radio)
-        .then((values) => { console.log('stop detection values', values); return values })
-        .catch((e) => { console.error('could not stop detections', e) })
-      radio.dropped = all_reboot_receiver.stopStats(radio)
-        .then((values) => { console.log('stop stats values', values); return values })
-        .catch((e) => { console.error('could not stop stats', e) })
+    const all_reboot = Promise.all(all_reboot_receiver.blu_radios.map(async (radio) => {
+
+      radio.beeps = await all_reboot_receiver.stopDetections(radio)
+      radio.dropped = await all_reboot_receiver.stopStats(radio)
 
       // reset polling interval to 10 s on reboot
       let radio_channel = radio.radio
@@ -457,14 +486,10 @@ class BluStation {
           console.error(console.error('could not reboot radio', e))
         })
 
-      all_reboot_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+      await all_reboot_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
-      radio.beeps = all_reboot_receiver.getDetections(radio_channel, Number(cmd.data.poll_interval))
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get detections could not start', e) })
-      radio.dropped = all_reboot_receiver.getBluStats(radio_channel, Number(cmd.data.poll_interval))
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get stats could not start', e) })
+      radio.beeps = await all_reboot_receiver.getDetections(radio_channel, Number(cmd.data.poll_interval))
+      radio.dropped = await all_reboot_receiver.getBluStats(radio_channel, Number(cmd.data.poll_interval))
 
     })).then((values) => {
       console.log('all radios rebooting', values)
@@ -479,17 +504,13 @@ class BluStation {
    * @param {Object} cmd websocket command object
    * @param {Number} cmd.data.port blu receiver port number
    */
-  bluRadiosAllChangePoll(cmd) {
-    // let poll_index = this.blu_receivers.findIndex(receiver => receiver.port === Number(cmd.data.port))
+  async bluRadiosAllChangePoll(cmd) {
     let all_poll_receiver = this.findBluReceiver(cmd)
 
-    const all_poll = Promise.all(all_poll_receiver.blu_radios.map(radio => {
-      radio.beeps = all_poll_receiver.stopDetections(radio)
-        .then((values) => { console.log('stop detection values', values); return values })
-        .catch((e) => { console.error('could not stop detections', e) })
-      radio.dropped = all_poll_receiver.stopStats(radio)
-        .then((values) => { console.log('stop stats values', values); return values })
-        .catch((e) => { console.error('could not stop stats', e) })
+    const all_poll = Promise.all(all_poll_receiver.blu_radios.map(async (radio) => {
+
+      radio.beeps = await all_poll_receiver.stopDetections(radio)
+      radio.dropped = await all_poll_receiver.stopStats(radio)
 
       let radio_channel = radio.radio
       radio.poll_interval = Number(cmd.data.poll_interval)
@@ -501,13 +522,11 @@ class BluStation {
       }
       this.broadcast(JSON.stringify(poll_data))
 
-      all_poll_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-      radio.beeps = all_poll_receiver.getDetections(radio_channel, Number(cmd.data.poll_interval))
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get detections could not start', e) })
-      radio.dropped = all_poll_receiver.getBluStats(radio_channel, Number(cmd.data.poll_interval))
-        .then((values) => { console.log('get detection values', values); return values })
-        .catch((e) => { console.error('get stats could not start', e) })
+      await all_poll_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+
+      radio.beeps = await all_poll_receiver.getDetections(radio_channel, Number(cmd.data.poll_interval))
+      radio.dropped = await all_poll_receiver.getBluStats(radio_channel, Number(cmd.data.poll_interval))
+
 
     })).then((values) => {
       console.log('all radios poll intervals changed', values)
@@ -521,37 +540,34 @@ class BluStation {
    * 
    * @param {Object} cmd websocket command object
    */
-  bluRadioOn(cmd) {
+  async bluRadioOn(cmd) {
     let on = this.findBluReceiverAndRadio(cmd)
     let { receiver, radio } = on
     let radio_channel = radio.radio
     radio.poll_interval = Number(cmd.data.poll_interval)
-    receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+    await receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
-    radio.beeps = receiver.getDetections(radio_channel, radio.poll_interval)
-      .then((values) => { console.log('stop detection values', values); return values })
-      .catch((e) => { console.error('could not stop detections', e) })
-    radio.dropped = receiver.getBluStats(radio_channel, radio.poll_interval)
-      .then((values) => { console.log('stop stats values', values); return values })
-      .catch((e) => { console.error('could not stop stats', e) })
-    // on.receiver.radioOn(on.radio, on.radio.poll_interval)
+    radio.beeps = await receiver.getDetections(radio_channel, radio.poll_interval)
+    radio.dropped = await receiver.getBluStats(radio_channel, radio.poll_interval)
+    radio.radio_state = 1
+
+    return { receiver, radio, poll_interval: radio.poll_interval, state: radio.radio_state }
   }
 
   /**
    * 
    * @param {Object} cmd websocket command object
    */
-  bluRadioOff(cmd) {
+  async bluRadioOff(cmd) {
     let off = this.findBluReceiverAndRadio(cmd)
     let { receiver, radio } = off
     let radio_channel = radio.radio
     receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0, })
-    radio.beeps = receiver.stopDetections(radio)
-      .then((values) => { console.log('stop detection values', values); return values })
-      .catch((e) => { console.error('could not stop detections', e) })
-    radio.dropped = receiver.stopStats(radio)
-      .then((values) => { console.log('stop stats values', values); return values })
-      .catch((e) => { console.error('could not stop stats', e) })
+    radio.beeps = await receiver.stopDetections(radio)
+    radio.dropped = await receiver.stopStats(radio)
+    radio.radio_state = 0
+    return { receiver, radio, poll_interval: radio.poll_interval, state: radio.radio_state }
+
   }
 
   /**
@@ -571,49 +587,38 @@ class BluStation {
  * 
  * @param {Object} cmd websocket command object
  */
-  bluReboot(cmd) {
-    let reboot = this.findBluReceiverAndRadio(cmd)
-    let { receiver, radio } = reboot
+  async bluReboot(cmd) {
+    let { receiver, radio } = this.findBluReceiverAndRadio(cmd)
     let radio_channel = radio.radio
-    let reboot_interval = 10000
+    let poll_interval = 10000
 
     this.poll_data = {
       channel: radio_channel,
-      poll_interval: reboot_interval,
+      poll_interval: poll_interval,
       msg_type: 'poll_interval',
     }
     this.broadcast(JSON.stringify(this.poll_data))
-    radio.beeps = receiver.stopDetections(radio)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not change poll on radio', e) })
-    radio.dropped = receiver.stopStats(radio)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not change poll on radio', e) })
 
-    reboot.receiver.rebootBluRadio(radio, reboot_interval)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not reboot radio', e) })
+    radio.beeps = await receiver.stopDetections(radio)
+    radio.dropped = await receiver.stopStats(radio)
 
-    radio.beeps = reboot.receiver.getDetections(radio_channel, reboot_interval)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not turn on radio', e) })
-    radio.dropped = reboot.receiver.getBluStats(radio_channel, reboot_interval)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not turn on radio', e) })
+    await receiver.rebootBluRadio(radio, poll_interval)
 
-    radio.poll_interval = reboot_interval
+    radio.beeps = await receiver.getDetections(radio_channel, poll_interval)
+    radio.dropped = await receiver.getBluStats(radio_channel, poll_interval)
+
+
+    radio.poll_interval = poll_interval
+
+    return { receiver, radio, poll_interval: radio.poll_interval, state: radio.radio_state }
   }
 
   /**
 * 
 * @param {Object} cmd websocket command object
 */
-  bluChangePoll(cmd) {
+  async bluChangePoll(cmd) {
 
-    // let { receiver_index, radio_index } = this.findBluReceiverAndRadioIndex(cmd)
-    // let radio = this.blu_receivers[receiver_index].blu_radios[radio_index]
-
-    // let radio_channel = this.blu_receivers[receiver_index].blu_radios[radio_index].radio
     let { receiver, radio } = this.findBluReceiverAndRadio(cmd)
     let radio_channel = radio.radio
     let poll_interval = cmd.data.poll_interval
@@ -623,16 +628,36 @@ class BluStation {
       poll_interval: poll_interval,
       msg_type: "poll_interval",
     }
-    radio.beeps = receiver.stopDetections(radio)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not change poll on radio', e) })
-    radio.dropped = receiver.stopStats(radio)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not change poll on radio', e) })
+    this.broadcast(JSON.stringify(poll_data))
+    radio.beeps = await receiver.stopDetections(radio)
+    radio.dropped = await receiver.stopStats(radio)
 
-    radio = receiver.radioOn(radio, radio.poll_interval)
-      .then((values) => { console.log(values); return values })
-      .catch((e) => { console.error('could not change poll on radio', e) })
+    radio.beeps = await receiver.getDetections(radio_channel, poll_interval)
+    radio.dropped = await receiver.getBluStats(radio_channel, poll_interval)
+
+    return { receiver, radio, poll_interval: radio.poll_interval, state: radio.radio_state }
+  }
+
+  /**
+* 
+* @param {Object} cmd websocket command object
+*/
+  async updateBluRadio(cmd) {
+
+    let { receiver, radio } = this.findBluReceiverAndRadio(cmd)
+    let radio_channel = radio.radio
+    let poll_interval = cmd.data.poll_interval
+
+    let poll_data = {
+      channel: radio_channel,
+      poll_interval: poll_interval,
+      msg_type: "poll_interval",
+    }
+
+    await receiver.updateBluFirmware(radio)
+    // radio.beeps = await receiver.stopDetections(radio)
+    // radio.dropped = await receiver.stopStats(radio)
+
   }
 }
 
