@@ -58,7 +58,6 @@ class BluReceiverIo extends EventEmitter {
       }, 1500) // initial value was 1500
     })
     this.#data.usb.on('close', async (data) => {
-      await this.power_off()
 
       this.emit('close')
     })
@@ -174,6 +173,7 @@ class BluReceiverIo extends EventEmitter {
       let detections = []
 
       this.addSelfDestructingEventListener('line', { timeout: 1500, reload: true }, (data, error) => {
+        console.log('self destruct event listener', data)
         if (error === 'timeout') {
           reject(error)
           return true

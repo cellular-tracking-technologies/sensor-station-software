@@ -24,7 +24,7 @@ class BluFormatter {
       // 'Id',
       'VCC',
       'Temp',
-      'Raw Payload',
+      'Payload',
       'NodeId',
       // 'Broadcast Id',
       // 'Payload Id',

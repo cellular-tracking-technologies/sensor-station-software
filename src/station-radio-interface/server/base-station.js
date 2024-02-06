@@ -457,7 +457,7 @@ class BaseStation {
           process.exit(0)
         } catch (e) {
           console.error('what the hell is happening', e)
-          this.blu_station.destroy_station()
+          // this.blu_station.destroy_station()
           process.exit(0)
         }
       } finally {
@@ -485,7 +485,7 @@ class BaseStation {
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
-
+        // await new Promise(r => setTimeout(r, 10000));
         await this.startBluStation(path)
 
       } else if (!path.includes('-port0')) {
@@ -567,6 +567,8 @@ class BaseStation {
     })
     // this.blu_station.stopBluRadios()
     await this.blu_station.destroy_receiver(unlink_receiver)
+    // await this.blu_station.destroy_station()
+
     console.log('unlink receiver after destruction', unlink_receiver)
   }
 

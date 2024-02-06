@@ -123,6 +123,8 @@ class BluStation {
               }
               this.broadcast(JSON.stringify(blu_sum))
             })
+            await this.blu_receivers[br_index].getBluVersion(job.radio_channel)
+
 
           } catch (e) {
             console.error(`base station get detections error on Port ${this.blu_receivers[br_index].port}`, e)
@@ -144,6 +146,10 @@ class BluStation {
           console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
           if (job.error == 'timeout') {
             this.blu_receivers[br_index].setBluConfig(job.radio_channel, { scan: 0, rx_blink: 0 })
+            // this.blu_receivers[br_index].setBluConfig(job.radio_channel, { scan: 1, rx_blink: 1 })
+
+            // this.stopBluRadios(this.blu_receivers[br_index].path)
+            // this.startBluRadios(this.blu_receivers[br_index].path)
           }
           break
         case BluReceiverTask.CONFIG:
@@ -185,8 +191,12 @@ class BluStation {
       }
     })
 
+    // this.stopBluRadios(this.blu_receivers[br_index].path)
+    // await this.blu_receivers[br_index].hardReset()
+    // await new Promise(r => setTimeout(r, 10000));
+
     await this.blu_receivers[br_index].startUpFlashLogo()
-    await this.sendBluVersion(this.blu_receivers[br_index], 10000)
+    // await this.sendBluVersion(this.blu_receivers[br_index], 10000)
     // console.log('blu_fw', this.getBluFirmware())
 
     // const radios_fw = Promise.all(this.blu_receivers[br_index].forEach((radio) => {
@@ -206,7 +216,7 @@ class BluStation {
         let poll_interval = radio.poll_interval
 
         await this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-
+        // await this.blu_receivers[br_index].getBluVersion(radio_channel)
         let blu_add = {
           port: this.blu_receivers[br_index].port,
           msg_type: "add_port",
@@ -227,7 +237,7 @@ class BluStation {
     this.blu_receivers[br_index].on('close', async () => {
       await this.stopBluRadios(receiver.path)
       await this.destroy_receiver(this.blu_receivers[br_index])
-      await this.destroy_station()
+      // await this.destroy_station()
     })
   }
 
@@ -295,10 +305,10 @@ class BluStation {
    */
   async destroy_receiver(receiver) {
     await this.stopBluRadios(receiver.path)
-    delete receiver.path
-    receiver.destroyed_port = receiver.port
-    delete receiver.blu_radios
-    delete receiver.port
+    // delete receiver.path
+    // receiver.destroyed_port = receiver.port
+    // delete receiver.blu_radios
+    // delete receiver.port
   }
 
 
@@ -306,12 +316,13 @@ class BluStation {
     try {
       delete this.firmware
       delete this.blu_fw
-      // delete this.blu_paths
-      // delete this.blu_receivers
+      delete this.blu_paths
+      delete this.blu_receivers
       delete this.data_manager
-      // delete this.broadcast
+      delete this.broadcast
       delete this.sensor_socket_server
-      // delete this.path
+      delete this.path
+      // delete this
     } catch (e) {
       console.error('problem with destroying blustation')
     }
