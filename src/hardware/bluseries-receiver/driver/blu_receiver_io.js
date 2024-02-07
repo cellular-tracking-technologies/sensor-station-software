@@ -173,7 +173,7 @@ class BluReceiverIo extends EventEmitter {
       let detections = []
 
       this.addSelfDestructingEventListener('line', { timeout: 1500, reload: true }, (data, error) => {
-        console.log('self destruct event listener', data)
+        // console.log('self destruct event listener', data)
         if (error === 'timeout') {
           reject(error)
           return true
