@@ -520,21 +520,24 @@ class BaseStation {
    */
   async startBluStation(path) {
 
+    const RADIO_STATES = {
+      ON: 1,
+      OFF: 0,
+    }
     await this.blu_station.startBluRadios(path.substring(17))
-    let start_receiver = await this.findBluReceiveryByPath(path)
+    const start_receiver = this.findBluReceiveryByPath(path)
 
     start_receiver.blu_radios.forEach(async (radio) => {
-      let add_port = {
+      this.broadcast(JSON.stringify({
         msg_type: 'add_port',
         poll_interval: radio.poll_interval,
         port: start_receiver.port
-      }
-      this.broadcast(JSON.stringify(add_port))
+      }))
 
       await this.toggleBluState({
         receiver_channel: start_receiver.port,
         blu_radio_channel: radio.radio,
-        radio_state: 1,
+        radio_state: RADIO_STATES.ON,
         poll_interval: radio.poll_interval,
       })
     })
@@ -647,8 +650,7 @@ class BaseStation {
  * @returns 
  */
   findBluReceiveryByPath(path) {
-    let receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    return receiver
+    return this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
   }
 
   /**
