@@ -42,13 +42,13 @@ class BluStation {
     this.data_manager.log(msgs)
   }
 
-  /**
-   * 
-   * @param {String} path /dev/serial/by-path string that has been substringed 17 spaces, starts the startBluRadios function
-   */
-  bluInit(path) {
-    this.startBluRadios(path)
-  }
+  // /**
+  //  * 
+  //  * @param {String} path /dev/serial/by-path string that has been substringed 17 spaces, starts the startBluRadios function
+  //  */
+  // bluInit(path) {
+  //   this.startBluRadios(path)
+  // }
 
   /**
    * 
@@ -56,66 +56,72 @@ class BluStation {
    */
   async startBluRadios(path) {
     let blu_path = this.blu_paths.find(receiver => receiver.path === path)
-    let blu_receiver = new BluReceiverManager({
-      path: path,
-      port: blu_path.channel,
-      blu_radios: blu_path.blu_radios,
-    })
-    this.blu_receivers.push(blu_receiver)
+    this.blu_receivers.push(
+      new BluReceiverManager({
+        path: path,
+        port: blu_path.channel,
+        blu_radios: blu_path.blu_radios,
+      })
+    )
 
-    let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path)
-    blu_receiver = undefined
+    const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
 
     // Blu Event Emitter
-    this.blu_receivers[br_index].on('complete', async (job) => {
+    blu_receiver.on('complete', (job) => {
+      const { task, error, radio_channel, data } = job
+      const { port: current_port } = blu_receiver
 
-      switch (job.task) {
+      if (error) {
+        console.log('Job Error Detected', error)
+        return
+      }
+
+      switch (task) {
         case BluReceiverTask.VERSION:
-          try {
-            console.log(`BluReceiverTask.VERSION Port ${this.blu_receivers[br_index].port} ${JSON.stringify(job)}`)
+          console.log(`BluReceiverTask.VERSION Port ${current_port} ${JSON.stringify(job)}`)
 
-            this.blu_fw = {
-              msg_type: 'blu-firmware',
-              firmware: {
-                [this.blu_receivers[br_index].port]: {
-                  channels: {
-                    [job.radio_channel]: job.data.version,
-                  }
+          this.blu_fw = {
+            msg_type: 'blu-firmware',
+            firmware: {
+              [current_port]: {
+                channels: {
+                  [radio_channel]: data.version,
                 }
               }
             }
-            this.blu_fw_checkin[job.radio_channel] = job.data.version
-            this.blu_version = job.data.version
-            this.broadcast(JSON.stringify(this.blu_fw))
-
-            // this.blu_updater.checkFirmware(job.data.version)
-          } catch (e) {
-            console.error('basestation getBluVersion error:', e)
-            this.blu_receivers[br_index].getBluVersion(job.radio_channel)
           }
+          this.blu_fw_checkin[radio_channel] = data.version
+          this.blu_version = data.version
+          this.broadcast(JSON.stringify(this.blu_fw))
+
+          // this.blu_updater.checkFirmware(job.data.version)
           break
         case BluReceiverTask.DETECTIONS:
           try {
-            console.log(`BluReceiverTask.DETECT Port ${this.blu_receivers[br_index].port} radio ${job.radio_channel} has ${job.data.length} detections`)
+            console.log(`BluReceiverTask.DETECT Port ${current_port} radio ${radio_channel} has ${job.data.length} detections`)
+
+            // call getBluVersion for radios that detect tags
+
             job.data.forEach((beep) => {
-              beep.data = { id: beep.id }
-              beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
+              const { id, rssi, time, channel: radio_channel, payload: { parsed: { solar, temp, } }, } = beep
+              beep.data = { id }
+              beep.meta = { data_type: "blu_tag", rssi, }
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
-              beep.received_at = moment(new Date(beep.time)).utc()
-              beep.radio_index = this.blu_receivers[br_index].blu_radios.findIndex(radio =>
-                radio.radio == beep.channel
+              beep.received_at = moment(new Date(time)).utc()
+              let radio = blu_receiver.blu_radios.find(radio =>
+                radio.radio == radio_channel
               )
-              beep.poll_interval = this.blu_receivers[br_index].blu_radios[beep.radio_index].poll_interval
-              beep.port = this.blu_receivers[br_index].port
-              beep.vcc = beep.payload.parsed.solar
-              beep.temp = beep.payload.parsed.temp
+              beep.poll_interval = radio.poll_interval
+              beep.port = current_port
+              beep.vcc = solar
+              beep.temp = temp
               this.broadcast(JSON.stringify(beep))
               this.data_manager.handleBluBeep(beep)
               let blu_beep_sum = this.data_manager.stats.blu_stats.blu_ports[beep.port.toString()].channels[beep.channel.toString()].beeps
               let blu_sum = {
-                port: this.blu_receivers[br_index].port,
-                channel: job.radio_channel,
+                port: current_port,
+                channel: radio_channel,
                 // blu_beeps: job.data.length == null ? 0 : job.data.length,
                 blu_beeps: blu_beep_sum,
 
@@ -127,20 +133,16 @@ class BluStation {
 
 
           } catch (e) {
-            console.error(`base station get detections error on Port ${this.blu_receivers[br_index].port}`, e)
-            let bad_radio = this.blu_receivers[br_index].blu_radios.find(radio => radio.radio == job.radio_channel)
-            bad_radio.beeps = await this.blu_receivers[br_index].stopDetections(bad_radio)
-            // bad_radio.beeps = await this.blu_receivers[br_index].getDetections(bad_radio.radio)
-
+            console.error(`base station get detections error on Port ${blu_receiver.port}`, e)
           }
           break
         case BluReceiverTask.DFU:
           // dfu download completed and then triggers reboot
-          console.log(`BluReceiverTask.DFU ${this.blu_receivers[br_index].channel},  ${JSON.stringify(job)}`)
+          console.log(`BluReceiverTask.DFU ${radio_channel},  ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.REBOOT:
           console.log(`BluReceiverTask.REBOOT ${JSON.stringify(job)}`)
-          console.log('Blu Receiver is rebooting!', job.radio_channel)
+          console.log('Blu Receiver is rebooting!', radio_channel)
           break
         case BluReceiverTask.LEDS:
           console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
@@ -156,75 +158,53 @@ class BluStation {
           console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.STATS:
-          try {
 
-            let port_key = this.blu_receivers[br_index].port.toString()
-            let channel_key = job.radio_channel.toString()
+          let port_key = current_port.toString()
+          let channel_key = radio_channel.toString()
 
-            this.data_manager.handleBluDroppedDetections(
-              {
-                port: port_key,
-                radio_channel: channel_key,
-                dropped_detections: job.data.det_dropped,
-              })
+          this.data_manager.handleBluDroppedDetections(
+            {
+              port: port_key,
+              radio_channel: channel_key,
+              dropped_detections: job.data.det_dropped,
+            })
 
-            let blu_dropped = this.data_manager.stats.blu_stats.blu_ports[port_key].channels[channel_key].blu_dropped
-            let blu_stats = {
-              port: this.blu_receivers[br_index].port,
-              channel: job.radio_channel,
-              blu_dropped: blu_dropped,
-              msg_type: "blu_dropped",
-            }
-            console.log(`BluReceiverTask.STATS  Port ${this.blu_receivers[br_index].port} radio ${job.radio_channel} has ${job.data.det_dropped} detections dropped`)
-
-            this.broadcast(JSON.stringify(blu_stats))
-          } catch (e) {
-            console.log('base station stats error:', 'receiver', this.blu_receivers[br_index].port, 'radio', job.radio_channel, e)
-            let bad_radio = this.blu_receivers[br_index].blu_radios.find(radio => radio.radio == job.radio_channel)
-            bad_radio.dropped = await this.blu_receivers[br_index].stopStats(bad_radio)
-            // bad_radio.dropped = await this.blu_receivers[br_index].getBluStats(bad_radio.radio)
-
+          let blu_dropped = this.data_manager.stats.blu_stats.blu_ports[port_key].channels[channel_key].blu_dropped
+          let blu_stats = {
+            port: blu_receiver.port,
+            channel: job.radio_channel,
+            blu_dropped: blu_dropped,
+            msg_type: "blu_dropped",
           }
+          console.log(`BluReceiverTask.STATS  Port ${blu_receiver.port} radio ${job.radio_channel} has ${blu_stats.blu_dropped} detections dropped`)
+
+          this.broadcast(JSON.stringify(blu_stats))
+
           break
         default:
           break
       }
     })
 
-    // this.stopBluRadios(this.blu_receivers[br_index].path)
-    // await this.blu_receivers[br_index].hardReset()
-    // await new Promise(r => setTimeout(r, 10000));
+    blu_receiver.startUpFlashLogo()
+    // await this.sendBluVersion(blu_receiver, 10000)
 
-    await this.blu_receivers[br_index].startUpFlashLogo()
-    // await this.sendBluVersion(this.blu_receivers[br_index], 10000)
-    // console.log('blu_fw', this.getBluFirmware())
-
-    // const radios_fw = Promise.all(this.blu_receivers[br_index].forEach((radio) => {
-    //   console.log('blu_fw', this.blu_fw_checkin)
-
-    //   updateBluFirmware(radio, this.blu_fw_checkin)
-    // })).then((values) => {
-    //   console.log('radios started values', values)
-    //   return values
-    // }).catch((e) => {
-    //   console.error('radios could not start properly', e)
-    // })
-
-    const radios_start = await Promise.all(this.blu_receivers[br_index].blu_radios
+    const radios_start = await Promise.all(blu_receiver.blu_radios
       .map(async (radio) => {
-        let radio_channel = radio.radio
-        let poll_interval = radio.poll_interval
+        const { radio: radio_channel, poll_interval } = radio
+        // let radio_channel = radio.radio
+        // let poll_interval = radio.poll_interval
 
-        await this.blu_receivers[br_index].setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-        // await this.blu_receivers[br_index].getBluVersion(radio_channel)
+        await blu_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+
         let blu_add = {
-          port: this.blu_receivers[br_index].port,
+          port: blu_receiver.port,
           msg_type: "add_port",
         }
         this.broadcast(JSON.stringify(blu_add))
 
-        radio.beeps = await this.blu_receivers[br_index].getDetections(radio_channel, poll_interval)
-        radio.dropped = await this.blu_receivers[br_index].getBluStats(radio_channel, poll_interval)
+        radio.beeps = await blu_receiver.getDetections(radio_channel, poll_interval)
+        radio.dropped = await blu_receiver.getBluStats(radio_channel, poll_interval)
 
       })).then((values) => {
         console.log('radios started values', values)
@@ -233,11 +213,10 @@ class BluStation {
         console.error('radios could not start properly', e)
       })
 
-
-    this.blu_receivers[br_index].on('close', async () => {
+    blu_receiver.on('close', async () => {
       await this.stopBluRadios(receiver.path)
-      await this.destroy_receiver(this.blu_receivers[br_index])
-      // await this.destroy_station()
+      await this.destroy_receiver(blu_receiver)
+      await this.destroy_station()
     })
   }
 
@@ -246,14 +225,13 @@ class BluStation {
    */
   async stopBluRadios(path) {
     if (path !== undefined) {
-      let br_index = this.blu_receivers.findIndex(receiver => receiver.path === path || receiver.path == path.substring(17))
+      const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
 
-      const exit_promises = this.blu_receivers[br_index].blu_radios
+      const exit_promises = blu_receiver.blu_radios
         .map(async (radio) => {
-          await this.blu_receivers[br_index].setBluConfig(radio.radio, { scan: 0, rx_blink: 0 })
-          radio.beeps = await this.blu_receivers[br_index].stopDetections(radio)
-          radio.dropped = await this.blu_receivers[br_index].stopStats(radio)
-
+          await blu_receiver.setBluConfig(radio.radio, { scan: 0, rx_blink: 0 })
+          radio.beeps = await blu_receiver.stopDetections(radio)
+          radio.dropped = await blu_receiver.stopStats(radio)
         })
 
       try {
@@ -413,18 +391,27 @@ class BluStation {
    */
   async bluRadiosAllOn(cmd) {
     let all_on = this.findBluReceiver(cmd)
+    const { data: { poll_interval: incoming_poll } } = cmd
 
     const radios_on = await Promise.all(all_on.blu_radios.map(async (radio) => {
+      // const { poll_interval, radio: radio_channel, radio_state } = radio
 
+      // if (beeps._destroyed == true) {
+      //   let new_poll_interval = Number(incoming_poll)
+      //   radio.poll_interval = new_poll_interval
+      //   await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+
+      //   beeps = await all_on.getDetections(radio_channel, new_poll_interval)
+      //   dropped = await all_on.getBluStats(radio_channel, new_poll_interval)
+      //   radio_state = 1
       if (radio.beeps._destroyed == true) {
-        radio.poll_interval = Number(cmd.data.poll_interval)
-        let poll_interval = radio.poll_interval
+        radio.poll_interval = Number(incoming_poll)
         let radio_channel = radio.radio
 
         await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
-        radio.beeps = await all_on.getDetections(radio_channel, poll_interval)
-        radio.dropped = await all_on.getBluStats(radio_channel, poll_interval)
+        radio.beeps = await all_on.getDetections(radio_channel, radio.poll_interval)
+        radio.dropped = await all_on.getBluStats(radio_channel, radio.poll_interval)
         radio.radio_state = 1
 
       } else {

@@ -15,6 +15,7 @@ import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
 import revision from '../../revision.js'
+import BluRadioStates from '../../hardware/bluseries-receiver/blu_radio_state.js'
 
 /**
  * manager class for controlling / reading radios
@@ -522,22 +523,26 @@ class BaseStation {
    */
   async startBluStation(path) {
 
+    // const RADIO_STATES = {
+    //   ON: 1,
+    //   OFF: 0,
+    // }
     await this.blu_station.startBluRadios(path.substring(17))
-    let start_receiver = await this.findBluReceiveryByPath(path)
+    const receiver_to_start = this.findBluReceiveryByPath(path)
 
-    await start_receiver.blu_radios.forEach(async (radio) => {
-      let add_port = {
+    receiver_to_start.blu_radios.forEach(async (radio) => {
+      const { poll_interval, radio: radio_channel, } = radio
+      this.broadcast(JSON.stringify({
         msg_type: 'add_port',
-        poll_interval: radio.poll_interval,
-        port: start_receiver.port
-      }
-      this.broadcast(JSON.stringify(add_port))
+        poll_interval: poll_interval,
+        port: receiver_to_start.port
+      }))
 
       await this.toggleBluState({
-        receiver_channel: start_receiver.port,
-        blu_radio_channel: radio.radio,
-        radio_state: 1,
-        poll_interval: radio.poll_interval,
+        receiver_channel: receiver_to_start.port,
+        blu_radio_channel: radio_channel,
+        radio_state: BluRadioStates.ON,
+        poll_interval: poll_interval,
       })
     })
   }
@@ -546,30 +551,29 @@ class BaseStation {
    * 
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
    */
-  async unlinkBluStation(path) {
-    let unlink_receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
+  unlinkBluStation(path) {
+    let receiver_to_unlink = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
     // let unlink_port = unlink_receiver.channel
-    let unlink_port = unlink_receiver.port
+    let unlink_port = receiver_to_unlink.port
     let unlink_obj = {
       msg_type: "unlink_port",
       port: unlink_port,
     }
     this.broadcast(JSON.stringify(unlink_obj))
-    await this.blu_station.stopBluRadios(path.substring(17))
-    unlink_receiver.blu_radios.forEach(async (radio) => {
+    this.blu_station.stopBluRadios(path.substring(17))
+    receiver_to_unlink.blu_radios.forEach(async (radio) => {
+      const { poll_interval, radio: radio_channel, } = radio
 
       await this.toggleBluState({
         receiver_channel: unlink_port,
-        radio_state: 0,
-        blu_radio_channel: radio.radio,
-        poll_interval: radio.poll_interval,
+        radio_state: BluRadioStates.OFF,
+        blu_radio_channel: radio_channel,
+        poll_interval: poll_interval,
       })
     })
     // this.blu_station.stopBluRadios()
-    await this.blu_station.destroy_receiver(unlink_receiver)
-    // await this.blu_station.destroy_station()
-
-    console.log('unlink receiver after destruction', unlink_receiver)
+    this.blu_station.destroy_receiver(receiver_to_unlink)
+    console.log('unlink receiver after destruction', receiver_to_unlink)
   }
 
   /**
@@ -651,8 +655,7 @@ class BaseStation {
  * @returns 
  */
   findBluReceiveryByPath(path) {
-    let receiver = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
-    return receiver
+    return this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
   }
 
   /**
