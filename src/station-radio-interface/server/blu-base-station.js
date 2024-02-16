@@ -67,7 +67,7 @@ class BluStation {
     const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
 
     // Blu Event Emitter
-    blu_receiver.on('complete', (job) => {
+    blu_receiver.on('complete', async (job) => {
       const { task, error, radio_channel, data } = job
       const { port: current_port } = blu_receiver
 
@@ -102,7 +102,7 @@ class BluStation {
 
             // call getBluVersion for radios that detect tags
 
-            job.data.forEach((beep) => {
+            job.data.forEach(async (beep) => {
               const { id, rssi, time, channel: radio_channel, payload: { parsed: { solar, temp, } }, } = beep
               beep.data = { id }
               beep.meta = { data_type: "blu_tag", rssi, }
@@ -129,7 +129,7 @@ class BluStation {
               }
               this.broadcast(JSON.stringify(blu_sum))
             })
-            await this.blu_receivers[br_index].getBluVersion(job.radio_channel)
+            await blu_receiver.getBluVersion(job.radio_channel)
 
 
           } catch (e) {
