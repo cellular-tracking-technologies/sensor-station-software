@@ -375,18 +375,27 @@ class BluStation {
    */
   async bluRadiosAllOn(cmd) {
     let all_on = this.findBluReceiver(cmd)
+    const { data: { poll_interval: incoming_poll } } = cmd
 
     const radios_on = await Promise.all(all_on.blu_radios.map(async (radio) => {
+      // const { poll_interval, radio: radio_channel, radio_state } = radio
 
+      // if (beeps._destroyed == true) {
+      //   let new_poll_interval = Number(incoming_poll)
+      //   radio.poll_interval = new_poll_interval
+      //   await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+
+      //   beeps = await all_on.getDetections(radio_channel, new_poll_interval)
+      //   dropped = await all_on.getBluStats(radio_channel, new_poll_interval)
+      //   radio_state = 1
       if (radio.beeps._destroyed == true) {
-        radio.poll_interval = Number(cmd.data.poll_interval)
-        let poll_interval = radio.poll_interval
+        radio.poll_interval = Number(incoming_poll)
         let radio_channel = radio.radio
 
         await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
-        radio.beeps = await all_on.getDetections(radio_channel, poll_interval)
-        radio.dropped = await all_on.getBluStats(radio_channel, poll_interval)
+        radio.beeps = await all_on.getDetections(radio_channel, radio.poll_interval)
+        radio.dropped = await all_on.getBluStats(radio_channel, radio.poll_interval)
         radio.radio_state = 1
 
       } else {

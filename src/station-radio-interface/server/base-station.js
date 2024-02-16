@@ -570,8 +570,8 @@ class BaseStation {
       })
     })
     // this.blu_station.stopBluRadios()
-    this.blu_station.destroy_receiver(unlink_receiver)
-    console.log('unlink receiver after destruction', unlink_receiver)
+    this.blu_station.destroy_receiver(receiver_to_unlink)
+    console.log('unlink receiver after destruction', receiver_to_unlink)
   }
 
   /**
