@@ -67,7 +67,8 @@ let items = new MenuItem("main", null, [
     ]),
     new MenuItem("Ping", new InternetTask(host), []),
     new MenuItem("Hostname", new HostnameTask(), []),
-    new MenuItem("Ip Address", new IpAddressTask(), [])
+    new MenuItem("Ip Address", new IpAddressTask(), []),
+    new MenuItem("Wifi Strength", new WifiStrength(), [])
   ]),
   new MenuItem("Server", new ServerConnectRequest(host), []),
   new MenuItem("Power", new SensorVoltageTask(host), []),
