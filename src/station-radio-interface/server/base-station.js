@@ -467,6 +467,45 @@ class BaseStation {
         }, 5000)
       }
     })
+
+    process.on('exit', async () => {
+      console.log('sigint, manually closing down program')
+      const promises = this.blu_station.blu_receivers.map(async (receiver) => {
+        console.log('receiver path', receiver.path)
+        if (receiver.path) {
+          receiver.blu_radios.forEach(async (radio) => {
+
+            await this.toggleBluState({
+              receiver_channel: receiver.port,
+              blu_radio_channel: radio.radio,
+              poll_interval: radio.poll_interval,
+              radio_state: 0,
+            })
+
+          })
+          // await this.blu_station.stopBluRadios(receiver.path)
+          await this.blu_station.destroy_receiver(receiver)
+        }
+      })
+      try {
+        const blu_radios_stop = await Promise.all(promises)
+        // await this.blu_station.destroy_station()
+      } catch (e) {
+        console.error('no port to closed in destroyed blu receiver', e)
+        try {
+          blu_radios_stop(promises)
+          process.exit(0)
+        } catch (e) {
+          console.error('what the hell is happening', e)
+          // this.blu_station.destroy_station()
+          process.exit(0)
+        }
+      } finally {
+        setTimeout(() => {
+          process.exit(0)
+        }, 5000)
+      }
+    })
   }
 
   /**
