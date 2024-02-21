@@ -31,42 +31,30 @@ class WifiStrength {
 
     }).then((values) => {
       let rows = [this.header]
-      let bars
+      let bars, bar0, bar1, bar2
       if (values > 75) {
 
-        let bar0 = String.fromCharCode(0xff)
+        bar0 = String.fromCharCode(0xff)
         rows.push(bar0)
-        let bar1 = String.fromCharCode(0xff, 0xff)
+        bar1 = String.fromCharCode(0xff, 0xff)
         rows.push(bar1)
-        let bar2 = String.fromCharCode(0xff, 0xff, 0xff)
+        bar2 = String.fromCharCode(0xff, 0xff, 0xff)
         rows.push(bar2)
 
-        console.log('high strength', bars)
+        console.log('high strength', rows)
       } else if (values <= 75 && values > 50) {
-        // bars = 0x1c
-        console.log('med strength', bars)
+        bar0 = String.fromCharCode(0xff)
+        rows.push(bar0)
+        bar1 = String.fromCharCode(0xff, 0xff)
+        console.log('med strength', rows)
       } else if (values <= 50 && values > 25) {
-        bars = 0x18
-        console.log('low strength', bars)
+        bar0 = String.fromCharCode(0xff)
+        rows.push(bar0)
+        console.log('low strength', rows)
       } else if (values <= 25 && values > 0) {
         bars = 0x10
-        console.log('no strength', bars)
-      } else {
-        bars = 0
-        console.log('no wifi', bars)
+        console.log('no strength', rows)
       }
-
-      console.log('bars', bars)
-      // rows.push(values)
-      // rows.push(bars.toString())
-      // let str = bars
-      //   .map((hex) => {
-      //     return String.fromCharCode(hex);
-      //   })
-      //   .join("");
-      // rows.push(str)
-
-      // rows.push(bars)
 
       console.log('rows', rows)
       return rows
