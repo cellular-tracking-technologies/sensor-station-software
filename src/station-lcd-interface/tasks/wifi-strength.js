@@ -10,6 +10,10 @@ class WifiStrength {
     return [this.header]
   }
 
+
+
+
+
   results() {
     return new Promise((resolve, reject) => {
 
