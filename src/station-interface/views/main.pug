@@ -94,8 +94,12 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
           tr
             th Wifi Signal Strength
             td
-              span(id="wifi-signal-strength")
-              
+              div(id="wifi-signal-strength" style="display:inline-flex; align-items:flex-end; justify-content:flex-end; width:auto; height:35px; padding:4px")
+                span(class="bar-1" style="height:25%; width:auto; padding:4px; background-color:white")   
+                span(class="bar-2" style="height:50%; width:auto; padding:4px; background-color:white")
+                span(class="bar-3" style="height:75%; width:auto; padding:4px; background-color:white")
+                span(class="bar-4" style="height:100%;width:auto; padding:4px; background-color:white")
+           
         h2 System Versioning Details
         table(class="table table-sm table-bordered table-dark", id="meta")
           tr

@@ -1082,6 +1082,32 @@ const render_tag_hist = function () {
   }, 10000);
 };
 
+const render_wifi_hist = function (percent) {
+  if (percent > 75) {
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: green;')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: green;')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: green;')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: green;')
+
+  } else if (percent <= 75 && percent > 50) {
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: green;')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: green;')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: green;')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: white;')
+  } else if (percent <= 50 && percent > 25) {
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: yellow;')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: yellow;')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: white;')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: white;')
+  } else if (percent <= 25 && percent > 0) {
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: white;')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: white;')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: white;')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: white;')
+
+  }
+}
+
 let RAW_LOG;
 const updateStats = function () {
   socket.send(JSON.stringify({
@@ -1160,7 +1186,8 @@ const initialize_websocket = function () {
         document.querySelector('#hardware').textContent = about.hardware;
         document.querySelector('#revision').textContent = about.revision;
         document.querySelector('#bootcount').textContent = about.bootcount;
-        document.querySelector('#wifi-signal-strength').textContent = `${about.wifi_signal}%`
+        // document.querySelector('#wifi-signal-strength').textContent = `${about.wifi_signal}%`
+        render_wifi_hist(about.wifi_signal)
         let total = Math.round(about.total_mem / 1024 / 1024.0);
         let free = Math.round(about.free_mem / 1024 / 1024.0);
         let used = total - free;
