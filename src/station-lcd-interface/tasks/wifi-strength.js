@@ -1,30 +1,42 @@
-import os from 'os'
-import command from '../../command.js'
-command(`sudo raspi-config nonint do_wifi_ssid_passphrase ${data.ssid} ${data.psk} 0 1`)
+import { exec } from 'child_process'
 
-
-class UsbWifiUploadTask {
+class WifiStrength {
   constructor() {
-    this.header = "WiFi Signal"
+    this.header = "WiFi Signal Strength"
+    this.percent
+    this.cmd = 'iwconfig | grep "Link Quality"'
   }
   loading() {
     return [this.header]
   }
+
   results() {
     return new Promise((resolve, reject) => {
-      const regex = /(wlan\d+|eth\d+)/   // Match all 'eth' or 'wlan' interfaces
-      var ifaces = os.networkInterfaces()
 
-      let rows = [this.header]
-      for (let [key, value] of Object.entries(ifaces)) {
-        if (key.match(regex)) {
-          const result = value.filter(element => (element.family == 'IPv4') && (element.internal == false))
-          result.forEach(element => {
-            rows.push(`${key} ${element.address}`)
-          })
+      let cmd = this.cmd
+      exec(cmd, (error, stdout, stderr) => {
+        if (error) {
+          console.log(`command error ${cmd}; ${stderr}`)
+          reject(error)
+          return
         }
-      }
-      resolve(rows)
+        const text = stdout
+        const key = text.match(/(Link Quality)/g)
+        const fraction = text.match(/(\d\d[\/]\d\d)/g)
+        const num = Number(fraction[0].split("/")[0])
+        const den = Number(fraction[0].split('/')[1])
+        let percent = `${Math.floor((num / den) * 100)}%`
+        resolve(percent)
+      })
+
+    }).then((values, resolve, reject) => {
+      let rows = [this.header]
+      rows.push(values)
+      return rows
+    }).catch((e) => {
+      console.error(e)
     })
   }
 }
+
+export { WifiStrength }
