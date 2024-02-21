@@ -34,11 +34,11 @@ class WifiStrength {
       let bars, bar0, bar1, bar2
       if (values > 75) {
 
-        bar0 = String.fromCharCode(0xff)
+        bar0 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff)
         rows.push(bar0)
-        bar1 = String.fromCharCode(0xff, 0xff)
+        bar1 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
         rows.push(bar1)
-        bar2 = String.fromCharCode(0xff, 0xff, 0xff)
+        bar2 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
         rows.push(bar2)
 
         console.log('high strength', rows)
