@@ -67,10 +67,16 @@ class BluStation {
     const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
 
     // Blu Event Emitter
-    blu_receiver.on('complete', (job) => {
+    blu_receiver.on('complete', async (job) => {
       const { task, error, radio_channel, data } = job
       if (error) {
-        console.log('Job Error Detected', error)
+        console.log('Job Error Detected', error, task)
+        let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
+        // console.log('stop blu radio', stop_radio)
+        // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
+        stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
+        stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
+
         return
       }
 
@@ -96,11 +102,13 @@ class BluStation {
             // this.blu_updater.checkFirmware(job.data.version)
           } catch (e) {
             console.error('basestation getBluVersion error:', e)
-            blu_receiver.getBluVersion(job.radio_channel)
           }
           break
         case BluReceiverTask.DETECTIONS:
           try {
+
+            blu_receiver.getBluVersion(job.radio_channel)
+
             console.log(`BluReceiverTask.DETECT Port ${blu_receiver.port} radio ${job.radio_channel} has ${job.data.length} detections`)
             job.data.forEach((beep) => {
               beep.data = { id: beep.id }
@@ -127,11 +135,12 @@ class BluStation {
                 msg_type: "blu_stats",
               }
               this.broadcast(JSON.stringify(blu_sum))
-
             })
 
           } catch (e) {
             console.error(`base station get detections error on Port ${blu_receiver.port}`, e)
+            // let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == job.radio_channel)
+            // stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
           }
           break
         case BluReceiverTask.DFU:
@@ -150,7 +159,7 @@ class BluStation {
           break
         case BluReceiverTask.STATS:
           try {
-
+            // console.log('stats job', job)
             let port_key = blu_receiver.port.toString()
             let channel_key = job.radio_channel.toString()
 
@@ -158,7 +167,7 @@ class BluStation {
               {
                 port: port_key,
                 radio_channel: channel_key,
-                dropped_detections: job.data.det_dropped,
+                dropped_detections: await job.data.det_dropped,
               })
 
             let blu_dropped = this.data_manager.stats.blu_stats.blu_ports[port_key].channels[channel_key].blu_dropped
@@ -169,11 +178,18 @@ class BluStation {
               msg_type: "blu_dropped",
             }
             console.log(`BluReceiverTask.STATS  Port ${blu_receiver.port} radio ${job.radio_channel} has ${blu_stats.blu_dropped} detections dropped`)
-
             this.broadcast(JSON.stringify(blu_stats))
+            // if (error == 'timeout') {
+            //   let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == job.radio_channel)
+            //   console.log('stop blu stats', stop_radio)
+            //   stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
+            // }
           } catch (e) {
             console.log('base station stats error:', 'receiver', blu_receiver.port, 'radio', job.radio_channel, e)
           }
+
+
+
           break
         default:
           break
@@ -181,7 +197,7 @@ class BluStation {
     })
 
     blu_receiver.startUpFlashLogo()
-    await this.sendBluVersion(blu_receiver, 10000)
+    // await this.sendBluVersion(blu_receiver, 10000)
     // console.log('blu_fw', this.getBluFirmware())
 
     // const radios_fw = Promise.all(blu_receiver.forEach((radio) => {

@@ -456,7 +456,7 @@ class BaseStation {
         } catch (e) {
           console.error('what the hell is happening', e)
           this.blu_station.destroy_station()
-          process.exit(0)
+          // process.exit(0)
         }
       } finally {
         setTimeout(() => {
