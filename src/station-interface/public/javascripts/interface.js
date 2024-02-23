@@ -1084,27 +1084,28 @@ const render_tag_hist = function () {
 
 const render_wifi_hist = function (percent) {
   if (percent > 75) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: green;')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: green;')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: green;')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: green;')
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: green; margin-left:5px')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: green; margin-left:5px')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: green; margin-left:5px')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: green; margin-left:5px')
 
   } else if (percent <= 75 && percent > 50) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: green;')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: green;')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: green;')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: white;')
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: green; margin-left:5px')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: green; margin-left:5px')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: green; margin-left:5px')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: none;  margin-left:5px')
   } else if (percent <= 50 && percent > 25) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: yellow;')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: yellow;')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: white;')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: white;')
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: yellow; margin-left:5px')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: yellow; margin-left:5px')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: none;   margin-left:5px')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: none;   margin-left:5px')
   } else if (percent <= 25 && percent > 0) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto; padding:4px; background-color: white;')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto; padding:4px; background-color: white;')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto; padding:4px; background-color: white;')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px;background-color: white;')
-
+    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: red;  margin-left:5px')
+    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: none; margin-left:5px')
+    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: none; margin-left:5px')
+    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: none; margin-left:5px')
+  } else {
+    document.querySelector(`.no-wifi`).textContent = 'No WiFi Connection'
   }
 }
 
