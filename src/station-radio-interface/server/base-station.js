@@ -67,33 +67,33 @@ class BaseStation {
     this.data_manager.log(msgs)
   }
 
-  async getWifiSignal() {
+  // async getWifiSignal() {
 
-    return new Promise((resolve, reject) => {
+  //   return new Promise((resolve, reject) => {
 
-      exec('iwconfig | grep "Link Quality"', (error, stdout, stderr) => {
-        if (error) {
-          console.log(`command error ${this.cmd}; ${stderr}`)
-          reject(error)
-          return
-        }
-        const text = stdout
-        const key = text.match(/(Link Quality)/g)
-        const fraction = text.match(/(\d\d[\/]\d\d)/g)
-        const num = Number(fraction[0].split("/")[0])
-        const den = Number(fraction[0].split('/')[1])
-        const percent = Math.floor((num / den) * 100)
-        console.log('percent', percent)
-        // const percent_string = `${Math.floor((num / den) * 100)}%`
-        resolve(percent)
-      })
+  //     exec('iwconfig | grep "Link Quality"', (error, stdout, stderr) => {
+  //       if (error) {
+  //         console.log(`command error ${this.cmd}; ${stderr}`)
+  //         reject(error)
+  //         return
+  //       }
+  //       const text = stdout
+  //       const key = text.match(/(Link Quality)/g)
+  //       const fraction = text.match(/(\d\d[\/]\d\d)/g)
+  //       const num = Number(fraction[0].split("/")[0])
+  //       const den = Number(fraction[0].split('/')[1])
+  //       const percent = Math.floor((num / den) * 100)
+  //       console.log('percent', percent)
+  //       // const percent_string = `${Math.floor((num / den) * 100)}%`
+  //       resolve(percent)
+  //     })
 
-    }).then((values) => {
-      return values
-    }).catch((e) => {
-      console.error('get wifi signal error', e)
-    })
-  }
+  //   }).then((values) => {
+  //     return values
+  //   }).catch((e) => {
+  //     console.error('get wifi signal error', e)
+  //   })
+  // }
 
 
   /**
