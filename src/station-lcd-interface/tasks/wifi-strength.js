@@ -1,5 +1,6 @@
+import { exec } from 'child_process'
+
 // import { WifiSignal } from '../../hardware/wifi/wifi-signal'
-// import { exec } from 'child_process'
 
 class WifiStrength {
   constructor() {

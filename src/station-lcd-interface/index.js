@@ -43,7 +43,7 @@ const host = 'http://localhost:3000'
 */
 
 let items = new MenuItem("main", null, [
-  new MenuItem("Wifi Strength", new WifiStrength(), []),
+  new MenuItem("WiFi Strength", new WifiStrength(), []),
 
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
