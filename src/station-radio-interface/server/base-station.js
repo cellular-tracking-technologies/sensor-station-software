@@ -16,7 +16,8 @@ import moment from 'moment'
 import chokidar from 'chokidar'
 import revision from '../../revision.js'
 import BluRadioStates from '../../hardware/bluseries-receiver/blu_radio_state.js'
-import { exec } from 'child_process'
+import { WifiSignal } from '../../hardware/wifi/wifi-signal.js'
+// import { exec } from 'child_process'
 
 /**
  * manager class for controlling / reading radios
@@ -55,6 +56,7 @@ class BaseStation {
     this.poll_data
     this.dongle_port
     this.blu_radio_filemap
+    this.wifi = new WifiSignal()
   }
 
   /**
@@ -272,7 +274,7 @@ class BaseStation {
               data.station_id = this.station_id
               data.msg_type = 'about'
               data.begin = this.begin
-              data.wifi_signal = await this.getWifiSignal()
+              data.wifi_signal = await this.wifi.getWifiSignal()
               console.log('about data', data)
               this.broadcast(JSON.stringify(data))
             })
