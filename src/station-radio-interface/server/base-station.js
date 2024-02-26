@@ -1,5 +1,7 @@
 import { RadioReceiver } from './radio-receiver.js'
 import BluStation from './blu-base-station.js'
+import BluLeds from '../../hardware/bluseries-receiver/driver/leds.js'
+
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
@@ -474,7 +476,7 @@ class BaseStation {
               receiver_channel: receiver.port,
               blu_radio_channel: radio.radio,
               poll_interval: radio.poll_interval,
-              radio_state: 0,
+              radio_state: BluLeds.state.off,
             })
 
           })
@@ -513,7 +515,7 @@ class BaseStation {
               receiver_channel: receiver.port,
               blu_radio_channel: radio.radio,
               poll_interval: radio.poll_interval,
-              radio_state: 0,
+              radio_state: BluLeds.state.off,
             })
 
           })
@@ -531,8 +533,8 @@ class BaseStation {
           process.exit(0)
         } catch (e) {
           console.error('what the hell is happening', e)
-          // this.blu_station.destroy_station()
-          process.exit(0)
+          this.blu_station.destroy_station()
+          // process.exit(0)
         }
       } finally {
         setTimeout(() => {
@@ -562,6 +564,9 @@ class BaseStation {
         // await new Promise(r => setTimeout(r, 10000));
         await this.startBluStation(path)
 
+        this.stationLog('starting blu receiver')
+
+
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
       }
@@ -577,6 +582,8 @@ class BaseStation {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
         await this.unlinkBluStation(path)
+        this.stationLog('removed blu receiver')
+
       } else if (!path.includes('-port0')) {
         await this.unlinkDongleRadio(path)
       }
@@ -610,12 +617,13 @@ class BaseStation {
         poll_interval: poll_interval,
         port: receiver_to_start.port
       }))
+      this.stationLog('starting blu radios')
 
       await this.toggleBluState({
-        receiver_channel: receiver_to_start.port,
-        blu_radio_channel: radio_channel,
-        radio_state: BluRadioStates.ON,
-        poll_interval: poll_interval,
+        receiver_channel: start_receiver.port,
+        blu_radio_channel: radio.radio,
+        radio_state: BluLeds.state.on,
+        poll_interval: radio.poll_interval,
       })
     })
   }
@@ -639,9 +647,9 @@ class BaseStation {
 
       await this.toggleBluState({
         receiver_channel: unlink_port,
-        radio_state: BluRadioStates.OFF,
-        blu_radio_channel: radio_channel,
-        poll_interval: poll_interval,
+        radio_state: BluLeds.state.off,
+        blu_radio_channel: radio.radio,
+        poll_interval: radio.poll_interval,
       })
     })
     // this.blu_station.stopBluRadios()
