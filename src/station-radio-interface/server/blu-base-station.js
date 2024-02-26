@@ -196,7 +196,7 @@ class BluStation {
     })
 
     blu_receiver.startUpFlashLogo()
-    await this.sendBluVersion(blu_receiver, 10000)
+    // await this.sendBluVersion(blu_receiver, 10000)
 
     const radios_start = await Promise.all(blu_receiver.blu_radios
       .map(async (radio) => {
