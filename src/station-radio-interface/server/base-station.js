@@ -628,7 +628,7 @@ class BaseStation {
    * 
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
    */
-  unlinkBluStation(path) {
+  async unlinkBluStation(path) {
     let receiver_to_unlink = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
     // let unlink_port = unlink_receiver.channel
     let unlink_port = receiver_to_unlink.port

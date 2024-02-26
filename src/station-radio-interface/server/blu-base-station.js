@@ -71,7 +71,7 @@ class BluStation {
       const { task, error, radio_channel, data } = job
       // const { port: current_port } = blu_receiver
 
-      if (error) {
+      if (error && blu_receiver.port) {
         console.log('Job Error Detected on Port', blu_receiver.port, error, task)
         let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
         // console.log('stop blu radio', stop_radio)
@@ -80,7 +80,7 @@ class BluStation {
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
         // await this.destroy_receiver(blu_receiver)
 
-        await blu_receiver.hard_reset()
+        // await blu_receiver.hard_reset()
 
         return
       }
@@ -153,11 +153,7 @@ class BluStation {
         case BluReceiverTask.LEDS:
           console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
           if (job.error == 'timeout') {
-            this.blu_receivers[br_index].setBluConfig(job.radio_channel, { scan: 0, rx_blink: 0 })
-            // this.blu_receivers[br_index].setBluConfig(job.radio_channel, { scan: 1, rx_blink: 1 })
-
-            // this.stopBluRadios(this.blu_receivers[br_index].path)
-            // this.startBluRadios(this.blu_receivers[br_index].path)
+            // blu_receiver.setBluConfig(job.radio_channel, { scan: 0, rx_blink: 0 })
           }
           break
         case BluReceiverTask.CONFIG:
