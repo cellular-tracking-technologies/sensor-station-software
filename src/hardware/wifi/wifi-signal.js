@@ -32,4 +32,4 @@ class WifiSignal {
     })
   }
 }
-export { WifiSignal }
+export default WifiSignal

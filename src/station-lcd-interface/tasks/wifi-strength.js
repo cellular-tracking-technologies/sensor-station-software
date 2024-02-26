@@ -1,12 +1,14 @@
+// import LCD from '../lcdi2c'
+import WifiSignal from '../../hardware/wifi/wifi-signal'
 import { exec } from 'child_process'
 
-// import { WifiSignal } from '../../hardware/wifi/wifi-signal'
 
 class WifiStrength {
   constructor() {
     this.header = "WiFi Signal Strength"
     this.cmd = 'iwconfig | grep "Link Quality"'
-    // this.wifi = new WifiSignal()
+    // this.lcd = new LCD()
+    this.wifi = new WifiSignal()
   }
   loading() {
     return [this.header]

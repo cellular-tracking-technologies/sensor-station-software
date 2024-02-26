@@ -216,7 +216,7 @@ class BluStation {
     blu_receiver.on('close', async () => {
       await this.stopBluRadios(receiver.path)
       await this.destroy_receiver(blu_receiver)
-      await this.destroy_station()
+      // await this.destroy_station()
     })
   }
 

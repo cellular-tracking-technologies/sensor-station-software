@@ -16,7 +16,7 @@ import moment from 'moment'
 import chokidar from 'chokidar'
 import revision from '../../revision.js'
 import BluRadioStates from '../../hardware/bluseries-receiver/blu_radio_state.js'
-import { WifiSignal } from '../../hardware/wifi/wifi-signal.js'
+import WifiSignal from '../../hardware/wifi/wifi-signal.js'
 // import { exec } from 'child_process'
 
 /**
