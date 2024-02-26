@@ -69,7 +69,7 @@ class BluStation {
     // Blu Event Emitter
     blu_receiver.on('complete', async (job) => {
       const { task, error, radio_channel, data } = job
-      const { port: current_port } = blu_receiver
+      // const { port: current_port } = blu_receiver
 
       if (error) {
         console.log('Job Error Detected', error, task)
@@ -84,12 +84,12 @@ class BluStation {
 
       switch (task) {
         case BluReceiverTask.VERSION:
-          console.log(`BluReceiverTask.VERSION Port ${current_port} ${JSON.stringify(job)}`)
+          console.log(`BluReceiverTask.VERSION Port ${blu_receiver.port} ${JSON.stringify(job)}`)
 
           this.blu_fw = {
             msg_type: 'blu-firmware',
             firmware: {
-              [current_port]: {
+              [blu_receiver.port]: {
                 channels: {
                   [radio_channel]: data.version,
                 }
@@ -105,6 +105,8 @@ class BluStation {
           try {
             console.log(`BluReceiverTask.DETECT Port ${blu_receiver.port} radio ${job.radio_channel} has ${job.data.length} detections`)
             job.data.forEach((beep) => {
+              const { id, rssi, time, channel: radio_channel, payload: { parsed: { solar, temp, } }, } = beep
+
               beep.data = { id: beep.id }
               beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
               beep.msg_type = "blu"
@@ -114,14 +116,14 @@ class BluStation {
                 radio.radio == radio_channel
               )
               beep.poll_interval = radio.poll_interval
-              beep.port = current_port
+              beep.port = blu_receiver.port
               beep.vcc = solar
               beep.temp = temp
               this.broadcast(JSON.stringify(beep))
               this.data_manager.handleBluBeep(beep)
               let blu_beep_sum = this.data_manager.stats.blu_stats.blu_ports[beep.port.toString()].channels[beep.channel.toString()].beeps
               let blu_sum = {
-                port: current_port,
+                port: blu_receiver.port,
                 channel: radio_channel,
                 // blu_beeps: job.data.length == null ? 0 : job.data.length,
                 blu_beeps: blu_beep_sum,
@@ -182,7 +184,7 @@ class BluStation {
 
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {
-            console.log('base station stats error:', 'receiver', blu_receiver.port, 'radio', job.radio_channel, e)
+            console.log('blu station stats error:', 'receiver', blu_receiver.port, 'radio', job.radio_channel, e)
           }
           break
         default:

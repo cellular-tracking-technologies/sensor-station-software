@@ -620,7 +620,7 @@ class BaseStation {
       this.stationLog('starting blu radios')
 
       await this.toggleBluState({
-        receiver_channel: start_receiver.port,
+        receiver_channel: receiver_to_start.port,
         blu_radio_channel: radio.radio,
         radio_state: BluLeds.state.on,
         poll_interval: radio.poll_interval,
