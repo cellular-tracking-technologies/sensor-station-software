@@ -486,7 +486,6 @@ class BaseStation {
       })
       try {
         const blu_radios_stop = await Promise.all(promises)
-        // await this.blu_station.destroy_station()
       } catch (e) {
         console.error('no port to closed in destroyed blu receiver', e)
         try {
@@ -494,7 +493,6 @@ class BaseStation {
           process.exit(0)
         } catch (e) {
           console.error('what the hell is happening', e)
-          // this.blu_station.destroy_station()
           process.exit(0)
         }
       } finally {
@@ -525,7 +523,6 @@ class BaseStation {
       })
       try {
         const blu_radios_stop = await Promise.all(promises)
-        // await this.blu_station.destroy_station()
       } catch (e) {
         console.error('no port to closed in destroyed blu receiver', e)
         try {
@@ -533,7 +530,6 @@ class BaseStation {
           process.exit(0)
         } catch (e) {
           console.error('what the hell is happening', e)
-          this.blu_station.destroy_station()
           // process.exit(0)
         }
       } finally {

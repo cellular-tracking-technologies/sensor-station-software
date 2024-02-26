@@ -272,6 +272,7 @@ class BluReceiverIo extends EventEmitter {
     return promise
   }
   clearlistener(eventType) {
+    console.log('clear listener data', this.#data)
     this.#data.usb.removeAllListeners(eventType)
   }
   /**

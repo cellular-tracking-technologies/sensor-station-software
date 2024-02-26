@@ -72,12 +72,15 @@ class BluStation {
       // const { port: current_port } = blu_receiver
 
       if (error) {
-        console.log('Job Error Detected', error, task)
+        console.log('Job Error Detected on Port', blu_receiver.port, error, task)
         let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
         // console.log('stop blu radio', stop_radio)
         // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
         stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
+        // await this.destroy_receiver(blu_receiver)
+
+        await blu_receiver.hard_reset()
 
         return
       }
@@ -220,7 +223,6 @@ class BluStation {
     blu_receiver.on('close', async () => {
       await this.stopBluRadios(receiver.path)
       await this.destroy_receiver(blu_receiver)
-      // await this.destroy_station()
     })
   }
 
@@ -287,10 +289,10 @@ class BluStation {
    */
   async destroy_receiver(receiver) {
     await this.stopBluRadios(receiver.path)
-    // delete receiver.path
-    // receiver.destroyed_port = receiver.port
-    // delete receiver.blu_radios
-    // delete receiver.port
+    delete receiver.path
+    receiver.destroyed_port = receiver.port
+    delete receiver.blu_radios
+    delete receiver.port
   }
 
 
