@@ -340,7 +340,7 @@ let LCD = class LCD {
 
             console.log('create custom character byte', data[i])
             this.write(data[i], this.displayPorts.CHR);
-            console.log('create custom char results', this.SETDDRAMADDR, this.displayPorts.CMD)
+            // console.log('create custom char results', this.SETDDRAMADDR, this.displayPorts.CMD)
         }
         return this.write(this.SETDDRAMADDR, this.displayPorts.CMD);
         // return this.write(0xC0, this.displayPorts.CMD);
