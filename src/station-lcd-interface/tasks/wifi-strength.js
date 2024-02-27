@@ -1,12 +1,16 @@
-// import LCD from '../lcdi2c'
-// import WifiSignal from '../../hardware/wifi/wifi-signal'
+import LCD from '/lib/ctt/sensor-station-software/src/station-lcd-interface/lcdi2c.js'
+import WifiSignal from '../../hardware/wifi/wifi-signal.js'
+import display from '/lib/ctt/sensor-station-software/src/station-lcd-interface/display-driver.js'
 import { exec } from 'child_process'
+import { Buffer } from 'node:buffer'
 
 
-class WifiStrength {
+class WifiStrength extends WifiSignal {
   constructor() {
+    super()
     this.header = "WiFi Signal Strength"
     this.cmd = 'iwconfig | grep "Link Quality"'
+    this.display = display
     // this.lcd = new LCD()
     // this.wifi = new WifiSignal()
   }
@@ -15,47 +19,35 @@ class WifiStrength {
   }
 
   results() {
-    return new Promise((resolve, reject) => {
-      // const percent = await this.wifi.getWifiSignal()
-      // const percent = 75
-      // console.log('wifi strength percent', percent)
-      exec(this.cmd, (error, stdout, stderr) => {
-        if (error) {
-          console.log(`command error ${this.cmd}; ${stderr}`)
-          reject(error)
-          return
-        }
-        const text = stdout
-        const key = text.match(/(Link Quality)/g)
-        const fraction = text.match(/(\d\d[\/]\d\d)/g)
-        const num = Number(fraction[0].split("/")[0])
-        const den = Number(fraction[0].split('/')[1])
-        const percent = Math.floor((num / den) * 100)
-        console.log('percent', percent)
-        //   // const percent_string = `${Math.floor((num / den) * 100)}%`
-        resolve(percent)
-      })
+    return new Promise(async (resolve, reject) => {
+      const percent = await this.getWifiSignal()
+      resolve(percent)
 
     }).then((values) => {
       console.log('wifi strength values', values)
       let rows = [this.header]
       let bar0, bar1, bar2
-      if (values > 75) {
+      if (values > 50) {
 
-        bar0 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff)
-        rows.push(bar0)
-        bar1 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
-        rows.push(bar1)
-        bar2 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
-        rows.push(bar2)
+        // bar0 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff)
+        bar0 = Buffer.from([0x1f, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1f], 'hex')
+        let arrByte = Uint8Array.from(bar0)
+
+        this.display.lcd.createChar(0, arrByte)
+        this.display.lcd.setCursor(1, 0)
+        this.display.lcd.write(0)
+        // console.log('custom character', custom_char)
+        // console.log('bar0 byte array', String.fromCharCode(custom_char))
+        // rows.push(custom_char)
 
         console.log('high strength', rows)
       } else if (values <= 75 && values > 50) {
-        bar0 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff)
-        rows.push(bar0)
-        bar1 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
-        rows.push(bar1)
-        bar1 = String.fromCharCode(0xff, 0xff)
+        bar0 = Buffer.from([0x1f, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1f], 'hex')
+        console.log('bar0 data', bar0.toString())
+        let arrByte = Uint8Array.from(bar0)
+        console.log('bar0 byte array', String.fromCharCode(arrByte))
+        rows.push('\u0001')
+
         console.log('med strength', rows)
       } else if (values <= 50 && values > 25) {
         bar0 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff)
