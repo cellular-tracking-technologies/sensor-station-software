@@ -1,59 +1,72 @@
-// import LCD from '/lib/ctt/sensor-station-software/src/station-lcd-interface/lcdi2c.js'
 import WifiSignal from '../../hardware/wifi/wifi-signal.js'
 import display from '/lib/ctt/sensor-station-software/src/station-lcd-interface/display-driver.js'
-import { exec } from 'child_process'
 import { Buffer } from 'node:buffer'
-
+import fetch from 'node-fetch'
+import url from 'url'
 
 class WifiStrength extends WifiSignal {
-  constructor() {
+  constructor(base_url, refresh = 5000) {
     super()
+    console.log('base url', base_url)
+    this.url = url.resolve(base_url, 'internet/wifi-strength')
     this.header = "WiFi:"
-    this.cmd = 'iwconfig | grep "Link Quality"'
+    this.autoRefresh = refresh
+    // this.cmd = 'iwconfig | grep "Link Quality"'
     this.display = display
-    // this.lcd = new LCD()
-    // this.wifi = new WifiSignal()
+
   }
   loading() {
     return [this.header]
   }
 
   results() {
+    let rows = [this.header]
+
     return new Promise(async (resolve, reject) => {
-      const percent = await this.getWifiSignal()
-      resolve(percent)
+      fetch(this.url)
+        .then(data => {
+          console.log('wifi strength fetch data', data)
+          return data.json()
+        })
+        .then(async res => {
+          console.log('wifi strength res', res.wifi_strength)
+          let bars, chars
+          let percent = res.wifi_strength
+          rows.push(percent)
+          // resolve(rows)
+          // resolve([this.header, percent])
 
-    }).then(async (values) => {
-      console.log('wifi strength values', values)
-      let rows = [this.header]
-      let bars
-      if (values > 75) {
+          // if (percent > 75) {
 
-        // bar0 = String.fromCharCode(0xff, 0xff, 0xff, 0xff, 0xff)
-        bars = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f], 'hex')
-        await this.createChar(bars)
-      } else if (values <= 75 && values > 50) {
-        bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x06, 0x0e, 0x1e], 'hex')
-        await this.createChar(bars)
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f], 'hex')
+          //   chars = await this.createChar(bars)
+          //   resolve([this.header, chars])
 
-        console.log('med strength', rows)
-      } else if (values <= 50 && values > 25) {
-        bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x04, 0x0c, 0x1c], 'hex')
-        await this.createChar(bars)
+          // } else if (percent <= 75 && percent > 50) {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x06, 0x0e, 0x1e], 'hex')
+          //   chars = await this.createChar(bars)
+          //   resolve([this.header, chars])
 
-        // rows.push(bar0)
-        console.log('low strength', rows)
-      } else if (values <= 25 && values > 0) {
-        bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x18], 'hex')
-        await this.createChar(bars)
-        console.log('no strength', rows)
-      } else {
-        bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
-        await this.createChar(bars)
-      }
+          //   console.log('med strength', rows)
+          // } else if (percent <= 50 && percent > 25) {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x04, 0x0c, 0x1c], 'hex')
+          //   resolve([this.header, await this.createChar(bars)])
 
-      console.log('rows', rows)
-      // return rows
+          //   console.log('low strength', rows)
+          // } else if (percent <= 25 && percent > 0) {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x18], 'hex')
+          //   resolve([this.header, await this.createChar(bars)])
+          //   console.log('no strength', rows)
+          // } else {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
+          //   resolve([this.header, await this.createChar(bars)])
+          // }
+        })
+        .catch(error => {
+          resolve([this.header, `error`])
+        })
+      resolve(rows)
+
     }).catch((e) => {
       console.error(e)
     })

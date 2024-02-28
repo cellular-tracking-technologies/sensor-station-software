@@ -21,6 +21,7 @@ import { InternetTask } from "./tasks/internet-task.js"
 import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
 import { WifiStrength } from './tasks/wifi-strength.js'
+import { StandBy } from './standby.js'
 import ButtonMap from './button-map.js'
 
 // Require Statements
@@ -43,7 +44,7 @@ const host = 'http://localhost:3000'
 */
 
 let items = new MenuItem("main", null, [
-  new MenuItem("WiFi Strength", new WifiStrength(), []),
+  new MenuItem("WiFi Strength", new WifiStrength(host), []),
 
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
