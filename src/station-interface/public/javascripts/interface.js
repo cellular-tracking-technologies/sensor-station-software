@@ -765,7 +765,6 @@ const createElement = function (text) {
 };
 
 const handle_stats = function (stats) {
-  console.log('handle stats stats', stats)
   let record;
   let reports = {};
   let received_at, old_received_at;
@@ -1082,31 +1081,43 @@ const render_tag_hist = function () {
   }, 10000);
 };
 
-const render_wifi_hist = function (percent) {
-  if (percent > 75) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: green; margin-left:5px')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: green; margin-left:5px')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: green; margin-left:5px')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: green; margin-left:5px')
+const render_wifi_hist = function () {
 
-  } else if (percent <= 75 && percent > 50) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: green; margin-left:5px')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: green; margin-left:5px')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: green; margin-left:5px')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: none;  margin-left:5px')
-  } else if (percent <= 50 && percent > 25) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: yellow; margin-left:5px')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: yellow; margin-left:5px')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: none;   margin-left:5px')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: none;   margin-left:5px')
-  } else if (percent <= 25 && percent > 0) {
-    document.querySelector(`.bar-1`).setAttribute('style', 'height:25%; width:auto;  padding:4px; background-color: red;  margin-left:5px')
-    document.querySelector(`.bar-2`).setAttribute('style', 'height:50%; width:auto;  padding:4px; background-color: none; margin-left:5px')
-    document.querySelector(`.bar-3`).setAttribute('style', 'height:75%; width:auto;  padding:4px; background-color: none; margin-left:5px')
-    document.querySelector(`.bar-4`).setAttribute('style', 'height:100%; width:auto; padding:4px; background-color: none; margin-left:5px')
-  } else {
-    document.querySelector(`.no-wifi`).textContent = 'No WiFi Connection'
-  }
+  fetch('/internet-wifi-strength')
+    .then(function (res) { return res.json() })
+    .then(function (json) {
+      let percent = json.wifi_strength
+
+      if (percent > 75) {
+        document.querySelector(`.bar-1`).style.backgroundColor = "green"
+        document.querySelector(`.bar-2`).style.backgroundColor = "green"
+        document.querySelector(`.bar-3`).style.backgroundColor = "green"
+        document.querySelector(`.bar-4`).style.backgroundColor = "green"
+
+      } else if (percent <= 75 && percent > 50) {
+        document.querySelector(`.bar-1`).style.backgroundColor = "green"
+        document.querySelector(`.bar-2`).style.backgroundColor = "green"
+        document.querySelector(`.bar-3`).style.backgroundColor = "green"
+        document.querySelector(`.bar-4`).style.backgroundColor = "none"
+      } else if (percent <= 50 && percent > 25) {
+        document.querySelector(`.bar-1`).style.backgroundColor = "yellow"
+        document.querySelector(`.bar-2`).style.backgroundColor = "yellow"
+        document.querySelector(`.bar-3`).style.backgroundColor = "none"
+        document.querySelector(`.bar-4`).style.backgroundColor = "none"
+      } else if (percent <= 25 && percent > 0) {
+        document.querySelector(`.bar-1`).style.backgroundColor = "red"
+        document.querySelector(`.bar-2`).style.backgroundColor = "none"
+        document.querySelector(`.bar-3`).style.backgroundColor = "none"
+        document.querySelector(`.bar-4`).style.backgroundColor = "none"
+      } else {
+        document.querySelector(`.no-wifi`).textContent = 'No WiFi Connection'
+      }
+    })
+    .catch(function (err) {
+      console.error('error rendering wifi strength', err)
+    })
+
+
 }
 
 let RAW_LOG;
@@ -1188,7 +1199,7 @@ const initialize_websocket = function () {
         document.querySelector('#revision').textContent = about.revision;
         document.querySelector('#bootcount').textContent = about.bootcount;
         // document.querySelector('#wifi-signal-strength').textContent = `${about.wifi_signal}%`
-        render_wifi_hist(about.wifi_signal)
+        // render_wifi_hist(about.wifi_signal)
         let total = Math.round(about.total_mem / 1024 / 1024.0);
         let free = Math.round(about.free_mem / 1024 / 1024.0);
         let used = total - free;
@@ -1669,8 +1680,10 @@ const init_sg = () => {
 
     document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
     render_gateway()
+    render_wifi_hist()
     initialize_reboot()
     setInterval(render_gateway, 5000)
+    setInterval(render_wifi_hist, 5000)
     let blu_receiver, blu_radio, component, col, row, div
     let max_row_count = localStorage.getItem('max-row-count')
     if (max_row_count) {

@@ -350,6 +350,21 @@ router.get('/internet-gateway', (req, res) => {
 })
 
 /**
+ * proxy to hardware server to get internet gateway
+ */
+router.get('/internet-wifi-strength', (req, res) => {
+  fetch('http://localhost:3000/internet/wifi-strength')
+    .then(res => res.json())
+    .then((json) => {
+      res.json(json)
+    })
+    .catch((err) => {
+      console.error(err)
+      res.sendStatus(500)
+    })
+})
+
+/**
  * get reboot schedule from crontab via hardware server proxy
  */
 router.get('/reboot-schedule', (req, res) => {
