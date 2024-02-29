@@ -43,8 +43,10 @@ const host = 'http://localhost:3000'
     Note: All menu items must have unique names!
 */
 
+// let stand_by = new MenuItem('stand-by', new StandBy(host), [])
+
 let items = new MenuItem("main", null, [
-  new MenuItem("WiFi Strength", new WifiStrength(host), []),
+  new MenuItem('Wifi Strength', new WifiStrength(host), []),
 
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -79,6 +81,8 @@ let items = new MenuItem("main", null, [
   new MenuItem("Location", new GpsTask(host), []),
 ])
 
+let standby = new MenuItem('Wifi Strength', new WifiStrength(host), [])
+
 
 /*
     Instantiate a menu manager that operates on a list of 
@@ -92,7 +96,13 @@ let items = new MenuItem("main", null, [
 */
 
 let menu = new MenuManager(items)
+let standby_menu = new MenuManager(standby)
+
 menu.init()
+
+setInterval(() => {
+  standby_menu.init()
+}, 10000)
 
 /*
     Configure Pi buttons and mount callbacks for when they are pushed.
