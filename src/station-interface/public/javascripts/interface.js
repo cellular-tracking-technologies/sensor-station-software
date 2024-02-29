@@ -1081,38 +1081,38 @@ const render_tag_hist = function () {
   }, 10000);
 };
 
-const render_wifi_hist = function () {
+const render_wifi = function () {
 
   fetch('/internet-wifi-strength')
     .then(function (res) { return res.json() })
     .then(function (json) {
       let percent = json.wifi_strength
 
-      if (percent > 66) {
-        document.querySelector(`.bi.bi-wifi`).style.fill = "#00d747"
-        document.querySelector(`.bi.bi-wifi-2`).style.fill = "none"
-        document.querySelector(`.bi.bi-wifi-1`).style.fill = 'none'
-        document.querySelector(`.bi.bi-wifi-off`).style.fill = 'none'
+      if (percent > 85) {
+        document.querySelector('#wifi-icon').setAttribute('class', 'bi bi-wifi')
+        document.querySelector('#wifi-icon').setAttribute('style', "width:50; height:30; fill:#00d747;")
+        document.querySelector('.wifi-path0').setAttribute('d', "M15.384 6.115a.485.485 0 0 0-.047-.736A12.44 12.44 0 0 0 8 3C5.259 3 2.723 3.882.663 5.379a.485.485 0 0 0-.048.736.52.52 0 0 0 .668.05A11.45 11.45 0 0 1 8 4c2.507 0 4.827.802 6.716 2.164.205.148.49.13.668-.049")
+        document.querySelector('.wifi-path1').setAttribute('d', "M13.229 8.271a.482.482 0 0 0-.063-.745A9.46 9.46 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.576 1.336c.206.132.48.108.653-.065m-2.183 2.183c.226-.226.185-.605-.1-.75A6.5 6.5 0 0 0 8 9c-1.06 0-2.062.254-2.946.704-.285.145-.326.524-.1.75l.015.015c.16.16.407.19.611.09A5.5 5.5 0 0 1 8 10c.868 0 1.69.201 2.42.56.203.1.45.07.61-.091zM9.06 12.44c.196-.196.198-.52-.04-.66A2 2 0 0 0 8 11.5a2 2 0 0 0-1.02.28c-.238.14-.236.464-.04.66l.706.706a.5.5 0 0 0 .707 0l.707-.707z")
 
+      } else if (percent <= 85 && percent > 33) {
 
-      } else
-        if (percent <= 66 && percent > 33) {
-          document.querySelector(`.bi.bi-wifi`).style.fill = 'none'
-          document.querySelector(`.bi.bi-wifi-2`).style.fill = "#ffff00"
-          document.querySelector(`.bi.bi-wifi-1`).style.fill = 'none'
-          document.querySelector(`.bi.bi-wifi-off`).style.fill = 'none'
+        document.querySelector('#wifi-icon').setAttribute('class', 'bi bi-wifi-2')
+        document.querySelector('#wifi-icon').setAttribute('style', "width:50; height:30; fill:#ffff00;")
+        document.querySelector('.wifi-path0').setAttribute('d', "M13.229 8.271c.216-.216.194-.578-.063-.745A9.46 9.46 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.577 1.336c.205.132.48.108.652-.065m-2.183 2.183c.226-.226.185-.605-.1-.75A6.5 6.5 0 0 0 8 9c-1.06 0-2.062.254-2.946.704-.285.145-.326.524-.1.75l.015.015c.16.16.408.19.611.09A5.5 5.5 0 0 1 8 10c.868 0 1.69.201 2.42.56.203.1.45.07.611-.091zM9.06 12.44c.196-.196.198-.52-.04-.66A2 2 0 0 0 8 11.5a2 2 0 0 0-1.02.28c-.238.14-.236.464-.04.66l.706.706a.5.5 0 0 0 .708 0l.707-.707z")
+        document.querySelector('.wifi-path1').setAttribute('d', "none")
 
-        } else if (percent <= 33 && percent > 0) {
-          document.querySelector(`.bi.bi-wifi`).style.fill = 'none'
-          document.querySelector(`.bi.bi-wifi-2`).style.fill = "none"
-          document.querySelector(`.bi.bi-wifi-1`).style.fill = 'red'
-          document.querySelector(`.bi.bi-wifi-off`).style.fill = 'none'
-        } else {
-          document.querySelector(`.bi.bi-wifi`).style.fill = 'none'
-          document.querySelector(`.bi.bi-wifi-2`).style.fill = "none"
-          document.querySelector(`.bi.bi-wifi-1`).style.fill = 'none'
-          document.querySelector(`.bi.bi-wifi-off`).style.fill = 'red'
-        }
+      } else if (percent <= 33 && percent > 0) {
+
+        document.querySelector('#wifi-icon').setAttribute('class', 'bi bi-wifi-1')
+        document.querySelector('#wifi-icon').setAttribute('style', "width:50; height:30; fill:red;")
+        document.querySelector('.wifi-path0').setAttribute('d', "M11.046 10.454c.226-.226.185-.605-.1-.75A6.5 6.5 0 0 0 8 9c-1.06 0-2.062.254-2.946.704-.285.145-.326.524-.1.75l.015.015c.16.16.407.19.611.09A5.5 5.5 0 0 1 8 10c.868 0 1.69.201 2.42.56.203.1.45.07.611-.091zM9.06 12.44c.196-.196.198-.52-.04-.66A2 2 0 0 0 8 11.5a2 2 0 0 0-1.02.28c-.238.14-.236.464-.04.66l.706.706a.5.5 0 0 0 .707 0l.708-.707z")
+        document.querySelector('.wifi-path1').setAttribute('d', "none")
+      } else {
+        document.querySelector('#wifi-icon').setAttribute('class', 'bi bi-wifi-off')
+        document.querySelector('#wifi-icon').setAttribute('style', "width:50; height:30; fill:red;")
+        document.querySelector('.wifi-path0').setAttribute('d', "M10.706 3.294A12.6 12.6 0 0 0 8 3C5.259 3 2.723 3.882.663 5.379a.485.485 0 0 0-.048.736.52.52 0 0 0 .668.05A11.45 11.45 0 0 1 8 4q.946 0 1.852.148zM8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065 8.45 8.45 0 0 1 3.51-1.27zm2.596 1.404.785-.785q.947.362 1.785.907a.482.482 0 0 1 .063.745.525.525 0 0 1-.652.065 8.5 8.5 0 0 0-1.98-.932zM8 10l.933-.933a6.5 6.5 0 0 1 2.013.637c.285.145.326.524.1.75l-.015.015a.53.53 0 0 1-.611.09A5.5 5.5 0 0 0 8 10m4.905-4.905.747-.747q.886.451 1.685 1.03a.485.485 0 0 1 .047.737.52.52 0 0 1-.668.05 11.5 11.5 0 0 0-1.811-1.07M9.02 11.78c.238.14.236.464.04.66l-.707.706a.5.5 0 0 1-.707 0l-.707-.707c-.195-.195-.197-.518.04-.66A2 2 0 0 1 8 11.5c.374 0 .723.102 1.021.28zm4.355-9.905a.53.53 0 0 1 .75.75l-10.75 10.75a.53.53 0 0 1-.75-.75z")
+        document.querySelector('.wifi-path1').setAttribute('d', "none")
+      }
     })
     .catch(function (err) {
       console.error('error rendering wifi strength', err)
@@ -1680,10 +1680,10 @@ const init_sg = () => {
 
     document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
     render_gateway()
-    render_wifi_hist()
+    render_wifi()
     initialize_reboot()
     setInterval(render_gateway, 5000)
-    setInterval(render_wifi_hist, 5000)
+    setInterval(render_wifi, 5000)
     let blu_receiver, blu_radio, component, col, row, div
     let max_row_count = localStorage.getItem('max-row-count')
     if (max_row_count) {
