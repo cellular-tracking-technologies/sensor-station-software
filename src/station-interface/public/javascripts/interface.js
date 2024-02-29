@@ -1198,8 +1198,7 @@ const initialize_websocket = function () {
         document.querySelector('#hardware').textContent = about.hardware;
         document.querySelector('#revision').textContent = about.revision;
         document.querySelector('#bootcount').textContent = about.bootcount;
-        // document.querySelector('#wifi-signal-strength').textContent = `${about.wifi_signal}%`
-        // render_wifi_hist(about.wifi_signal)
+
         let total = Math.round(about.total_mem / 1024 / 1024.0);
         let free = Math.round(about.free_mem / 1024 / 1024.0);
         let used = total - free;
