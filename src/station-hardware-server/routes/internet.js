@@ -153,8 +153,6 @@ router.get('/wifi-strength', (req, res, next) => {
     const num = Number(fraction[0].split("/")[0])
     const den = Number(fraction[0].split('/')[1])
     const percent = Math.floor((num / den) * 100)
-    // const percent_string = `${Math.floor((num / den) * 100)}%`
-    // resolve(percent)
 
     res.json({ wifi_strength: percent })
 
