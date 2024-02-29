@@ -503,7 +503,7 @@ class BluStation {
           console.error(console.error('could not reboot radio', e))
         })
 
-      await all_reboot_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+      // await all_reboot_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
 
       radio.beeps = await all_reboot_receiver.getDetections(radio_channel, Number(cmd.data.poll_interval))
       radio.dropped = await all_reboot_receiver.getBluStats(radio_channel, Number(cmd.data.poll_interval))
