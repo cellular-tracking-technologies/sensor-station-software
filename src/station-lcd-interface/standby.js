@@ -14,8 +14,7 @@ class StandBy {
    */
   constructor(host) {
     this.wifi = new WifiStrength(host)
-    // this.battery = new Battery()
-    // this.solar = new SensorVoltageTask()
+    this.power = new SensorVoltageTask(host)
     // this.temperature = new SensorTemperatureTask()
     // this.location = new Location()
     this.cellular = new CellularCarrier(host)
@@ -43,6 +42,14 @@ class StandBy {
     console.log('cellular', await this.cellular.results())
     display.lcd.setCursor(0, 1)
     display.lcd.print(`cell: ${cell_results[2]}`)
+
+    let battery_results = await this.power.results()
+    console.log('battery results', battery_results)
+    display.lcd.setCursor(0, 2)
+    display.lcd.print(`${battery_results[1]}`)
+
+    display.lcd.setCursor(0, 3)
+    display.lcd.print(`${battery_results[3]}`)
 
     // return ['Wifi', this.wifi.results()]
     // display.write(percent)

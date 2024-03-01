@@ -42,8 +42,8 @@ class WifiStrength extends WifiSignal {
           if (percent > 75) {
 
             bars = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f], 'hex')
-            await this.createChar(bars)
-            // console.log('char high strength', char)
+            char = await this.createChar(bars)
+            console.log('char high strength', char)
 
 
           } else if (percent <= 75 && percent > 50) {
@@ -65,8 +65,8 @@ class WifiStrength extends WifiSignal {
             bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
             await this.createChar(bars)
           }
-          // return char
-          resolve(percent)
+          resolve(char)
+          // resolve(percent)
         })
         .catch(error => {
           resolve([this.header, `error`])
@@ -81,10 +81,12 @@ class WifiStrength extends WifiSignal {
   }
 
   async createChar(bars) {
+    let char = '\x00'
     let arrByte = Uint8Array.from(bars)
     this.display.lcd.createChar(0, arrByte)
     this.display.lcd.setCursor(0, 0)
-    // this.display.lcd.print(`wifi: ${`\x00`}`)
+    this.display.lcd.print(`wifi: ${char}`)
+    return char
   }
 }
 
