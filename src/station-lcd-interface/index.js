@@ -46,7 +46,7 @@ const host = 'http://localhost:3000'
 // let stand_by = new MenuItem('stand-by', new StandBy(host), [])
 
 let items = new MenuItem("main", null, [
-  new MenuItem('Wifi Strength', new WifiStrength(host), []),
+  // new MenuItem('Wifi Strength', new WifiStrength(host), []),
 
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -81,8 +81,6 @@ let items = new MenuItem("main", null, [
   new MenuItem("Location", new GpsTask(host), []),
 ])
 
-let standby = new MenuItem('Wifi Strength', new WifiStrength(host), [])
-
 
 /*
     Instantiate a menu manager that operates on a list of 
@@ -96,12 +94,25 @@ let standby = new MenuItem('Wifi Strength', new WifiStrength(host), [])
 */
 
 let menu = new MenuManager(items)
+
+let wifi_strength = new WifiStrength(host)
+let standby = new MenuItem('standby', null, [
+  // new MenuItem(String.fromCharCode(0xFC), new WifiStrength(host), [])
+  new MenuItem('', null, [])
+])
 let standby_menu = new MenuManager(standby)
+
+let standby_class = new StandBy(host)
+
 
 menu.init()
 
 setInterval(() => {
-  standby_menu.init()
+  // standby_menu.init()
+  // wifi_strength.results()
+
+  standby_class.clearScreen()
+  standby_class.percent()
 }, 10000)
 
 /*

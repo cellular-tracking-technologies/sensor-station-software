@@ -334,16 +334,12 @@ let LCD = class LCD {
 
     /** set special character 0..7, data is an array(8) of bytes, and then return to home addr */
     createChar(ch, data) {
-        console.log('create custom character')
         this.write(this.SETCGRAMADDR | ((ch & 7) << 3), this.displayPorts.CMD);
         for (let i = 0; i < 8; i++) {
 
-            console.log('create custom character byte', data[i])
             this.write(data[i], this.displayPorts.CHR);
-            // console.log('create custom char results', this.SETDDRAMADDR, this.displayPorts.CMD)
         }
         return this.write(this.SETDDRAMADDR, this.displayPorts.CMD);
-        // return this.write(0xC0, this.displayPorts.CMD);
 
     }
 };

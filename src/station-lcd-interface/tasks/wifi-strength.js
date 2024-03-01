@@ -57,7 +57,7 @@ class WifiStrength extends WifiSignal {
             bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x18], 'hex')
             await this.createChar(bars)
             console.log('no strength', rows)
-            
+
           } else {
             bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
             await this.createChar(bars)
@@ -76,8 +76,8 @@ class WifiStrength extends WifiSignal {
   async createChar(bars) {
     let arrByte = Uint8Array.from(bars)
     this.display.lcd.createChar(0, arrByte)
-    this.display.lcd.setCursor(6, 0)
-    this.display.lcd.print('\x00')
+    this.display.lcd.setCursor(0, 0)
+    this.display.lcd.print(`wifi: ${`\x00`}`)
   }
 }
 

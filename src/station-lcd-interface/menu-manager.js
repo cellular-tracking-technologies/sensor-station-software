@@ -47,6 +47,8 @@ class MenuManager {
     */
     if (this.focus.childCount() == 0) {
       if (this.focus.view != null) {
+        // console.log('this view', this.view_())
+
         this.view_()
         return
       }
@@ -56,6 +58,8 @@ class MenuManager {
     let row = this.focus.getChild(this.scroller.getSelectedRow())
     if (row.view != null) {
       this.focus = row
+      // console.log('this view', this.view_())
+
       this.view_()
       return
     }
@@ -115,12 +119,14 @@ class MenuManager {
     }
   }
   findMenuItem_(menu, id) {
+    // console.log('find menu item', menu, id)
     if (menu.id == id) {
       return menu
     } else if (menu.childCount() > 0) {
       let result = null
       for (let i = 0; i < menu.childCount(); i++) {
         result = this.findMenuItem_(menu.children[i], id)
+        // console.log('find menu item result', result)
         if (result != null) {
           break
         }
