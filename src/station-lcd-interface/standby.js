@@ -18,16 +18,33 @@ class StandBy {
     // this.solar = new SensorVoltageTask()
     // this.temperature = new SensorTemperatureTask()
     // this.location = new Location()
-    // this.cellular = new CellularCarrier()
+    this.cellular = new CellularCarrier(host)
     // this.gps = new GpsTask()
   }
+
+  // async createChar(bars) {
+  //   let arrByte = Uint8Array.from(bars)
+  //   this.display.lcd.createChar(0, arrByte)
+  //   this.display.lcd.setCursor(0, 0)
+  //   this.display.lcd.print(`wifi: ${`\x00`}`)
+  // }
 
   clearScreen() {
     display.clear()
   }
 
-  percent() {
-    return ['Wifi', this.wifi.results()]
+  async results() {
+    let wifi_results = await this.wifi.results()
+    console.log('wifi', await this.wifi.results())
+    display.lcd.setCursor(0, 0)
+    display.lcd.print(`wifi: ${wifi_results}`)
+
+    let cell_results = await this.cellular.results()
+    console.log('cellular', await this.cellular.results())
+    display.lcd.setCursor(0, 1)
+    display.lcd.print(`cell: ${cell_results[2]}`)
+
+    // return ['Wifi', this.wifi.results()]
     // display.write(percent)
   }
 

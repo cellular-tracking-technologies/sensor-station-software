@@ -7,7 +7,6 @@ import url from 'url'
 class WifiStrength extends WifiSignal {
   constructor(base_url, refresh = 5000) {
     super()
-    console.log('base url', base_url)
     this.url = url.resolve(base_url, 'internet/wifi-strength')
     this.header = "WiFi:"
     this.autoRefresh = refresh
@@ -25,23 +24,27 @@ class WifiStrength extends WifiSignal {
     return new Promise(async (resolve, reject) => {
       fetch(this.url)
         .then(data => {
-          console.log('wifi strength fetch data', data)
+          // console.log('wifi strength fetch data', data)
           return data.json()
         })
         .then(async res => {
-          console.log('wifi strength res', res.wifi_strength)
+          // console.log('wifi strength res', res.wifi_strength)
           let bars, chars
           let percent = res.wifi_strength
+          console.log('wifi strength percent', percent)
+
 
 
           // rows.push(percent)
           // resolve(rows)
           // resolve([this.header, percent])
-
+          let char
           if (percent > 75) {
 
             bars = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f], 'hex')
             await this.createChar(bars)
+            // console.log('char high strength', char)
+
 
           } else if (percent <= 75 && percent > 50) {
             bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x06, 0x0e, 0x1e], 'hex')
@@ -62,11 +65,15 @@ class WifiStrength extends WifiSignal {
             bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
             await this.createChar(bars)
           }
+          // return char
+          resolve(percent)
         })
         .catch(error => {
           resolve([this.header, `error`])
         })
-      resolve(rows)
+      // resolve(rows)
+      // resolve(percent)
+
 
     }).catch((e) => {
       console.error(e)
@@ -77,7 +84,7 @@ class WifiStrength extends WifiSignal {
     let arrByte = Uint8Array.from(bars)
     this.display.lcd.createChar(0, arrByte)
     this.display.lcd.setCursor(0, 0)
-    this.display.lcd.print(`wifi: ${`\x00`}`)
+    // this.display.lcd.print(`wifi: ${`\x00`}`)
   }
 }
 

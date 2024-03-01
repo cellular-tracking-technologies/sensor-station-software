@@ -107,12 +107,12 @@ let standby_class = new StandBy(host)
 
 menu.init()
 
-setInterval(() => {
+setInterval(async () => {
   // standby_menu.init()
   // wifi_strength.results()
 
   standby_class.clearScreen()
-  standby_class.percent()
+  await standby_class.results()
 }, 10000)
 
 /*
