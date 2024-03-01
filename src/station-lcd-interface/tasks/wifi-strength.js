@@ -18,7 +18,7 @@ class WifiStrength extends WifiSignal {
     return [this.header]
   }
 
-  results() {
+  async results() {
     let rows = [this.header]
 
     return new Promise(async (resolve, reject) => {
@@ -29,44 +29,44 @@ class WifiStrength extends WifiSignal {
         })
         .then(async res => {
           // console.log('wifi strength res', res.wifi_strength)
-          let bars, chars
+          // let bars, chars
           let percent = res.wifi_strength
           console.log('wifi strength percent', percent)
-
+          resolve(percent)
 
 
           // rows.push(percent)
           // resolve(rows)
           // resolve([this.header, percent])
-          let char
-          if (percent > 75) {
+          // let char
+          // if (percent > 75) {
 
-            bars = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f], 'hex')
-            char = await this.createChar(bars)
-            console.log('char high strength', char)
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f], 'hex')
+          //   // char = await this.createChar(bars)
+          //   // console.log('char high strength', char)
 
 
-          } else if (percent <= 75 && percent > 50) {
-            bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x06, 0x0e, 0x1e], 'hex')
-            await this.createChar(bars)
-            console.log('med strength', rows)
+          // } else if (percent <= 75 && percent > 50) {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x06, 0x0e, 0x1e], 'hex')
+          //   // await this.createChar(bars)
+          //   // console.log('med strength', rows)
 
-          } else if (percent <= 50 && percent > 25) {
-            bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x04, 0x0c, 0x1c], 'hex')
-            await this.createChar(bars)
-            console.log('low strength', rows)
+          // } else if (percent <= 50 && percent > 25) {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x02, 0x04, 0x0c, 0x1c], 'hex')
+          //   // await this.createChar(bars)
+          //   // console.log('low strength', rows)
 
-          } else if (percent <= 25 && percent > 0) {
-            bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x18], 'hex')
-            await this.createChar(bars)
-            console.log('no strength', rows)
+          // } else if (percent <= 25 && percent > 0) {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x18], 'hex')
+          //   // await this.createChar(bars)
+          //   // console.log('no strength', rows)
 
-          } else {
-            bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
-            await this.createChar(bars)
-          }
-          // resolve(char)
-          resolve(percent)
+          // } else {
+          //   bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
+          //   // await this.createChar(bars)
+          // }
+          // // resolve(char)
+          // resolve(percent)
         })
         .catch(error => {
           resolve([this.header, `error`])

@@ -104,29 +104,55 @@ class StandBy {
     }
   }
 
-  async createWifiChar() {
+  async createWifiChar(percent) {
+    let block_left, block_center, block_right, arrByte
 
-    let bar0_left = Buffer.from([0x00, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
-    let arrByte = Uint8Array.from(bar0_left)
-    display.lcd.createChar(5, arrByte)
-    display.lcd.setCursor(0, 0)
-    display.lcd.print(`\x05`)
+    if (percent > 85) {
 
-    let bar0 = Buffer.from([0x1f, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
-    arrByte = Uint8Array.from(bar0)
-    display.lcd.createChar(6, arrByte)
-    display.lcd.setCursor(1, 0)
-    display.lcd.print(`\x06`)
+      block_left = Buffer.from([0x00, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
+      arrByte = Uint8Array.from(block_left)
+      display.lcd.createChar(5, arrByte)
+      display.lcd.setCursor(0, 0)
+      display.lcd.print(`\x05`)
 
-    let bar0_right = Buffer.from([0x00, 0x18, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
-    arrByte = Uint8Array.from(bar0_right)
-    display.lcd.createChar(7, arrByte)
-    display.lcd.setCursor(2, 0)
-    display.lcd.print(`\x07`)
+      block_center = Buffer.from([0x1f, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
+      arrByte = Uint8Array.from(block_center)
+      display.lcd.createChar(6, arrByte)
+      display.lcd.setCursor(1, 0)
+      display.lcd.print(`\x06`)
+
+      block_right = Buffer.from([0x00, 0x18, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
+      arrByte = Uint8Array.from(block_right)
+      display.lcd.createChar(7, arrByte)
+      display.lcd.setCursor(2, 0)
+      display.lcd.print(`\x07`)
+
+    } else if (percent <= 85 && percent > 50) {
+
+      block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
+      arrByte = Uint8Array.from(block_left)
+      display.lcd.createChar(5, arrByte)
+      display.lcd.setCursor(0, 0)
+      display.lcd.print(`\x05`)
+
+      block_center = Buffer.from([0x00, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
+      arrByte = Uint8Array.from(block_center)
+      display.lcd.createChar(6, arrByte)
+      display.lcd.setCursor(1, 0)
+      display.lcd.print(`\x06`)
+
+      block_right = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
+      arrByte = Uint8Array.from(block_right)
+      display.lcd.createChar(7, arrByte)
+      display.lcd.setCursor(2, 0)
+      display.lcd.print(`\x07`)
+    }
   }
 
   async results() {
-    await this.createWifiChar()
+    let wifi_results = await this.wifi.results()
+    console.log('wifi results', wifi_results)
+    await this.createWifiChar(wifi_results)
     // let wifi_results = await this.wifi.results()
     // display.lcd.setCursor(0, 0)
     // display.lcd.print(`wifi: ${wifi_results}`)
