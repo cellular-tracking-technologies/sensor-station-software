@@ -18,6 +18,7 @@ class StandBy {
     // this.temperature = new SensorTemperatureTask()
     // this.location = new Location()
     this.cellular = new CellularCarrier(host)
+    this.cellular_id = new CellularIds(host)
     this.batt
     // this.gps = new GpsTask()
   }
@@ -103,11 +104,32 @@ class StandBy {
     }
   }
 
-  async results() {
-    let wifi_results = await this.wifi.results()
-    // console.log('wifi', wifi_results)
+  async createWifiChar() {
+
+    let bar0_left = Buffer.from([0x00, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
+    let arrByte = Uint8Array.from(bar0_left)
+    display.lcd.createChar(5, arrByte)
     display.lcd.setCursor(0, 0)
-    display.lcd.print(`wifi: ${wifi_results}`)
+    display.lcd.print(`\x05`)
+
+    let bar0 = Buffer.from([0x1f, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
+    arrByte = Uint8Array.from(bar0)
+    display.lcd.createChar(6, arrByte)
+    display.lcd.setCursor(1, 0)
+    display.lcd.print(`\x06`)
+
+    let bar0_right = Buffer.from([0x00, 0x18, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
+    arrByte = Uint8Array.from(bar0_right)
+    display.lcd.createChar(7, arrByte)
+    display.lcd.setCursor(2, 0)
+    display.lcd.print(`\x07`)
+  }
+
+  async results() {
+    await this.createWifiChar()
+    // let wifi_results = await this.wifi.results()
+    // display.lcd.setCursor(0, 0)
+    // display.lcd.print(`wifi: ${wifi_results}`)
 
     // let cell_results = await this.cellular.results()
     // console.log('cellular', await this.cellular.results())

@@ -65,8 +65,8 @@ class WifiStrength extends WifiSignal {
             bars = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10], 'hex')
             await this.createChar(bars)
           }
-          resolve(char)
-          // resolve(percent)
+          // resolve(char)
+          resolve(percent)
         })
         .catch(error => {
           resolve([this.header, `error`])
