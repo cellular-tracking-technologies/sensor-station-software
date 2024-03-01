@@ -42,8 +42,9 @@ class StandBy {
   }
 
   async createBattChar(voltage) {
+    console.log('voltage', voltage)
     let bar0, bar1, bar2, top, arrByte
-    if (voltage > 12) {
+    if (voltage > 11.65) {
 
       bar0 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
       arrByte = Uint8Array.from(bar0)
@@ -72,7 +73,7 @@ class StandBy {
       // console.log('char high strength', char)
 
 
-    } else if (voltage <= 12 && voltage > 10) {
+    } else if (voltage <= 11.65 && voltage > 10) {
       bar0 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
       arrByte = Uint8Array.from(bar0)
       display.lcd.createChar(1, arrByte)
