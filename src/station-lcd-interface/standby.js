@@ -15,20 +15,12 @@ class StandBy {
   constructor(host) {
     this.wifi = new WifiStrength(host)
     this.power = new SensorVoltageTask(host)
-    // this.temperature = new SensorTemperatureTask()
+    this.temp = new SensorTemperatureTask(host)
     // this.location = new Location()
     this.cellular = new CellularCarrier(host)
-    this.cellular_id = new CellularIds(host)
-    this.batt
-    // this.gps = new GpsTask()
+    // this.cellular_id = new CellularIds(host)
+    this.gps = new GpsTask(host)
   }
-
-  // async createChar(bars) {
-  //   let arrByte = Uint8Array.from(bars)
-  //   this.display.lcd.createChar(0, arrByte)
-  //   this.display.lcd.setCursor(0, 0)
-  //   this.display.lcd.print(`wifi: ${`\x00`}`)
-  // }
 
   clearScreen() {
     display.clear()
@@ -45,27 +37,13 @@ class StandBy {
     console.log('voltage', voltage)
     let bar0, bar1, bar2, top, arrByte
     if (voltage > 11.65) {
-      // bar0 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      // arrByte = Uint8Array.from(bar0)
-      // display.lcd.createChar(1, arrByte)
-      // display.lcd.setCursor(0, 2)
-      // display.lcd.print(`\x01`)
+
       display.lcd.setCursor(0, 2)
       display.lcd.print(`\xff`)
 
-      // bar1 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      // arrByte = Uint8Array.from(bar1)
-      // display.lcd.createChar(2, arrByte)
-      // display.lcd.setCursor(1, 2)
-      // display.lcd.print(`\x02`)
       display.lcd.setCursor(1, 2)
       display.lcd.print(`\xff`)
 
-      // bar2 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      // arrByte = Uint8Array.from(bar2)
-      // display.lcd.createChar(3, arrByte)
-      // display.lcd.setCursor(2, 2)
-      // display.lcd.print(`\x03`)
       display.lcd.setCursor(2, 2)
       display.lcd.print(`\xff`)
 
@@ -195,33 +173,28 @@ class StandBy {
     let wifi_results = await this.wifi.results()
     console.log('wifi results', wifi_results)
     await this.createWifiChar(wifi_results)
-    // let wifi_results = await this.wifi.results()
-    // display.lcd.setCursor(0, 0)
-    // display.lcd.print(`wifi: ${wifi_results}`)
+
     await this.getBattVoltage()
 
-
-
     let cell_results = await this.cellular.results()
-    let rssi = Number(cell_results[2].match(/(-)\w+/g))
+    console.log('cell regex', cell_results[2].match(/(-)\w+/g))
+    let rssi = cell_results[2].match(/(-)\w+/g) ? Number(cell_results[2].match(/(-)\w+/g)) : undefined
     console.log('cell results rssi', cell_results[2], rssi)
     await this.createCellChar(rssi)
     console.log('cellular', await this.cellular.results())
-    // display.lcd.setCursor(0, 1) //column row
-    // display.lcd.print(`cell: ${cell_results[2]}`)
 
+    let temp_results = await this.temp.results()
+    console.log('temp results', temp_results)
 
-    // let battery_results = await this.power.results()
-    // console.log('battery results', battery_results)
+    let regex_temp = temp_results[1].match(/(-\d)\w+/g)
+    console.log('temp results regex', temp_results, regex_temp)
 
-    // display.lcd.setCursor(0, 2)
-    // display.lcd.print(`${battery_results[1]}`)
+    display.lcd.setCursor(12, 0)
+    display.lcd.print(`${regex_temp[0]}`)
 
-    // display.lcd.setCursor(0, 3)
-    // display.lcd.print(`${battery_results[3]}`)
+    display.lcd.setCursor(12, 1)
+    display.lcd.print(`${regex_temp[1]}`)
 
-    // return ['Wifi', this.wifi.results()]
-    // display.write(percent)
   }
 
 }
