@@ -36,14 +36,14 @@ class WifiStrength extends WifiSignal {
     })
   }
 
-  async createChar(bars) {
-    let char = '\x00'
-    let arrByte = Uint8Array.from(bars)
-    this.display.lcd.createChar(0, arrByte)
-    this.display.lcd.setCursor(0, 0)
-    this.display.lcd.print(`wifi: ${char}`)
-    return char
-  }
+  // async createChar(bars) {
+  //   let char = '\x00'
+  //   let arrByte = Uint8Array.from(bars)
+  //   this.display.lcd.createChar(0, arrByte)
+  //   this.display.lcd.setCursor(0, 0)
+  //   this.display.lcd.print(`wifi: ${char}`)
+  //   return char
+  // }
 }
 
 export { WifiStrength }
