@@ -45,41 +45,53 @@ class StandBy {
     console.log('voltage', voltage)
     let bar0, bar1, bar2, top, arrByte
     if (voltage > 11.65) {
-      bar0 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      arrByte = Uint8Array.from(bar0)
-      display.lcd.createChar(1, arrByte)
+      // bar0 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
+      // arrByte = Uint8Array.from(bar0)
+      // display.lcd.createChar(1, arrByte)
+      // display.lcd.setCursor(0, 2)
+      // display.lcd.print(`\x01`)
       display.lcd.setCursor(0, 2)
-      display.lcd.print(`\x01`)
+      display.lcd.print(`\xff`)
 
-      bar1 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      arrByte = Uint8Array.from(bar1)
-      display.lcd.createChar(2, arrByte)
+      // bar1 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
+      // arrByte = Uint8Array.from(bar1)
+      // display.lcd.createChar(2, arrByte)
+      // display.lcd.setCursor(1, 2)
+      // display.lcd.print(`\x02`)
       display.lcd.setCursor(1, 2)
-      display.lcd.print(`\x02`)
+      display.lcd.print(`\xff`)
 
-      bar2 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      arrByte = Uint8Array.from(bar2)
-      display.lcd.createChar(3, arrByte)
+      // bar2 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
+      // arrByte = Uint8Array.from(bar2)
+      // display.lcd.createChar(3, arrByte)
+      // display.lcd.setCursor(2, 2)
+      // display.lcd.print(`\x03`)
       display.lcd.setCursor(2, 2)
-      display.lcd.print(`\x03`)
+      display.lcd.print(`\xff`)
 
       top = Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex')
       arrByte = Uint8Array.from(top)
       display.lcd.createChar(4, arrByte)
       display.lcd.setCursor(3, 2)
       display.lcd.print(`\x04`)
-    } else if (voltage <= 11.65 && voltage > 10) {
-      bar0 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      arrByte = Uint8Array.from(bar0)
-      display.lcd.createChar(1, arrByte)
-      display.lcd.setCursor(0, 2)
-      display.lcd.print(`\x01`)
 
-      bar1 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
-      arrByte = Uint8Array.from(bar1)
-      display.lcd.createChar(2, arrByte)
+    } else if (voltage <= 11.65 && voltage > 10) {
+      // bar0 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
+      // arrByte = Uint8Array.from(bar0)
+      // display.lcd.createChar(1, arrByte)
+      // display.lcd.setCursor(0, 2)
+      // display.lcd.print(`\x01`)
+
+      // bar1 = Buffer.from([0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f], 'hex')
+      // arrByte = Uint8Array.from(bar1)
+      // display.lcd.createChar(2, arrByte)
+      // display.lcd.setCursor(1, 2)
+      // display.lcd.print(`\x02`)
+      display.lcd.setCursor(0, 2)
+      display.lcd.print(`\xff`)
+
       display.lcd.setCursor(1, 2)
-      display.lcd.print(`\x02`)
+      display.lcd.print(`\xff`)
 
       bar2 = Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex')
       arrByte = Uint8Array.from(bar2)
@@ -143,6 +155,9 @@ class StandBy {
   async createCellChar(rssi) {
     let block_left, block_right, arrByte0, arrByte1
     if (rssi > -120) {
+      display.lcd.setCursor(5, 0)
+      display.lcd.print('\x28')
+
       display.lcd.setCursor(6, 0)
       display.lcd.print(`\x28`)
 
@@ -150,6 +165,9 @@ class StandBy {
       display.lcd.print('\x2a')
 
       display.lcd.setCursor(8, 0)
+      display.lcd.print('\x29')
+
+      display.lcd.setCursor(9, 0)
       display.lcd.print('\x29')
 
       display.lcd.setCursor(7, 1)
