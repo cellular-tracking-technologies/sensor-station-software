@@ -173,16 +173,22 @@ class StandBy {
       display.lcd.setCursor(7, 1)
       display.lcd.print('\x7c')
 
-    }
+    } else if (rssi <= -113) {
+      display.lcd.setCursor(6, 0)
+      display.lcd.print(`\x28`)
 
-    // arrByte0 = Uint8Array.from(block_left)
-    // arrByte1 = Uint8Array.from(block_right)
-    // display.lcd.createChar(8, arrByte0)
-    // display.lcd.createChar(80, arrByte1) // not saving or not printing
-    // display.lcd.setCursor(6, 0)
-    // display.lcd.print(`\x08`)
-    // display.lcd.setCursor(7, 0)
-    // display.lcd.print('\x28')
+      display.lcd.setCursor(7, 0)
+      display.lcd.print('\x2a')
+
+      display.lcd.setCursor(8, 0)
+      display.lcd.print('\x29')
+
+      display.lcd.setCursor(7, 1)
+      display.lcd.print('\x7c')
+    } else {
+      display.lcd.setCursor(7, 0)
+      display.lcd.print('\x21')
+    }
   }
 
   async results() {
