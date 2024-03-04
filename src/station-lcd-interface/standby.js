@@ -1,6 +1,5 @@
 import { WifiStrength } from './tasks/wifi-strength.js'
-import { CellularIds, CellularCarrier } from "./tasks/cellular-task.js"
-import { GpsTask } from "./tasks/gps-task.js"
+import { CellularCarrier } from "./tasks/cellular-task.js"
 import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
 import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
@@ -13,7 +12,6 @@ class StandBy {
    * @param {String} host ip address of server
    */
   constructor(host) {
-    console.log('stand by host', host)
     this.wifi = new WifiStrength(host)
     this.power = new SensorVoltageTask(host)
     this.temp = new SensorTemperatureTask(host)
@@ -84,56 +82,70 @@ class StandBy {
   async createBattChar(voltage) {
     console.log('voltage', voltage)
     let bar0, bar1, bar2, top, arrByte
-    if (voltage > 11.65) {
+    top = Uint8Array.from(Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex'))
+    let empty_bar = Uint8Array.from(Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex'))
+    let full_bar = `\xff`
 
+    display.lcd.createChar(1, top)
+    display.lcd.createChar(2, empty_bar)
+    // display.lcd.createChar(3, full_bar)
+
+    // print top part of battery
+    display.lcd.setCursor(3, 2)
+    display.lcd.print(`\x01`)
+
+    if (voltage > 11.5) {
+
+      //   // print bar0
+      //   display.lcd.setCursor(0, 2)
+      //   display.lcd.print(full_bar)
+
+      //   // print bar1
+      //   display.lcd.setCursor(1, 2)
+      //   display.lcd.print(full_bar)
+
+      //   // print bar2
+      //   display.lcd.setCursor(2, 2)
+      //   display.lcd.print(full_bar)
+
+      // } else if (voltage <= 11.75 && voltage > 10) {
+
+      //   // print bar0
+      //   display.lcd.setCursor(0, 2)
+      //   display.lcd.print(full_bar)
+
+      //   // print bar1
+      //   display.lcd.setCursor(1, 2)
+      //   display.lcd.print(full_bar)
+
+      //   // print bar2
+      //   display.lcd.setCursor(2, 2)
+      //   display.lcd.print(`\x02`)
+
+
+      // } else if (voltage <= 10) {
+      // print bar0
       display.lcd.setCursor(0, 2)
-      display.lcd.print(`\xff`)
+      display.lcd.print(full_bar)
 
+      // print bar1
       display.lcd.setCursor(1, 2)
-      display.lcd.print(`\xff`)
+      display.lcd.print(`\x02`)
 
+      // print bar2
       display.lcd.setCursor(2, 2)
-      display.lcd.print(`\xff`)
-
-      top = Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex')
-      arrByte = Uint8Array.from(top)
-      display.lcd.createChar(4, arrByte)
-      display.lcd.setCursor(3, 2)
-      display.lcd.print(`\x04`)
-
-    } else if (voltage <= 11.65 && voltage > 10) {
-
-      display.lcd.setCursor(0, 2)
-      display.lcd.print(`\xff`)
-
-      display.lcd.setCursor(1, 2)
-      display.lcd.print(`\xff`)
-
-      bar2 = Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex')
-      arrByte = Uint8Array.from(bar2)
-      display.lcd.createChar(3, arrByte)
-      display.lcd.setCursor(2, 2)
-      display.lcd.print(`\x03`)
-
-      top = Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex')
-      arrByte = Uint8Array.from(top)
-      display.lcd.createChar(4, arrByte)
-      display.lcd.setCursor(3, 2)
-      display.lcd.print(`\x04`)
+      display.lcd.print(`\x02`)
     }
+
   }
 
   async getCellStrength() {
     let cell_results = await this.cellular.results()
-    console.log('cell regex', cell_results[2].match(/(-)\w+/g))
     let rssi = cell_results[2].match(/(-)\w+/g) ? Number(cell_results[2].match(/(-)\w+/g)) : undefined
-    console.log('cell results rssi', cell_results[2], rssi)
     await this.createCellChar(rssi)
-    console.log('cellular', await this.cellular.results())
   }
 
   async createCellChar(rssi) {
-    let block_left, block_right, arrByte0, arrByte1
     if (rssi > -113) {
       display.lcd.setCursor(5, 0)
       display.lcd.print('\x28')
@@ -173,10 +185,8 @@ class StandBy {
 
   async getTempValues() {
     let temp_results = await this.temp.results()
-    console.log('temp results', temp_results)
 
     let regex_temp = temp_results[1].match(/-?\d+/g)
-    console.log('temp results regex', temp_results, regex_temp)
 
     display.lcd.setCursor(12, 0)
     display.lcd.print(`${regex_temp[0]}${`\xdf`}C`)
