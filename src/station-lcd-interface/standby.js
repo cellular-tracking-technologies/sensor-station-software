@@ -150,6 +150,32 @@ class StandBy {
     }
   }
 
+  async createCellChar(rssi) {
+    let block_left, block_right, arrByte0, arrByte1
+    if (rssi > -120) {
+      block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x06, 0x06, 0x1e, 0x1e])
+      block_right = Buffer.from([0x06, 0x06, 0x06, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e])
+      // } else if (rssi <= -10 && rssi > -30) {
+      //   block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x06, 0x06, 0x1e, 0x1e])
+      //   block_right = Buffer.from([0x00, 0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x18])
+      // } else if (rssi <= -30 && rssi > -130) {
+      //   block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x06, 0x06, 0x1e, 0x1e])
+      //   block_right = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+      // } else if (rssi <= -150) {
+      //   block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x18])
+      //   block_right = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+    }
+
+    arrByte0 = Uint8Array.from(block_left)
+    arrByte1 = Uint8Array.from(block_right)
+    display.lcd.createChar(8, arrByte0)
+    display.lcd.createChar(80, arrByte1) // not saving or not printing
+    display.lcd.setCursor(6, 0)
+    display.lcd.print(`\x08`)
+    display.lcd.setCursor(7, 0)
+    display.lcd.print('\x80')
+  }
+
   async results() {
     let wifi_results = await this.wifi.results()
     console.log('wifi results', wifi_results)
@@ -158,8 +184,11 @@ class StandBy {
     // display.lcd.setCursor(0, 0)
     // display.lcd.print(`wifi: ${wifi_results}`)
 
-    // let cell_results = await this.cellular.results()
-    // console.log('cellular', await this.cellular.results())
+    let cell_results = await this.cellular.results()
+    let rssi = Number(cell_results[2].match(/(-)\w+/g))
+    console.log('cell results rssi', cell_results[2], rssi)
+    await this.createCellChar(rssi)
+    console.log('cellular', await this.cellular.results())
     // display.lcd.setCursor(0, 1) //column row
     // display.lcd.print(`cell: ${cell_results[2]}`)
 
