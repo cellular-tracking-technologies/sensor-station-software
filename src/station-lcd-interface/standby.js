@@ -3,7 +3,7 @@ import { CellularCarrier } from "./tasks/cellular-task.js"
 import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
 import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
-import { wifi, battery } from './lcd-chars.js'
+import { wifi, battery, cell } from './lcd-chars.js'
 
 /**
  * 
@@ -29,7 +29,6 @@ class StandBy {
   }
 
   async createWifiChar(percent) {
-    let block_left, block_center, block_right, arrByte
 
     if (percent > 85) {
 
@@ -70,14 +69,12 @@ class StandBy {
 
   async createBattChar(voltage) {
     console.log('voltage', voltage)
-    // let bar0, bar1, bar2, top, arrByte
-    // top = Uint8Array.from(Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex'))
-    // let empty_bar = Uint8Array.from(Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex'))
-    // let full_bar = `\xff`
 
+    // create top part of battery icon
     display.lcd.createChar(battery.top.char, battery.top.byte)
+
+    // create empty bar of battery icon
     display.lcd.createChar(battery.empty_bar.char, battery.empty_bar.byte)
-    // display.lcd.createChar(3, full_bar)
 
     // print top part of battery
     display.lcd.setCursor(3, 2)
@@ -131,6 +128,7 @@ class StandBy {
 
   async getCellStrength() {
     let cell_results = await this.cellular.results()
+    console.log('cell signal', cell_results[2].match(/(-)\w+/g))
     let rssi = cell_results[2].match(/(-)\w+/g) ? Number(cell_results[2].match(/(-)\w+/g)) : undefined
     await this.createCellChar(rssi)
   }
@@ -138,38 +136,38 @@ class StandBy {
   async createCellChar(rssi) {
     if (rssi > -113) {
       display.lcd.setCursor(5, 0)
-      display.lcd.print('\x28')
+      display.lcd.print(cell.left.hex)
 
       display.lcd.setCursor(6, 0)
-      display.lcd.print(`\x28`)
+      display.lcd.print(cell.left.hex)
 
       display.lcd.setCursor(7, 0)
-      display.lcd.print('\x2a')
+      display.lcd.print(cell.center.hex)
 
       display.lcd.setCursor(8, 0)
-      display.lcd.print('\x29')
+      display.lcd.print(cell.right.hex)
 
       display.lcd.setCursor(9, 0)
-      display.lcd.print('\x29')
+      display.lcd.print(cell.right.hex)
 
       display.lcd.setCursor(7, 1)
-      display.lcd.print('\x7c')
+      display.lcd.print(cell.bottom.hex)
 
     } else if (rssi <= -113) {
       display.lcd.setCursor(6, 0)
-      display.lcd.print(`\x28`)
+      display.lcd.print(cell.left.hex)
 
       display.lcd.setCursor(7, 0)
-      display.lcd.print('\x2a')
+      display.lcd.print(cell.center.hex)
 
       display.lcd.setCursor(8, 0)
-      display.lcd.print('\x29')
+      display.lcd.print(cell.right.hex)
 
       display.lcd.setCursor(7, 1)
-      display.lcd.print('\x7c')
+      display.lcd.print(cell.bottom.hex)
     } else {
       display.lcd.setCursor(7, 0)
-      display.lcd.print('\x21')
+      display.lcd.print(cell.warning.hex)
     }
   }
 

@@ -34,7 +34,6 @@ const battery = {
         byte: Uint8Array.from(Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex')),
         char: 1,
         hex: `\x01`,
-
     },
     empty_bar: {
         byte: Uint8Array.from(Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex')),
@@ -48,5 +47,35 @@ const battery = {
     }
 }
 
-export { wifi, battery }
+const cell = {
+    left: {
+        byte: null,
+        char: null,
+        hex: '\x28',
+    },
+
+    center: {
+        byte: null,
+        char: null,
+        hex: `\x2a`,
+    },
+
+    right: {
+        byte: null,
+        char: null,
+        hex: `\x29`,
+    },
+    bottom: {
+        byte: null,
+        char: null,
+        hex: `\x7c`,
+    },
+    warning: {
+        byte: null,
+        char: null,
+        hex: `\x21`,
+    }
+}
+
+export { wifi, battery, cell }
 
