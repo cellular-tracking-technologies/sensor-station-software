@@ -77,5 +77,13 @@ const cell = {
     }
 }
 
-export { wifi, battery, cell }
+const temp = {
+    degree: {
+        byte: null,
+        char: null,
+        hex: `\xdf`,
+    }
+}
+
+export { wifi, battery, cell, temp }
 

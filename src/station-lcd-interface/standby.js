@@ -3,7 +3,7 @@ import { CellularCarrier } from "./tasks/cellular-task.js"
 import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
 import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
-import { wifi, battery, cell } from './lcd-chars.js'
+import { wifi, battery, cell, temp } from './lcd-chars.js'
 
 /**
  * 
@@ -80,7 +80,7 @@ class StandBy {
     display.lcd.setCursor(3, 2)
     display.lcd.print(battery.top.hex)
 
-    if (voltage > 11.5) {
+    if (voltage > 11.75) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -177,10 +177,10 @@ class StandBy {
     let regex_temp = temp_results[1].match(/-?\d+/g)
 
     display.lcd.setCursor(12, 0)
-    display.lcd.print(`${regex_temp[0]}${`\xdf`}C`)
+    display.lcd.print(`${regex_temp[0]}${temp.degree.hex}C`)
 
     display.lcd.setCursor(12, 1)
-    display.lcd.print(`${regex_temp[1]}${`\xdf`}F`)
+    display.lcd.print(`${regex_temp[1]}${temp.degree.hex}F`)
   }
 
   async results() {
