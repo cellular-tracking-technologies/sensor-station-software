@@ -4,7 +4,8 @@ import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
 import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
 import { wifi, battery, cell, temp } from './lcd-chars.js'
-
+import fetch from 'node-fetch'
+import url from 'url'
 /**
  * 
  */
@@ -12,20 +13,49 @@ class StandBy {
   /**
    * @param {String} host ip address of server
    */
-  constructor(host) {
-    this.wifi = new WifiStrength(host)
-    this.power = new SensorVoltageTask(host)
-    this.temp = new SensorTemperatureTask(host)
-    this.cellular = new CellularCarrier(host)
+  // constructor(host) {
+  constructor(base_url, refresh = 5000) {
+    this.wifi = new WifiStrength(base_url)
+    this.power = new SensorVoltageTask(base_url)
+    this.temp = new SensorTemperatureTask(base_url)
+    this.cellular = new CellularCarrier(base_url)
+    // }
+
+    // constructor(base_url, refresh = 5000) {
+    this.url = url.resolve(base_url, 'standby-menu')
+    // this.header = "Temperature"
+    this.autoRefresh = refresh
+  }
+  loading() {
+    // return [this.header, "Loading..."]
+    return []
+  }
+  results() {
+    return new Promise((resolve, reject) => {
+      fetch(this.url)
+        .then(data => {
+          return data.json()
+        })
+        .then(async res => {
+          // resolve([this.header, `Temp:${res.celsius}C [${res.fahrenheit}F]`])
+          await this.getWifiStrength()
+          await this.getBattVoltage()
+          await this.getCellStrength()
+          await this.getTempValues()
+        })
+        .catch(error => {
+          resolve([this.header, `error`])
+        })
+    })
   }
 
-  async results() {
+  // async results() {
 
-    await this.getWifiStrength()
-    await this.getBattVoltage()
-    await this.getCellStrength()
-    await this.getTempValues()
-  }
+  // await this.getWifiStrength()
+  // await this.getBattVoltage()
+  // await this.getCellStrength()
+  // await this.getTempValues()
+  // }
 
   clearScreen() {
     display.clear()
@@ -33,12 +63,13 @@ class StandBy {
 
   async getWifiStrength() {
     let wifi_results = await this.wifi.results()
+    console.log('wifi signal', wifi_results)
     await this.createWifiChar(wifi_results)
   }
 
   async createWifiChar(percent) {
 
-    if (percent > 85) {
+    if (percent > 97) {
 
       display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.high)
       display.lcd.setCursor(0, 0)
@@ -52,7 +83,7 @@ class StandBy {
       display.lcd.setCursor(2, 0)
       display.lcd.print(wifi.block_right.hex)
 
-    } else if (percent <= 85 && percent > 50) {
+    } else if (percent <= 97 && percent > 50) {
 
       display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.med)
       display.lcd.setCursor(0, 0)
@@ -91,7 +122,7 @@ class StandBy {
     display.lcd.setCursor(3, 2)
     display.lcd.print(battery.top.hex)
 
-    if (voltage > 11.75) {
+    if (voltage > 11.67) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -105,7 +136,7 @@ class StandBy {
       display.lcd.setCursor(2, 2)
       display.lcd.print(battery.full_bar.hex)
 
-    } else if (voltage <= 11.75 && voltage > 10) {
+    } else if (voltage <= 11.67 && voltage > 10) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -190,7 +221,7 @@ class StandBy {
 
     let regex_temp = temp_results[1].match(/-?\d+/g)
 
-    if(!regex_temp) {
+    if (!regex_temp) {
       display.lcd.setCursor(12, 0)
       display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
 
@@ -200,7 +231,7 @@ class StandBy {
 
       display.lcd.setCursor(12, 0)
       display.lcd.print(`${regex_temp[0]}${temp.degree.hex}C`)
-  
+
       display.lcd.setCursor(12, 1)
       display.lcd.print(`${regex_temp[1]}${temp.degree.hex}F`)
     }

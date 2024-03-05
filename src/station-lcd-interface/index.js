@@ -94,14 +94,19 @@ let items = new MenuItem("main", null, [
 */
 
 let menu = new MenuManager(items)
-let standby_class = new StandBy(host)
+// let standby_class = new StandBy(host)
+
+let standby_item = new MenuItem('StandBy', new StandBy(host), [])
+
+let standby_menu = new MenuManager(standby_item)
 
 menu.init()
 
 setInterval(async () => {
-
-  standby_class.clearScreen()
-  await standby_class.results()
+  standby_menu.init()
+  standby_menu.select()
+  // standby_class.clearScreen()
+  // await standby_class.results()
 }, 10000)
 
 /*
