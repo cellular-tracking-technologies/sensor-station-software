@@ -19,6 +19,14 @@ class StandBy {
     this.cellular = new CellularCarrier(host)
   }
 
+  async results() {
+
+    await this.getWifiStrength()
+    await this.getBattVoltage()
+    await this.getCellStrength()
+    await this.getTempValues()
+  }
+
   clearScreen() {
     display.clear()
   }
@@ -182,15 +190,6 @@ class StandBy {
     display.lcd.setCursor(12, 1)
     display.lcd.print(`${regex_temp[1]}${temp.degree.hex}F`)
   }
-
-  async results() {
-
-    await this.getWifiStrength()
-    await this.getBattVoltage()
-    await this.getCellStrength()
-    await this.getTempValues()
-  }
-
 }
 
 export { StandBy }
