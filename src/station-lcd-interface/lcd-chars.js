@@ -41,6 +41,11 @@ const battery = {
         char: 2,
         hex: `\x02`,
     },
+    full_bar: {
+        byte: null,
+        char: null,
+        hex: `\xff`,
+    }
 }
 
 export { wifi, battery }

@@ -44,43 +44,20 @@ class StandBy {
       display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.high)
       display.lcd.setCursor(2, 0)
       display.lcd.print(wifi.block_right.hex)
-      // block_left = Buffer.from([0x00, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
-      // arrByte = Uint8Array.from(block_left)
-      // display.lcd.createChar(5, arrByte)
-      // display.lcd.setCursor(0, 0)
-      // display.lcd.print(`\x05`)
-
-      // block_center = Buffer.from([0x1f, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
-      // arrByte = Uint8Array.from(block_center)
-      // display.lcd.createChar(6, arrByte)
-      // display.lcd.setCursor(1, 0)
-      // display.lcd.print(`\x06`)
-
-      // block_right = Buffer.from([0x00, 0x18, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
-      // arrByte = Uint8Array.from(block_right)
-      // display.lcd.createChar(7, arrByte)
-      // display.lcd.setCursor(2, 0)
-      // display.lcd.print(`\x07`)
 
     } else if (percent <= 85 && percent > 50) {
 
-      // block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
-      // arrByte = Uint8Array.from(block_left)
-      // display.lcd.createChar(5, arrByte)
+      display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.med)
       display.lcd.setCursor(0, 0)
-      display.lcd.print(`\x05`)
+      display.lcd.print(wifi.block_left.hex)
 
-      // block_center = Buffer.from([0x00, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
-      // arrByte = Uint8Array.from(block_center)
-      // display.lcd.createChar(6, arrByte)
+      display.lcd.createChar(wifi.block_center.char, wifi.block_center.byte.med)
       display.lcd.setCursor(1, 0)
-      display.lcd.print(`\x06`)
+      display.lcd.print(wifi.block_center.hex)
 
-      // block_right = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
-      // arrByte = Uint8Array.from(block_right)
-      // display.lcd.createChar(7, arrByte)
+      display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.med)
       display.lcd.setCursor(2, 0)
-      display.lcd.print(`\x07`)
+      display.lcd.print(wifi.block_right.hex)
     }
   }
 
@@ -93,60 +70,61 @@ class StandBy {
 
   async createBattChar(voltage) {
     console.log('voltage', voltage)
-    let bar0, bar1, bar2, top, arrByte
-    top = Uint8Array.from(Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex'))
-    let empty_bar = Uint8Array.from(Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex'))
-    let full_bar = `\xff`
+    // let bar0, bar1, bar2, top, arrByte
+    // top = Uint8Array.from(Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex'))
+    // let empty_bar = Uint8Array.from(Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex'))
+    // let full_bar = `\xff`
 
-    display.lcd.createChar(1, top)
-    display.lcd.createChar(2, empty_bar)
+    display.lcd.createChar(battery.top.char, battery.top.byte)
+    display.lcd.createChar(battery.empty_bar.char, battery.empty_bar.byte)
     // display.lcd.createChar(3, full_bar)
 
     // print top part of battery
     display.lcd.setCursor(3, 2)
-    display.lcd.print(`\x01`)
+    display.lcd.print(battery.top.hex)
 
     if (voltage > 11.5) {
 
-      //   // print bar0
-      //   display.lcd.setCursor(0, 2)
-      //   display.lcd.print(full_bar)
-
-      //   // print bar1
-      //   display.lcd.setCursor(1, 2)
-      //   display.lcd.print(full_bar)
-
-      //   // print bar2
-      //   display.lcd.setCursor(2, 2)
-      //   display.lcd.print(full_bar)
-
-      // } else if (voltage <= 11.75 && voltage > 10) {
-
-      //   // print bar0
-      //   display.lcd.setCursor(0, 2)
-      //   display.lcd.print(full_bar)
-
-      //   // print bar1
-      //   display.lcd.setCursor(1, 2)
-      //   display.lcd.print(full_bar)
-
-      //   // print bar2
-      //   display.lcd.setCursor(2, 2)
-      //   display.lcd.print(`\x02`)
-
-
-      // } else if (voltage <= 10) {
       // print bar0
       display.lcd.setCursor(0, 2)
-      display.lcd.print(full_bar)
+      display.lcd.print(battery.full_bar.hex)
 
       // print bar1
       display.lcd.setCursor(1, 2)
-      display.lcd.print(`\x02`)
+      display.lcd.print(battery.full_bar.hex)
 
       // print bar2
       display.lcd.setCursor(2, 2)
-      display.lcd.print(`\x02`)
+      display.lcd.print(battery.full_bar.hex)
+
+    } else if (voltage <= 11.75 && voltage > 10) {
+
+      // print bar0
+      display.lcd.setCursor(0, 2)
+      display.lcd.print(battery.full_bar.hex)
+
+      // print bar1
+      display.lcd.setCursor(1, 2)
+      display.lcd.print(battery.full_bar.hex)
+
+      // print bar2
+      display.lcd.setCursor(2, 2)
+      display.lcd.print(battery.empty_bar.hex)
+
+
+    } else if (voltage <= 10) {
+
+      // print bar0
+      display.lcd.setCursor(0, 2)
+      display.lcd.print(battery.full_bar.hex)
+
+      // print bar1
+      display.lcd.setCursor(1, 2)
+      display.lcd.print(battery.empty_bar.hex)
+
+      // print bar2
+      display.lcd.setCursor(2, 2)
+      display.lcd.print(battery.empty_bar.hex)
     }
 
   }
