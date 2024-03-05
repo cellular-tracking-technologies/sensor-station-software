@@ -25,6 +25,11 @@ const wifi = {
         char: 7,
         hex: `\x07`,
     },
+    warning: {
+        byte: null,
+        char: null,
+        hex: `\x21`,
+    },
 }
 
 
@@ -44,7 +49,12 @@ const battery = {
         byte: null,
         char: null,
         hex: `\xff`,
-    }
+    },
+    warning: {
+        byte: null,
+        char: null,
+        hex: `\x21`,
+    },
 }
 
 const cell = {
@@ -82,6 +92,11 @@ const temp = {
         byte: null,
         char: null,
         hex: `\xdf`,
+    },
+    warning: {
+        byte: null,
+        char: null,
+        hex: `\x21`,
     }
 }
 

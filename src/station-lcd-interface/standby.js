@@ -65,6 +65,9 @@ class StandBy {
       display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.med)
       display.lcd.setCursor(2, 0)
       display.lcd.print(wifi.block_right.hex)
+    } else {
+      display.lcd.setCursor(1, 0)
+      display.lcd.print(wifi.warning.hex)
     }
   }
 
@@ -130,6 +133,9 @@ class StandBy {
       // print bar2
       display.lcd.setCursor(2, 2)
       display.lcd.print(battery.empty_bar.hex)
+    } else {
+      display.lcd.setCursor(1, 2)
+      display.lcd.print(battery.warning.hex)
     }
 
   }
@@ -184,11 +190,21 @@ class StandBy {
 
     let regex_temp = temp_results[1].match(/-?\d+/g)
 
-    display.lcd.setCursor(12, 0)
-    display.lcd.print(`${regex_temp[0]}${temp.degree.hex}C`)
+    if(!regex_temp) {
+      display.lcd.setCursor(12, 0)
+      display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
 
-    display.lcd.setCursor(12, 1)
-    display.lcd.print(`${regex_temp[1]}${temp.degree.hex}F`)
+      display.lcd.setCursor(12, 1)
+      display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
+    } else {
+
+      display.lcd.setCursor(12, 0)
+      display.lcd.print(`${regex_temp[0]}${temp.degree.hex}C`)
+  
+      display.lcd.setCursor(12, 1)
+      display.lcd.print(`${regex_temp[1]}${temp.degree.hex}F`)
+    }
+
   }
 }
 

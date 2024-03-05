@@ -46,7 +46,7 @@ const host = 'http://localhost:3000'
 // let stand_by = new MenuItem('stand-by', new StandBy(host), [])
 
 let items = new MenuItem("main", null, [
-  new MenuItem('StandBy', new StandBy(host), []),
+  // new MenuItem('StandBy', new StandBy(host), []),
 
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -96,14 +96,9 @@ let items = new MenuItem("main", null, [
 let menu = new MenuManager(items)
 let standby_class = new StandBy(host)
 
-// let standby = new MenuItem('standby', new StandBy(host), [])
-// let standby_menu = new MenuManager(standby)
-
 menu.init()
 
 setInterval(async () => {
-  // standby_menu.init()
-  // standby_menu.select()
 
   standby_class.clearScreen()
   await standby_class.results()
