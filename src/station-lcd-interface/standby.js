@@ -3,6 +3,7 @@ import { CellularCarrier } from "./tasks/cellular-task.js"
 import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
 import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
+import { wifi, battery } from './lcd-chars.js'
 
 /**
  * 
@@ -32,41 +33,52 @@ class StandBy {
 
     if (percent > 85) {
 
-      block_left = Buffer.from([0x00, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
-      arrByte = Uint8Array.from(block_left)
-      display.lcd.createChar(5, arrByte)
+      display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.high)
       display.lcd.setCursor(0, 0)
-      display.lcd.print(`\x05`)
+      display.lcd.print(wifi.block_left.hex)
 
-      block_center = Buffer.from([0x1f, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
-      arrByte = Uint8Array.from(block_center)
-      display.lcd.createChar(6, arrByte)
+      display.lcd.createChar(wifi.block_center.char, wifi.block_center.byte.high)
       display.lcd.setCursor(1, 0)
-      display.lcd.print(`\x06`)
+      display.lcd.print(wifi.block_center.hex)
 
-      block_right = Buffer.from([0x00, 0x18, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
-      arrByte = Uint8Array.from(block_right)
-      display.lcd.createChar(7, arrByte)
+      display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.high)
       display.lcd.setCursor(2, 0)
-      display.lcd.print(`\x07`)
+      display.lcd.print(wifi.block_right.hex)
+      // block_left = Buffer.from([0x00, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
+      // arrByte = Uint8Array.from(block_left)
+      // display.lcd.createChar(5, arrByte)
+      // display.lcd.setCursor(0, 0)
+      // display.lcd.print(`\x05`)
+
+      // block_center = Buffer.from([0x1f, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
+      // arrByte = Uint8Array.from(block_center)
+      // display.lcd.createChar(6, arrByte)
+      // display.lcd.setCursor(1, 0)
+      // display.lcd.print(`\x06`)
+
+      // block_right = Buffer.from([0x00, 0x18, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
+      // arrByte = Uint8Array.from(block_right)
+      // display.lcd.createChar(7, arrByte)
+      // display.lcd.setCursor(2, 0)
+      // display.lcd.print(`\x07`)
 
     } else if (percent <= 85 && percent > 50) {
 
-      block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
-      arrByte = Uint8Array.from(block_left)
-      display.lcd.createChar(5, arrByte)
+      // block_left = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')
+      // arrByte = Uint8Array.from(block_left)
+      // display.lcd.createChar(5, arrByte)
       display.lcd.setCursor(0, 0)
       display.lcd.print(`\x05`)
 
-      block_center = Buffer.from([0x00, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
-      arrByte = Uint8Array.from(block_center)
-      display.lcd.createChar(6, arrByte)
+      // block_center = Buffer.from([0x00, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')
+      // arrByte = Uint8Array.from(block_center)
+      // display.lcd.createChar(6, arrByte)
       display.lcd.setCursor(1, 0)
       display.lcd.print(`\x06`)
 
-      block_right = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
-      arrByte = Uint8Array.from(block_right)
-      display.lcd.createChar(7, arrByte)
+      // block_right = Buffer.from([0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')
+      // arrByte = Uint8Array.from(block_right)
+      // display.lcd.createChar(7, arrByte)
       display.lcd.setCursor(2, 0)
       display.lcd.print(`\x07`)
     }
