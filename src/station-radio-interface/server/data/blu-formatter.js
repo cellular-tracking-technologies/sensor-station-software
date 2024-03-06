@@ -24,7 +24,7 @@ class BluFormatter {
       // 'Id',
       'VCC',
       'Temp',
-      'Raw Payload',
+      'Payload',
       'NodeId',
       // 'Broadcast Id',
       // 'Payload Id',
@@ -37,7 +37,6 @@ class BluFormatter {
    * @param {object} record - GPS record received from GPSD
    */
   formatRecord(record) {
-    // console.log('blu formatter record', record)
     let fields, usb_port, channel, recorded_at, product, tag_rssi, id, sync, revision, raw_payload, solar, temp
     let node_id = ''
 

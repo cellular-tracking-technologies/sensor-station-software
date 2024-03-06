@@ -14,7 +14,6 @@ class BluReceiverTask {
 class BluReceiver extends EventEmitter {
   #data
   constructor(opts) {
-    // console.log('blu receiver opts', opts)
     super()
     this.#data = {
       io: new BluReceiverIo({ path: opts.path }),
@@ -24,16 +23,16 @@ class BluReceiver extends EventEmitter {
     }
 
     this.#data.io.on('open', () => {
-      // console.log('blu radio is opening')
       this.#data.connected = true
       this.run_schedule()
     })
     this.#data.io.on('close', () => {
-      console.log('blu radio is closing')
 
       this.#data.connected = false
-      // process.exit(0)
+      // process.exit(0) // shuts down program if usb adapter is removed
     })
+
+    console.log('blu receiver opts', opts)
   }
   /**
    * 
@@ -100,6 +99,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get detections error', e)
 
           const { error, data } = e
           this.finalize({
@@ -118,7 +118,6 @@ class BluReceiver extends EventEmitter {
 
         try {
           const data = await this.#data.io.dfu(job.radio_channel, job.data.file)
-          console.log('blu receiver dfu data', data)
           this.finalize({
             task: BluReceiverTask.DFU,
             radio_channel: job.radio_channel,
@@ -160,6 +159,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get leds error', e)
 
           this.finalize({
             task: BluReceiverTask.LEDS,
@@ -186,6 +186,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get reboot error', e)
 
           this.finalize({
             task: BluReceiverTask.REBOOT,
@@ -213,6 +214,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('set config error', e)
 
           this.finalize({
             task: BluReceiverTask.CONFIG,
@@ -239,6 +241,7 @@ class BluReceiver extends EventEmitter {
           })
 
         } catch (e) {
+          console.log('get stats error', e)
 
           this.finalize({
             task: BluReceiverTask.STATS,
@@ -271,6 +274,16 @@ class BluReceiver extends EventEmitter {
       error,
       data,
     })
+  }
+
+  clear_listener(eventType) {
+    this.#data.io.clearlistener(eventType)
+  }
+
+  async hard_reset() {
+    await this.#data.io.power_off()
+    // await new Promise(r => setTimeout(r, 10000));
+    // await this.#data.io.power_on()
   }
 }
 

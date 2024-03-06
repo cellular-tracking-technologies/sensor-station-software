@@ -6,7 +6,6 @@ class UsbWifiUploadTask {
   constructor(base_url) {
     this.url = url.resolve(base_url, 'usb/wifi')
     this.header = "WiFi"
-    console.log('url', this.url)
 
   }
   loading() {

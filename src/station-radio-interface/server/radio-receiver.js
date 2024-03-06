@@ -15,7 +15,6 @@ class RadioReceiver extends EventEmitter {
    * @param {*} opts 
    */
   constructor(opts) {
-    // console.log('radio receiver opts', opts)
     super()
     this.port_uri = opts.port_uri
     this.baud_rate = opts.baud_rate
@@ -39,13 +38,11 @@ class RadioReceiver extends EventEmitter {
       ook: "preset:ooktag",
       version: "version",
     }
-    // console.log('build serial interface port', this.port_uri)
 
     this.pollFirmware = this.pollFirmware.bind(this)
   }
 
   destroy() {
-    console.log('radio', this.channel, 'is destroyed')
     this.cancel()
     delete this.port_uri
     delete this.parser
@@ -100,7 +97,6 @@ class RadioReceiver extends EventEmitter {
    */
   write(data) {
     if (data) { // data was coming in null...
-      console.log('radio receiver write data', data)
       console.log(`${moment(new Date()).utc().format('YYYY-MM-DD HH:mm:ss')} writing to radio ${this.channel}:  ${data.trim()}`)
       // emit 'write' message  with data to write / channel
       this.emit('write', {

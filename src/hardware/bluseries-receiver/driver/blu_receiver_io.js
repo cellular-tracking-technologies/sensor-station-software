@@ -39,20 +39,26 @@ class BluReceiverIo extends EventEmitter {
     }
 
     this.#data.usb.connect()
-    this.#data.usb.on('open', (data) => {
+    this.#data.usb.on('open', async (data) => {
       /** 
        * Power must be applied to the upstream device AFTER a usb connection 
        * has been established.
        */
-      this.power_on()
+
+      // if (this.#data.usb.dtr == false || this.#data.usb.dtr == undefined) {
+      //   await this.power_off()
+      // }
+
+      await this.power_on()
       /**
        * Wait for the device to boot before sending commands
        */
       setTimeout(() => {
         this.emit('open')
-      }, 1500)
+      }, 1500) // initial value was 1500
     })
-    this.#data.usb.on('close', (data) => {
+    this.#data.usb.on('close', async (data) => {
+
       this.emit('close')
     })
   }
@@ -60,10 +66,10 @@ class BluReceiverIo extends EventEmitter {
   /**
    * 
    */
-  power_off() {
+  async power_off() {
     this.#data.usb.dtr = true
   }
-  power_on() {
+  async power_on() {
     console.log('Booting Device...')
     this.#data.usb.dtr = false
   }
@@ -123,7 +129,7 @@ class BluReceiverIo extends EventEmitter {
 
         try {
           let o = JSON.parse(data)
-          console.log('dfu o', o)
+          // console.log('dfu o', o)
           switch (o.type) {
             case this.#commands.DFU_START:
               this.send_command(this.#data.dfu.fragment(this.#commands.DFU_FRAGMENT))
@@ -167,6 +173,7 @@ class BluReceiverIo extends EventEmitter {
       let detections = []
 
       this.addSelfDestructingEventListener('line', { timeout: 1500, reload: true }, (data, error) => {
+        // console.log('self destruct event listener', data)
         if (error === 'timeout') {
           reject(error)
           return true
@@ -265,6 +272,7 @@ class BluReceiverIo extends EventEmitter {
     return promise
   }
   clearlistener(eventType) {
+    console.log('clear listener data', this.#data)
     this.#data.usb.removeAllListeners(eventType)
   }
   /**

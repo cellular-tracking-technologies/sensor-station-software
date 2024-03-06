@@ -6,14 +6,14 @@ class SerialClient extends EventEmitter {
   constructor(opts) {
     super()
 
-    const { path} = opts
+    const { path } = opts
     if (path === undefined) throw Error('no path provided')
     console.log('opening serial port', path, opts)
     this.port = new SerialPort(path, {
       baudRate: opts.baud ? opts.baud : 115200,
       autoOpen: false,
     })
-    console.log('baud rate', opts.baud)
+    // console.log('baud rate', opts.baud)
 
     this.port.on('open', () => {
       console.log(`opened serial port ${this.port.path}; baud: ${this.port.baudRate}`)
@@ -26,7 +26,7 @@ class SerialClient extends EventEmitter {
       console.log(`closed serial port ${this.port.path}`)
       this.emit('close', { port: this.port.path, })
     })
-    this.port.on('error', (err) => { 
+    this.port.on('error', (err) => {
       console.log(`port error on ${this.port.path} ${err}`)
     })
     // this.port.on('data', (buffer) => {
@@ -46,7 +46,7 @@ class SerialClient extends EventEmitter {
     this.port.set({ dtr: enable })
   }
   connect() {
-      this.port.open()
+    this.port.open()
   }
   write(buffer) {
     this.port.write(buffer)
