@@ -14,60 +14,64 @@ class StandBy {
    * @param {String} host ip address of server
    */
   constructor(base_url, refresh = 5000) {
-    this.wifi = new WifiStrength(base_url)
-    this.power = new SensorVoltageTask(base_url)
-    this.temp = new SensorTemperatureTask(base_url)
-    this.cellular = new CellularCarrier(base_url)
-    this.header = 'stand by menu'
-    this.url = url.resolve(base_url, '/standby')
+    this.volt_url = url.resolve(base_url, 'sensor/voltages')
+    this.temp_url = url.resolve(base_url, 'sensor/temperature')
+    this.wifi_url = url.resolve(base_url, 'internet/wifi-strength')
+    this.cell_url = url.resolve(base_url, 'modem')
+
     this.autoRefresh = refresh
   }
   loading() {
     // return [this.header, "Loading..."]
     return []
   }
-  results() {
-    return new Promise((resolve, reject) => {
-      console.log('standby url', this.url)
-      fetch(this.url)
-        .then(data => {
-          console.log('fetch data', data)
-          return data.json()
-        })
-        .then(res => {
-          // resolve(res)
-          console.log('standby data', res)
+  async results() {
+    try {
 
-          resolve([this.header, `${res.wifi_strength}`])
+      let [voltages, temperature, wifi_res, cell_res] = await Promise.all([
+        fetch(this.volt_url),
+        fetch(this.temp_url),
+        fetch(this.wifi_url),
+        fetch(this.cell_url),
+      ]).then(([voltages, temperature, wifi, cell]) => {
+        return [
+          voltages.json(),
+          temperature.json(),
+          wifi.json(),
+          cell.json()
+        ]
+      })
+      // }).then(async values => {
 
-          // resolve([this.header, `Temp:${res.celsius}C [${res.fahrenheit}F]`])
-          // await this.getWifiStrength()
-          // await this.getBattVoltage()
-          // await this.getCellStrength()
-          // await this.getTempValues()
-        })
-        .catch(error => {
-          resolve([this.header, `error`])
-        })
-    })
+      console.log('standby data', await voltages, await temperature, await wifi_res, await cell_res)
+      // resolve([this.header, `${res.wifi_strength}`, `${res.temperature}`, `${res.voltages}`])
+
+      // resolve([this.header, `Temp:${res.celsius}C [${res.fahrenheit}F]`])
+      await this.getWifiStrength(await wifi_res)
+      await this.getBattVoltage(await voltages)
+      await this.getCellStrength(await cell_res)
+      await this.getTempValues(await temperature)
+    } catch (err) {
+      console.error(err)
+    }
+    // })
+    // .catch(error => {
+    //   resolve([this.header, `error`])
+    // })
   }
-
-  // async results() {
-
-  // await this.getWifiStrength()
-  // await this.getBattVoltage()
-  // await this.getCellStrength()
-  // await this.getTempValues()
-  // }
 
   clearScreen() {
     display.clear()
   }
 
-  async getWifiStrength() {
-    let wifi_results = await this.wifi.results()
-    console.log('wifi signal', wifi_results)
-    await this.createWifiChar(wifi_results)
+  async getWifiStrength(wifi_res) {
+    let { wifi_strength: percent } = wifi_res
+    console.log('get wifi strength percent', percent)
+    await this.createWifiChar(Number(percent))
+
+    // let wifi_results = await this.wifi.results()
+    // console.log('wifi signal', wifi_results)
+    // await this.createWifiChar(wifi_results)
   }
 
   async createWifiChar(percent) {
@@ -105,11 +109,12 @@ class StandBy {
     }
   }
 
-  async getBattVoltage() {
-    let battery_results = await this.power.results()
-    console.log('battery results', battery_results)
-    let volt = Number(battery_results[1].match(/(\d.+)/g))
-    await this.createBattChar(volt)
+  async getBattVoltage(voltage) {
+    await this.createBattChar(Number(voltage.battery))
+    // let battery_results = await this.power.results()
+    // console.log('battery results', battery_results)
+    // let volt = Number(battery_results[1].match(/(\d.+)/g))
+    // await this.createBattChar(volt)
   }
 
   async createBattChar(voltage) {
@@ -174,14 +179,16 @@ class StandBy {
 
   }
 
-  async getCellStrength() {
-    let cell_results = await this.cellular.results()
-    console.log('cell signal', cell_results[2].match(/(-)\w+/g))
-    let rssi = cell_results[2].match(/(-)\w+/g) ? Number(cell_results[2].match(/(-)\w+/g)) : undefined
+  async getCellStrength(cell) {
+    let { signal } = cell
+    // let cell_results = await this.cellular.results()
+    console.log('cell signal', signal.match(/(-)\w+/g))
+    let rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
     await this.createCellChar(rssi)
   }
 
   async createCellChar(rssi) {
+    console.log('create cell char rssi', rssi)
     if (rssi > -113) {
       display.lcd.setCursor(5, 0)
       display.lcd.print(cell.left.hex)
@@ -219,12 +226,16 @@ class StandBy {
     }
   }
 
-  async getTempValues() {
-    let temp_results = await this.temp.results()
+  async getTempValues(temperature) {
+    let { celsius, fahrenheit } = temperature
+    console.log(celsius, 'C', fahrenheit, 'F')
+    // let temp_results = await this.temp.results()
 
-    let regex_temp = temp_results[1].match(/-?\d+/g)
+    // let regex_temp = temp_results[1].match(/-?\d+/g)
 
-    if (!regex_temp) {
+    // let regex_temp = temperature
+
+    if (!celsius) {
       display.lcd.setCursor(12, 0)
       display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
 
@@ -233,10 +244,10 @@ class StandBy {
     } else {
 
       display.lcd.setCursor(12, 0)
-      display.lcd.print(`${regex_temp[0]}${temp.degree.hex}C`)
+      display.lcd.print(`${celsius.toString()}${temp.degree.hex}C`)
 
       display.lcd.setCursor(12, 1)
-      display.lcd.print(`${regex_temp[1]}${temp.degree.hex}F`)
+      display.lcd.print(`${fahrenheit}${temp.degree.hex}F`)
     }
 
   }

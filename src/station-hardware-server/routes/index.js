@@ -5,30 +5,8 @@ import path from 'path'
 import { ComputeModule } from './compute-module.js'
 import { fileURLToPath } from 'url'
 import StationIdInterface from '../../hardware/id-driver/station-id-interface.js'
-import WifiSignal from '../../hardware/wifi/wifi-signal.js'
-
-
-// import { exec } from 'child_process'
-
-// import SensorMonitor from '../../hardware/sensors/index.js'
-
-
 
 const ModuleInfo = new ComputeModule()
-
-// try {
-// 	let Monitor = new SensorMonitor()
-// 	Monitor.start(5000)
-// 	Monitor.on('sensor', (data) => {
-// 		standby_data.voltages = data.voltages
-// 		standby_data.temperature = data.temperature
-// 	})
-// 	Monitor.read()
-// } catch (err) {
-// 	console.error(err)
-// }
-
-
 
 const router = express.Router()
 const __filename = fileURLToPath(import.meta.url)
@@ -109,23 +87,6 @@ router.get('/about', (req, res, next) => {
 router.get('/node/version', function (req, res, next) {
 	res.json({ version: package_info.version })
 })
-
-router.get('/standby', async (req, res, next) => {
-	let wifi = new WifiSignal()
-	let percent = await wifi.getWifiSignal()
-	res.json({ wifi_strength: percent, })
-	// res.json({
-	// 	wifi: standby_data.wifi_percent,
-	// 	temperature: standby_data.temperature,
-	// 	voltages: standby_data.voltages,
-	// })
-
-})
-
-
-
-
-
 
 
 export default router
