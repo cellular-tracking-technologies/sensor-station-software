@@ -13,17 +13,13 @@ class StandBy {
   /**
    * @param {String} host ip address of server
    */
-  // constructor(host) {
   constructor(base_url, refresh = 5000) {
     this.wifi = new WifiStrength(base_url)
     this.power = new SensorVoltageTask(base_url)
     this.temp = new SensorTemperatureTask(base_url)
     this.cellular = new CellularCarrier(base_url)
-    // }
-
-    // constructor(base_url, refresh = 5000) {
-    this.url = url.resolve(base_url, 'standby-menu')
-    // this.header = "Temperature"
+    this.header = 'stand by menu'
+    this.url = url.resolve(base_url, '/standby')
     this.autoRefresh = refresh
   }
   loading() {
@@ -32,16 +28,23 @@ class StandBy {
   }
   results() {
     return new Promise((resolve, reject) => {
+      console.log('standby url', this.url)
       fetch(this.url)
         .then(data => {
+          console.log('fetch data', data)
           return data.json()
         })
-        .then(async res => {
+        .then(res => {
+          // resolve(res)
+          console.log('standby data', res)
+
+          resolve([this.header, `${res.wifi_strength}`])
+
           // resolve([this.header, `Temp:${res.celsius}C [${res.fahrenheit}F]`])
-          await this.getWifiStrength()
-          await this.getBattVoltage()
-          await this.getCellStrength()
-          await this.getTempValues()
+          // await this.getWifiStrength()
+          // await this.getBattVoltage()
+          // await this.getCellStrength()
+          // await this.getTempValues()
         })
         .catch(error => {
           resolve([this.header, `error`])
