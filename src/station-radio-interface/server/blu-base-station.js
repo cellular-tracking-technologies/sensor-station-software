@@ -20,6 +20,47 @@ class BluStation {
     this.blu_fw_checkin = {}
     this.blu_version
     this.blu_updater = new BluFirmwareUpdater({})
+    this.config = opts.config
+    // this.toggleRadioMode = opts.toggleRadioMode()
+    // this.toggleBluState = opts.toggleBluState()
+  }
+
+  /**
+ * 
+ * @param {Object} opts 
+ * @param {Number} opts.channel
+ * @param {String} opts.mode
+ */
+  toggleRadioMode(opts) {
+    if (opts.channel in Object.keys(this.active_radios)) {
+      this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
+      let radio = this.active_radios[opts.channel]
+      this.config.toggleRadioMode({
+        channel: opts.channel,
+        cmd: radio.preset_commands[opts.mode]
+      })
+      radio.issuePresetCommand(opts.mode)
+    } else {
+      this.stationLog(`invalid radio channel ${opts.channel}`)
+    }
+  }
+
+  /**
+ * 
+ * @param {Object} opts 
+ * @param {Number} opts.receiver_channel
+ * @param {Number} opts.blu_radio_channel
+ * @param {Number} opts.poll_interval
+ * @param {String} opts.radio_state
+ */
+  async toggleBluState(opts) {
+    // console.log('toggle blu state', opts)
+    await this.config.toggleRadioMode({
+      receiver_channel: opts.receiver_channel,
+      poll_interval: opts.poll_interval,
+      blu_radio_channel: opts.blu_radio_channel,
+      radio_state: opts.radio_state,
+    })
   }
 
   /**
@@ -40,6 +81,77 @@ class BluStation {
  */
   stationLog(...msgs) {
     this.data_manager.log(msgs)
+  }
+
+  /**
+ * start web socket server
+ */
+  startWebsocketServer() {
+    // this.sensor_socket_server = new SensorSocketServer({
+    //   port: this.config.data.http.websocket_port,
+    // })
+    // this.sensor_socket_server.on('open', (event) => {
+
+    // })
+    this.sensor_socket_server.on('cmd', async (cmd) => {
+      switch (cmd.cmd) {
+        case ('blu_radio_all_on'):
+          await this.bluRadiosAllOn(cmd)
+          let on_receiver = this.blu_receivers.find(receiver => receiver.port == Number(cmd.data.port))
+          await this.setBluReceiverState(on_receiver)
+          break;
+        case ('blu_radio_all_off'):
+          await this.bluRadiosAllOff(cmd)
+          let off_receiver = this.blu_receivers.find(receiver => receiver.port == Number(cmd.data.port))
+          await this.setBluReceiverState(off_receiver)
+          break
+        case ('blu_led_all'):
+          await this.bluRadiosAllLed(cmd)
+          let led_receiver = this.blu_receivers.find(receiver => receiver.port == Number(cmd.data.port))
+          await this.setBluReceiverState(led_receiver)
+          break
+        case ('blu_reboot_all'):
+          await this.bluRadiosAllReboot(cmd)
+          let reboot_receiver = this.blu_receivers.find(receiver => receiver.port == Number(cmd.data.port))
+          await this.setBluReceiverState(reboot_receiver)
+          break
+        case ('all_change_poll'):
+          await this.bluRadiosAllChangePoll(cmd)
+          let poll_receiver = this.blu_receivers.find(receiver => receiver.port == Number(cmd.data.port))
+          this.setBluReceiverState(poll_receiver)
+          break
+        case ('toggle_blu'):
+          if (cmd.data.type === 'blu_on') {
+            let blu_on = await this.bluRadioOn(cmd)
+            await this.setBluRadioState(blu_on)
+          } else if (cmd.data.type === "blu_off") {
+            let blu_off = await this.blu_station.bluRadioOff(cmd)
+            await this.setBluRadioState(blu_off)
+          }
+          break
+        case ('toggle_blu_led'):
+          this.bluLed(cmd)
+          break
+        case ('reboot_blu_radio'):
+          let blu_reboot = await this.blu_station.bluReboot(cmd)
+          await this.setBluRadioState(blu_reboot)
+          break
+        case ('change_poll'):
+          let blu_poll = await this.blu_station.bluChangePoll(cmd)
+          await this.setBluRadioState(blu_poll)
+          break
+        case ('update-blu-firmware'):
+          await this.updateBluRadio(cmd)
+          break
+
+          break
+        default:
+          break
+      }
+    })
+    this.sensor_socket_server.on('client_conn', (ip) => {
+      this.stationLog(`client connected from IP: ${ip}`)
+    })
   }
 
   // /**
@@ -65,6 +177,8 @@ class BluStation {
     )
 
     const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
+
+    this.startWebsocketServer()
 
     // Blu Event Emitter
     blu_receiver.on('complete', async (job) => {
@@ -675,6 +789,45 @@ class BluStation {
     // radio.beeps = await receiver.stopDetections(radio)
     // radio.dropped = await receiver.stopStats(radio)
 
+  }
+
+  /**
+  * @param {Object} receiver BluReceiver object
+  * @param {String} receiver.port Port number in string format
+  */
+  async setBluReceiverState(receiver) {
+    // console.log('set blu receiver state opts', receiver)
+
+    let receiver_channel = receiver.port
+
+    receiver.blu_radios.forEach(async (radio) => {
+      let blu_radio_channel = radio.radio
+      let poll_interval = radio.poll_interval
+      let radio_state = radio.radio_state
+      await this.toggleBluState({ receiver_channel, blu_radio_channel, poll_interval, radio_state })
+    })
+  }
+
+  /**
+ * @param {Object} opts Websocket command object
+ * @param {Object} opts.receiver BluReceiver Object
+ * @param {String} opts.radio Radio Object on the receiver
+ */
+  async setBluRadioState(opts) {
+    console.log('set blu radio state', opts)
+    let { receiver, radio } = opts
+
+    let receiver_channel = receiver.port
+    let blu_radio_channel = radio.radio
+
+    if (opts.poll_interval) {
+      let poll_interval = Number(opts.poll_interval)
+      let radio_state = opts.scan ? Number(opts.state) : 1
+      await this.toggleBluState({ receiver_channel, blu_radio_channel, poll_interval, radio_state })
+    } else {
+      let radio_state = opts.scan ? Number(opts.state) : 1
+      await this.toggleBluState({ receiver_channel, blu_radio_channel, radio_state })
+    }
   }
 }
 
