@@ -3,7 +3,7 @@ import { CellularCarrier } from "./tasks/cellular-task.js"
 import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
 import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
-import { wifi, battery, cell, temp, solar } from './lcd-chars.js'
+import { wifi, battery, cell, temp, solar, thresholds } from './lcd-chars.js'
 import fetch from 'node-fetch'
 import url from 'url'
 /**
@@ -66,7 +66,7 @@ class StandBy {
 
   async createWifiChar(percent) {
 
-    if (percent > 97) {
+    if (percent > thresholds.wifi.max) {
 
       display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.high)
       display.lcd.setCursor(0, 0)
@@ -80,7 +80,7 @@ class StandBy {
       display.lcd.setCursor(2, 0)
       display.lcd.print(wifi.block_right.hex)
 
-    } else if (percent <= 97 && percent > 50) {
+    } else if (percent <= thresholds.wifi.max && percent > thresholds.wifi.med) {
 
       display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.med)
       display.lcd.setCursor(0, 0)
@@ -120,7 +120,7 @@ class StandBy {
     display.lcd.setCursor(3, 2)
     display.lcd.print(battery.top.hex)
 
-    if (voltage > 11.75) {
+    if (voltage > thresholds.battery.max) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -134,7 +134,7 @@ class StandBy {
       display.lcd.setCursor(2, 2)
       display.lcd.print(battery.full_bar.hex)
 
-    } else if (voltage <= 11.75 && voltage > 11.3) {
+    } else if (voltage <= thresholds.battery.max && voltage > thresholds.battery.min) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -149,7 +149,7 @@ class StandBy {
       display.lcd.print(battery.empty_bar.hex)
 
 
-    } else if (voltage <= 11.3) {
+    } else if (voltage <= thresholds.battery.min) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -179,7 +179,7 @@ class StandBy {
 
   async createCellChar(rssi) {
     console.log('create cell char rssi', rssi)
-    if (rssi > -90) {
+    if (rssi > thresholds.cell.max) {
       display.lcd.setCursor(5, 0)
       display.lcd.print(cell.left.hex)
 
@@ -198,7 +198,7 @@ class StandBy {
       display.lcd.setCursor(7, 1)
       display.lcd.print(cell.bottom.hex)
 
-    } else if (rssi <= -90 && rssi > -105) {
+    } else if (rssi <= thresholds.cell.max && rssi > thresholds.cell.med) {
       display.lcd.setCursor(6, 0)
       display.lcd.print(cell.left.hex)
 
@@ -210,7 +210,7 @@ class StandBy {
 
       display.lcd.setCursor(7, 1)
       display.lcd.print(cell.bottom.hex)
-    } else if (rssi <= -105) {
+    } else if (rssi <= thresholds.cell.med) {
       display.lcd.setCursor(7, 0)
       display.lcd.print(cell.center.hex)
 
@@ -250,37 +250,71 @@ class StandBy {
   async createSolarChar(voltage) {
     console.log('solar voltage', voltage)
 
-    if (voltage > 0.03) {
+    // solar rays left
+    display.lcd.setCursor(9, 2)
+    display.lcd.print(`\xa5`)
+    // display.lcd.print(`\x3e`)
 
-      display.lcd.createChar(solar.block_left.char, solar.block_left.byte.high)
+    // solar rays right
+    display.lcd.setCursor(11, 2)
+    display.lcd.print(`\xa5`)
+
+    // display.lcd.print(`\x3c`)
+
+    // solar rays top
+    display.lcd.setCursor(10, 1)
+    display.lcd.print(`\xa5`)
+
+    // display.lcd.print(`\x7c`)
+
+    //solar rays bottom
+
+    display.lcd.setCursor(10, 3)
+    display.lcd.print(`\xa5`)
+
+    // display.lcd.print(`\x7c`)
+
+    if (voltage > thresholds.solar.max) {
+      display.lcd.createChar(solar.sun.char, solar.sun.byte.high)
       display.lcd.setCursor(10, 2)
-      display.lcd.print(solar.block_left.hex)
+      display.lcd.print(solar.sun.hex)
 
-      display.lcd.createChar(solar.block_right.char, solar.block_right.byte.high)
-      display.lcd.setCursor(11, 2)
-      display.lcd.print(solar.block_right.hex)
+      // display.lcd.createChar(solar.block_left.char, solar.block_left.byte.high)
+      // display.lcd.setCursor(10, 2)
+      // display.lcd.print(solar.block_left.hex)
+
+      // display.lcd.createChar(solar.block_right.char, solar.block_right.byte.high)
+      // display.lcd.setCursor(11, 2)
+      // display.lcd.print(solar.block_right.hex)
 
 
-    } else if (voltage <= 0.03 && voltage > 0.02) {
-
-      display.lcd.createChar(solar.block_left.char, solar.block_left.byte.med)
+    } else if (voltage <= thresholds.solar.max && voltage > thresholds.solar.min) {
+      display.lcd.createChar(solar.sun.char, solar.sun.byte.med)
       display.lcd.setCursor(10, 2)
-      display.lcd.print(solar.block_left.hex)
+      display.lcd.print(solar.sun.hex)
 
-      display.lcd.createChar(solar.block_right.char, solar.block_right.byte.med)
-      display.lcd.setCursor(11, 2)
-      display.lcd.print(solar.block_right.hex)
+      // display.lcd.createChar(solar.block_left.char, solar.block_left.byte.med)
+      // display.lcd.setCursor(10, 2)
+      // display.lcd.print(solar.block_left.hex)
+
+      // display.lcd.createChar(solar.block_right.char, solar.block_right.byte.med)
+      // display.lcd.setCursor(11, 2)
+      // display.lcd.print(solar.block_right.hex)
 
 
-    } else if (voltage <= 0.02) {
-
-      display.lcd.createChar(solar.block_left.char, solar.block_left.byte.low)
+    } else if (voltage <= thresholds.solar.min) {
+      display.lcd.createChar(solar.sun.char, solar.sun.byte.low)
       display.lcd.setCursor(10, 2)
-      display.lcd.print(solar.block_left.hex)
+      display.lcd.print(solar.sun.hex)
 
-      display.lcd.createChar(solar.block_right.char, solar.block_right.byte.low)
-      display.lcd.setCursor(11, 2)
-      display.lcd.print(solar.block_right.hex)
+      // display.lcd.createChar(solar.block_left.char, solar.block_left.byte.low)
+      // display.lcd.setCursor(10, 2)
+      // display.lcd.print(solar.block_left.hex)
+
+      // display.lcd.createChar(solar.block_right.char, solar.block_right.byte.low)
+      // display.lcd.setCursor(11, 2)
+      // display.lcd.print(solar.block_right.hex)
+
     } else {
       display.lcd.setCursor(10, 2)
       display.lcd.print(battery.warning.hex)

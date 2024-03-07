@@ -75,6 +75,15 @@ const solar = {
         },
         char: 6,
         hex: `\x06`,
+    },
+    sun: {
+        byte: {
+            high: Uint8Array.from(Buffer.from([0x0E, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x0E], 'hex')),
+            med: Uint8Array.from(Buffer.from([0x0E, 0x11, 0x11, 0x11, 0x1F, 0x1F, 0x1F, 0x0E], 'hex')),
+            low: Uint8Array.from(Buffer.from([0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E], 'hex')),
+        },
+        char:5,
+        hex: `\x05`,
     }
 }
 
@@ -119,9 +128,29 @@ const temp = {
         char: null,
         hex: `\x21`,
     }
-
-
 }
 
-export { wifi, battery, cell, temp, solar }
+const thresholds = {
+    wifi: {
+        max: 75,
+        med: 50,
+        min: 25,
+    },
+    battery: {
+        max: 11.75,
+        min: 11.3,
+    },
+    cell: {
+        max: -90,
+        med: -105,
+        min: -113,
+    },
+
+    solar: {
+        max: 0.03,
+        min: 0.02,
+    },
+}
+
+export { wifi, battery, cell, temp, solar, thresholds }
 
