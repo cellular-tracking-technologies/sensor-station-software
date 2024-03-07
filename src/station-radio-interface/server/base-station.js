@@ -245,7 +245,6 @@ class BaseStation {
               data.station_id = this.station_id
               data.msg_type = 'about'
               data.begin = this.begin
-              data.wifi_signal = await this.wifi.getWifiSignal()
               console.log('about data', data)
               this.broadcast(JSON.stringify(data))
             })
