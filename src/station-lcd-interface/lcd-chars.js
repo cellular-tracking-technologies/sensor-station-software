@@ -57,6 +57,27 @@ const battery = {
     },
 }
 
+const solar = {
+    block_left: {
+        byte: {
+            high: Uint8Array.from(Buffer.from([0x00, 0x00, 0x01, 0x11, 0x0b, 0x07, 0x07, 0x1f], 'hex')),
+            med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x01, 0x0b, 0x07, 0x07, 0x0f], 'hex')),
+            low: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x03, 0x07, 0x07, 0x07], 'hex')),
+        },
+        char: 5,
+        hex: `\x05`,
+    },
+    block_right: {
+        byte: {
+            high: Uint8Array.from(Buffer.from([0x00, 0x00, 0x10, 0x11, 0x1a, 0x1c, 0x1c, 0x1f], 'hex')),
+            med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x10, 0x1a, 0x1c, 0x1c, 0x1e], 'hex')),
+            low: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x18, 0x1c, 0x1c, 0x1c], 'hex')),
+        },
+        char: 6,
+        hex: `\x06`,
+    }
+}
+
 const cell = {
     left: {
         byte: null,
@@ -98,7 +119,9 @@ const temp = {
         char: null,
         hex: `\x21`,
     }
+
+
 }
 
-export { wifi, battery, cell, temp }
+export { wifi, battery, cell, temp, solar }
 

@@ -3,7 +3,7 @@ import { CellularCarrier } from "./tasks/cellular-task.js"
 import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
 import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
-import { wifi, battery, cell, temp } from './lcd-chars.js'
+import { wifi, battery, cell, temp, solar } from './lcd-chars.js'
 import fetch from 'node-fetch'
 import url from 'url'
 /**
@@ -43,6 +43,7 @@ class StandBy {
       })
 
       console.log('standby data', await voltages, await temperature, await wifi_res, await cell_res)
+      await this.getSolarVoltage(await voltages)
 
       await this.getWifiStrength(await wifi_res)
       await this.getBattVoltage(await voltages)
@@ -240,6 +241,50 @@ class StandBy {
       display.lcd.print(`${fahrenheit}${temp.degree.hex}F`)
     }
 
+  }
+
+  async getSolarVoltage(voltage) {
+    await this.createSolarChar(Number(voltage.solar))
+  }
+
+  async createSolarChar(voltage) {
+    console.log('solar voltage', voltage)
+
+    if (voltage > 0.03) {
+
+      display.lcd.createChar(solar.block_left.char, solar.block_left.byte.high)
+      display.lcd.setCursor(10, 2)
+      display.lcd.print(solar.block_left.hex)
+
+      display.lcd.createChar(solar.block_right.char, solar.block_right.byte.high)
+      display.lcd.setCursor(11, 2)
+      display.lcd.print(solar.block_right.hex)
+
+
+    } else if (voltage <= 0.03 && voltage > 0.02) {
+
+      display.lcd.createChar(solar.block_left.char, solar.block_left.byte.med)
+      display.lcd.setCursor(10, 2)
+      display.lcd.print(solar.block_left.hex)
+
+      display.lcd.createChar(solar.block_right.char, solar.block_right.byte.med)
+      display.lcd.setCursor(11, 2)
+      display.lcd.print(solar.block_right.hex)
+
+
+    } else if (voltage <= 0.02) {
+
+      display.lcd.createChar(solar.block_left.char, solar.block_left.byte.low)
+      display.lcd.setCursor(10, 2)
+      display.lcd.print(solar.block_left.hex)
+
+      display.lcd.createChar(solar.block_right.char, solar.block_right.byte.low)
+      display.lcd.setCursor(11, 2)
+      display.lcd.print(solar.block_right.hex)
+    } else {
+      display.lcd.setCursor(10, 2)
+      display.lcd.print(battery.warning.hex)
+    }
   }
 }
 
