@@ -1,7 +1,3 @@
-import { WifiStrength } from './tasks/wifi-strength.js'
-import { CellularCarrier } from "./tasks/cellular-task.js"
-import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
-import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
 import display from './display-driver.js'
 import { wifi, battery, cell, temp, solar, thresholds } from './lcd-chars.js'
 import fetch from 'node-fetch'
