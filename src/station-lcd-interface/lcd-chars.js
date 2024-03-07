@@ -6,24 +6,24 @@ const wifi = {
             high: Uint8Array.from(Buffer.from([0x00, 0x03, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')),
             med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00], 'hex')),
         },
-        char: 5,
-        hex: `\x05`,
+        char: 0,
+        hex: `\x00`,
     },
     block_center: {
         byte: {
             high: Uint8Array.from(Buffer.from([0x1f, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')),
             med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x1f, 0x00, 0x0e, 0x11, 0x04], 'hex')),
         },
-        char: 6,
-        hex: `\x06`,
+        char: 1,
+        hex: `\x01`,
     },
     block_right: {
         byte: {
             high: Uint8Array.from(Buffer.from([0x00, 0x18, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')),
             med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00], 'hex')),
         },
-        char: 7,
-        hex: `\x07`,
+        char: 2,
+        hex: `\x02`,
     },
     warning: {
         byte: null,
@@ -37,13 +37,13 @@ const battery = {
 
     top: {
         byte: Uint8Array.from(Buffer.from([0x00, 0x00, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00], 'hex')),
-        char: 1,
-        hex: `\x01`,
+        char: 3,
+        hex: `\x03`,
     },
     empty_bar: {
         byte: Uint8Array.from(Buffer.from([0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f], 'hex')),
-        char: 2,
-        hex: `\x02`,
+        char: 4,
+        hex: `\x04`,
     },
     full_bar: {
         byte: null,

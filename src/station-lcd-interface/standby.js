@@ -41,12 +41,9 @@ class StandBy {
           cell.json()
         ]
       })
-      // }).then(async values => {
 
       console.log('standby data', await voltages, await temperature, await wifi_res, await cell_res)
-      // resolve([this.header, `${res.wifi_strength}`, `${res.temperature}`, `${res.voltages}`])
 
-      // resolve([this.header, `Temp:${res.celsius}C [${res.fahrenheit}F]`])
       await this.getWifiStrength(await wifi_res)
       await this.getBattVoltage(await voltages)
       await this.getCellStrength(await cell_res)
@@ -54,10 +51,6 @@ class StandBy {
     } catch (err) {
       console.error(err)
     }
-    // })
-    // .catch(error => {
-    //   resolve([this.header, `error`])
-    // })
   }
 
   clearScreen() {
@@ -66,12 +59,8 @@ class StandBy {
 
   async getWifiStrength(wifi_res) {
     let { wifi_strength: percent } = wifi_res
-    console.log('get wifi strength percent', percent)
     await this.createWifiChar(Number(percent))
 
-    // let wifi_results = await this.wifi.results()
-    // console.log('wifi signal', wifi_results)
-    // await this.createWifiChar(wifi_results)
   }
 
   async createWifiChar(percent) {
@@ -130,7 +119,7 @@ class StandBy {
     display.lcd.setCursor(3, 2)
     display.lcd.print(battery.top.hex)
 
-    if (voltage > 11.67) {
+    if (voltage > 11.75) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -144,7 +133,7 @@ class StandBy {
       display.lcd.setCursor(2, 2)
       display.lcd.print(battery.full_bar.hex)
 
-    } else if (voltage <= 11.67 && voltage > 10) {
+    } else if (voltage <= 11.75 && voltage > 11.3) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -159,7 +148,7 @@ class StandBy {
       display.lcd.print(battery.empty_bar.hex)
 
 
-    } else if (voltage <= 10) {
+    } else if (voltage <= 11.3) {
 
       // print bar0
       display.lcd.setCursor(0, 2)
@@ -189,7 +178,7 @@ class StandBy {
 
   async createCellChar(rssi) {
     console.log('create cell char rssi', rssi)
-    if (rssi > -113) {
+    if (rssi > -90) {
       display.lcd.setCursor(5, 0)
       display.lcd.print(cell.left.hex)
 
@@ -208,7 +197,7 @@ class StandBy {
       display.lcd.setCursor(7, 1)
       display.lcd.print(cell.bottom.hex)
 
-    } else if (rssi <= -113) {
+    } else if (rssi <= -90 && rssi > -105) {
       display.lcd.setCursor(6, 0)
       display.lcd.print(cell.left.hex)
 
@@ -217,6 +206,12 @@ class StandBy {
 
       display.lcd.setCursor(8, 0)
       display.lcd.print(cell.right.hex)
+
+      display.lcd.setCursor(7, 1)
+      display.lcd.print(cell.bottom.hex)
+    } else if (rssi <= -105) {
+      display.lcd.setCursor(7, 0)
+      display.lcd.print(cell.center.hex)
 
       display.lcd.setCursor(7, 1)
       display.lcd.print(cell.bottom.hex)
@@ -229,11 +224,6 @@ class StandBy {
   async getTempValues(temperature) {
     let { celsius, fahrenheit } = temperature
     console.log(celsius, 'C', fahrenheit, 'F')
-    // let temp_results = await this.temp.results()
-
-    // let regex_temp = temp_results[1].match(/-?\d+/g)
-
-    // let regex_temp = temperature
 
     if (!celsius) {
       display.lcd.setCursor(12, 0)
