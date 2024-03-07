@@ -17,8 +17,7 @@ import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
 import revision from '../../revision.js'
-import BluRadioStates from '../../hardware/bluseries-receiver/blu_radio_state.js'
-import WifiSignal from '../../hardware/wifi/wifi-signal.js'
+
 // import { exec } from 'child_process'
 
 /**
@@ -58,7 +57,6 @@ class BaseStation {
     this.poll_data
     this.dongle_port
     this.blu_radio_filemap
-    this.wifi = new WifiSignal()
   }
 
   /**
@@ -68,35 +66,6 @@ class BaseStation {
   stationLog(...msgs) {
     this.data_manager.log(msgs)
   }
-
-  // async getWifiSignal() {
-
-  //   return new Promise((resolve, reject) => {
-
-  //     exec('iwconfig | grep "Link Quality"', (error, stdout, stderr) => {
-  //       if (error) {
-  //         console.log(`command error ${this.cmd}; ${stderr}`)
-  //         reject(error)
-  //         return
-  //       }
-  //       const text = stdout
-  //       const key = text.match(/(Link Quality)/g)
-  //       const fraction = text.match(/(\d\d[\/]\d\d)/g)
-  //       const num = Number(fraction[0].split("/")[0])
-  //       const den = Number(fraction[0].split('/')[1])
-  //       const percent = Math.floor((num / den) * 100)
-  //       console.log('percent', percent)
-  //       // const percent_string = `${Math.floor((num / den) * 100)}%`
-  //       resolve(percent)
-  //     })
-
-  //   }).then((values) => {
-  //     return values
-  //   }).catch((e) => {
-  //     console.error('get wifi signal error', e)
-  //   })
-  // }
-
 
   /**
    * load config - start the data manager, gps client, web socket server, timers, radios
