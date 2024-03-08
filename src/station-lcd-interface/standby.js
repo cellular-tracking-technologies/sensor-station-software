@@ -90,10 +90,17 @@ class StandBy {
 
   async getCellStrength(cell) {
     let { signal } = cell
-    // let cell_results = await this.cellular.results()
-    console.log('cell signal', signal.match(/(-)\w+/g))
-    let rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+    let rssi
+    if (signal) {
+
+      // let cell_results = await this.cellular.results()
+      console.log('cell signal', signal)
+      rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+    } else {
+      rssi = undefined
+    }
     await this.createCellChar(rssi)
+
   }
 
   async createCellChar(rssi) {
