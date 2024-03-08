@@ -30,6 +30,7 @@ class StandBy {
         fetch(this.wifi_url),
         fetch(this.cell_url),
       ]).then(([voltages, temperature, wifi, cell]) => {
+        console.log('wifi json', wifi)
         return [
           voltages.json(),
           temperature.json(),

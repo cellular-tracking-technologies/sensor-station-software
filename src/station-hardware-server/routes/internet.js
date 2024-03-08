@@ -143,22 +143,23 @@ router.get('/wifi-strength', (req, res, next) => {
   exec('iwconfig | grep "Link Quality"', (err, stdout, stderr) => {
     if (err) {
       console.error('wifi strength', stdout, stderr, err)
-      res.sendStatus(500)
+      // res.sendStatus(500)
+      res.json({ wifi_strength: 0 })
       return
     }
+    if (stdout) {
 
-    const text = stdout
-    const key = text.match(/(Link Quality)/g)
-    let percent
-    if (key !== null | key !== undefined) {
+      const text = stdout
+      const key = text.match(/(Link Quality)/g)
       const fraction = text.match(/(\d\d[\/]\d\d)/g)
       const num = Number(fraction[0].split("/")[0])
       const den = Number(fraction[0].split('/')[1])
-      percent = Math.floor((num / den) * 100)
+      let percent = Math.floor((num / den) * 100)
+
+      res.json({ wifi_strength: percent })
     } else {
-      percent = 0
+      res.json({ wifi_strength: 0 })
     }
-    res.json({ wifi_strength: percent })
 
   })
 
