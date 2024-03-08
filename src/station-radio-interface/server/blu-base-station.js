@@ -618,9 +618,11 @@ class BluStation {
         })
 
       // await all_reboot_receiver.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
+      setTimeout(async () => {
+        radio.beeps = await all_reboot_receiver.getDetections(radio_channel, Number(cmd.data.poll_interval))
+        radio.dropped = await all_reboot_receiver.getBluStats(radio_channel, Number(cmd.data.poll_interval))
+      }, 10000)
 
-      radio.beeps = await all_reboot_receiver.getDetections(radio_channel, Number(cmd.data.poll_interval))
-      radio.dropped = await all_reboot_receiver.getBluStats(radio_channel, Number(cmd.data.poll_interval))
 
     })).then((values) => {
       console.log('all radios rebooting', values)
