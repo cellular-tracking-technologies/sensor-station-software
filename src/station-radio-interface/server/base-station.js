@@ -522,10 +522,6 @@ class BaseStation {
    */
   async startBluStation(path) {
 
-    // const RADIO_STATES = {
-    //   ON: 1,
-    //   OFF: 0,
-    // }
     await this.blu_station.startBluRadios(path.substring(17))
     const receiver_to_start = this.findBluReceiveryByPath(path)
 
@@ -657,9 +653,6 @@ class BaseStation {
   findBluReceiveryByPath(path) {
     return this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
   }
-
-
-
 } // end of base station class
 
 export { BaseStation }
