@@ -89,11 +89,23 @@ class StandBy {
   }
 
   async getCellStrength(cell) {
-    let { signal } = cell
-    // let cell_results = await this.cellular.results()
-    console.log('cell signal', signal.match(/(-)\w+/g))
-    let rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
-    await this.createCellChar(rssi)
+    try {
+      console.log('get cell strength', cell)
+      let rssi
+      if (cell.signal) {
+
+        let { signal } = cell
+        // let cell_results = await this.cellular.results()
+        console.log('cell signal', signal.match(/(-)\w+/g))
+        rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+        await this.createCellChar(rssi)
+      } else {
+        rssi = 0
+      }
+    } catch (e) {
+      console.error(e)
+
+    }
   }
 
   async createCellChar(rssi) {
