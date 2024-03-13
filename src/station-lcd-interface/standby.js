@@ -98,10 +98,12 @@ class StandBy {
         // let cell_results = await this.cellular.results()
         console.log('cell signal', signal.match(/(-)\w+/g))
         rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
-        await this.createCellChar(rssi)
+        // await this.createCellChar(rssi)
       } else {
-        rssi = 0
+        rssi = undefined
       }
+      await this.createCellChar(rssi)
+
     } catch (e) {
       console.error(e)
 
