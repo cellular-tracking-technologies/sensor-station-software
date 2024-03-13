@@ -140,21 +140,21 @@ router.get('/pending-upload', (req, res, next) => {
 });
 
 router.get('/wifi-strength', (req, res, next) => {
+  let percent = 0
+
   try {
     exec('iwconfig | grep "Link Quality"', async (err, stdout, stderr) => {
-      let percent = 0
       if (stdout) {
-
         const text = stdout
         const key = text.match(/(?<numerator>\d+)(?:\/)(?<denominator>\d+)/)
         const num = key.groups.numerator
         const den = key.groups.denominator
-
         percent = Math.floor((num / den) * 100)
-        res.json({ wifi_strength: percent })
-      } else {
-        res.json({ wifi_strength: percent })
+
+      // } else {
+      //   res.json({ wifi_strength: percent })
       }
+      res.json({ wifi_strength: percent })
 
     })
   } catch (e) {
