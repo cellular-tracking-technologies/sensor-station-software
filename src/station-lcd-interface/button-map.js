@@ -4,10 +4,14 @@ let Buttons = {}
 
 if (Revision.revision >= 3) {
 	Buttons = {
-		Up: 17,
-		Down: 22,
-		Select: 27,
-		Back: 8
+		// Up: 17,
+		// Down: 22,
+		// Select: 27,
+		// Back: 8
+		Up: 529,
+		Down: 534,
+		Select: 539,
+		Back: 520,
 	}
 } else {
 	Buttons = {
