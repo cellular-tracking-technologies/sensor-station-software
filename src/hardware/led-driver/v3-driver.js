@@ -1,13 +1,16 @@
 import { Drive, Toggle } from '../io-expander/expander.js'
 
 const Pins = {
-  GPS: 0,
-  A: 10,
-  B: 11,
+  // GPS: 0,
+  // A: 10,
+  // B: 11,
+  GPS: 512,
+  A: 522,
+  B: 523,
 }
 
 class Led {
-  #addr 
+  #addr
   #interval
 
   constructor(addr) {
@@ -29,7 +32,7 @@ class Led {
       state: 'high'
     })
   }
-  
+
   async off() {
     console.log('led off', this.#addr)
     clearInterval(this.#interval)
@@ -58,7 +61,7 @@ class Led {
 
 class GpsLed extends Led {
   constructor() {
-    super(Pins.GPS) 
+    super(Pins.GPS)
   }
 }
 

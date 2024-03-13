@@ -200,7 +200,6 @@ class BaseStation {
               data.station_id = this.station_id
               data.msg_type = 'about'
               data.begin = this.begin
-              console.log('about data', data)
               this.broadcast(JSON.stringify(data))
             })
             .catch((err) => {
