@@ -11,10 +11,14 @@ if (Revision.revision >= 3) {
 	}
 } else {
 	Buttons = {
-		Up: 4,
-		Down: 5,
-		Select: 6,
-		Back: 7
+		// Up: 4,
+		// Down: 5,
+		// Select: 6,
+		// Back: 7
+		Up: 516,
+		Down: 517,
+		Select: 518,
+		Back: 519,
 	}
 }
 

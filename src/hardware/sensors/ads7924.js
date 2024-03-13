@@ -3,7 +3,8 @@ import { Gpio } from 'onoff'
 import i2c from 'i2c-bus'
 
 class Ads7924 {
-    constructor(i2c_port = 1, address = 0x48, reset_pin=19){
+    // constructor(i2c_port = 1, address = 0x48, reset_pin=19){
+        constructor(i2c_port = 1, address = 0x48, reset_pin=531){
         this.i2cPort_ = i2c_port        
         this.address_ = address
         this.reset_ = new Gpio(reset_pin, 'out')

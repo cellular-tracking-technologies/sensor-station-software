@@ -1,9 +1,12 @@
 import { Gpio } from 'onoff'
 
 const Pins = {
-  GPS: 38,
-  A: 39,
-  B: 40
+  // GPS: 38,
+  // A: 39,
+  // B: 40
+  GPS: 550,
+  A: 551,
+  B: 552,
 }
 
 class Led {
