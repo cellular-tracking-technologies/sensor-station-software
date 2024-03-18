@@ -1,10 +1,11 @@
 import Revision from '../revision.js'
 import os from 'os'
 
-let osVersion = os.version().match(/(?<=\:)\d.\d.{2,3}/g).toString()
-console.log(osVersion)
+let osVersion = os.version().match(/(?<=\:)\d.\d.{2,3}/g)
+let kernel_version = osVersion ? osVersion.toString() : null
+console.log(kernel_version)
 let Buttons = {}
-if (osVersion === '6.6.20') {
+if (kernel_version === '6.6.20') {
 
 	if (Revision.revision >= 3) {
 		Buttons = {
