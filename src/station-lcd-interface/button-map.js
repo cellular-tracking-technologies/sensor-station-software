@@ -1,9 +1,12 @@
 import Revision from '../revision.js'
 import os from 'os'
+import { KernelVersion } from '../hardware/kernel/kernel-version.js'
 
-let osVersion = os.version().match(/(?<=\:)\d.\d.{2,3}/g)
-let kernel_version = osVersion ? osVersion.toString() : null
-console.log(kernel_version)
+let kernel = new KernelVersion()
+let kernel_version = kernel.getVersion()
+// let osVersion = os.version().match(/(?<=\:)\d.\d.{2,3}/g)
+// let kernel_version = osVersion ? osVersion.toString() : null
+
 let Buttons = {}
 if (kernel_version === '6.6.20') {
 
