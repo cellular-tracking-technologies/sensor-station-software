@@ -9,10 +9,10 @@ class KernelVersion {
 
   async getVersion() {
     try {
-      exec(this.cmd, async (err, stdout, stderr) => {
+      await exec(this.cmd, async (err, stdout, stderr) => {
         console.log('get version stdout', stdout)
-        let kernel_version = stdout.match(/(?<version>\d+.\d+.\d+)/)
-        console.log('get version kernel', kernel_version.groups.version)
+        let kernel_version = await stdout.match(/(?<version>\d+.\d+.\d+)/)
+        console.log('get version kernel', kernel_version)
 
         return kernel_version.groups.version
 

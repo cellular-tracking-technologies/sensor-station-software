@@ -3,6 +3,7 @@ import { KernelVersion } from '../hardware/kernel/kernel.js'
 
 let kernel = new KernelVersion()
 let kernel_version = kernel.getVersion()
+console.log('kernel version', kernel_version)
 
 let Buttons = {}
 if (kernel_version === '6.6.20') {
