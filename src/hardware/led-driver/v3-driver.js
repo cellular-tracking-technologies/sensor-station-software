@@ -1,13 +1,27 @@
 import { Drive, Toggle } from '../io-expander/expander.js'
+import { KernelVersion } from '../kernel/kernel.js'
+
+let kernel = new KernelVersion()
+let kernel_pins = kernel.getPins()
+console.log('kernel pins', kernel_pins)
+
+const { v3: { GPS, A, B } } = kernel_pins
+console.log('v3 driver pins', GPS, A, B)
 
 const Pins = {
-  // GPS: 0,
-  // A: 10,
-  // B: 11,
-  GPS: 512,
-  A: 522,
-  B: 523,
+  GPS,
+  A,
+  B,
 }
+
+// const Pins = {
+//   // GPS: 0,
+//   // A: 10,
+//   // B: 11,
+//   GPS: 512,
+//   A: 522,
+//   B: 523,
+// }
 
 class Led {
   #addr
