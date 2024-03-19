@@ -8,18 +8,23 @@ class KernelVersion {
   }
 
   async getVersion() {
-    try {
-      await exec(this.cmd, async (err, stdout, stderr) => {
+    return new Promise((resolve, reject) => {
+      exec(this.cmd, async (err, stdout, stderr) => {
+        if (err) {
+          console.log(`command error ${this.cmd}; ${stderr}`)
+          reject(err)
+          return
+        }
+
         console.log('get version stdout', stdout)
-        let kernel_version = await stdout.match(/(?<version>\d+.\d+.\d+)/)
-        console.log('get version kernel', kernel_version)
-
-        return kernel_version.groups.version
-
+        let kernel_version = stdout.match(/(?<version>\d+.\d+.\d+)/)
+        console.log('get version kernel', kernel_version.groups.version)
+        resolve(kernel_version.groups.version)
       })
-    } catch (err) {
-      console.error(err)
-    }
+    }).then((values) => {
+      return values
+    })
+
   }
 
   async compareVersions() {
@@ -52,4 +57,7 @@ class KernelVersion {
 
 
 }
-export { KernelVersion }
+
+let kernel = new KernelVersion
+let kernel_version = kernel.getVersion().then((values) => { return values }).catch((e) => { console.error(e) })
+export default kernel_version
