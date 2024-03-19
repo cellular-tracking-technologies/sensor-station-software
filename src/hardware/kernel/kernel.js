@@ -1,4 +1,5 @@
 import { execSync } from 'child_process'
+import { bookworm, bullseye } from './gpio-pins.js'
 
 class KernelVersion {
   constructor() {
@@ -35,10 +36,17 @@ class KernelVersion {
     }
   }
 
-  getImage() {
+  getPins() {
     let kernel = this.compareVersions()
+    let pins
     let image = kernel > 0 ? 'bookworm' : 'bullseye'
-    return image
+    // return image
+    if (image === 'bookworm') {
+      pins = bookworm
+    } else if (image === 'bullseye') {
+      pins = bullseye
+    }
+    return pins
   }
 
 }
