@@ -1,34 +1,36 @@
-import { exec } from 'child_process'
+import { execSync } from 'child_process'
 
 class KernelVersion {
   constructor() {
     this.cmd = 'uname -a'
     this.bullseye = '6.1'
     this.bookworm = '6.6'
+    this.kernel_version = execSync('uname -a').toString().match(/(?<version>\d+.\d+.\d+)/).groups.version
+    console.log('kernel class kernel version', this.kernel_version)
   }
 
-  async getVersion() {
-    return new Promise((resolve, reject) => {
-      exec(this.cmd, async (err, stdout, stderr) => {
-        if (err) {
-          console.log(`command error ${this.cmd}; ${stderr}`)
-          reject(err)
-          return
-        }
+  // async getVersion() {
+  //   return new Promise((resolve, reject) => {
+  //     exec(this.cmd, async (err, stdout, stderr) => {
+  //       if (err) {
+  //         console.log(`command error ${this.cmd}; ${stderr}`)
+  //         reject(err)
+  //         return
+  //       }
 
-        console.log('get version stdout', stdout)
-        let kernel_version = stdout.match(/(?<version>\d+.\d+.\d+)/)
-        console.log('get version kernel', kernel_version.groups.version)
-        resolve(kernel_version.groups.version)
-      })
-    }).then((values) => {
-      return values
-    })
+  //       console.log('get version stdout', stdout)
+  //       let kernel_version = stdout.match(/(?<version>\d+.\d+.\d+)/)
+  //       console.log('get version kernel', kernel_version.groups.version)
+  //       resolve(kernel_version.groups.version)
+  //     })
+  //   }).then((values) => {
+  //     return values
+  //   })
 
-  }
+  // }
 
-  async compareVersions() {
-    const current_version = await this.getVersion()
+  compareVersions() {
+    const current_version = this.kernel_version
     console.log('kernel version', current_version)
 
     let cur_components = current_version.split('.')
@@ -49,8 +51,8 @@ class KernelVersion {
     }
   }
 
-  async getImage() {
-    let kernel = await compareVersions()
+  getImage() {
+    let kernel = this.compareVersions()
     let image = kernel > 0 ? 'bookworm' : 'bullseye'
     return image
   }
@@ -58,6 +60,4 @@ class KernelVersion {
 
 }
 
-let kernel = new KernelVersion
-let kernel_version = kernel.getVersion().then((values) => { return values }).catch((e) => { console.error(e) })
-export default kernel_version
+export { KernelVersion }

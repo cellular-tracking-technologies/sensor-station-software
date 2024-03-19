@@ -1,10 +1,15 @@
 import Revision from '../revision.js'
+import { KernelVersion } from '../hardware/kernel/kernel.js'
 import { execSync } from 'child_process'
 
-let kernel_version = execSync('uname -a').toString().match(/(?<version>\d+.\d+.\d+)/).groups.version
+let kernel = new KernelVersion()
+let kernel_version = kernel.kernel_version
+let kernel_image = kernel.getImage()
+
 console.log('button map kernel version', kernel_version)
+console.log('button map kernel image', kernel_image)
 let Buttons = {}
-if (kernel_version === '6.6.20') {
+if (kernel_version === 'bookworm') {
 
 	if (Revision.revision >= 3) {
 		Buttons = {
@@ -21,7 +26,7 @@ if (kernel_version === '6.6.20') {
 			Back: 519,
 		}
 	}
-} else {
+} else if (kernel_image === 'bullseye') {
 	if (Revision.revision >= 3) {
 		Buttons = {
 			Up: 17,
