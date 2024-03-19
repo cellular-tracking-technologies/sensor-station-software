@@ -9,7 +9,7 @@ let kernel_image = kernel.getImage()
 console.log('button map kernel version', kernel_version)
 console.log('button map kernel image', kernel_image)
 let Buttons = {}
-if (kernel_version === 'bookworm') {
+if (kernel_image === 'bookworm') {
 
 	if (Revision.revision >= 3) {
 		Buttons = {
