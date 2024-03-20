@@ -1,5 +1,7 @@
 import { Drive, Toggle } from '../io-expander/expander.js'
-import kernel_pins from '../kernel/kernel.js'
+import KernelInfo from '../kernel/kernel.js'
+
+const kernel_pins = KernelInfo.getPins()
 
 const { v3: { GPS, A, B } } = kernel_pins
 console.log('v3 driver pins', GPS, A, B)

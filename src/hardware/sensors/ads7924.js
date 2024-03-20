@@ -1,7 +1,9 @@
 //const Gpio = require('onoff').Gpio
 import { Gpio } from 'onoff'
 import i2c from 'i2c-bus'
-import kernel_pins from '../kernel/kernel.js'
+import KernelInfo from '../kernel/kernel.js'
+
+const kernel_pins = KernelInfo.getPins()
 
 class Ads7924 {
     // constructor(i2c_port = 1, address = 0x48, reset_pin=19){

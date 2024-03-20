@@ -1,5 +1,7 @@
 import { Gpio } from 'onoff'
-import kernel_pins from '../kernel/kernel.js'
+import KernelInfo from '../kernel/kernel.js'
+
+const kernel_pins = KernelInfo.getPins()
 
 const { v2: { GPS, A, B, } } = kernel_pins
 const Pins = {

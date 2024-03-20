@@ -1,5 +1,8 @@
 import Revision from '../revision.js'
-import kernel_pins from '../hardware/kernel/kernel.js'
+import KernelInfo from '../hardware/kernel/kernel.js'
+const kernel_pins = KernelInfo.getPins()
+console.log('kernel pins', kernel_pins)
+// import kernel_pins from '../hardware/kernel/kernel.js'
 
 let Buttons = {}
 

@@ -1,18 +1,23 @@
 import { execSync } from 'child_process'
 import { bookworm, bullseye } from './gpio-pins.js'
 
-class KernelVersion {
-  constructor() {
-    this.cmd = 'uname -a'
-    this.bullseye = '6.1'
-    this.bookworm = '6.6'
-    this.kernel_version = execSync('uname -a').toString().match(/(?<version>\d+.\d+.\d+)/).groups.version
-    this.pins = {}
-    console.log('kernel class kernel version', this.kernel_version)
+
+// https://nodejs.org/docs/latest-v12.x/api/child_process.html#child_process_child_process_exec_command_options_callback
+
+export default class KernelInfo {
+  static cmd = 'uname -a'
+  static bullseye = '6.1'
+  static bookworm = '6.6'
+
+  static getVersion() {
+    const kernel = execSync('uname -a').toString().match(/(?<version>\d+.\d+.\d+)/).groups.version
+    return kernel
   }
 
-  compareVersions() {
-    const current_version = this.kernel_version
+
+  static compareVersions() {
+
+    const current_version = KernelInfo.getVersion()
     console.log('kernel version', current_version)
 
     let cur_components = current_version.split('.')
@@ -36,8 +41,8 @@ class KernelVersion {
     }
   }
 
-  getPins() {
-    let kernel = this.compareVersions()
+  static getPins() {
+    const kernel = KernelInfo.compareVersions()
     let pins
     let image = kernel > 0 ? 'bookworm' : 'bullseye'
     // return image
@@ -48,11 +53,4 @@ class KernelVersion {
     }
     return pins
   }
-
 }
-// export { KernelVersion }
-
-
-let kernel = new KernelVersion()
-let kernel_pins = kernel.getPins()
-export default kernel_pins
