@@ -1,14 +1,11 @@
 import Revision from '../revision.js'
-import { KernelVersion } from '../hardware/kernel/kernel.js'
+import kernel_pins from '../hardware/kernel/kernel.js'
+// import { KernelVersion } from '../hardware/kernel/kernel.js'
 
-let kernel = new KernelVersion()
-let kernel_pins = kernel.getPins()
-console.log('kernel pins', kernel_pins)
-// let kernel_version = kernel.kernel_version
-// let kernel_image = kernel.getImage()
+// let kernel = new KernelVersion()
+// let kernel_pins = kernel.getPins()
+// console.log('kernel pins', kernel_pins)
 
-// console.log('button map kernel version', kernel_version)
-// console.log('button map kernel image', kernel_image)
 
 let Buttons = {}
 // if (kernel_image === 'bookworm') {
