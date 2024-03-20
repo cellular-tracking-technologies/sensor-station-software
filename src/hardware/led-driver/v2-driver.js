@@ -1,25 +1,12 @@
 import { Gpio } from 'onoff'
 import kernel_pins from '../kernel/kernel.js'
 
-// let kernel = new KernelVersion()
-// let kernel_pins = kernel.getPins()
-// console.log('kernel pins', kernel_pins)
-
 const { v2: { GPS, A, B, } } = kernel_pins
 const Pins = {
   GPS,
   A,
   B,
 }
-
-// const Pins = {
-//   // GPS: 38,
-//   // A: 39,
-//   // B: 40
-//   GPS: 550,
-//   A: 551,
-//   B: 552,
-// }
 
 class Led {
   constructor(gpio) {
