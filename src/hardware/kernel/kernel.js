@@ -50,5 +50,9 @@ class KernelVersion {
   }
 
 }
+// export { KernelVersion }
 
-export { KernelVersion }
+
+let kernel = new KernelVersion()
+let kernel_pins = kernel.getPins()
+export default kernel_pins
