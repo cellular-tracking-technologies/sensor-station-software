@@ -402,6 +402,7 @@ class BaseStation {
             })
 
           })
+          this.stationLog(`blu receiver ${receiver.port} turned off`)
           // await this.blu_station.stopBluRadios(receiver.path)
           await this.blu_station.destroy_receiver(receiver)
         }
@@ -472,6 +473,7 @@ class BaseStation {
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
 
         await this.startBluStation(path)
+        this.stationLog('starting blu receiver')
 
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
@@ -509,6 +511,8 @@ class BaseStation {
       // V2 Radio Paths
       if (path.includes('-port0')) {
         await this.unlinkBluStation(path)
+        this.stationLog('removed blu receiver')
+
       } else if (!path.includes('-port0')) {
         await this.unlinkDongleRadio(path)
       }
@@ -531,7 +535,7 @@ class BaseStation {
         poll_interval: poll_interval,
         port: receiver_to_start.port
       }))
-      this.stationLog('starting blu radios')
+      this.stationLog(`starting blu radios ${radio_channel} on USB Port ${receiver_to_start.port}`)
 
       await this.toggleBluState({
         receiver_channel: receiver_to_start.port,

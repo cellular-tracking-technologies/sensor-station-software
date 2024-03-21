@@ -306,7 +306,6 @@ class BluStation {
     })
 
     blu_receiver.startUpFlashLogo()
-    // await this.sendBluVersion(blu_receiver, 10000)
 
     const radios_start = await Promise.all(blu_receiver.blu_radios
       .map(async (radio) => {
@@ -359,38 +358,6 @@ class BluStation {
     } else {
       console.log('no path to clear')
     }
-  }
-
-  /**
-   * 
-   * @param {Object} receiver BluReceiver with timeout events
-   * @param {Number} poll_interval Poll interval number
-   */
-  async sendBluVersion(receiver, poll_interval) {
-    console.log('send blu version receiver', receiver)
-    if (receiver.port) {
-
-      setInterval(async () => {
-        // receiver.blu_radios.forEach(async (radio) => {
-
-        // await receiver.getBluVersion(radio.radio)
-        await receiver.getBluVersion(1)
-        await receiver.getBluVersion(2)
-        await receiver.getBluVersion(3)
-        await receiver.getBluVersion(4)
-
-        if (receiver.port) {
-          let blu_add = {
-            port: receiver.port,
-            msg_type: "add_port",
-          }
-          this.broadcast(JSON.stringify(blu_add))
-        }
-        // })
-      }, poll_interval)
-    }
-    // return version
-
   }
 
   /**
