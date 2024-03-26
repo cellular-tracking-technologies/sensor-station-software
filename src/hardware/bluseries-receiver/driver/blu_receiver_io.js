@@ -288,7 +288,6 @@ class BluReceiverIo extends EventEmitter {
     let timeout
 
     this.handler = (result) => {
-      console.log('selft destructing event listener result', result)
       if (on_event(result) === true) {
         clearTimeout(timeout)
         /** remove event listener */
