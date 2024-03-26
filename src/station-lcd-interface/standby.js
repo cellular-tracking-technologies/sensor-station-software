@@ -89,13 +89,11 @@ class StandBy {
 
   async getCellStrength(cell) {
     try {
-      console.log('get cell strength', cell)
       let rssi
       if (cell.signal) {
 
         let { signal } = cell
         // let cell_results = await this.cellular.results()
-        console.log('cell signal', signal.match(/(-)\w+/g))
         rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
         // await this.createCellChar(rssi)
       } else {
@@ -110,7 +108,6 @@ class StandBy {
   }
 
   async createCellChar(rssi) {
-    console.log('create cell char rssi', rssi)
     if (rssi > thresholds.cell.max) {
       display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
       display.lcd.setCursor(3, 0)
@@ -155,8 +152,6 @@ class StandBy {
   }
 
   async createBattChar(voltage) {
-    console.log('voltage', voltage)
-
     // create top part of battery icon
     display.lcd.createChar(battery.top.char, battery.top.byte)
 
