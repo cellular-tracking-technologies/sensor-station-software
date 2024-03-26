@@ -214,7 +214,7 @@ class BluReceiverIo extends EventEmitter {
               switch (detection.revision) {
                 case 0:
                   detection.payload.parsed = {
-                    solar: payload.readUInt16LE(8) / 1000,
+                    solar: payload ? payload.readUInt16LE(8) / 1000 : 0,
                     temp: payload.readUInt16LE(10) / 100
                   }
                   break
