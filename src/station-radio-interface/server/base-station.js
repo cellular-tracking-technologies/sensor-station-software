@@ -543,6 +543,9 @@ class BaseStation {
         radio_state: BluLeds.state.on,
         poll_interval: radio.poll_interval,
       })
+      setInterval(() => {
+        this.stationLog(`blu radio ${radio_channel} is runnning on USB Port ${receiver_to_start.port}`)
+      }, 300000)
     })
   }
 
