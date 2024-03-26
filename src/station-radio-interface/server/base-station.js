@@ -382,9 +382,12 @@ class BaseStation {
     chokidar.watch('../../../../../../dev/serial/by-path')
       .on('add', async path => {
         await this.addPath(path)
+        this.stationLog(`${path} was added`)
       })
       .on('unlink', async path => {
         await this.unlinkPath(path)
+        this.stationLog(`${path} was removed`)
+
       })
 
     process.on('SIGINT', async () => {
