@@ -207,6 +207,8 @@ class BluReceiverIo extends EventEmitter {
             }
 
             if (payload.length > 8) {
+              console.log('payload', payload, 'payload length', payload.length)
+
               detection.payload.raw = payload.toString("hex", 8)
 
               switch (detection.revision) {
@@ -286,6 +288,7 @@ class BluReceiverIo extends EventEmitter {
     let timeout
 
     this.handler = (result) => {
+      console.log('selft destructing event listener result', result)
       if (on_event(result) === true) {
         clearTimeout(timeout)
         /** remove event listener */

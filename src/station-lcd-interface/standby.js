@@ -38,7 +38,6 @@ class StandBy {
         ]
       })
 
-      console.log('standby data', await voltages, await temperature, await wifi_res, await cell_res)
       await this.getSolarVoltage(await voltages)
 
       await this.getWifiStrength(await wifi_res)
