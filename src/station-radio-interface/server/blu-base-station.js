@@ -197,6 +197,21 @@ class BluStation {
         // await blu_receiver.hard_reset()
 
         return
+      } else if (error !== 'timeout' && error !== null && blu_receiver.port) {
+        console.log('Job Error Detected on Port', blu_receiver.port, error, task)
+        let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
+        // console.log('stop blu radio', stop_radio)
+        // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
+        stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
+        stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
+        // await this.destroy_receiver(blu_receiver)
+
+        // await blu_receiver.hard_reset()
+        setTimeout(async () => {
+          stop_radio.beeps = await blu_receiver.getDetections(stop_radio.radio, stop_radio.poll_interval)
+          stop_radio.dropped = await blu_receiver.getBluStats(stop_radio.radio, stop_radio.poll_interval)
+        }, 10000)
+        return
       }
 
       switch (task) {
