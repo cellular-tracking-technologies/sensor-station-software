@@ -192,6 +192,8 @@ class BluStation {
         // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
         stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
+
+        this.stationLog(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
         // await this.destroy_receiver(blu_receiver)
 
         // await blu_receiver.hard_reset()
@@ -205,9 +207,13 @@ class BluStation {
         stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
         // await this.destroy_receiver(blu_receiver)
+        this.stationLog(`${error} error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
+
+
 
         // await blu_receiver.hard_reset()
         setTimeout(async () => {
+          this.stationLog(`attempting to turn ${radio_channel} on USB Port ${blu_receiver.port} back on`)
           stop_radio.beeps = await blu_receiver.getDetections(stop_radio.radio, stop_radio.poll_interval)
           stop_radio.dropped = await blu_receiver.getBluStats(stop_radio.radio, stop_radio.poll_interval)
         }, 10000)
