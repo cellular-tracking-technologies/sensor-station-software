@@ -216,7 +216,7 @@ class BluStation {
 
       switch (task) {
         case BluReceiverTask.VERSION:
-          console.log(`BluReceiverTask.VERSION Port ${blu_receiver.port} ${JSON.stringify(job)}`)
+          // console.log(`BluReceiverTask.VERSION Port ${blu_receiver.port} ${JSON.stringify(job)}`)
 
           this.blu_fw = {
             msg_type: 'blu-firmware',
@@ -235,7 +235,7 @@ class BluStation {
           break
         case BluReceiverTask.DETECTIONS:
           try {
-            console.log(`BluReceiverTask.DETECT Port ${blu_receiver.port} radio ${job.radio_channel} has ${job.data.length} detections`)
+            // console.log(`BluReceiverTask.DETECT Port ${blu_receiver.port} radio ${job.radio_channel} has ${job.data.length} detections`)
             job.data.forEach((beep) => {
               const { id, rssi, time, channel: radio_channel, payload: { parsed: { solar, temp, } }, } = beep
 
@@ -280,13 +280,13 @@ class BluStation {
           console.log('Blu Receiver is rebooting!', radio_channel)
           break
         case BluReceiverTask.LEDS:
-          console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
+          // console.log(`BluReceiverTask.LEDS ${JSON.stringify(job)}`)
           if (job.error == 'timeout') {
             // blu_receiver.setBluConfig(job.radio_channel, { scan: 0, rx_blink: 0 })
           }
           break
         case BluReceiverTask.CONFIG:
-          console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
+          // console.log(`BluReceiverTask.CONFIG ${JSON.stringify(job)}`)
           break
         case BluReceiverTask.STATS:
           try {
@@ -308,7 +308,7 @@ class BluStation {
               blu_dropped: blu_dropped,
               msg_type: "blu_dropped",
             }
-            console.log(`BluReceiverTask.STATS  Port ${blu_receiver.port} radio ${job.radio_channel} has ${blu_stats.blu_dropped} detections dropped`)
+            // console.log(`BluReceiverTask.STATS  Port ${blu_receiver.port} radio ${job.radio_channel} has ${blu_stats.blu_dropped} detections dropped`)
 
             this.broadcast(JSON.stringify(blu_stats))
           } catch (e) {

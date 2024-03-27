@@ -207,7 +207,7 @@ class BluReceiverIo extends EventEmitter {
             }
 
             if (payload.length > 8) {
-              console.log('payload', payload, 'payload length', payload.length)
+              // console.log('payload', payload, 'payload length', payload.length)
 
               detection.payload.raw = payload.toString("hex", 8)
 
