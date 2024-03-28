@@ -132,10 +132,6 @@ class StandBy {
       display.lcd.setCursor(3, 0)
       display.lcd.print(cell.block_left.hex)
 
-      // display.lcd.createChar(cell.block_right.char, cell.block_right.byte.low)
-      // display.lcd.setCursor(4, 0)
-      // display.lcd.print(cell.block_right.hex)
-
     } else {
       display.lcd.setCursor(3, 0)
       display.lcd.print(cell.warning.hex)
@@ -145,10 +141,7 @@ class StandBy {
 
   async getBattVoltage(voltage) {
     await this.createBattChar(Number(voltage.battery))
-    // let battery_results = await this.power.results()
-    // console.log('battery results', battery_results)
-    // let volt = Number(battery_results[1].match(/(\d.+)/g))
-    // await this.createBattChar(volt)
+
   }
 
   async createBattChar(voltage) {
@@ -216,7 +209,6 @@ class StandBy {
   }
 
   async createSolarChar(voltage) {
-    console.log('solar voltage', voltage)
 
     if (voltage > thresholds.solar.max) {
       display.lcd.createChar(solar.block_left.char, solar.block_left.byte.high)
@@ -253,7 +245,6 @@ class StandBy {
 
   async getTempValues(temperature) {
     let { celsius, fahrenheit } = temperature
-    console.log(celsius, 'C', fahrenheit, 'F')
 
     if (!celsius) {
       display.lcd.setCursor(14, 0)

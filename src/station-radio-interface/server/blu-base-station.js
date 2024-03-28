@@ -188,17 +188,13 @@ class BluStation {
       if (error && blu_receiver.port) {
         console.log('Job Error Detected on Port', blu_receiver.port, error, task)
         let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
-        // console.log('stop blu radio', stop_radio)
-        // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
+
         stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
 
         this.stationLog(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
-        // await this.destroy_receiver(blu_receiver)
-
-        // await blu_receiver.hard_reset()
-
-        return
+        throw new Error(`Blu radio is not communicating with the BluReceiver, shutting down blu radio ${radio_channel} on USB Port ${blu_receiver.port}`)
+        // return
       } else if (error !== 'timeout' && error !== null && blu_receiver.port) {
         console.log('Job Error Detected on Port', blu_receiver.port, error, task)
         let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
@@ -206,12 +202,8 @@ class BluStation {
         // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
         stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
-        // await this.destroy_receiver(blu_receiver)
         this.stationLog(`${error} error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
 
-
-
-        // await blu_receiver.hard_reset()
         setTimeout(async () => {
           this.stationLog(`attempting to turn ${radio_channel} on USB Port ${blu_receiver.port} back on`)
           stop_radio.beeps = await blu_receiver.getDetections(stop_radio.radio, stop_radio.poll_interval)
@@ -245,8 +237,10 @@ class BluStation {
             job.data.forEach((beep) => {
               const { id, rssi, time, channel: radio_channel, payload: { parsed: { solar, temp, } }, } = beep
 
-              beep.data = { id: beep.id }
-              beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
+              // beep.data = { id: beep.id }
+              beep.data = id
+              // beep.meta = { data_type: "blu_tag", rssi: beep.rssi, }
+              beep.meta = { data_type: 'blu_tag', rssi: rssi, }
               beep.msg_type = "blu"
               beep.protocol = "1.0.0"
               beep.received_at = moment(new Date(time)).utc()
