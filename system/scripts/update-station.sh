@@ -44,6 +44,7 @@ echo '********************'
 # pull sensorgnome code updates
 dir="$home/sensorgnome/sensorgnome"
 cd $dir
+git config --global --add safe.directory /usr/lib/ctt/sensor-station-software
 git stash
 git pull
 changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)" 
