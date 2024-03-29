@@ -185,8 +185,8 @@ class BluStation {
       const { task, error, radio_channel, data } = job
       // const { port: current_port } = blu_receiver
 
-      if (error && blu_receiver.port) {
-        console.log('Job Error Detected on Port', blu_receiver.port, error, task)
+      if (error === "timeout" && blu_receiver.port) {
+        console.log('Timeout Error on Port', blu_receiver.port, 'radio', radio_channel, error, task)
         let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
 
         stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
@@ -196,7 +196,7 @@ class BluStation {
         throw new Error(`Blu radio is not communicating with the BluReceiver, shutting down blu radio ${radio_channel} on USB Port ${blu_receiver.port}`)
         // return
       } else if (error !== 'timeout' && error !== null && blu_receiver.port) {
-        console.log('Job Error Detected on Port', blu_receiver.port, error, task)
+        console.log('Job Error (NOT TIMEOUT!!!) Detected on Port', blu_receiver.port, error, task)
         let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
         // console.log('stop blu radio', stop_radio)
         // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
@@ -205,6 +205,7 @@ class BluStation {
         this.stationLog(`${error} error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
 
         setTimeout(async () => {
+          console.log(`attempting to turn ${radio_channel} on USB Port ${blu_receiver.port} back on`)
           this.stationLog(`attempting to turn ${radio_channel} on USB Port ${blu_receiver.port} back on`)
           stop_radio.beeps = await blu_receiver.getDetections(stop_radio.radio, stop_radio.poll_interval)
           stop_radio.dropped = await blu_receiver.getBluStats(stop_radio.radio, stop_radio.poll_interval)
