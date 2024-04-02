@@ -202,25 +202,26 @@ class BluReceiverIo extends EventEmitter {
               revision: payload.readUInt8(7),
               payload: {
                 parsed: {},
-                raw: ""
+                /**
+                * The tags sensor data starts at payload[8]. The size of this payload
+                * is based on the payload type 'detection.revision'. 
+                */
+                raw: payload.length > 8 ? payload.toString("hex", 8) : ""
               }
             }
 
-            if (payload.length > 8) {
-              // console.log('payload', payload, 'payload length', payload.length)
+            // console.log('blu receiver io detection', detection)
 
-              detection.payload.raw = payload.toString("hex", 8)
-
-              switch (detection.revision) {
-                case 0:
-                  detection.payload.parsed = {
-                    solar: payload ? payload.readUInt16LE(8) / 1000 : 0,
-                    temp: payload.readUInt16LE(10) / 100
-                  }
-                  break
-                default:
-                  break
-              }
+            switch (detection.revision) {
+              case 0:
+                /** saving parsed payload to check corrupted solar data */
+                detection.payload.parsed = {
+                  solar: payload.length >= 10 ? payload.readUInt16LE(8) / 1000 : 0,
+                  temp: payload.length >= 12 ? payload.readUInt16LE(10) / 100 : 0
+                }
+                break
+              default:
+                break
             }
 
             detections.push(detection)

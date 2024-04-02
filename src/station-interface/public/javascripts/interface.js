@@ -947,7 +947,9 @@ const render_dropped_detections = function (blu_stats) {
         blu_stat_info = `#blu_dropped_count_${port}-${channel}`;
 
         let stats_blu = blu_stats[Number(port)].channels[Number(channel)].blu_dropped;
-        document.querySelector(blu_stat_info).textContent = stats_blu > 0 ? stats_blu : 0
+        // document.querySelector(blu_stat_info).textContent = stats_blu > 0 ? stats_blu : 0
+        document.querySelector(blu_stat_info).textContent = stats_blu
+
       }
     })
   })
