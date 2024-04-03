@@ -188,7 +188,7 @@ class BluStation {
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
 
         this.stationLog(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
-        throw new Error(`Blu radio is not communicating with the BluReceiver, shutting down blu radio ${radio_channel} on USB Port ${blu_receiver.port}`)
+        // throw new Error(`Blu radio is not communicating with the BluReceiver, shutting down blu radio ${radio_channel} on USB Port ${blu_receiver.port}`)
         // return
       } else if (error !== 'timeout' && error !== null && blu_receiver.port) {
         console.log('Job Error (NOT TIMEOUT!!!) Detected on Port', blu_receiver.port, error, task)
