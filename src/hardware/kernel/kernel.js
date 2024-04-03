@@ -18,14 +18,9 @@ export default class KernelInfo {
   static compareVersions() {
 
     const current_version = KernelInfo.getVersion()
-    console.log('kernel version', current_version)
 
     let cur_components = current_version.split('.')
-    console.log('current kernel componenets', cur_components)
-    // let bookworm_components = this.bookworm.split('.')
     let bullseye_components = this.bullseye.split('.')
-    console.log('bullseye kernel componenets', bullseye_components)
-
 
     let len = Math.min(cur_components.length, bullseye_components.length)
 

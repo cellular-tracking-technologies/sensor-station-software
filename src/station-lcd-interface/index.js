@@ -114,7 +114,6 @@ setInterval(async () => {
     Note: Debounce is common feature to prevent buttons from being 
     pressed multiple times in rapid sucession.
 */
-console.log('ButtonMap up', ButtonMap.Up)
 const button_up = new Gpio(ButtonMap.Up, 'in', 'rising', { debounceTimeout: 50 })
 button_up.watch((err, value) => {
   if (err) {
