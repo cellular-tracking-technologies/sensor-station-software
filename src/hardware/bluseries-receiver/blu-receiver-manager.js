@@ -15,6 +15,9 @@ class BluReceiverManager extends BluReceiver {
         this.blu_updater = new BluFirmwareUpdater({})
     }
 
+
+
+
     /**
  * 
  * @param {Number} radio_channel 
