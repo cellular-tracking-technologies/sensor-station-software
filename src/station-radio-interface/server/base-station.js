@@ -111,6 +111,7 @@ class BaseStation {
       // toggleRadioMode: this.toggleRadioMode(),
       // toggleBluState: this.toggleBluState()
     })
+    this.blu_station.startBluWebsocketServer()
     await this.directoryWatcher()
     this.startTimers()
   }
@@ -565,9 +566,9 @@ class BaseStation {
       port: unlink_port,
     }
     this.broadcast(JSON.stringify(unlink_obj))
-    this.blu_station.stopBluRadios(path.substring(17))
+    // await this.blu_station.stopBluRadios(path.substring(17))
     receiver_to_unlink.blu_radios.forEach(async (radio) => {
-      const { poll_interval, radio: radio_channel, } = radio
+      // const { poll_interval, radio: radio_channel, } = radio
 
       await this.toggleBluState({
         receiver_channel: unlink_port,
@@ -577,7 +578,7 @@ class BaseStation {
       })
     })
     // this.blu_station.stopBluRadios()
-    this.blu_station.destroy_receiver(receiver_to_unlink)
+    await this.blu_station.destroy_receiver(receiver_to_unlink)
     console.log('unlink receiver after destruction', receiver_to_unlink)
   }
 
