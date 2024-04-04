@@ -223,8 +223,12 @@ class BluReceiverIo extends EventEmitter {
               default:
                 break
             }
-
-            detections.push(detection)
+            if (payload.length === 12) {
+              // console.log('blu receiver io detection length', payload.length)
+              detections.push(detection)
+            } else {
+              console.log(`non CTT Blu tag detected ${payload}`)
+            }
 
             return false
           }
