@@ -138,8 +138,6 @@ class BluStation {
         case ('update-blu-firmware'):
           await this.updateBluRadio(cmd)
           break
-
-          break
         default:
           break
       }
