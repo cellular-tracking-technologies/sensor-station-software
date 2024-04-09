@@ -13,6 +13,7 @@ dir="$home/sensor-station-software"
 if [ -d $dir ]; then
   # directory exists - stash any changes and do a git pull
   cd $dir
+  git config --global --add safe.directory /usr/lib/ctt/sensor-station-software
   git stash
   git pull
   # checking if package.json has changed
