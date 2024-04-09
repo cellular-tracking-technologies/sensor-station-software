@@ -1676,6 +1676,11 @@ const init_sg = () => {
 
     window.onload = function () {
       document.getElementById('tag-filter-input').value = '';
+      console.log('window on load blu ports', blu_ports)
+      blu_ports.forEach((port) => {
+        console.log('loading port', port)
+        document.querySelector(`#blu-receiver-${port}`).style.display = ''
+      })
     }
 
     document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
