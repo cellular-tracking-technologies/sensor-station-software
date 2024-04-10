@@ -549,6 +549,8 @@ class BaseStation {
       })
       setInterval(() => {
         this.stationLog(`blu radio ${radio_channel} is runnning on USB Port ${receiver_to_start.port}`)
+        console.log(`blu radio ${radio_channel} is runnning on USB Port ${receiver_to_start.port}`)
+
       }, 300000)
     })
   }
