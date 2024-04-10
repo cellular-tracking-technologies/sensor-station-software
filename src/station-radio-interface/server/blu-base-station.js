@@ -120,7 +120,7 @@ class BluStation {
             let blu_on = await this.bluRadioOn(cmd)
             await this.setBluRadioState(blu_on)
           } else if (cmd.data.type === "blu_off") {
-            let blu_off = await this.blu_station.bluRadioOff(cmd)
+            let blu_off = await this.bluRadioOff(cmd)
             await this.setBluRadioState(blu_off)
           }
           break
@@ -128,11 +128,11 @@ class BluStation {
           this.bluLed(cmd)
           break
         case ('reboot_blu_radio'):
-          let blu_reboot = await this.blu_station.bluReboot(cmd)
+          let blu_reboot = await this.bluReboot(cmd)
           await this.setBluRadioState(blu_reboot)
           break
         case ('change_poll'):
-          let blu_poll = await this.blu_station.bluChangePoll(cmd)
+          let blu_poll = await this.bluChangePoll(cmd)
           await this.setBluRadioState(blu_poll)
           break
         case ('update-blu-firmware'):
@@ -188,24 +188,9 @@ class BluStation {
         stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
 
         this.stationLog(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
-        // throw new Error(`Blu radio is not communicating with the BluReceiver, shutting down blu radio ${radio_channel} on USB Port ${blu_receiver.port}`)
-        // return
-        // } else if (error !== 'timeout' && error !== null && blu_receiver.port) {
-        //   console.log('Job Error (NOT TIMEOUT!!!) Detected on Port', blu_receiver.port, error, task)
-        //   let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
-        //   // console.log('stop blu radio', stop_radio)
-        //   // await blu_receiver.setBluConfig(radio_channel, { scan: 0, rx_blink: 0 })
-        //   stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
-        //   stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
-        //   this.stationLog(`${error} error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
+        console.log(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
 
-        //   setTimeout(async () => {
-        //     console.log(`attempting to turn ${radio_channel} on USB Port ${blu_receiver.port} back on`)
-        //     this.stationLog(`attempting to turn ${radio_channel} on USB Port ${blu_receiver.port} back on`)
-        //     stop_radio.beeps = await blu_receiver.getDetections(stop_radio.radio, stop_radio.poll_interval)
-        //     stop_radio.dropped = await blu_receiver.getBluStats(stop_radio.radio, stop_radio.poll_interval)
-        //   }, 10000)
-        // return
+
       } else if (error !== null) {
         console.log('Job Error (NOT TIMEOUT!!!) Detected on Port', blu_receiver.port, error, task)
         this.stationLog('Job Error(NOT TIMEOUT!!!) Detected on Port', blu_receiver.port, error, task)
@@ -492,16 +477,7 @@ class BluStation {
     const { data: { poll_interval: incoming_poll } } = cmd
 
     const radios_on = await Promise.all(all_on.blu_radios.map(async (radio) => {
-      // const { poll_interval, radio: radio_channel, radio_state } = radio
 
-      // if (beeps._destroyed == true) {
-      //   let new_poll_interval = Number(incoming_poll)
-      //   radio.poll_interval = new_poll_interval
-      //   await all_on.setBluConfig(radio_channel, { scan: 1, rx_blink: 1, })
-
-      //   beeps = await all_on.getDetections(radio_channel, new_poll_interval)
-      //   dropped = await all_on.getBluStats(radio_channel, new_poll_interval)
-      //   radio_state = 1
       if (radio.beeps._destroyed == true) {
         radio.poll_interval = Number(incoming_poll)
         let radio_channel = radio.radio
@@ -593,6 +569,7 @@ class BluStation {
       }
 
       this.broadcast(JSON.stringify(poll_data))
+
       all_reboot_receiver.rebootBluRadio(radio_channel)
         .then((values) => {
           console.log('radio reboot values', values)
@@ -706,31 +683,48 @@ class BluStation {
  * @param {Object} cmd websocket command object
  */
   async bluReboot(cmd) {
-    let { receiver, radio } = this.findBluReceiverAndRadio(cmd)
-    let radio_channel = radio.radio
-    let poll_interval = 10000
+    try {
 
-    this.poll_data = {
-      channel: radio_channel,
-      poll_interval: poll_interval,
-      msg_type: 'poll_interval',
+      let { receiver, radio } = this.findBluReceiverAndRadio(cmd)
+      // let reboot = this.findBluReceiverAndRadio(cmd)
+      // let { receiver, radio } = reboot
+
+      console.log('reboot found receiver', receiver, 'radio', radio)
+      let radio_channel = radio.radio
+      let poll_interval = 10000
+
+      this.poll_data = {
+        channel: radio_channel,
+        poll_interval: poll_interval,
+        msg_type: 'poll_interval',
+      }
+      this.broadcast(JSON.stringify(this.poll_data))
+
+      radio.beeps = await receiver.stopDetections(radio)
+      radio.dropped = await receiver.stopStats(radio)
+
+      // await receiver.rebootBluRadio(radio)
+      receiver.rebootBluRadio(radio_channel)
+        .then((values) => {
+          console.log('radio reboot values', values)
+        })
+        .catch((e) => {
+          console.error(console.error('could not reboot radio', e))
+        })
+
+      setTimeout(async () => {
+        radio.beeps = await receiver.getDetections(radio_channel, poll_interval)
+        radio.dropped = await receiver.getBluStats(radio_channel, poll_interval)
+      }, 10000)
+
+      radio.poll_interval = poll_interval
+
+      return { receiver, radio, poll_interval: radio.poll_interval, state: radio.radio_state }
+
+    } catch (e) {
+      console.error(`Could not reboot radio ${radio_channel} on USB Port ${receiver.port}`)
     }
-    this.broadcast(JSON.stringify(this.poll_data))
-
-    radio.beeps = await receiver.stopDetections(radio)
-    radio.dropped = await receiver.stopStats(radio)
-
-    await receiver.rebootBluRadio(radio, poll_interval)
-
-    radio.beeps = await receiver.getDetections(radio_channel, poll_interval)
-    radio.dropped = await receiver.getBluStats(radio_channel, poll_interval)
-
-
-    radio.poll_interval = poll_interval
-
-    return { receiver, radio, poll_interval: radio.poll_interval, state: radio.radio_state }
   }
-
   /**
 * 
 * @param {Object} cmd websocket command object

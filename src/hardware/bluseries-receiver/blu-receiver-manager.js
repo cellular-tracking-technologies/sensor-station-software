@@ -111,7 +111,7 @@ class BluReceiverManager extends BluReceiver {
      */
     async rebootBluRadio(radio_channel) {
         try {
-            return this.schedule({
+            return await this.schedule({
                 task: BluReceiverTask.REBOOT,
                 radio_channel,
             })
@@ -120,7 +120,7 @@ class BluReceiverManager extends BluReceiver {
             try {
 
                 for (i = 1; i < 3; i++) {
-                    return this.schedule({
+                    return await this.schedule({
                         task: BluReceiverTask.REBOOT,
                         radio_channel,
                     })

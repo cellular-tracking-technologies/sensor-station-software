@@ -17,7 +17,12 @@ class IpAddressTask {
         if (key.match(regex)) {
           const result = value.filter(element => (element.family == 'IPv4') && (element.internal == false))
           result.forEach(element => {
-            rows.push(`${key} ${element.address}`)
+            if (key.includes('wlan')) {
+              rows.push(`${key}`)
+              rows.push(`${element.address}`)
+            } else {
+              rows.push(`${key} ${element.address}`)
+            }
           })
         }
       }
