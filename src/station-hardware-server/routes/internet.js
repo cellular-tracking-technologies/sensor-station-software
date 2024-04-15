@@ -140,28 +140,27 @@ router.get('/pending-upload', (req, res, next) => {
 });
 
 router.get('/wifi-strength', (req, res, next) => {
-  exec('iwconfig | grep "Link Quality"', (err, stdout, stderr) => {
-    if (err) {
-      console.error('wifi strength', stdout, stderr, err)
-      // res.sendStatus(500)
-      res.json({ wifi_strength: 0 })
-      return
-    }
-    if (stdout) {
+  let percent = 0
 
-      const text = stdout
-      const key = text.match(/(Link Quality)/g)
-      const fraction = text.match(/(\d\d[\/]\d\d)/g)
-      const num = Number(fraction[0].split("/")[0])
-      const den = Number(fraction[0].split('/')[1])
-      let percent = Math.floor((num / den) * 100)
+  try {
+    exec('iwconfig | grep "Link Quality"', async (err, stdout, stderr) => {
+      if (stdout) {
+        const text = stdout
+        const key = text.match(/(?<numerator>\d+)(?:\/)(?<denominator>\d+)/)
+        const num = key.groups.numerator
+        const den = key.groups.denominator
+        percent = Math.floor((num / den) * 100)
 
+        // } else {
+        //   res.json({ wifi_strength: percent })
+      }
       res.json({ wifi_strength: percent })
-    } else {
-      res.json({ wifi_strength: 0 })
-    }
 
-  })
+    })
+  } catch (e) {
+    console.error(e)
+    res.sendStatus(500)
+  }
 
 })
 

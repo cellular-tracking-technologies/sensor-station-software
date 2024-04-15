@@ -39,7 +39,6 @@ class StandBy {
         ]
       })
 
-      console.log('standby data', await voltages, await temperature, await wifi_res, await cell_res)
       await this.getSolarVoltage(await voltages)
 
       await this.getWifiStrength(await wifi_res)
@@ -47,7 +46,7 @@ class StandBy {
       await this.getCellStrength(await cell_res)
       await this.getTempValues(await temperature)
     } catch (err) {
-      console.error(err)
+      console.error('lcd client error', err)
     }
   }
 
@@ -56,9 +55,13 @@ class StandBy {
   }
 
   async getWifiStrength(wifi_res) {
-    let { wifi_strength: percent } = wifi_res
-    await this.createWifiChar(Number(percent))
-
+    try {
+      let { wifi_strength: percent } = wifi_res
+      await this.createWifiChar(Number(percent))
+    } catch (e) {
+      console.error('lcd wifi error', e)
+      await this.createWifiChar(null)
+    }
   }
 
   async createWifiChar(percent) {
@@ -90,22 +93,24 @@ class StandBy {
   }
 
   async getCellStrength(cell) {
-    let { signal } = cell
-    let rssi
-    if (signal) {
+    try {
+      let rssi
+      if (cell.signal) {
 
-      // let cell_results = await this.cellular.results()
-      console.log('cell signal', signal)
-      rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
-    } else {
-      rssi = undefined
+        let { signal } = cell
+        rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+      } else {
+        rssi = undefined
+      }
+      await this.createCellChar(rssi)
+
+    } catch (e) {
+      console.error('lcd cell error', e)
+
     }
-    await this.createCellChar(rssi)
-
   }
 
   async createCellChar(rssi) {
-    console.log('create cell char rssi', rssi)
     if (rssi > thresholds.cell.max) {
       display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
       display.lcd.setCursor(3, 0)
@@ -130,10 +135,6 @@ class StandBy {
       display.lcd.setCursor(3, 0)
       display.lcd.print(cell.block_left.hex)
 
-      // display.lcd.createChar(cell.block_right.char, cell.block_right.byte.low)
-      // display.lcd.setCursor(4, 0)
-      // display.lcd.print(cell.block_right.hex)
-
     } else {
       display.lcd.setCursor(3, 0)
       display.lcd.print(cell.warning.hex)
@@ -142,16 +143,16 @@ class StandBy {
   }
 
   async getBattVoltage(voltage) {
-    await this.createBattChar(Number(voltage.battery))
-    // let battery_results = await this.power.results()
-    // console.log('battery results', battery_results)
-    // let volt = Number(battery_results[1].match(/(\d.+)/g))
-    // await this.createBattChar(volt)
+    try {
+      await this.createBattChar(Number(voltage.battery))
+    } catch (e) {
+      console.error('lcd voltage error', e)
+      await this.createBattChar(null)
+    }
+
   }
 
   async createBattChar(voltage) {
-    console.log('voltage', voltage)
-
     // create top part of battery icon
     display.lcd.createChar(battery.top.char, battery.top.byte)
 
@@ -212,11 +213,15 @@ class StandBy {
   }
 
   async getSolarVoltage(voltage) {
-    await this.createSolarChar(Number(voltage.solar))
+    try {
+      await this.createSolarChar(Number(voltage.solar))
+    } catch (e) {
+      console.error('lcd solar error', e)
+      await this.createSolarChar(null)
+    }
   }
 
   async createSolarChar(voltage) {
-    console.log('solar voltage', voltage)
 
     if (voltage > thresholds.solar.max) {
       display.lcd.createChar(solar.block_left.char, solar.block_left.byte.high)
@@ -252,22 +257,26 @@ class StandBy {
   }
 
   async getTempValues(temperature) {
-    let { celsius, fahrenheit } = temperature
-    console.log(celsius, 'C', fahrenheit, 'F')
+    try {
 
-    if (!celsius) {
-      display.lcd.setCursor(14, 0)
-      display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
+      let { celsius, fahrenheit } = temperature
 
-      display.lcd.setCursor(14, 1)
-      display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
-    } else {
+      if (!celsius) {
+        display.lcd.setCursor(14, 0)
+        display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
 
-      display.lcd.setCursor(14, 0)
-      display.lcd.print(`${celsius.toString()}${temp.degree.hex}C`)
+        display.lcd.setCursor(14, 1)
+        display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
+      } else {
 
-      display.lcd.setCursor(14, 1)
-      display.lcd.print(`${fahrenheit}${temp.degree.hex}F`)
+        display.lcd.setCursor(14, 0)
+        display.lcd.print(`${celsius.toString()}${temp.degree.hex}C`)
+
+        display.lcd.setCursor(14, 1)
+        display.lcd.print(`${fahrenheit}${temp.degree.hex}F`)
+      }
+    } catch (e) {
+      console.error('lcd temp error', e)
     }
 
   }

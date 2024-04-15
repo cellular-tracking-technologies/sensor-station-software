@@ -23,7 +23,6 @@ class BluFirmwareUpdater {
 
 	readFirmwareFiles() {
 		this.file_list = fs.readdirSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin')
-		console.log('firmware file list', this.file_list)
 		return this.file_list
 	}
 

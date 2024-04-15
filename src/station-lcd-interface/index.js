@@ -104,7 +104,7 @@ setInterval(async () => {
   standby_menu.select()
   // standby_class.clearScreen()
   // await standby_class.results()
-}, 10000)
+}, 300000)
 
 /*
     Configure Pi buttons and mount callbacks for when they are pushed.
@@ -114,7 +114,6 @@ setInterval(async () => {
     Note: Debounce is common feature to prevent buttons from being 
     pressed multiple times in rapid sucession.
 */
-
 const button_up = new Gpio(ButtonMap.Up, 'in', 'rising', { debounceTimeout: 50 })
 button_up.watch((err, value) => {
   if (err) {

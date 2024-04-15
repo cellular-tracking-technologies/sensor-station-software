@@ -17,13 +17,10 @@ class WifiSignal {
           return
         }
         const text = stdout
-        const key = text.match(/(Link Quality)/g)
-        const fraction = text.match(/(\d\d[\/]\d\d)/g)
-        const num = Number(fraction[0].split("/")[0])
-        const den = Number(fraction[0].split('/')[1])
+        const key = text.match(/(?<numerator>\d+)(?:\/)(?<denominator>\d+)/)
+        const num = Number(key.groups.numerator)
+        const den = Number(key.groups.denominator)
         const percent = Math.floor((num / den) * 100)
-        console.log('percent', percent)
-        // const percent_string = `${Math.floor((num / den) * 100)}%`
         resolve(percent)
       })
 

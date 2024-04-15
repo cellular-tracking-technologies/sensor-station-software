@@ -4,3 +4,4 @@ lib/*
 src/station-radio-interface/server/data/blu-parser.js
 src/hardware/bluseries-receiver/driver/bin/blu_adapter_v2.0.0+0.bin
 src/hardware/bluseries-receiver/driver/bin/blu_adapter_v3.0.0+0.bin
+src/hardware/sensors/test.js

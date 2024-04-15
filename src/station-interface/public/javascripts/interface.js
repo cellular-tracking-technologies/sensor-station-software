@@ -864,7 +864,6 @@ const build_blu_stats = function (port, channel) {
 }
 
 const handle_blu_stats = function (data) {
-  console.log('handle blu stats', data)
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
 
@@ -872,7 +871,6 @@ const handle_blu_stats = function (data) {
 
   if (blu_stats[port_key].channels[channel_key]) {
     blu_stats[port_key].channels[channel_key].beeps = data.blu_beeps
-    console.log('blu stats beeps', blu_stats[port_key].channels[channel_key].beeps)
 
     Object.keys(blu_stats[port_key].channels[channel_key].beeps).forEach((tag_id) => {
       n += blu_stats[port_key].channels[channel_key].beeps[tag_id];
@@ -884,7 +882,6 @@ const handle_blu_stats = function (data) {
     };
 
   };
-  console.log('handle blu stats blu stats', blu_stats)
   render_blu_stats(blu_stats)
 
 }
@@ -929,7 +926,8 @@ const render_blu_stats = function (blu_stats) {
         if (channel > 0) {
           blu_beep_info = `#blu_beep_count_${port}-${channel}`
           let stats = blu_stats[Number(port)].channels[Number(channel)].blu_beeps;
-          document.querySelector(blu_beep_info).textContent = stats > 0 ? stats : 0
+          // document.querySelector(blu_beep_info).textContent = stats > 0 ? stats : 0
+          document.querySelector(blu_beep_info).textContent = stats
         }
       })
     })
@@ -947,7 +945,9 @@ const render_dropped_detections = function (blu_stats) {
         blu_stat_info = `#blu_dropped_count_${port}-${channel}`;
 
         let stats_blu = blu_stats[Number(port)].channels[Number(channel)].blu_dropped;
-        document.querySelector(blu_stat_info).textContent = stats_blu > 0 ? stats_blu : 0
+        // document.querySelector(blu_stat_info).textContent = stats_blu > 0 ? stats_blu : 0
+        document.querySelector(blu_stat_info).textContent = stats_blu
+
       }
     })
   })
@@ -1676,6 +1676,11 @@ const init_sg = () => {
 
     window.onload = function () {
       document.getElementById('tag-filter-input').value = '';
+      console.log('window on load blu ports', blu_ports)
+      blu_ports.forEach((port) => {
+        console.log('loading port', port)
+        document.querySelector(`#blu-receiver-${port}`).style.display = ''
+      })
     }
 
     document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');

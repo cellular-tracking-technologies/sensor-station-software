@@ -1,13 +1,19 @@
 import { Drive, Toggle } from '../io-expander/expander.js'
+import KernelInfo from '../kernel/kernel.js'
+
+const kernel_pins = KernelInfo.getPins()
+
+const { v3: { GPS, A, B } } = kernel_pins
+console.log('v3 driver pins', GPS, A, B)
 
 const Pins = {
-  GPS: 0,
-  A: 10,
-  B: 11,
+  GPS,
+  A,
+  B,
 }
 
 class Led {
-  #addr 
+  #addr
   #interval
 
   constructor(addr) {
@@ -29,7 +35,7 @@ class Led {
       state: 'high'
     })
   }
-  
+
   async off() {
     console.log('led off', this.#addr)
     clearInterval(this.#interval)
@@ -58,7 +64,7 @@ class Led {
 
 class GpsLed extends Led {
   constructor() {
-    super(Pins.GPS) 
+    super(Pins.GPS)
   }
 }
 

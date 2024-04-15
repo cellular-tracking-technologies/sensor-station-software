@@ -1,9 +1,13 @@
 import { Gpio } from 'onoff'
+import KernelInfo from '../kernel/kernel.js'
 
+const kernel_pins = KernelInfo.getPins()
+
+const { v2: { GPS, A, B, } } = kernel_pins
 const Pins = {
-  GPS: 38,
-  A: 39,
-  B: 40
+  GPS,
+  A,
+  B,
 }
 
 class Led {
@@ -52,12 +56,12 @@ class Led {
 
 class GpsLed extends Led {
   constructor() {
-    super(Pins.GPS) 
+    super(Pins.GPS)
   }
 }
 
 class DiagALed extends Led {
-  constructor() { 
+  constructor() {
     super(Pins.A)
   }
 }
