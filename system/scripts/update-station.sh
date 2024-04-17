@@ -13,8 +13,10 @@ dir="$home/sensor-station-software"
 if [ -d $dir ]; then
   # directory exists - stash any changes and do a git pull
   cd $dir
+  git config --global --add safe.directory $dir
   git stash
   git pull
+  sudo chown -R ctt $dir
   # checking if package.json has changed
   changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)" 
   check_run package.json "npm install"
