@@ -253,7 +253,15 @@ class BluReceiverIo extends EventEmitter {
           return true
         }
         try {
-          let o = JSON.parse(data)
+          let o
+          // first data packet contains white space/null characters, conditional below removes them
+          if (data.substring(0, 1) !== '{') {
+            let data_string = data.substring(data.indexOf('{'))
+            o = JSON.parse(data_string)
+          } else {
+            o = JSON.parse(data)
+          }
+
           if (o.type === type) {
             resolve(o.data)
             return true
