@@ -47,6 +47,10 @@ class BluReceiverManager extends BluReceiver {
     async getDetections(radio_channel, buffer_interval) {
         let poll_interval = buffer_interval ? buffer_interval : 10000
         try {
+            this.schedule({
+                task: BluReceiverTask.DETECTIONS,
+                radio_channel,
+            })
             let beeps = setInterval(() => {
                 this.schedule({
                     task: BluReceiverTask.DETECTIONS,
@@ -171,6 +175,10 @@ class BluReceiverManager extends BluReceiver {
     async getBluStats(radio_channel, buffer_interval) {
         let poll_interval = buffer_interval ? buffer_interval : 10000
         try {
+            this.schedule({
+                task: BluReceiverTask.STATS,
+                radio_channel,
+            })
             let dropped = setInterval(() => {
                 this.schedule({
                     task: BluReceiverTask.STATS,
