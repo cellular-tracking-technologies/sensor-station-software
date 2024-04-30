@@ -178,20 +178,11 @@ class BluStation {
       const { task, error, radio_channel, data } = job
       // const { port: current_port } = blu_receiver
 
-      if (error === "timeout" || error === undefined && blu_receiver.port) {
-        console.log('Timeout Error on Port', blu_receiver.port, 'radio', radio_channel, error, task)
-        let stop_radio = blu_receiver.blu_radios.find(radio => radio.radio == radio_channel)
-
-        stop_radio.beeps = await blu_receiver.stopDetections(stop_radio)
-        stop_radio.dropped = await blu_receiver.stopStats(stop_radio)
+      if (error && blu_receiver.port) {
 
         this.stationLog(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
         console.log(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
 
-
-      } else if (error !== null) {
-        console.log('Job Error (NOT TIMEOUT!!!) Detected on Port', blu_receiver.port, error, task)
-        this.stationLog('Job Error(NOT TIMEOUT!!!) Detected on Port', blu_receiver.port, error, task)
       }
 
       switch (task) {
