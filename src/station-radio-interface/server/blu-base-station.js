@@ -180,8 +180,8 @@ class BluStation {
 
       if (error && blu_receiver.port) {
 
-        this.stationLog(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
-        console.log(`timeout error on radio ${radio_channel} on USB Port ${blu_receiver.port}, turning radio off`)
+        this.stationLog(`error ${error} on radio ${radio_channel} on USB Port ${blu_receiver.port}`)
+        console.log(`error ${error} on radio ${radio_channel} on USB Port ${blu_receiver.port}`)
 
       }
 
