@@ -1,31 +1,43 @@
 
 import express from 'express'
 import { exec } from 'child_process'
-import { ModemInterface, QuectelCommandSetParser } from '../../modem-status-driver/index.js'
 import RunCommand from '../../command.js'
 var router = express.Router()
 
-const Modem = new ModemInterface({
-  uri: '/dev/station_modem_status',
-  baud_rate: 115200,
-  command_set_parser: QuectelCommandSetParser,
-  poll_frequency_seconds: 10
-})
-try {
-  Modem.open()
-} catch (err) {
-  console.error('unable to open the modem')
-  console.error(err)
+const ModemInfo = {
+  signal: null,
+  imsi: null,
+  imei: null,
+  sim: null,
+  info: null,
+  creg: null,
+  carrier: null,
+  access_tech: null,
 }
 
 /* GET home page. */
-router.get('/', function (req, res, next) {
-  res.json(Modem.info)
+router.get('/', async function (req, res, next) {
+  const modem_info = JSON.parse(await RunCommand('sudo mmcli -J -m 0'))
+  const sim_info = JSON.parse(await RunCommand('sudo mmcli -J -m 0 -i 0'))
+  const modem = modem_info.modem
+  const broadband = modem['3gpp']
+  const generic_info = modem.generic
+  const signal = generic_info['signal-quality']
+  ModemInfo.signal = signal.value
+  ModemInfo.imsi = sim_info.sim.properties.imsi
+  ModemInfo.imei = broadband.imei
+  ModemInfo.sim = sim_info.sim.properties.iccid
+  ModemInfo.info = generic_info.model + ' - ' + generic_info.revision
+  ModemInfo.creg = broadband['registration-state']
+  ModemInfo.carrier = broadband['operator-name']
+  ModemInfo.access_tech = generic_info['access-technologies']
+  ModemInfo.tower = broadband['operator-code']
+  res.json(ModemInfo)
 })
 
 router.get('/ppp', (req, res, next) => {
-  // check if at least 1 ppp connection exists
-  exec('ifconfig | grep ppp | wc -l', (err, stdout, stderr) => {
+  // check general state of station modem using network manager
+  exec('nmcli -f GENERAL.STATE connection show station-modem | grep activated | wc -l', (err, stdout, stderr) => {
     if (err) {
       res.status(500).send(err.toString())
     }
@@ -40,7 +52,7 @@ router.get('/ppp', (req, res, next) => {
 })
 
 router.post('/stop', (req, res, next) => {
-  RunCommand('systemctl stop modem')
+  RunCommand('nmcli connection down station-modem')
     .then((response) => {
       res.status(204).send()
     })
@@ -50,7 +62,7 @@ router.post('/stop', (req, res, next) => {
 })
 
 router.post('/start', (req, res, next) => {
-  RunCommand('systemctl start modem')
+  RunCommand('nmcli connection up station-modem')
     .then((response) => {
       res.status(204).send()
     })
@@ -59,28 +71,17 @@ router.post('/start', (req, res, next) => {
     })
 })
 
-router.post('/enable', (req, res, next) => {
-  RunCommand('systemctl enable /lib/ctt/sensor-station-software/system/modem/modem.service')
-    .then((response) => {
-      // start the modem after enabling
-      RunCommand('systemctl restart modem')
-        .then((response) => {
-          res.status(204).send()
-        })
-    })
-    .catch((err) => {
-      res.status(500).send(err.toString())
-    })
+router.post('/enable', async (req, res, next) => {
+  // delete station-modem connection before adding
+  await RunCommand('nmcli connection delete station-modem')
+  // add new station-modem connection
+  await RunCommand('nmcli connection add type gsm ifname '*' con-name station-modem apn super connection.autoconnect yes')
+  res.status(204).send()
 })
 
-router.post('/disable', (req, res, next) => {
-  RunCommand('systemctl disable modem')
-    .then((response) => {
-      res.status(204).send()
-    })
-    .catch((err) => {
-      res.status(500).send(err.toString())
-    })
+router.post('/disable', async (req, res, next) => {
+  await RunCommand('nmcli connection delete station-modem')
+  res.status(204).send()
 })
 
 export default router
