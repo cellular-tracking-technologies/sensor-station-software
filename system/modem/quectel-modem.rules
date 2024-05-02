@@ -1,14 +1,5 @@
-# Symlink for Station Modem
+# Symlink for Station Modem - ignore quectel ec25 USB ports to minimize usb bandwidth
 
-# note bInterfaceNumber
-SUBSYSTEMS=="usb", ENV{.LOCAL_ifNum}="$attr{bInterfaceNumber}"
-
-# adding symlink for modem
-SUBSYSTEM=="tty", ACTION=="add", \
+KERNEL=="ttyUSB*", \
 	ATTRS{idVendor}=="2c7c", ATTRS{idProduct}=="0125", \
-	ENV{.LOCAL_ifNum}=="02", SYMLINK+="station_modem"
-
-# adding symlink for modem
-SUBSYSTEM=="tty", ACTION=="add", \
-	ATTRS{idVendor}=="2c7c", ATTRS{idProduct}=="0125", \
-	ENV{.LOCAL_ifNum}=="03", SYMLINK+="station_modem_status"
+	ENV{ID_MM_DEVICE_IGNORE}="1"
