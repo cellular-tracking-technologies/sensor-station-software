@@ -144,28 +144,23 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
             th Station Software Update
             td
               a(href="/update-station", class="btn btn-sm btn-primary btn-block") Station Update
-        h2 Modem Control
-        p When the modem is connected - this will always be the default route to the internet, even if you are plugged into a fast internet connection.  Use these controls to temporarily stop / start the modem.  It will still be active on the next reboot.
+        h2 Network Control 
+        p If running multiple FUNcubes - you should disable either the modem or wifi for optimal performance.
         table(class="table table-bordered table-sm table-dark")
           tr
-            th Temporarily Start modem
-            td
-              button(class="btn btn-sm btn-primary btn-block", id="start-modem") Start Modem
+            th(colspan=2) Modem
           tr
-            th Temporarily Stop modem
-            td
-              button(class="btn btn-sm btn-primary btn-block", id="stop-modem") Stop Modem
-
-        p The controls below are for persistent modem control - starting or stopping the modem will persist through reboots and be permanent.
-        table(class="table table-bordered table-sm table-dark")
-          tr
-            th Permanently Enable modem
             td
               button(class="btn btn-sm btn-primary btn-block", id="enable-modem") Enable Modem
-          tr
-            th Permanently Disable modem
-            td
+            td 
               button(class="btn btn-sm btn-primary btn-block", id="disable-modem") Disable Modem
+          tr
+            th(colspan=2) WiFi
+          tr
+            td
+              button(class="btn btn-sm btn-primary btn-block", id="enable-wifi") Enable Wifi
+            td
+              button(class="btn btn-sm btn-primary btn-block", id="disable-wifi") Disable Wifi
         h2 Radio Software Control
         p You can restart the radio software with this control, which will require a page refresh after it is complete.
         table(class="table table-bordered table-sm table-dark")
