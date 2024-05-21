@@ -392,6 +392,18 @@ router.post('/modem/disable', async (req, res) => {
   return res.status(200).send()
 })
 
+router.get('/modem-signal-strength', async (req, res) => {
+  fetch('http://localhost:3000/modem/signal-strength')
+    .then(res => res.json())
+    .then((json) => {
+      res.json(json)
+    })
+    .catch((err) => {
+      console.error(err)
+      res.sendStatus(500)
+    })
+})
+
 router.post('/wifi/enable', async (req, res) => {
   await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-wifi.sh')
   return res.status(200).send()

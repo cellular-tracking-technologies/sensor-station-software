@@ -11,12 +11,14 @@ const Modem = new ModemInterface({
   command_set_parser: QuectelCommandSetParser,
   poll_frequency_seconds: 10
 })
+
 try {
   Modem.open()
 } catch (err) {
   console.error('unable to open the modem')
   console.error(err)
 }
+console.log('modem info', Modem.info)
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -37,6 +39,24 @@ router.get('/ppp', (req, res, next) => {
       ppp: status
     })
   })
+})
+
+router.get('/signal-strength', (req, res) => {
+  try {
+    let rssi
+    console.log('modem info', Modem.info)
+    if (Modem.info.signal) {
+
+      let { signal } = Modem.info
+      rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+    } else {
+      rssi = undefined
+    }
+    res.json({ signal: rssi })
+  } catch (e) {
+    console.error('lcd cell error', e)
+
+  }
 })
 
 export default router
