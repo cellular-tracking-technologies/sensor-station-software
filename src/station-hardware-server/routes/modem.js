@@ -39,48 +39,4 @@ router.get('/ppp', (req, res, next) => {
   })
 })
 
-router.post('/stop', (req, res, next) => {
-  RunCommand('systemctl stop modem')
-    .then((response) => {
-      res.status(204).send()
-    })
-    .catch((err) => {
-      res.status(500).send(err.toString())
-    })
-})
-
-router.post('/start', (req, res, next) => {
-  RunCommand('systemctl start modem')
-    .then((response) => {
-      res.status(204).send()
-    })
-    .catch((err) => {
-      res.status(500).send(err.toString())
-    })
-})
-
-router.post('/enable', (req, res, next) => {
-  RunCommand('systemctl enable /lib/ctt/sensor-station-software/system/modem/modem.service')
-    .then((response) => {
-      // start the modem after enabling
-      RunCommand('systemctl restart modem')
-        .then((response) => {
-          res.status(204).send()
-        })
-    })
-    .catch((err) => {
-      res.status(500).send(err.toString())
-    })
-})
-
-router.post('/disable', (req, res, next) => {
-  RunCommand('systemctl disable modem')
-    .then((response) => {
-      res.status(204).send()
-    })
-    .catch((err) => {
-      res.status(500).send(err.toString())
-    })
-})
-
 export default router

@@ -187,46 +187,26 @@ router.get('/ctt-data-uploaded', function (req, res, next) {
   })
 })
 
-router.post('/delete-ctt-data-uploaded', (req, res, next) => {
-  glob('/data/uploaded/ctt/*.gz', (err, uploaded_files) => {
-    uploaded_files.forEach((filename) => {
-      fs.unlinkSync(filename)
-    })
-    res.json({ res: true })
-  })
+router.post('/delete-ctt-data-uploaded', async (req, res) => {
+  await RunCommand('rm -rf /data/uploaded/ctt')
+  res.json({ res: true })
 })
 
-router.post('/delete-ctt-data-rotated', (req, res, next) => {
-  glob('/data/rotated/*.gz', (err, uploaded_files) => {
-    uploaded_files.forEach((filename) => {
-      fs.unlinkSync(filename)
-    })
-    res.json({ res: true })
-  })
+router.post('/delete-ctt-data-rotated', async (req, res) => {
+  await RunCommand('rm -rf /data/rotated')
+  await RunCommand('mkdir /data/rotated')
+  res.json({ res: true })
 })
 
-router.post('/delete-sg-data-uploaded', (req, res, next) => {
-  glob('/data/uploaded/sg/*.gz', (err, uploaded_files) => {
-    uploaded_files.forEach((filename) => {
-      fs.unlinkSync(filename)
-    })
-    res.json({ res: true })
-  })
+router.post('/delete-sg-data-uploaded', async (req, res) => {
+  await RunCommand('rm -rf /data/uploaded/sg')
+  res.json({ res: true })
 })
 
-router.post('/delete-sg-data-rotated', (req, res, next) => {
-  let now = new Date()
-  glob('/data/SGdata/*/*.gz', (err, uploaded_files) => {
-    uploaded_files.forEach((filename) => {
-      let file_info = fs.statSync(filename)
-      if ((now - file_info.mtime) > 1000 * 60 * 61) {
-        fs.unlinkSync(filename)
-      } else {
-        console.log('ignoring file for delete', filename)
-      }
-    })
-    res.json({ res: true })
-  })
+router.post('/delete-sg-data-rotated', async (req, res) => {
+  await RunCommand('rm -rf /data/SGdata/*')
+  await RunCommand('systemctl restart sensorgnome')
+  res.json({ res: true })
 })
 
 router.post('/clear-log/', (req, res, next) => {
@@ -403,20 +383,23 @@ router.post('/update-reboot-schedule', (req, res) => {
     })
 })
 
-const HardwareRouter = (req, res, next) => {
-  let url = 'http://localhost:3000' + req.originalUrl
-  fetch(url, { method: 'post' })
-    .then((hardware_response) => {
-      res.status(hardware_response.status).send()
-    })
-    .catch((err) => {
-      res.status(500).send('hardware proxy error')
-    })
-}
+router.post('/modem/enable', async (req, res) => {
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-modem.sh')
+  return res.status(200).send()
+})
+router.post('/modem/disable', async (req, res) => {
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/disable-modem.sh')
+  return res.status(200).send()
+})
 
-router.post('/modem/start', HardwareRouter)
-router.post('/modem/stop', HardwareRouter)
-router.post('/modem/enable', HardwareRouter)
-router.post('/modem/disable', HardwareRouter)
+router.post('/wifi/enable', async (req, res) => {
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-wifi.sh')
+  return res.status(200).send()
+})
+
+router.post('/wifi/disable', async (req, res) => {
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/disable-wifi.sh')
+  return res.status(200).send()
+})
 
 export default router

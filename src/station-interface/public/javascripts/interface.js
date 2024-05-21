@@ -77,6 +77,29 @@ const download_node_health = function () {
 };
 
 const initialize_controls = function () {
+  document.querySelector('#enable-wifi').addEventListener('click', async (e) => {
+    let res = window.confirm('Are you sure you want to enable wifi?');
+    if (res) {
+      const response = await fetch('/wifi/enable', { method: 'POST' })
+      if (response.ok) {
+        alert('Wifi has been enabled')
+      } else {
+        alert('Something went wrong enabling wifi')
+      }
+    }
+  })
+  document.querySelector('#disable-wifi').addEventListener('click', async (e) => {
+    let res = window.confirm('Are you sure you want to disable wifi?');
+    if (res) {
+      const response = await fetch('/wifi/disable', { method: 'POST' })
+      if (response.ok) {
+        alert('Wifi has been disabled')
+      } else {
+        alert('Something went wrong disabling wifi')
+      }
+    }
+  })
+
   document.querySelector('#max-row-count').value = MAX_ROW_COUNT
   document.querySelector('#update-max-row-count').addEventListener('click', function (e) {
     MAX_ROW_COUNT = document.querySelector('#max-row-count').value
@@ -110,52 +133,26 @@ const initialize_controls = function () {
     }));
     document.querySelector('#upload-files').setAttribute('disabled', true);
   });
-  document.querySelector('#start-modem').addEventListener('click', function (e) {
-    let res = window.confirm('Are you sure you want to start the modem?');
-    if (res) {
-      $.ajax({
-        url: '/modem/start',
-        method: 'post',
-        success: function (res) {
-          alert('Modem startup initiated');
-        }
-      })
-    }
-  });
-  document.querySelector('#stop-modem').addEventListener('click', function (e) {
-    let res = window.confirm('WARNING: Are you sure you want to stop the modem?');
-    if (res) {
-      $.ajax({
-        url: '/modem/stop',
-        method: 'post',
-        success: function (res) {
-          alert('Stopping modem connection');
-        }
-      })
-    }
-  });
-  document.querySelector('#enable-modem').addEventListener('click', function (e) {
+  document.querySelector('#enable-modem').addEventListener('click', async function (e) {
     let res = window.confirm('Are you sure you want to enable the modem?');
     if (res) {
-      $.ajax({
-        url: '/modem/enable',
-        method: 'post',
-        success: function (res) {
-          alert('Modem enabled');
-        }
-      })
+      const response = await fetch('/modem/enable', { method: 'POST' })
+      if (response.ok) {
+        alert('Modem has been enabled')
+      } else {
+        alert('Something went wrong enabling the modem')
+      }
     }
   });
-  document.querySelector('#disable-modem').addEventListener('click', function (e) {
+  document.querySelector('#disable-modem').addEventListener('click', async function (e) {
     let res = window.confirm('WARNING: Are you sure you want to PERMANENTLY diable the modem?');
     if (res) {
-      $.ajax({
-        url: '/modem/disable',
-        method: 'post',
-        success: function (res) {
-          alert('Modem disabled');
-        }
-      })
+      const response = await fetch('/modem/disable', { method: 'POST' })
+      if (response.ok) {
+        alert('Modem has been disabled')
+      } else {
+        alert('Something went wrong disabling the modem')
+      }
     }
   });
 
