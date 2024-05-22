@@ -42,21 +42,29 @@ router.get('/ppp', (req, res, next) => {
 })
 
 router.get('/signal-strength', (req, res) => {
-  try {
-    let rssi
-    console.log('modem info', Modem.info)
-    if (Modem.info.signal) {
+  exec('ifconfig | grep -e ppp | wc -l', (err, stdout, stderr) => {
+    if (stdout > 0) {
+      console.log('modem stdout', stdout)
 
-      let { signal } = Modem.info
-      rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+      try {
+        let rssi
+        console.log('modem info', Modem.info)
+        if (Modem.info.signal) {
+
+          let { signal } = Modem.info
+          rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+        } else {
+          rssi = undefined
+        }
+        res.json({ signal: rssi })
+      } catch (e) {
+        console.error('lcd cell error', e)
+
+      }
     } else {
-      rssi = undefined
+      res.json({ signal: undefined })
     }
-    res.json({ signal: rssi })
-  } catch (e) {
-    console.error('lcd cell error', e)
-
-  }
+  })
 })
 
 export default router

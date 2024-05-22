@@ -1109,9 +1109,9 @@ const render_modem = function () {
         document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
         document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
         // document.querySelector('.wifi-path1').setAttribute('d', "none")
-      } else if (signal <= -150 && signal > -175) {
+      } else if (signal == undefined) {
         document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-0')
-        document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:#00d747;")
+        document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
         document.querySelector('.modem-path0').setAttribute('d', "M0 13.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
       }
     })
@@ -1723,14 +1723,22 @@ const init_sg = () => {
       })
     }
 
+    const render_interfaces = function () {
+      render_gateway()
+      render_wifi()
+      render_modem()
+    }
+
     document.querySelector('#sg_link').setAttribute('href', 'http://' + window.location.hostname + ':3010');
-    render_gateway()
-    render_wifi()
-    render_modem()
+    // render_gateway()
+    // render_wifi()
+    // render_modem()
+    render_interfaces()
     initialize_reboot()
-    setInterval(render_gateway, 5000)
-    setInterval(render_wifi, 5000)
-    setInterval(render_modem, 5000)
+    setInterval(render_interfaces, 5000)
+    // setInterval(render_gateway, 5000)
+    // setInterval(render_wifi, 5000)
+    // setInterval(render_modem, 5000)
     let blu_receiver, blu_radio, component, col, row, div
     let max_row_count = localStorage.getItem('max-row-count')
     if (max_row_count) {

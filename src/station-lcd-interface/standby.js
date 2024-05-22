@@ -2,6 +2,7 @@ import display from './display-driver.js'
 import { wifi, battery, cell, temp, solar, thresholds } from './lcd-chars.js'
 import fetch from 'node-fetch'
 import url from 'url'
+import { exec } from 'child_process'
 /**
  * 
  */
@@ -93,21 +94,31 @@ class StandBy {
   }
 
   async getCellStrength(cell) {
-    try {
+    exec('ifconfig | grep ppp | wc -l', async (err, stdout, stderr) => {
       let rssi
-      if (cell.signal) {
 
-        let { signal } = cell
-        rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+      if (stdout > 0) {
+        try {
+          if (cell.signal) {
+
+            let { signal } = cell
+            rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
+          } else {
+            rssi = undefined
+          }
+          await this.createCellChar(rssi)
+
+
+        } catch (e) {
+          console.error('lcd cell error', e)
+
+        }
       } else {
         rssi = undefined
+        await this.createCellChar(rssi)
       }
-      await this.createCellChar(rssi)
+    })
 
-    } catch (e) {
-      console.error('lcd cell error', e)
-
-    }
   }
 
   async createCellChar(rssi) {
