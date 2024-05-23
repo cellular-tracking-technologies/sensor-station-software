@@ -147,14 +147,6 @@ class BluStation {
     })
   }
 
-  // /**
-  //  * 
-  //  * @param {String} path /dev/serial/by-path string that has been substringed 17 spaces, starts the startBluRadios function
-  //  */
-  // bluInit(path) {
-  //   this.startBluRadios(path)
-  // }
-
   /**
    * 
    * @param {String} path Radio path from chokidar, already substringed 17 spaces 
@@ -171,8 +163,6 @@ class BluStation {
 
     const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
 
-    // this.startWebsocketServer()
-
     // Blu Event Emitter
     blu_receiver.on('complete', async (job) => {
       const { task, error, radio_channel, data } = job
@@ -182,7 +172,6 @@ class BluStation {
 
         this.stationLog(`error ${error} on radio ${radio_channel} on USB Port ${blu_receiver.port}`)
         console.log(`error ${error} on radio ${radio_channel} on USB Port ${blu_receiver.port}`)
-
 
       }
 
