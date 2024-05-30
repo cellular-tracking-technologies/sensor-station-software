@@ -1,5 +1,5 @@
 import express from 'express'
-import glob from 'glob'
+import { glob } from 'glob'
 import fs from 'fs'
 import moment from 'moment'
 import { spawn } from 'child_process'
