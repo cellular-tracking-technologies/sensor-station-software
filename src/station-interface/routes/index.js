@@ -1,5 +1,5 @@
 import express from 'express'
-import { glob } from 'glob'
+import glob from 'glob'
 import fs from 'fs'
 import moment from 'moment'
 import { spawn } from 'child_process'
@@ -17,10 +17,6 @@ const router = express.Router()
 
 router.get('/', function (req, res, next) {
   res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
-})
-
-router.get('/blu', function (req, res, next) {
-  res.render('main-blu', { title: 'CTT Sensor Station BluSeries Receiver Control', message: 'pug' })
 })
 
 router.get('/update-station', function (req, res, next) {
@@ -330,21 +326,6 @@ router.get('/internet-gateway', (req, res) => {
 })
 
 /**
- * proxy to hardware server to get internet gateway
- */
-router.get('/internet-wifi-strength', (req, res) => {
-  fetch('http://localhost:3000/internet/wifi-strength')
-    .then(res => res.json())
-    .then((json) => {
-      res.json(json)
-    })
-    .catch((err) => {
-      console.error(err)
-      res.sendStatus(500)
-    })
-})
-
-/**
  * get reboot schedule from crontab via hardware server proxy
  */
 router.get('/reboot-schedule', (req, res) => {
@@ -384,24 +365,12 @@ router.post('/update-reboot-schedule', (req, res) => {
 })
 
 router.post('/modem/enable', async (req, res) => {
-  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-modem.sh')
+  await RunCommand('nmcli connection up station-modem')
   return res.status(200).send()
 })
 router.post('/modem/disable', async (req, res) => {
-  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/disable-modem.sh')
+  await RunCommand('nmcli connection down station-modem')
   return res.status(200).send()
-})
-
-router.get('/modem-signal-strength', async (req, res) => {
-  fetch('http://localhost:3000/modem/signal-strength')
-    .then(res => res.json())
-    .then((json) => {
-      res.json(json)
-    })
-    .catch((err) => {
-      console.error(err)
-      res.sendStatus(500)
-    })
 })
 
 router.post('/wifi/enable', async (req, res) => {
