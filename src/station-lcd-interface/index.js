@@ -20,12 +20,13 @@ import { HostnameTask } from "./tasks/hostname-task.js"
 import { InternetTask } from "./tasks/internet-task.js"
 import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
-// import { WifiStrength } from './tasks/wifi-strength.js'
+import { Gpio } from 'onoff' // RaspberryPI Gpio functions
 import { StandBy } from './standby.js'
-import ButtonMap from './button-map.js'
+import GpioMap from '../hardware/pi/gpio-map.js'
+
+const { Buttons: ButtonMap } = GpioMap
 
 // Require Statements
-import { Gpio } from 'onoff' // RaspberryPI Gpio functions
 
 // App Config
 
