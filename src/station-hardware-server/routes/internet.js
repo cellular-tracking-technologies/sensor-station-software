@@ -1,5 +1,5 @@
 import fs from 'fs'
-import glob from 'glob'
+import { glob } from 'glob'
 import express from 'express'
 import icmp from 'icmp'
 import { exec } from 'child_process'
