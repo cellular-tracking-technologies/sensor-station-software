@@ -1,15 +1,12 @@
 
 import express from 'express'
 import { exec } from 'child_process'
-var router = express.Router()
-
-const Modem = {
-  info: {},
-}
+import ModemUtil from '../../hardware/modem/info.js'
+const router = express.Router()
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-  res.json(Modem.info)
+  res.json(ModemUtil.info())
 })
 
 router.get('/ppp', (req, res, next) => {
