@@ -1,5 +1,4 @@
-import SerialPort from 'serialport'
-import Readline from '@serialport/parser-readline'
+import { SerialPort, ReadlineParser } from 'serialport'
 import moment from 'moment'
 import EventEmitter from 'events'
 
@@ -147,7 +146,8 @@ class RadioReceiver extends EventEmitter {
    * emit basic events
    */
   buildSerialInterface() {
-    let port = new SerialPort(this.port_uri, {
+    let port = new SerialPort({
+      path: this.port_uri,
       baudRate: this.baud_rate
     })
     port.on('open', () => {
@@ -165,7 +165,7 @@ class RadioReceiver extends EventEmitter {
       this.emit('error', `${err.toString() + this.data().toString()}`)
     })
     this.serialport = port
-    let parser = new Readline()
+    let parser = new ReadlineParser()
     parser.on('data', (line) => {
       let raw_beep
       let now = moment(new Date()).utc()

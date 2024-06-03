@@ -1,6 +1,5 @@
 import fetch from 'node-fetch'
 import url from 'url'
-// import glob from 'glob'
 
 class UsbWifiUploadTask {
   constructor(base_url) {

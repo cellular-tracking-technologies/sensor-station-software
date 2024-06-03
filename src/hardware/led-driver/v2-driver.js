@@ -1,14 +1,7 @@
 import { Gpio } from 'onoff'
-import KernelInfo from '../kernel/kernel.js'
+import GpioMap from '../pi/gpio-map.js'
 
-const kernel_pins = KernelInfo.getPins()
-
-const { v2: { GPS, A, B, } } = kernel_pins
-const Pins = {
-  GPS,
-  A,
-  B,
-}
+const { GPS: Pins } = GpioMap
 
 class Led {
   constructor(gpio) {

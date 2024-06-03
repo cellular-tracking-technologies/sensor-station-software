@@ -1,16 +1,7 @@
 import { Drive, Toggle } from '../io-expander/expander.js'
-import KernelInfo from '../kernel/kernel.js'
+import GpioMap from '../pi/gpio-map.js'
 
-const kernel_pins = KernelInfo.getPins()
-
-const { v3: { GPS, A, B } } = kernel_pins
-console.log('v3 driver pins', GPS, A, B)
-
-const Pins = {
-  GPS,
-  A,
-  B,
-}
+const { GPS: Pins } = GpioMap
 
 class Led {
   #addr

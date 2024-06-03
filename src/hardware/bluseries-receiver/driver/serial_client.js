@@ -1,6 +1,5 @@
 import EventEmitter from 'events'
-import SerialPort from 'serialport'
-import ReadlineParser from '@serialport/parser-readline'
+import { SerialPort, ReadlineParser } from 'serialport'
 
 class SerialClient extends EventEmitter {
   constructor(opts) {
@@ -9,7 +8,8 @@ class SerialClient extends EventEmitter {
     const { path } = opts
     if (path === undefined) throw Error('no path provided')
     console.log('opening serial port', path, opts)
-    this.port = new SerialPort(path, {
+    this.port = new SerialPort({
+      path,
       baudRate: opts.baud ? opts.baud : 115200,
       autoOpen: false,
     })
