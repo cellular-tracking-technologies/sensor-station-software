@@ -1,9 +1,16 @@
 #!/bin/bash
 
-file=/etc/modprobe.d/blacklist-wifi.conf
+mt7601u_file=/etc/modprobe.d/blacklist-mt7601u.conf
+rtl8811cu_file=/etc/modprobe.d/blacklist-rtl8811cu.conf
 
-if [ -f $file ]; then
-    rm $file
+if [ -f $mt7601u_file ]; then
+    rm $mt7601u_file
 fi
 
+if [ -f $rtl8811cu_file ]; then
+    rm $rtl8811cu_file
+fi
+
+
 modprobe mt7601u
+modprobe rtw88_8821cu
