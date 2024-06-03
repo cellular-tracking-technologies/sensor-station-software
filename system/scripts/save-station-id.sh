@@ -46,9 +46,3 @@ else
 	sudo raspi-gpio set 27 op dh
 fi
 
-# copy modem controls
-echo 'copying modem scripts from monorepo'
-cp /lib/ctt/sensor-station-software/system/modem/ppp-gprs /etc/ppp/peers/gprs
-cp /lib/ctt/sensor-station-software/system/modem/twilio-chatscript /etc/chatscripts/twilio
-cp /lib/ctt/sensor-station-software/system/modem/simcom-chat-disconnect /etc/chatscripts/disconnect
-
