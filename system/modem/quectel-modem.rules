@@ -1,19 +1,10 @@
 # Symlink for Station Modem
 
 # prevent modem manager from accessing modem serial ports
-KERNEL=="ttyUSB*", \
+KERNEL=="ttyUSB[0-2]", \
 	ATTRS{idVendor}=="2c7c", ATTRS{idProduct}=="0125", \
 	ENV{ID_MM_DEVICE_IGNORE}="1"
 
-# note bInterfaceNumber
-SUBSYSTEMS=="usb", ENV{.LOCAL_ifNum}="$attr{bInterfaceNumber}"
+# prevent modem manager from accessing adafruit microcontrollers to be safe
+SUBSYSTEM=="tty", ACTION=="add", ATTRS{idVendor}="239a",ATTRS{idProduct}="800c", ENV{ID_MM_DEVICE_IGNORE}="1"
 
-# adding symlink for modem
-SUBSYSTEM=="tty", ACTION=="add", \
-	ATTRS{idVendor}=="2c7c", ATTRS{idProduct}=="0125", \
-	ENV{.LOCAL_ifNum}=="02", SYMLINK+="station_modem"
-
-# adding symlink for modem
-SUBSYSTEM=="tty", ACTION=="add", \
-	ATTRS{idVendor}=="2c7c", ATTRS{idProduct}=="0125", \
-	ENV{.LOCAL_ifNum}=="03", SYMLINK+="station_modem_status"
