@@ -30,5 +30,5 @@ function program () {
 for i in {1..5}; do program "$i"; done
 
 sleep 1
-echo 'starting radio interface
+echo 'starting radio interface'
 systemctl start station-radio-interface
