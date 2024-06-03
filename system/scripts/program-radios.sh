@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ -z "$1" ]; then
   # no input argument - use default fw
-  fw_file="/lib/ctt/sensor-station-software/system/radios/fw/default"
+  fw_file="/etc/ctt/fw/default"
 else
   fw_file=$1
 fi
