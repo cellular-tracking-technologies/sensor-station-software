@@ -1,7 +1,7 @@
 
 import express from 'express'
 import { exec } from 'child_process'
-import ModemUtil from '../../hardware/modem/info.js'
+import ModemUtil from '../../hardware/pi/modem.js'
 const router = express.Router()
 
 /* GET home page. */

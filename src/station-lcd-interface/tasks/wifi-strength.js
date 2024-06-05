@@ -1,6 +1,5 @@
-import WifiSignal from '../../hardware/wifi/wifi-signal.js'
+import WifiSignal from '../../hardware/pi/network/wifi-signal.js'
 import display from '/lib/ctt/sensor-station-software/src/station-lcd-interface/display-driver.js'
-import { Buffer } from 'node:buffer'
 import fetch from 'node-fetch'
 import url from 'url'
 
@@ -35,15 +34,6 @@ class WifiStrength extends WifiSignal {
         })
     })
   }
-
-  // async createChar(bars) {
-  //   let char = '\x00'
-  //   let arrByte = Uint8Array.from(bars)
-  //   this.display.lcd.createChar(0, arrByte)
-  //   this.display.lcd.setCursor(0, 0)
-  //   this.display.lcd.print(`wifi: ${char}`)
-  //   return char
-  // }
 }
 
 export { WifiStrength }

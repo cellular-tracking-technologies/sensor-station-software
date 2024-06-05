@@ -1,5 +1,4 @@
 import { exec } from 'child_process'
-// import command from '../../command'
 
 class WifiSignal {
   constructor() {
