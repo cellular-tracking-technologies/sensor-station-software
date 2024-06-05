@@ -1,5 +1,7 @@
 import Revision from '../../revision.js'
-const Pins = {
+import OsInfo from './os.js'
+
+const BookwormPins = {
     V3: {
         Buttons: {
             Up: 529,
@@ -25,4 +27,34 @@ const Pins = {
     reset_pin: 531,
 }
 
+const BullseyePins = {
+    V3: {
+        Buttons: {
+            Up: 17,
+            Down: 22,
+            Select: 27,
+            Back: 8
+        },
+        GPS: 0,
+        A: 10,
+        B: 11,
+    },
+    V2: {
+        Buttons: {
+            Up: 4,
+            Down: 5,
+            Select: 6,
+            Back: 7
+        },
+        GPS: 38,
+        A: 39,
+        B: 40,
+    },
+    reset_pin: 19,
+}
+
+// Identify which debian version we are running - GPIO numbers changed in Bookworm 
+const Pins = (OsInfo.Release > 11) ? BookwormPins : BullseyePins
+
+// Identify which Station Hardware revision we are using
 export default (Revision.revision >= 3) ? Pins.V3 : Pins.V2
