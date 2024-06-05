@@ -1,31 +1,12 @@
-import { exec } from 'child_process'
+import { execSync } from 'child_process'
 
-class WifiSignal {
-  constructor() {
-    this.cmd = 'iwconfig | grep "Link Quality"'
+export default Object.freeze(() => {
+  // use nmcli to get signal percent of connected wifi
+  const result = execSync("nmcli -f IN-USE,SSID,SIGNAL dev wifi list | awk '/\*/{if (NR!=1) {print $2,$3}}'")
+  // check there is a result
+  if (result.length < 2) {
+    return null
   }
-
-  async getWifiSignal() {
-    return new Promise((resolve, reject) => {
-
-      // command(this.cmd)
-      exec(this.cmd, (error, stdout, stderr) => {
-        if (error) {
-          console.log(`command error ${this.cmd}; ${stderr}`)
-          reject(error)
-          return
-        }
-        const text = stdout
-        const key = text.match(/(?<numerator>\d+)(?:\/)(?<denominator>\d+)/)
-        const num = Number(key.groups.numerator)
-        const den = Number(key.groups.denominator)
-        const percent = Math.floor((num / den) * 100)
-        resolve(percent)
-      })
-
-    }).then((values) => {
-      return values
-    })
-  }
-}
-export default WifiSignal
+  const [ssid, signal] = result.split()
+  return { ssid, signal }
+})
