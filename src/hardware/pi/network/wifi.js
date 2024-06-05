@@ -1,25 +1,23 @@
 import { execSync } from 'child_process'
 
+const GetNetworkList = () => {
+  const network_info = execSync('nmcli -t -f IN-USE,SSID,SIGNAL device wifi list').toString().trim()
+  return network_info.split('\n').map((info) => {
+    const [in_use, ssid, signal] = info.split(':')
+    return {
+      connected: (in_use === '*') ? true : false,
+      ssid,
+      signal,
+    }
+  })
+}
+
 export default Object.freeze({
   GetSignal: () => {
-    // use nmcli to get signal percent of connected wifi
-    const networks = execSync('nmcli -f IN-USE,SSID,SIGNAL dev wifi list').toString().trim()
-    const network = {
-      ssid: null,
-      signal: null,
-    }
-    networks.split('\n').forEach((network) => {
-      const [in_use, ssid, signal] = network.split()
-      console.log(in_use, ssid, signal)
-      if (in_use === '*') {
-        // network is in use
-        network.ssid = ssid,
-          network.signal = signal
-      }
-    })
-    return network
+    // return result
+    GetNetworkList().find(network => network.connected ? true : false)
   },
   ScanNetworks: () => {
-
+    return GetNetworkList()
   }
 })
