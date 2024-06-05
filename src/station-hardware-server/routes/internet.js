@@ -3,14 +3,12 @@ import { glob } from 'glob'
 import express from 'express'
 import icmp from 'icmp'
 import { exec } from 'child_process'
-// import WifiSignal from '../../hardware/wifi.js'
+import Wifi from '../../hardware/pi/network/wifi.js'
 
 const router = express.Router();
 
 const DEFAULT_PING_COUNT = 3;
 const PING_IP = '8.8.8.8';
-
-// const wifi = new WifiSignal()
 
 const ping = function () {
   return new Promise((resolve, reject) => {
@@ -140,28 +138,7 @@ router.get('/pending-upload', (req, res, next) => {
 });
 
 router.get('/wifi-strength', (req, res, next) => {
-  let percent = 0
-
-  try {
-    exec('iwconfig | grep "Link Quality"', async (err, stdout, stderr) => {
-      if (stdout) {
-        const text = stdout
-        const key = text.match(/(?<numerator>\d+)(?:\/)(?<denominator>\d+)/)
-        const num = key.groups.numerator
-        const den = key.groups.denominator
-        percent = Math.floor((num / den) * 100)
-
-        // } else {
-        //   res.json({ wifi_strength: percent })
-      }
-      res.json({ wifi_strength: percent })
-
-    })
-  } catch (e) {
-    console.error(e)
-    res.sendStatus(500)
-  }
-
+  res.json(Wifi.GetSignal())
 })
 
 export default router
