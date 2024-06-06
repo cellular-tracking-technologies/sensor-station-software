@@ -39,10 +39,10 @@ else
 	fi
 
 	# let's kick the gps for gps hats
-	sudo raspi-gpio set 27 op dh
+	sudo pinctrl set 27 op dh
 	sleep 1
-	sudo raspi-gpio set 27 op dl
+	sudo pinctrl set 27 op dl
 	sleep 1
-	sudo raspi-gpio set 27 op dh
+	sudo pinctrl set 27 op dh
 fi
 
