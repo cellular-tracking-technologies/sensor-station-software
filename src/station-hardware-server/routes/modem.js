@@ -26,7 +26,12 @@ router.get('/ppp', (req, res, next) => {
 })
 
 router.get('/signal-strength', (req, res) => {
-  res.json({ signal: undefined })
+
+  res.json(ModemUtil.info())
+  // res.json({
+  //   signal: ModemUtil.signal,
+  //   state: ModemUtil.state,
+  // })
 })
 
 export default router

@@ -19,6 +19,10 @@ router.get('/', function (req, res, next) {
   res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
 })
 
+router.get('/blu', function (req, res) {
+  res.render('main-blu', { title: 'CTT Blu Receiver Interface', message: 'pug' })
+})
+
 router.get('/update-station', function (req, res, next) {
   res.render('station-update')
 })
@@ -326,6 +330,23 @@ router.get('/internet-gateway', (req, res) => {
 })
 
 /**
+ * proxy to hardware server to get internet gateway
+ */
+router.get('/internet-wifi-strength', (req, res) => {
+  // fetch('http://localhost:3000/internet/wifi-strength')
+  fetch('http://localhost:3000/internet/wifi-networks')
+
+    .then(res => res.json())
+    .then((json) => {
+      res.json(json)
+    })
+    .catch((err) => {
+      console.error(err)
+      res.sendStatus(500)
+    })
+})
+
+/**
  * get reboot schedule from crontab via hardware server proxy
  */
 router.get('/reboot-schedule', (req, res) => {
@@ -371,6 +392,18 @@ router.post('/modem/enable', async (req, res) => {
 router.post('/modem/disable', async (req, res) => {
   await RunCommand('nmcli connection down station-modem')
   return res.status(200).send()
+})
+
+router.get('/modem-signal-strength', async (req, res) => {
+  fetch('http://localhost:3000/modem/signal-strength')
+    .then(res => res.json())
+    .then((json) => {
+      res.json(json)
+    })
+    .catch((err) => {
+      console.error(err)
+      res.sendStatus(500)
+    })
 })
 
 router.post('/wifi/enable', async (req, res) => {

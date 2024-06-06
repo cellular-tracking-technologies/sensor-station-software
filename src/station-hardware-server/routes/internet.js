@@ -138,7 +138,16 @@ router.get('/pending-upload', (req, res, next) => {
 });
 
 router.get('/wifi-networks', (req, res, next) => {
-  res.json(Wifi.GetNetworks())
+  const wifi = Wifi.GetCurrentNetwork()
+  if (wifi) {
+    res.json(wifi)
+  } else {
+    res.json({
+      signal: undefined,
+      state: false,
+    })
+  }
+
 })
 
 export default router
