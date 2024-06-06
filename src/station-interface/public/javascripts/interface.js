@@ -1601,6 +1601,7 @@ const render_gateway = function () {
   fetch('/internet-gateway')
     .then(function (res) { return res.json() })
     .then(function (json) {
+      console.log('internet gateway json', json)
       document.querySelector('#internet-gateway').textContent = json.gateway
     })
     .catch(function (err) {

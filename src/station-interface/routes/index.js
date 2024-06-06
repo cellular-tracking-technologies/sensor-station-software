@@ -318,7 +318,8 @@ router.get('/software', (req, res) => {
  * proxy to hardware server to get internet gateway
  */
 router.get('/internet-gateway', (req, res) => {
-  fetch('http://localhost:3000/internet/gateway')
+  // fetch('http://localhost:3000/internet/gateway')
+  fetch('http://localhost:3000/internet/wifi-networks')
     .then(res => res.json())
     .then((json) => {
       res.json(json)
