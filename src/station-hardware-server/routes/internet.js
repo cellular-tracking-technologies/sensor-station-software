@@ -137,8 +137,8 @@ router.get('/pending-upload', (req, res, next) => {
     });
 });
 
-router.get('/wifi-strength', (req, res, next) => {
-  res.json(Wifi.GetSignal())
+router.get('/wifi-networks', (req, res, next) => {
+  res.json(Wifi.GetNetworks())
 })
 
 export default router

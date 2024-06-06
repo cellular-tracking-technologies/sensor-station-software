@@ -62,7 +62,7 @@ const pollModemInfo = (modem_index) => {
     const sim_info = pollSimInfo({ modem_index, sim_index })
     const signal = generic_info['signal-quality']
     return {
-      signal: signal.value,
+      signal: parseInt(signal.value),
       imsi: sim_info.sim.properties.imsi,
       imei: broadband.imei,
       sim: sim_info.sim.properties.iccid,

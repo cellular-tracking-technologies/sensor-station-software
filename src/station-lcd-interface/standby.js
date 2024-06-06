@@ -1,8 +1,10 @@
-import display from './display-driver.js'
-import { wifi, battery, cell, temp, solar, thresholds } from './lcd-chars.js'
 import fetch from 'node-fetch'
 import url from 'url'
 import { exec } from 'child_process'
+
+import Network from '../hardware/pi/network/index.js'
+import display from './display-driver.js'
+import { wifi, battery, cell, temp, solar, thresholds } from './lcd-chars.js'
 /**
  * 
  */
@@ -13,8 +15,6 @@ class StandBy {
   constructor(base_url, refresh = 60000) {
     this.volt_url = url.resolve(base_url, 'sensor/voltages')
     this.temp_url = url.resolve(base_url, 'sensor/temperature')
-    this.wifi_url = url.resolve(base_url, 'internet/wifi-strength')
-    this.cell_url = url.resolve(base_url, 'modem')
 
     this.autoRefresh = refresh
   }
@@ -24,28 +24,24 @@ class StandBy {
   }
   async results() {
     try {
-
-      let [voltages, temperature, wifi_res, cell_res] = await Promise.all([
+      const [voltages, temperature] = await Promise.all([
         fetch(this.volt_url),
         fetch(this.temp_url),
-        fetch(this.wifi_url),
-        fetch(this.cell_url),
-      ]).then(([voltages, temperature, wifi, cell]) => {
-        console.log('wifi json', wifi)
+      ]).then(([voltages, temperature]) => {
         return [
           voltages.json(),
           temperature.json(),
-          wifi.json(),
-          cell.json()
         ]
       })
 
       await this.getSolarVoltage(await voltages)
-
-      await this.getWifiStrength(await wifi_res)
       await this.getBattVoltage(await voltages)
-      await this.getCellStrength(await cell_res)
       await this.getTempValues(await temperature)
+
+      const network = Network.Wifi.GetCurrentNetwork()
+      const modem = Network.Modem.info()
+      await this.getWifiStrength(network ? network.signal : 0)
+      await this.getCellStrength(modem ? modem.signal : 0)
     } catch (err) {
       console.error('lcd client error', err)
     }
@@ -55,9 +51,8 @@ class StandBy {
     display.clear()
   }
 
-  async getWifiStrength(wifi_res) {
+  async getWifiStrength(percent) {
     try {
-      let { wifi_strength: percent } = wifi_res
       await this.createWifiChar(Number(percent))
     } catch (e) {
       console.error('lcd wifi error', e)
@@ -93,7 +88,14 @@ class StandBy {
     }
   }
 
-  async getCellStrength(cell) {
+  /**
+   * 
+   * @param {Integer} percent signal percent to display
+   */
+  async getCellStrength(percent) {
+    // *** temporary value - TO BE REPLACED with percent ***
+    cell = { signal: -100 }
+    // *****************************************************
     exec('ifconfig | grep ppp | wc -l', async (err, stdout, stderr) => {
       let rssi
 
@@ -107,18 +109,14 @@ class StandBy {
             rssi = undefined
           }
           await this.createCellChar(rssi)
-
-
         } catch (e) {
           console.error('lcd cell error', e)
-
         }
       } else {
         rssi = undefined
         await this.createCellChar(rssi)
       }
     })
-
   }
 
   async createCellChar(rssi) {
@@ -149,7 +147,6 @@ class StandBy {
     } else {
       display.lcd.setCursor(3, 0)
       display.lcd.print(cell.warning.hex)
-
     }
   }
 
@@ -160,7 +157,6 @@ class StandBy {
       console.error('lcd voltage error', e)
       await this.createBattChar(null)
     }
-
   }
 
   async createBattChar(voltage) {
@@ -220,7 +216,6 @@ class StandBy {
       display.lcd.setCursor(6, 0)
       display.lcd.print(battery.warning.hex)
     }
-
   }
 
   async getSolarVoltage(voltage) {
@@ -269,7 +264,6 @@ class StandBy {
 
   async getTempValues(temperature) {
     try {
-
       let { celsius, fahrenheit } = temperature
 
       if (!celsius) {
@@ -289,10 +283,7 @@ class StandBy {
     } catch (e) {
       console.error('lcd temp error', e)
     }
-
   }
-
-
 }
 
 export { StandBy }
