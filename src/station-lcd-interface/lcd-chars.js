@@ -119,9 +119,9 @@ const thresholds = {
         min: 11.3,
     },
     cell: {
-        max: -90,
-        med: -105,
-        min: -113,
+        max: 100,
+        med: 50,
+        min: 25,
     },
 
     solar: {

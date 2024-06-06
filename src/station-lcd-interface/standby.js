@@ -40,8 +40,12 @@ class StandBy {
 
       const network = Network.Wifi.GetCurrentNetwork()
       const modem = Network.Modem.info()
-      await this.getWifiStrength(network ? network.signal : 0)
-      await this.getCellStrength(modem ? modem.signal : 0)
+      console.log('wifi network', network, 'modem', modem)
+      const wifi_signal = network && network.connected == true ? network.signal : undefined
+      const modem_signal = modem && modem.state == 'connected' ? modem.signal : undefined
+      console.log('conditional wifi', wifi_signal, 'conditional modem', modem_signal)
+      await this.createWifiChar(wifi_signal)
+      await this.createCellChar(modem_signal)
     } catch (err) {
       console.error('lcd client error', err)
     }
@@ -51,17 +55,9 @@ class StandBy {
     display.clear()
   }
 
-  async getWifiStrength(percent) {
-    try {
-      await this.createWifiChar(Number(percent))
-    } catch (e) {
-      console.error('lcd wifi error', e)
-      await this.createWifiChar(null)
-    }
-  }
 
   async createWifiChar(percent) {
-
+    console.log('create wifi char percent', percent)
     if (percent > thresholds.wifi.max) {
 
       display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.high)
@@ -88,38 +84,10 @@ class StandBy {
     }
   }
 
-  /**
-   * 
-   * @param {Integer} percent signal percent to display
-   */
-  async getCellStrength(percent) {
-    // *** temporary value - TO BE REPLACED with percent ***
-    cell = { signal: -100 }
-    // *****************************************************
-    exec('ifconfig | grep ppp | wc -l', async (err, stdout, stderr) => {
-      let rssi
-
-      if (stdout > 0) {
-        try {
-          if (cell.signal) {
-
-            let { signal } = cell
-            rssi = signal.match(/(-)\w+/g) ? Number(signal.match(/(-)\w+/g)) : undefined
-          } else {
-            rssi = undefined
-          }
-          await this.createCellChar(rssi)
-        } catch (e) {
-          console.error('lcd cell error', e)
-        }
-      } else {
-        rssi = undefined
-        await this.createCellChar(rssi)
-      }
-    })
-  }
 
   async createCellChar(rssi) {
+    console.log('create cell char percent', rssi)
+
     if (rssi > thresholds.cell.max) {
       display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
       display.lcd.setCursor(3, 0)

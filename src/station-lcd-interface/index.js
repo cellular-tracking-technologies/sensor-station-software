@@ -105,7 +105,7 @@ setInterval(async () => {
   standby_menu.select()
   // standby_class.clearScreen()
   // await standby_class.results()
-}, 300000)
+}, 10000)
 
 /*
     Configure Pi buttons and mount callbacks for when they are pushed.

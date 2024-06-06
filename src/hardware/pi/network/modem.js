@@ -55,12 +55,14 @@ const pollModemInfo = (modem_index) => {
   try {
     const info = JSON.parse(execSync("mmcli -J -m " + modem_index))
     const { modem } = info
+    console.log('modem', modem)
     const broadband = modem['3gpp']
     const { generic: generic_info } = modem
     const { sim: sim_path } = generic_info
     const sim_index = getIndexFromPath(sim_path)
     const sim_info = pollSimInfo({ modem_index, sim_index })
     const signal = generic_info['signal-quality']
+    const state = generic_info.state
     return {
       signal: parseInt(signal.value),
       imsi: sim_info.sim.properties.imsi,
@@ -71,6 +73,7 @@ const pollModemInfo = (modem_index) => {
       carrier: broadband['operator-name'],
       access_tech: generic_info['access-technologies'],
       tower: broadband['operator-code'],
+      state: state,
     }
   } catch (err) {
     console.error(`unable to poll modem index ${modem_index}`)
