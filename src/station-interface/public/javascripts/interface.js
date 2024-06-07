@@ -1601,7 +1601,6 @@ const render_gateway = function () {
   fetch('/internet-gateway')
     .then(function (res) { return res.json() })
     .then(function (json) {
-      console.log('internet gateway json', json)
       document.querySelector('#internet-gateway').textContent = json.gateway
     })
     .catch(function (err) {
@@ -1700,7 +1699,6 @@ const init_sg = () => {
     reader.readAsArrayBuffer(tag_file)
     reader.onload = (e) => {
       let contents = e.target.result
-      console.log('loaded file contents', contents.length)
       fetch('/upload-sg-tag-file', {
         method: 'POST',
         body: contents,
@@ -1728,7 +1726,6 @@ const init_sg = () => {
     window.onload = function () {
       document.getElementById('tag-filter-input').value = '';
       blu_ports.forEach((port) => {
-        console.log('loading port', port)
         document.querySelector(`#blu-receiver-${port}`).style.display = ''
       })
     }

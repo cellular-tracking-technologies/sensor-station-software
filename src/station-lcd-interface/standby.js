@@ -40,10 +40,8 @@ class StandBy {
 
       const network = Network.Wifi.GetCurrentNetwork()
       const modem = Network.Modem.info()
-      console.log('wifi network', network, 'modem', modem)
       const wifi_signal = network && network.connected == true ? network.signal : undefined
       const modem_signal = modem && modem.state == 'connected' ? modem.signal : undefined
-      console.log('conditional wifi', wifi_signal, 'conditional modem', modem_signal)
       await this.createWifiChar(wifi_signal)
       await this.createCellChar(modem_signal)
     } catch (err) {
@@ -57,7 +55,6 @@ class StandBy {
 
 
   async createWifiChar(percent) {
-    console.log('create wifi char percent', percent)
     if (percent > thresholds.wifi.max) {
 
       display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.high)
@@ -86,7 +83,6 @@ class StandBy {
 
 
   async createCellChar(rssi) {
-    console.log('create cell char percent', rssi)
 
     if (rssi > thresholds.cell.max) {
       display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
