@@ -1,7 +1,7 @@
 # prevent modem manager from controlling adafruit microcontrollers to be safe
-SUBSYSTEM=="tty", ACTION=="add", ATTRS{idVendor}="239a",ATTRS{idProduct}="800c", ENV{ID_MM_DEVICE_IGNORE}="1"
+SUBSYSTEM=="tty", ACTION=="add", ATTRS{idVendor}=="239a", ATTRS{idProduct}=="800c", ENV{ID_MM_DEVICE_IGNORE}="1"
 # prevent modem manager from controlling bluseries adapter to be safe
-SUBSYSTEM=="tty", ACTION=="add", ATTRS{idVendor}="0403",ATTRS{idProduct}="6015", ENV{ID_MM_DEVICE_IGNORE}="1"
+SUBSYSTEM=="tty", ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", ENV{ID_MM_DEVICE_IGNORE}="1"
 
 # note bInterfaceNumber
 SUBSYSTEMS=="usb", ENV{.LOCAL_ifNum}="$attr{bInterfaceNumber}"
