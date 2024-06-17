@@ -20,6 +20,8 @@ import { HostnameTask } from "./tasks/hostname-task.js"
 import { InternetTask } from "./tasks/internet-task.js"
 import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
+import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
+import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
 import { StandBy } from './standby.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
@@ -68,7 +70,11 @@ let items = new MenuItem("main", null, [
     new MenuItem("Bash Update", new BashUpdateTask(), [])
   ]),
   new MenuItem("Network", null, [
+    new MenuItem("Enable Wifi", new EnableWifi(host), []),
+    new MenuItem("Disable Wifi", new DisableWifi(host), []),
     new MenuItem("Cellular", null, [
+      new MenuItem('Enable Modem', new EnableModem(host), []),
+      new MenuItem('Disable Modem', new DisableModem(host), []),
       new MenuItem("Ids", new CellularIds(host), []),
       new MenuItem("Carrier", new CellularCarrier(host), [])
     ]),

@@ -2,6 +2,8 @@
 import express from 'express'
 import { exec } from 'child_process'
 import ModemUtil from '../../hardware/pi/network/modem.js'
+import RunCommand from '../../command.js'
+
 const router = express.Router()
 
 /* GET home page. */
@@ -32,6 +34,15 @@ router.get('/signal-strength', (req, res) => {
   //   signal: ModemUtil.signal,
   //   state: ModemUtil.state,
   // })
+})
+
+router.get('/enable-modem', async (req, res) => {
+  await RunCommand('nmcli connection up station-modem')
+  return res.status(200).send()
+})
+router.get('/disable-modem', async (req, res) => {
+  await RunCommand('nmcli connection down station-modem')
+  return res.status(200).send()
 })
 
 export default router

@@ -4,6 +4,7 @@ import express from 'express'
 import icmp from 'icmp'
 import { exec } from 'child_process'
 import Wifi from '../../hardware/pi/network/wifi.js'
+import RunCommand from '../../command.js'
 
 const router = express.Router();
 
@@ -65,6 +66,16 @@ router.get('/status', (req, res, next) => {
       });
     })
 });
+
+router.get('/enable-wifi', async (req, res) => {
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-wifi.sh')
+  return res.status(200).send()
+})
+
+router.get('/disable-wifi', async (req, res) => {
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/disable-wifi.sh')
+  return res.status(200).send()
+})
 
 const getStatsForDir = (opts) => {
   return new Promise((resolve, reject) => {
