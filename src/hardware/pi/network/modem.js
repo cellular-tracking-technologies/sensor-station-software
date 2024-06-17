@@ -55,7 +55,6 @@ const pollModemInfo = (modem_index) => {
   try {
     const info = JSON.parse(execSync("mmcli -J -m " + modem_index))
     const { modem } = info
-    console.log('modem', modem)
     const broadband = modem['3gpp']
     const { generic: generic_info } = modem
     const { sim: sim_path } = generic_info

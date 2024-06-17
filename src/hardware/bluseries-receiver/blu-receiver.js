@@ -91,6 +91,7 @@ class BluReceiver extends EventEmitter {
         try {
 
           const { data } = await this.#data.io.poll_detections(job.radio_channel)
+          // console.log('blu receiver data', data)
           this.finalize({
             task: BluReceiverTask.DETECTIONS,
             radio_channel: job.radio_channel,
