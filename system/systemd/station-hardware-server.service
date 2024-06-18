@@ -1,6 +1,7 @@
 [Unit]
 Description=start station-hardware-server
-After=station-boot.service
+PartOf=ctt.service
+After=ctt.service
 
 [Service]
 Type=simple
