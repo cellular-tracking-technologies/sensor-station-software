@@ -108,12 +108,10 @@ menu.init()
 let standby_item = new MenuItem('StandBy', new StandBy(host), [])
 let standby_menu = new MenuManager(standby_item)
 
-setInterval(async () => {
+setInterval(() => {
   standby_menu.init()
   standby_menu.select()
-  // standby_class.clearScreen()
-  // await standby_class.results()
-}, 10000)
+}, 30000)
 
 /*
     Configure Pi buttons and mount callbacks for when they are pushed.
@@ -153,4 +151,7 @@ button_back.watch((err, value) => {
     throw err
   }
   menu.back()
+
 })
+
+

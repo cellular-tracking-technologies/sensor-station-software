@@ -112,7 +112,7 @@ router.get('/wifi', function (req, res, next) {
       // load JSON file with credentials
       var data = JSON.parse(fs.readFileSync(path, 'utf8'))
       command(`sudo nmcli dev wifi connect ${data.ssid} password "${data.psk}"`)
-      command('sudo rm /etc/wpa_supplicant/.wpa_supplicant.conf.swp') // remove bad lock file
+      // command('sudo rm /etc/wpa_supplicant/.wpa_supplicant.conf.swp') // remove bad lock file
 
       response = success
     } catch (err) {

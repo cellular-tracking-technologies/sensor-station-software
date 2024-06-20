@@ -12,7 +12,7 @@ class StandBy {
   /**
    * @param {String} host ip address of server
    */
-  constructor(base_url, refresh = 60000) {
+  constructor(base_url, refresh = 300000) {
     this.volt_url = url.resolve(base_url, 'sensor/voltages')
     this.temp_url = url.resolve(base_url, 'sensor/temperature')
 
