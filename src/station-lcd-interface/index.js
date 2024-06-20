@@ -70,8 +70,10 @@ let items = new MenuItem("main", null, [
     new MenuItem("Bash Update", new BashUpdateTask(), [])
   ]),
   new MenuItem("Network", null, [
-    new MenuItem("Enable Wifi", new EnableWifi(host), []),
-    new MenuItem("Disable Wifi", new DisableWifi(host), []),
+    new MenuItem('WiFi', null, [
+      new MenuItem("Enable Wifi", new EnableWifi(host), []),
+      new MenuItem("Disable Wifi", new DisableWifi(host), []),
+    ]),
     new MenuItem("Cellular", null, [
       new MenuItem('Enable Modem', new EnableModem(host), []),
       new MenuItem('Disable Modem', new DisableModem(host), []),
