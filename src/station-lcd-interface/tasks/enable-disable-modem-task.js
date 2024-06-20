@@ -14,14 +14,13 @@ class EnableModem {
         return new Promise((resolve, reject) => {
             fetch(this.url)
                 .then(data => {
-                    console.log('data', data)
-                    return data.json()
+                    return data
                 })
                 .then(res => {
-                    resolve([this.header, `Cell Modem enabled:${res.status}`])
+                    resolve([this.header, `Modem enabled:${res.statusText}`])
                 })
                 .catch(error => {
-                    resolve([this.header, `Cell Modem:error`])
+                    resolve([this.header, `Modem:error`])
                 })
         })
     }
@@ -40,11 +39,10 @@ class DisableModem {
         return new Promise((resolve, reject) => {
             fetch(this.url)
                 .then(data => {
-                    console.log('data', data)
-                    return data.json()
+                    return data
                 })
                 .then(res => {
-                    resolve([this.header, `modem disabled:${res.status}`])
+                    resolve([this.header, `modem disabled:${res.statusText}`])
                 })
                 .catch(error => {
                     resolve([this.header, `modem:error`])
