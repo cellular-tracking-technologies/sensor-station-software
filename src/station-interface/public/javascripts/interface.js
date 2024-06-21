@@ -1742,10 +1742,7 @@ const init_sg = () => {
     // render_modem()
     render_interfaces()
     initialize_reboot()
-    setInterval(render_interfaces, 5000)
-    // setInterval(render_gateway, 5000)
-    // setInterval(render_wifi, 5000)
-    // setInterval(render_modem, 5000)
+    setInterval(render_interfaces, 60000)
     let blu_receiver, blu_radio, component, col, row, div
     let max_row_count = localStorage.getItem('max-row-count')
     if (max_row_count) {
