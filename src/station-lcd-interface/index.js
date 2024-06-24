@@ -49,47 +49,87 @@ const host = 'http://localhost:3000'
 // let stand_by = new MenuItem('stand-by', new StandBy(host), [])
 
 let items = new MenuItem("main", null, [
-  new MenuItem('Station Stats', new StandBy(host), []),
-
-  new MenuItem("File Transfer", null, [
-    new MenuItem("Mount Usb", new MountUsbTask(host), []),
-    new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
-    new MenuItem("Download", new UsbDownloadTask(host), []),
-    new MenuItem("Get WiFi", new UsbWifiUploadTask(host), [])
-  ]),
-  new MenuItem("System", null, [
-    new MenuItem("About", null, [
-      new MenuItem("Image", new SystemImageTask(host), []),
-      new MenuItem("Ids", new SystemIdsTask(host), []),
-      new MenuItem("Memory", new SystemMemoryTask(host), []),
-      new MenuItem("Uptime", new SystemUptimeTask(host), [])
+  new MenuItem('English', null, [
+    new MenuItem('Station Stats', new StandBy(host), []),
+    new MenuItem("File Transfer", null, [
+      new MenuItem("Mount Usb", new MountUsbTask(host), []),
+      new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
+      new MenuItem("Download", new UsbDownloadTask(host), []),
+      new MenuItem("Get WiFi", new UsbWifiUploadTask(host), [])
     ]),
-    new MenuItem("QAQC", new QaqcRequest(host), []),
-    new MenuItem("Time", new SystemTimeTask(host), []),
-    new MenuItem("Restart", new SystemRestartTask(), []),
-    new MenuItem("Bash Update", new BashUpdateTask(), [])
-  ]),
-  new MenuItem("Network", null, [
-    new MenuItem('WiFi', null, [
-      new MenuItem("Enable Wifi", new EnableWifi(host), []),
-      new MenuItem("Disable Wifi", new DisableWifi(host), []),
+    new MenuItem("System", null, [
+      new MenuItem("About", null, [
+        new MenuItem("Image", new SystemImageTask(host), []),
+        new MenuItem("Ids", new SystemIdsTask(host), []),
+        new MenuItem("Memory", new SystemMemoryTask(host), []),
+        new MenuItem("Uptime", new SystemUptimeTask(host), [])
+      ]),
+      new MenuItem("QAQC", new QaqcRequest(host), []),
+      new MenuItem("Time", new SystemTimeTask(host), []),
+      new MenuItem("Restart", new SystemRestartTask(), []),
+      new MenuItem("Bash Update", new BashUpdateTask(), [])
     ]),
-    new MenuItem("Cellular", null, [
-      new MenuItem('Enable Modem', new EnableModem(host), []),
-      new MenuItem('Disable Modem', new DisableModem(host), []),
-      new MenuItem("Ids", new CellularIds(host), []),
-      new MenuItem("Carrier", new CellularCarrier(host), [])
+    new MenuItem("Network", null, [
+      new MenuItem('WiFi', null, [
+        new MenuItem("Enable Wifi", new EnableWifi(host), []),
+        new MenuItem("Disable Wifi", new DisableWifi(host), []),
+      ]),
+      new MenuItem("Cellular", null, [
+        new MenuItem('Enable Modem', new EnableModem(host), []),
+        new MenuItem('Disable Modem', new DisableModem(host), []),
+        new MenuItem("Ids", new CellularIds(host), []),
+        new MenuItem("Carrier", new CellularCarrier(host), [])
+      ]),
+      new MenuItem("Ping", new InternetTask(host), []),
+      new MenuItem("Hostname", new HostnameTask(), []),
+      new MenuItem("Ip Address", new IpAddressTask(), []),
     ]),
-    new MenuItem("Ping", new InternetTask(host), []),
-    new MenuItem("Hostname", new HostnameTask(), []),
-    new MenuItem("Ip Address", new IpAddressTask(), []),
+    new MenuItem("Server", new ServerConnectRequest(host), []),
+    new MenuItem("Power", new SensorVoltageTask(host), []),
+    new MenuItem("Temperature", new SensorTemperatureTask(host), []),
+    new MenuItem("Location", new GpsTask(host), []),
   ]),
-  new MenuItem("Server", new ServerConnectRequest(host), []),
-  new MenuItem("Power", new SensorVoltageTask(host), []),
-  new MenuItem("Temperature", new SensorTemperatureTask(host), []),
-  new MenuItem("Location", new GpsTask(host), []),
+  new MenuItem('Español', null, [
+    new MenuItem('Estadísticas de la estación', new StandBy(host), []),
+    new MenuItem("Transferencia de archivos", null, [
+      new MenuItem("Montar USB", new MountUsbTask(host), []),
+      new MenuItem("Desmontar USB", new UnmountUsbTask(host), []),
+      new MenuItem("Descargar", new UsbDownloadTask(host), []),
+      new MenuItem("Obtener Wi-Fi", new UsbWifiUploadTask(host), [])
+    ]),
+    new MenuItem("Sistema", null, [
+      new MenuItem("Sobre", null, [
+        new MenuItem("La Imagen", new SystemImageTask(host), []),
+        new MenuItem("Ids", new SystemIdsTask(host), []),
+        new MenuItem("La Memoria", new SystemMemoryTask(host), []),
+        new MenuItem("Tiempo de actividad", new SystemUptimeTask(host), [])
+      ]),
+      new MenuItem("QAQC", new QaqcRequest(host), []),
+      new MenuItem("El Tiempo", new SystemTimeTask(host), []),
+      new MenuItem("Reanudar", new SystemRestartTask(), []),
+      new MenuItem("Actualización de bash", new BashUpdateTask(), [])
+    ]),
+    new MenuItem("La Red", null, [
+      new MenuItem('WiFi', null, [
+        new MenuItem("Habilitar Wi-Fi", new EnableWifi(host), []),
+        new MenuItem("Desactivar Wi-Fi", new DisableWifi(host), []),
+      ]),
+      new MenuItem("Celular", null, [
+        new MenuItem('Habilitar módem', new EnableModem(host), []),
+        new MenuItem('Desactivar módem', new DisableModem(host), []),
+        new MenuItem("Ids", new CellularIds(host), []),
+        new MenuItem("Compañía celular ", new CellularCarrier(host), [])
+      ]),
+      new MenuItem("Picar", new InternetTask(host), []),
+      new MenuItem("Nombre de host", new HostnameTask(), []),
+      new MenuItem("Dirección IP", new IpAddressTask(), []),
+    ]),
+    new MenuItem("El Servidor", new ServerConnectRequest(host), []),
+    new MenuItem("La Energia", new SensorVoltageTask(host), []),
+    new MenuItem("La Temperatura", new SensorTemperatureTask(host), []),
+    new MenuItem("Ubicación", new GpsTask(host), []),
+  ]),
 ])
-
 
 /*
     Instantiate a menu manager that operates on a list of 
