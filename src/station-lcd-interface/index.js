@@ -34,11 +34,17 @@ let en_items = await new MenuTranslator({ language: 'en' }).translateMenu()
 console.log('english items', en_items)
 let es_items = await new MenuTranslator({ language: 'es' }).translateMenu()
 let fr_items = await new MenuTranslator({ language: 'fr' }).translateMenu()
+let pt_items = await new MenuTranslator({ language: 'pt' }).translateMenu()
+let nl_items = await new MenuTranslator({ language: 'nl' }).translateMenu()
+
 
 let languages = new MenuItem("languages", null, [
   new MenuItem('English', null, [en_items]),
   new MenuItem('Espagnol', null, [es_items]),
   new MenuItem('Francais', null, [fr_items]),
+  new MenuItem('Portugues', null, [pt_items]),
+  new MenuItem('Nederlands', null, [nl_items]),
+
 ])
 
 
