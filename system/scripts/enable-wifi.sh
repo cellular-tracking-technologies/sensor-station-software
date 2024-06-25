@@ -1,18 +1,20 @@
 #!/bin/bash
 
-mt7601u_file=/etc/modprobe.d/blacklist-mt7601u.conf
-rtl8811cu_file=/etc/modprobe.d/blacklist-rtl8811cu.conf
+#load chipsets array
+source kernel-chipsets.sh
 
+chipcount=${#CHIPS[@]}
 
-if [ -f $mt7601u_file ]; then
-    rm $mt7601u_file
-    modprobe mt7601u
-fi
+for chipset in "${CHIPS[@]}"
+do
+    filename="/etc/modprobe.d/blacklist-$chipset.conf"
+    if [ -f  $filename ]; then
+        echo "deleting blacklist file $filename"
+        rm $filename
+    fi
+    modprobe $chipset
+done
 
-if [ -f $rtl8811cu_file ]; then
-    rm $rtl8811cu_file
-    modprobe rtw88_8821cu
-fi
 
 
 
