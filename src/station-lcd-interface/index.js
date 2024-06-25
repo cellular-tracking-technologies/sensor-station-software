@@ -31,6 +31,7 @@ const host = 'http://localhost:3000'
 
 // console.log('menu items', items)
 let en_items = await new MenuTranslator({ language: 'en' }).translateMenu()
+console.log('english items', en_items)
 let es_items = await new MenuTranslator({ language: 'es' }).translateMenu()
 let fr_items = await new MenuTranslator({ language: 'fr' }).translateMenu()
 

@@ -53,7 +53,7 @@ class MenuTranslator {
         break
     }
     const host = 'http://localhost:3000'
-    this.items = new MenuItem('main', null, [
+    this.items = new MenuItem(await this.translateString('main', this.language), null, [
       new MenuItem('Station Stats', new StandBy(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -107,6 +107,9 @@ class MenuTranslator {
     // menu = JSON.parse(JSON.stringify(menu))
     for await (let child of this.items.children) {
       let translated_child = await this.translateString(child.id, this.language)
+      // let translated_parent = await this.translateString(child.parent_id, this.language)
+      // child.parent_id = translated_parent
+
       // console.log('translated child', translated_child)
       child.id = translated_child
       // console.log('child id after translation', child.id)
@@ -114,6 +117,9 @@ class MenuTranslator {
       if (child.children) {
         for await (let subchild of child.children) {
           // console.log('subchild', subchild)
+          let translated_parent = await this.translateString(subchild.parent_id, this.language)
+          subchild.parent_id = translated_parent
+
           let translated_child = await this.translateString(subchild.id, this.language)
           // console.log('translated subchild', translated_child)
           subchild.id = translated_child
@@ -121,6 +127,8 @@ class MenuTranslator {
           if (subchild.children) {
             for await (let ter_child of subchild.children) {
               // console.log('tertiary child', ter_child)
+              let translated_parent = await this.translateString(ter_child.parent_id, this.language)
+              ter_child.parent_id = translated_parent
               let translated_child = await this.translateString(ter_child.id, this.language)
               // console.log('translated tertiary child', translated_child)
               ter_child.id = translated_child
