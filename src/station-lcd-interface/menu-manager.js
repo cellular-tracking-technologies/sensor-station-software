@@ -62,7 +62,7 @@ class MenuManager {
       this.view_()
       return
     }
-
+    console.log('menu manger row', row)
     // User Enters a sub menu
     if (row.childCount() > 0) {
       this.scroller.init(row.childrenNames())
