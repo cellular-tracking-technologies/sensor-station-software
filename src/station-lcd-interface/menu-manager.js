@@ -16,7 +16,6 @@ class MenuManager {
     this.refresh_
   }
   init() {
-
     this.scroller.init(this.focus.childrenNames())
 
     display.init().then(() => {
