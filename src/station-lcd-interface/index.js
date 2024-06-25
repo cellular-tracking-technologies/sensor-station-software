@@ -48,10 +48,7 @@ const host = 'http://localhost:3000'
     Note: All menu items must have unique names!
 */
 
-// let stand_by = new MenuItem('stand-by', new StandBy(host), [])
-
 let items = new MenuItem("main", null, [
-  // new MenuItem('English', null, [
   new MenuItem('Station Stats', new StandBy(host), []),
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -90,47 +87,6 @@ let items = new MenuItem("main", null, [
   new MenuItem("Power", new SensorVoltageTask(host), []),
   new MenuItem("Temperature", new SensorTemperatureTask(host), []),
   new MenuItem("Location", new GpsTask(host), []),
-  // ]),
-  // new MenuItem('Español', null, [
-  //   new MenuItem('Estadísticas de la estación', new StandBy(host), []),
-  //   new MenuItem("Transferencia de archivos", null, [
-  //     new MenuItem("Montar USB", new MountUsbTask(host), []),
-  //     new MenuItem("Desmontar USB", new UnmountUsbTask(host), []),
-  //     new MenuItem("Descargar", new UsbDownloadTask(host), []),
-  //     new MenuItem("Obtener Wi-Fi", new UsbWifiUploadTask(host), [])
-  //   ]),
-  //   new MenuItem("Sistema", null, [
-  //     new MenuItem("Sobre", null, [
-  //       new MenuItem("La Imagen", new SystemImageTask(host), []),
-  //       new MenuItem("Ids", new SystemIdsTask(host), []),
-  //       new MenuItem("La Memoria", new SystemMemoryTask(host), []),
-  //       new MenuItem("Tiempo de actividad", new SystemUptimeTask(host), [])
-  //     ]),
-  //     new MenuItem("QAQC", new QaqcRequest(host), []),
-  //     new MenuItem("El Tiempo", new SystemTimeTask(host), []),
-  //     new MenuItem("Reanudar", new SystemRestartTask(), []),
-  //     new MenuItem("Actualización de bash", new BashUpdateTask(), [])
-  //   ]),
-  //   new MenuItem("La Red", null, [
-  //     new MenuItem('WiFi', null, [
-  //       new MenuItem("Habilitar Wi-Fi", new EnableWifi(host), []),
-  //       new MenuItem("Desactivar Wi-Fi", new DisableWifi(host), []),
-  //     ]),
-  //     new MenuItem("Celular", null, [
-  //       new MenuItem('Habilitar módem', new EnableModem(host), []),
-  //       new MenuItem('Desactivar módem', new DisableModem(host), []),
-  //       new MenuItem("Ids", new CellularIds(host), []),
-  //       new MenuItem("Compañía celular ", new CellularCarrier(host), [])
-  //     ]),
-  //     new MenuItem("Picar", new InternetTask(host), []),
-  //     new MenuItem("Nombre de host", new HostnameTask(), []),
-  //     new MenuItem("Dirección IP", new IpAddressTask(), []),
-  //   ]),
-  //   new MenuItem("El Servidor", new ServerConnectRequest(host), []),
-  //   new MenuItem("La Energia", new SensorVoltageTask(host), []),
-  //   new MenuItem("La Temperatura", new SensorTemperatureTask(host), []),
-  //   new MenuItem("Ubicación", new GpsTask(host), []),
-  // ]),
 ])
 
 const translateString = async (str, translateTo) => {
@@ -140,20 +96,38 @@ const translateString = async (str, translateTo) => {
   return translated_string
 }
 
-const translateMenu = async (language) => {
-  for await (let child of items.children) {
+const translateMenu = async (menu, language) => {
+  for await (let child of menu.children) {
     let translated_child = await translateString(child.id, language)
     console.log('translated child', translated_child)
     child.id = translated_child
     console.log('child id after translation', child.id)
-    // return child
+
+    if (child.children) {
+      for await (let subchild of child.children) {
+        console.log('subchild', subchild)
+        let translated_child = await translateString(subchild.id, language)
+        console.log('translated subchild', translated_child)
+        subchild.id = translated_child
+        console.log('subchild id after translation', subchild.id)
+        if (subchild.children) {
+          for await (let ter_child of subchild.children) {
+            console.log('tertiary child', ter_child)
+            let translated_child = await translateString(ter_child.id, language)
+            console.log('translated tertiary child', translated_child)
+            ter_child.id = translated_child
+            console.log('tertiary child id after translation', ter_child.id)
+          }
+        }
+      }
+    }
   }
-  return items
+  return menu
 }
 
 console.log('menu items', items)
 
-let es_items = await translateMenu('es')
+let es_items = await translateMenu(items, 'es')
 console.log('es items', es_items)
 
 
