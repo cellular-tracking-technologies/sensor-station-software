@@ -1,16 +1,8 @@
 import { StationLeds as StationLedsV2 } from './station-leds-v2.js'
 import { StationLeds as StationLedsV3 } from './station-leds-v3.js'
 
-import revision from '../../../revision.js'
+import System from '../../../system.js'
 
-let StationLeds
+const { Revision } = System
 
-if (revision.revision >= 3)  {
-  console.log('importing v3 leds')
-  StationLeds = StationLedsV3
-} else {
-  console.log('importing v2 leds')
-  StationLeds = StationLedsV2
-}
-
-export { StationLeds }
+export default (Revision >= 3) ? StationLedsV3 : StationLedsV2

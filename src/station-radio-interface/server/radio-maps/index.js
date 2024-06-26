@@ -1,17 +1,17 @@
-import StationRevision from '../../../revision.js'
 import V2RadioMap from './v2-radio-map.js'
 import V3RadioMap from './v3-radio-map.js'
 import V2BluRadioMap from './v2-blu-radio-map.js'
 import V3BluRadioMap from './v3-blu-radio-map.js'
 
-const { revision } = StationRevision
+import System from '../../../system.js'
+const { Revision } = System
 
 const Maps = {
   Blu: V3BluRadioMap,
   Radio: V3RadioMap,
 }
 
-switch (revision) {
+switch (Revision) {
   case 3: {
     break
   }
@@ -21,7 +21,7 @@ switch (revision) {
     break
   }
   default: {
-    console.log('unexpected revision detected:', revision, 'defaulting to 3')
+    console.log('unexpected revision detected:', Revision, 'defaulting to 3')
     break
   }
 }

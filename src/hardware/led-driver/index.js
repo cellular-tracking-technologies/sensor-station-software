@@ -1,11 +1,12 @@
 import { Led as V2LedDriver } from './v2-driver.js'
 import { Led as V3LedDriver } from './v3-driver.js'
 
-import StationRevision from '../revision.js'
+import System from '../system.js'
+const { Revision } = System
 
 let Led
 
-if (StationRevision.revision >= 3) {
+if (Revision >= 3) {
   Led = V3LedDriver
 } else {
   Led = V2LedDriver

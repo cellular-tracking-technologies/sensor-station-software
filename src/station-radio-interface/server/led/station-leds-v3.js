@@ -1,15 +1,11 @@
 import fetch from 'node-fetch'
-import { SetState, Reset, EnablePullUp, SetDirection } from '../../../hardware/io-expander/expander.js'
+import { SetState } from '../../../hardware/io-expander/expander.js'
 
 const LEDS = {
   GPS: 0,
   A: 10,
   B: 11,
 }
-
-const CFGS = [ 1,2,3,4,5,6,7 ]
-
-const BUTTONS = [12, 13, 14, 15]
 
 class StationLeds {
   constructor() {
@@ -34,7 +30,7 @@ class StationLeds {
   }
 
   async checkInternet() {
-    return fetch(this.internet_url) 
+    return fetch(this.internet_url)
       .then(res => res.json())
       .then(json => {
         if (json.ppp == true) {
@@ -50,7 +46,7 @@ class StationLeds {
     let internet_status
     try {
       internet_status = await this.checkInternet()
-    } catch(err) {
+    } catch (err) {
       console.log('unable to poll hardware server', this.internet_url)
       console.error(err)
       internet_status = false
@@ -60,15 +56,15 @@ class StationLeds {
     let led_state = [{
       pin: LEDS.GPS,
       state: gps_state,
-    },{
+    }, {
       pin: LEDS.A,
       state: 'toggle',
-    },{
+    }, {
       pin: LEDS.B,
       state: internet_state
     }]
     await SetState(led_state)
-    return 
+    return
   }
 }
 

@@ -107,7 +107,7 @@ const SetDirection = async (pins) => {
  * opts.pins
  * opts.state - high / low
  */
-const Drive = async(opts) => {
+const Drive = async (opts) => {
   const states = ['high', 'low']
   if (!states.includes(opts.state.toLowerCase())) {
     throw Error('invalid pin state - expected high/low')
@@ -127,7 +127,7 @@ const Drive = async(opts) => {
 
   console.log('updated mask A', pin_mask.a.toString(2))
   console.log('updated mask B', pin_mask.b.toString(2))
-  
+
   let result
   result = await I2C.writeRegister({
     register: Addresses.RegDataA,
@@ -147,7 +147,7 @@ const print_bank = (info) => {
   console.log('bank b', parseInt(info.b).toString(2))
 }
 
-const Toggle = async(pins) => {
+const Toggle = async (pins) => {
   let pin_mask = get_pin_mask(pins)
   let current_state = await PollState()
 
@@ -176,15 +176,15 @@ const getMask = (opts) => {
       break
     case 'toggle':
       opts.current ^= mask
-      break   
+      break
     default:
       throw new Error(`invalid state ${opts.state}`)
-   }
+  }
   return opts.current
 }
 
 // set by each pin: high, low, toggle
-const SetState = async(details) => {
+const SetState = async (details) => {
   const current_state = await PollState()
   const mask_a = details
     .filter(detail => detail.pin < 8)

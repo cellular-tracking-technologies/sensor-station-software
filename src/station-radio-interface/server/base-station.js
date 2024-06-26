@@ -7,7 +7,7 @@ import { GpsClient } from './gps-client.js'
 import { StationConfig } from './station-config.js'
 import { DataManager } from './data/data-manager.js'
 import { ServerApi } from './http/server-api.js'
-import { StationLeds } from './led/station-leds.js'
+import StationLeds from './led/station-leds.js'
 import fetch from 'node-fetch'
 import { spawn } from 'child_process'
 import fs from 'fs'
@@ -16,7 +16,9 @@ import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
-import revision from '../../revision.js'
+import System from '../../system.js'
+
+const { Revision } = System
 
 
 /**
@@ -33,6 +35,7 @@ class BaseStation {
     this.blu_station
     this.blu_receivers = []
     this.active_radios = {}
+    console.log('LEDS', StationLeds)
     this.station_leds = new StationLeds()
     this.gps_client = new GpsClient({
       max_gps_records: 50
@@ -471,7 +474,7 @@ class BaseStation {
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
    */
   async addPath(path) {
-    if (revision.revision >= 3) {
+    if (Revision >= 3) {
       // V3 Radio Paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
 
@@ -501,7 +504,7 @@ class BaseStation {
  * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
  */
   async unlinkPath(path) {
-    if (revision.revision >= 3) {
+    if (Revision >= 3) {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
         await this.unlinkBluStation(path)
