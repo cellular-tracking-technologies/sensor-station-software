@@ -1,6 +1,5 @@
 [Unit]
 Description=start station-lcd-interface
-PartOf=ctt.service
 After=station-hardware-server.service
 
 [Service]

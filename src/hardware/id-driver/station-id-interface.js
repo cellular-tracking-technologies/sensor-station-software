@@ -148,28 +148,6 @@ class StationIdInterface {
       revision
     }
   }
-
-  async getRadioMap() {
-    const version_info = await this.getVersion()
-    const { version, revision } = version_info
-    let radio_map
-
-    switch (version) {
-      case 3:
-        radio_map = fs.readFileSync('/etc/ctt/radios/v3-blu-radio-map.js', null, 2)
-        break
-      case 2:
-        radio_map = fs.readFileSync('/etc/ctt/radios/v2-blu-radio-map.js', null, 2)
-        break
-      default:
-        throw new Error('No blu radio map found')
-    }
-    return {
-      id,
-      revision,
-      radio_map
-    }
-  }
 }
 
 export default StationIdInterface

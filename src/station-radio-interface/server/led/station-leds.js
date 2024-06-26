@@ -3,6 +3,6 @@ import { StationLeds as StationLedsV3 } from './station-leds-v3.js'
 
 import System from '../../../system.js'
 
-const { Revision } = System
+const { Version } = System.Hardware
 
-export default (Revision >= 3) ? StationLedsV3 : StationLedsV2
+export default (Version >= 3) ? StationLedsV3 : StationLedsV2
