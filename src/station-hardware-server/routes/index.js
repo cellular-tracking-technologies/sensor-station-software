@@ -1,10 +1,9 @@
 import express from 'express'
 import fs from 'fs'
-import StationId from '../../hardware/id-driver/index.js'
 import path from 'path'
 import { ComputeModule } from './compute-module.js'
 import { fileURLToPath } from 'url'
-import StationIdInterface from '../../hardware/id-driver/station-id-interface.js'
+import StationInformation from '../../system.js'
 
 const ModuleInfo = new ComputeModule()
 
@@ -19,24 +18,23 @@ const read_package_version = () => {
 
 const package_info = read_package_version()
 
-const DEVICE_ID = StationId.FromFile()
-
 /* GET home page. */
 router.get('/', function (req, res, next) {
 	res.json({ welcome: true })
 })
 
 router.get('/id', function (req, res, next) {
-	res.json({ id: DEVICE_ID })
+	res.json({ id: StationInformation.Hardware.Id })
 })
 
 /**
  * endpoint to determine station hardware revision
  */
 router.get('/revision', async (req, res) => {
-	const id_interface = new StationIdInterface()
-	const hardware_info = await id_interface.getVersion()
-	res.json(hardware_info)
+	res.json({
+		revision: StationInformation.Hardware.Revision,
+		version: StationInformation.Hardware.Version,
+	})
 })
 
 const get_about_info = () => {

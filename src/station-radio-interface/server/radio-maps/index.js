@@ -4,14 +4,14 @@ import V2BluRadioMap from './v2-blu-radio-map.js'
 import V3BluRadioMap from './v3-blu-radio-map.js'
 
 import System from '../../../system.js'
-const { Revision } = System
+const { Version } = System.Hardware
 
 const Maps = {
   Blu: V3BluRadioMap,
   Radio: V3RadioMap,
 }
 
-switch (Revision) {
+switch (Version) {
   case 3: {
     break
   }
@@ -21,7 +21,7 @@ switch (Revision) {
     break
   }
   default: {
-    console.log('unexpected revision detected:', Revision, 'defaulting to 3')
+    console.log('unexpected revision detected:', Version, 'defaulting to 3')
     break
   }
 }

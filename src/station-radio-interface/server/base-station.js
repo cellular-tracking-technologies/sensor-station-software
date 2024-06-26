@@ -18,8 +18,7 @@ import moment from 'moment'
 import chokidar from 'chokidar'
 import System from '../../system.js'
 
-const { Revision } = System
-
+const { Version } = System.Hardware
 
 /**
  * manager class for controlling / reading radios
@@ -474,7 +473,7 @@ class BaseStation {
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
    */
   async addPath(path) {
-    if (Revision >= 3) {
+    if (Version >= 3) {
       // V3 Radio Paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
 
@@ -504,7 +503,7 @@ class BaseStation {
  * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
  */
   async unlinkPath(path) {
-    if (Revision >= 3) {
+    if (Version >= 3) {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
         await this.unlinkBluStation(path)

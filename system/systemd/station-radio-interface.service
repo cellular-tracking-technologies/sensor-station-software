@@ -1,6 +1,5 @@
 [Unit]
 Description=start station-radio-interface
-PartOf=ctt.service
 After=station-hardware-server.service
 
 [Service]

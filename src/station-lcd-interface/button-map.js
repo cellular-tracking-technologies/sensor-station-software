@@ -3,11 +3,11 @@ import KernelInfo from '../hardware/kernel/kernel.js'
 const kernel_pins = KernelInfo.getPins()
 // import kernel_pins from '../hardware/kernel/kernel.js'
 
-const { Revision } = System
+const { Version } = System.Hardware
 
 let Buttons = {}
 
-if (Revision >= 3) {
+if (Version >= 3) {
 	let { v3: { Buttons: { Up, Down, Select, Back, } } } = kernel_pins
 
 	Buttons = {

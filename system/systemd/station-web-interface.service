@@ -1,6 +1,5 @@
 [Unit]
 Description=start station-web-interface
-PartOf=ctt.service
 After=station-hardware-server.service
 
 [Service]

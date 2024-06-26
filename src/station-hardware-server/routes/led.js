@@ -2,11 +2,11 @@ import express from 'express'
 import { GpsLed, DiagALed, DiagBLed } from '../../hardware/led-driver/v2-driver.js'
 import System from '../../system.js'
 
-const { Revision } = System
+const { Version } = System.Hardware
 
 var router = express.Router()
 
-if (Revision < 3) {
+if (Version < 3) {
 
     console.log('setting up V2 LED routing')
     let led_gps = new GpsLed()
