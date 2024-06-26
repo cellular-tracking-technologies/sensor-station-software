@@ -1,6 +1,7 @@
 // Import Statements
 import MenuItem from "./menu-item.js"
 import MenuManager from "./menu-manager.js"
+import languages from './translated-menus.json' assert { type: 'json'}
 import MenuTranslator from './menu-translator.js'
 
 // Tasks
@@ -26,6 +27,7 @@ import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
 import { StandBy } from './standby.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
+// import { en_items, es_items } from './translated-menus.js'
 
 const { Buttons: ButtonMap } = GpioMap
 
@@ -47,56 +49,74 @@ const host = 'http://localhost:3000'
     Note: All menu items must have unique names!
 */
 
-// let items = new MenuItem('main', null, [
-//   new MenuItem('Station Stats', new StandBy(host), []),
-//   new MenuItem("File Transfer", null, [
-//     new MenuItem("Mount Usb", new MountUsbTask(host), []),
-//     new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
-//     new MenuItem("Download", new UsbDownloadTask(host), []),
-//     new MenuItem("Get WiFi", new UsbWifiUploadTask(host), [])
-//   ]),
-//   new MenuItem("System", null, [
-//     new MenuItem("About", null, [
-//       new MenuItem("Image", new SystemImageTask(host), []),
-//       new MenuItem("Ids", new SystemIdsTask(host), []),
-//       new MenuItem("Memory", new SystemMemoryTask(host), []),
-//       new MenuItem("Uptime", new SystemUptimeTask(host), [])
-//     ]),
-//     new MenuItem("QAQC", new QaqcRequest(host), []),
-//     new MenuItem("Time", new SystemTimeTask(host), []),
-//     new MenuItem("Restart", new SystemRestartTask(), []),
-//     new MenuItem("Bash Update", new BashUpdateTask(), [])
-//   ]),
-//   new MenuItem("Network", null, [
-//     new MenuItem('WiFi', null, [
-//       new MenuItem("Enable Wifi", new EnableWifi(host), []),
-//       new MenuItem("Disable Wifi", new DisableWifi(host), []),
-//     ]),
-//     new MenuItem("Cellular", null, [
-//       new MenuItem('Enable Modem', new EnableModem(host), []),
-//       new MenuItem('Disable Modem', new DisableModem(host), []),
-//       new MenuItem("Ids", new CellularIds(host), []),
-//       new MenuItem("Carrier", new CellularCarrier(host), [])
-//     ]),
-//     new MenuItem("Ping", new InternetTask(host), []),
-//     new MenuItem("Hostname", new HostnameTask(), []),
-//     new MenuItem("Ip Address", new IpAddressTask(), []),
-//   ]),
-//   new MenuItem("Server", new ServerConnectRequest(host), []),
-//   new MenuItem("Power", new SensorVoltageTask(host), []),
-//   new MenuItem("Temperature", new SensorTemperatureTask(host), []),
-//   new MenuItem("Location", new GpsTask(host), []),
+let items = new MenuItem('English', null, [
+  new MenuItem('Station Stats', new StandBy(host), []),
+  new MenuItem("File Transfer", null, [
+    new MenuItem("Mount Usb", new MountUsbTask(host), []),
+    new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
+    new MenuItem("Download", new UsbDownloadTask(host), []),
+    new MenuItem("Get WiFi", new UsbWifiUploadTask(host), [])
+  ]),
+  new MenuItem("System", null, [
+    new MenuItem("About", null, [
+      new MenuItem("Image", new SystemImageTask(host), []),
+      new MenuItem("Ids", new SystemIdsTask(host), []),
+      new MenuItem("Memory", new SystemMemoryTask(host), []),
+      new MenuItem("Uptime", new SystemUptimeTask(host), [])
+    ]),
+    new MenuItem("QAQC", new QaqcRequest(host), []),
+    new MenuItem("Time", new SystemTimeTask(host), []),
+    new MenuItem("Restart", new SystemRestartTask(), []),
+    new MenuItem("Bash Update", new BashUpdateTask(), [])
+  ]),
+  new MenuItem("Network", null, [
+    new MenuItem('WiFi', null, [
+      new MenuItem("Enable Wifi", new EnableWifi(host), []),
+      new MenuItem("Disable Wifi", new DisableWifi(host), []),
+    ]),
+    new MenuItem("Cellular", null, [
+      new MenuItem('Enable Modem', new EnableModem(host), []),
+      new MenuItem('Disable Modem', new DisableModem(host), []),
+      new MenuItem("Ids", new CellularIds(host), []),
+      new MenuItem("Carrier", new CellularCarrier(host), [])
+    ]),
+    new MenuItem("Ping", new InternetTask(host), []),
+    new MenuItem("Hostname", new HostnameTask(), []),
+    new MenuItem("Ip Address", new IpAddressTask(), []),
+  ]),
+  new MenuItem("Server", new ServerConnectRequest(host), []),
+  new MenuItem("Power", new SensorVoltageTask(host), []),
+  new MenuItem("Temperature", new SensorTemperatureTask(host), []),
+  new MenuItem("Location", new GpsTask(host), []),
+])
+
+// let en_items = await new MenuTranslator({ language: 'en' }).translateMenu()
+// let es_items = await new MenuTranslator({ language: 'es' }).translateMenu()
+// let fr_items = await new MenuTranslator({ language: 'fr' }).translateMenu()
+// console.log('fr items', fr_items)
+
+// let pt_items = await new MenuTranslator({ language: 'pt' }).translateMenu()
+// let nl_items = await new MenuTranslator({ language: 'nl' }).translateMenu()
+
+
+// let languages = new MenuItem("Languages", null, [
+//   en_items,
+//   es_items,
+//   // fr_items,
+//   // pt_items,
+//   // nl_items
 // ])
 
-let en_items = await new MenuTranslator({ language: 'en' }).translateMenu()
-let es_items = await new MenuTranslator({ language: 'es' }).translateMenu()
-let fr_items = await new MenuTranslator({ language: 'fr' }).translateMenu()
-let pt_items = await new MenuTranslator({ language: 'pt' }).translateMenu()
-let nl_items = await new MenuTranslator({ language: 'nl' }).translateMenu()
+let menu_translator = new MenuTranslator()
+let en_items = await menu_translator.menuSwitchStrings('English')
 
+let es_items = await menu_translator.menuSwitchStrings('Espagnol')
+let fr_items = await menu_translator.menuSwitchStrings('Francais')
+let pt_items = await menu_translator.menuSwitchStrings('Portugues')
+let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
+console.log('string switch translated items', es_items)
 
-let languages = new MenuItem("Languages", null, [en_items, es_items, fr_items, pt_items, nl_items])
-
+let menu_languages = new MenuItem('Languages', null, [en_items, es_items, fr_items, pt_items, nl_items])
 /*
     Instantiate a menu manager that operates on a list of 
     menu items organized within a hierarchical structure.
@@ -108,7 +128,7 @@ let languages = new MenuItem("Languages", null, [en_items, es_items, fr_items, p
         D) back()   - Exits a dir within a menu.
 */
 
-let menu = new MenuManager(languages)
+let menu = new MenuManager(menu_languages)
 menu.init()
 
 /*

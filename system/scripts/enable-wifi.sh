@@ -1,7 +1,9 @@
 #!/bin/bash
 
 #load chipsets array
-source kernel-chipsets.sh
+# source kernel-chipsets.sh
+source /lib/ctt/sensor-station-software/system/scripts/kernel-chipsets.sh
+
 
 chipcount=${#CHIPS[@]}
 

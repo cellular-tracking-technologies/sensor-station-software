@@ -46,7 +46,7 @@ class MenuManager {
     */
     if (this.focus.childCount() == 0) {
       if (this.focus.view != null) {
-        // console.log('this view', this.view_())
+        console.log('this view', this.view_())
 
         this.view_()
         return
@@ -55,6 +55,7 @@ class MenuManager {
 
     // Launch a custom view by way of submenu transition.
     let row = this.focus.getChild(this.scroller.getSelectedRow())
+    console.log('menu manager row', row)
     if (row.view != null) {
       this.focus = row
       // console.log('this view', this.view_())

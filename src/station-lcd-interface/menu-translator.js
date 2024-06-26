@@ -1,7 +1,9 @@
 // Import Statements
 import MenuItem from "./menu-item.js"
-import MenuManager from "./menu-manager.js"
 import translate from 'translate'
+import languages from './translated-menus.json' assert { type: 'json'}
+// import fs from 'node:fs'
+
 
 // Tasks
 import { IpAddressTask } from "./tasks/ip-address-task.js"
@@ -33,35 +35,35 @@ class MenuTranslator {
    * 
    */
   constructor(opts) {
-    this.language = opts.language
+    // this.language = opts.language
     this.items
     this.lang_string
   }
 
-  async createItems() {
-    switch (this.language) {
-      case 'en':
-        this.lang_string = 'English'
-        break
-      case 'es':
-        this.lang_string = 'Espagnol'
-        break
-      case 'fr':
-        this.lang_string = 'Francais'
-        break
-      case 'pt':
-        this.lang_string = 'Portugues'
-        break
-      case 'nl':
-        this.lang_string = 'Nederlands'
-        break
-      default:
-        this.lang_string = 'English'
-        break
-    }
+  async createItems(language) {
+    // switch (this.language) {
+    //   case 'en':
+    //     this.lang_string = 'English'
+    //     break
+    //   case 'es':
+    //     this.lang_string = 'Espagnol'
+    //     break
+    //   case 'fr':
+    //     this.lang_string = 'Francais'
+    //     break
+    //   case 'pt':
+    //     this.lang_string = 'Portugues'
+    //     break
+    //   case 'nl':
+    //     this.lang_string = 'Nederlands'
+    //     break
+    //   default:
+    //     this.lang_string = 'English'
+    //     break
+    // }
     const host = 'http://localhost:3000'
 
-    this.items = new MenuItem(this.lang_string, null, [
+    this.items = new MenuItem(language, null, [
       new MenuItem('Station Stats', new StandBy(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -127,6 +129,61 @@ class MenuTranslator {
               ter_child.parent_id = await this.translateString(ter_child.parent_id, this.language)
               ter_child.id = await this.translateString(ter_child.id, this.language)
             }
+          }
+        }
+      }
+    }
+    // fs.writeFile('./translated-menus.json', JSON.stringify(this.items), {}, (err) => {
+    //   if (err) {
+    //     console.error(err)
+    //   }
+    // })
+    // this.menuItemCreator()
+    return this.items
+  }
+
+  async menuItemCreator() {
+    // console.log('json langugages', languages)
+    let items = []
+    let item, item_child
+    Object.values(languages).forEach((lang) => {
+      console.log('lang', lang)
+      item = new MenuItem(lang.id, null, lang.children)
+      if (lang.children) {
+        lang.children.forEach((child) => {
+          item_child = new MenuItem(child.id,)
+        })
+      }
+      items.push(item)
+    })
+    console.log('menu item languages', items, 2)
+  }
+
+  async menuSwitchStrings(language) {
+    await this.createItems(language)
+    console.log('this items', this.items)
+    // console.log('incoming language', language)
+    // console.log('import languages', Object.keys(languages))
+    let translation = Object.values((languages)).find(e => language == e.id)
+    console.log('translated object', translation.children[1].children[0])
+
+    this.items.id = translation.id
+    if (this.items.children) {
+      console.log('items children', this.items.children)
+      for (let i = 0; i < this.items.children.length; i++) {
+        console.log('items children element', this.items.children[i])
+
+        this.items.children[i].parent_id = translation.children[i].parent_id
+        this.items.children[i].id = translation.children[i].id
+
+        if (this.items.children[i].children) {
+          console.log('subitems children element', this.items.children[i].children)
+
+          for (let j = 0; j < this.items.children[i].children.length; j++) {
+
+            this.items.children[i].children[j].parent_id = translation.children[i].children[j].parent_id
+            this.items.children[i].children[j].id = translation.children[i].children[j].id
+
           }
         }
       }
