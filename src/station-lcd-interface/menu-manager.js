@@ -62,7 +62,6 @@ class MenuManager {
       this.view_()
       return
     }
-    console.log('menu manger row', row)
     // User Enters a sub menu
     if (row.childCount() > 0) {
       this.scroller.init(row.childrenNames())
@@ -72,7 +71,6 @@ class MenuManager {
   }
   back() {
     this.autoRefresh_(false)
-    console.log('back button focus parent', this.focus)
     if (this.focus.parent_id != null) {
       this.focus = this.findMenuItem_(this.menu, this.focus.parent_id)
       this.scroller.init(this.focus.childrenNames())

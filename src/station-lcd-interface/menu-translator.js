@@ -115,33 +115,17 @@ class MenuTranslator {
     this.items.id = this.lang_string
 
     for await (let child of this.items.children) {
-      let translated_child = await this.translateString(child.id, this.language)
-      // let translated_parent = await this.translateString(child.parent_id, this.language)
-      // child.parent_id = translated_parent
-
-      // console.log('translated child', translated_child)
-      child.id = translated_child
-      // console.log('child id after translation', child.id)
+      child.id = await this.translateString(child.id, this.language)
 
       if (child.children) {
         for await (let subchild of child.children) {
-          // console.log('subchild', subchild)
-          let translated_parent = await this.translateString(subchild.parent_id, this.language)
-          subchild.parent_id = translated_parent
+          subchild.parent_id = await this.translateString(subchild.parent_id, this.language)
+          subchild.id = await this.translateString(subchild.id, this.language)
 
-          let translated_child = await this.translateString(subchild.id, this.language)
-          // console.log('translated subchild', translated_child)
-          subchild.id = translated_child
-          // console.log('subchild id after translation', subchild.id)
           if (subchild.children) {
             for await (let ter_child of subchild.children) {
-              // console.log('tertiary child', ter_child)
-              let translated_parent = await this.translateString(ter_child.parent_id, this.language)
-              ter_child.parent_id = translated_parent
-              let translated_child = await this.translateString(ter_child.id, this.language)
-              // console.log('translated tertiary child', translated_child)
-              ter_child.id = translated_child
-              // console.log('tertiary child id after translation', ter_child.id)
+              ter_child.parent_id = await this.translateString(ter_child.parent_id, this.language)
+              ter_child.id = await this.translateString(ter_child.id, this.language)
             }
           }
         }
