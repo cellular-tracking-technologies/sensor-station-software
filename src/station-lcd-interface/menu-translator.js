@@ -147,7 +147,7 @@ class MenuTranslator {
     let items = []
     let item, item_child
     Object.values(languages).forEach((lang) => {
-      console.log('lang', lang)
+      // console.log('lang', lang)
       item = new MenuItem(lang.id, null, lang.children)
       if (lang.children) {
         lang.children.forEach((child) => {
@@ -156,34 +156,42 @@ class MenuTranslator {
       }
       items.push(item)
     })
-    console.log('menu item languages', items, 2)
+    // console.log('menu item languages', items, 2)
   }
 
   async menuSwitchStrings(language) {
     await this.createItems(language)
-    console.log('this items', this.items)
-    // console.log('incoming language', language)
-    // console.log('import languages', Object.keys(languages))
+    // console.log('this items', this.items)
+
     let translation = Object.values((languages)).find(e => language == e.id)
-    console.log('translated object', translation.children[1].children[0])
+    // console.log('translated object', translation.children[1].children[0])
 
     this.items.id = translation.id
     if (this.items.children) {
-      console.log('items children', this.items.children)
+      // console.log('items children', this.items.children)
       for (let i = 0; i < this.items.children.length; i++) {
-        console.log('items children element', this.items.children[i])
+        // console.log('items children element', this.items.children[i])
 
         this.items.children[i].parent_id = translation.children[i].parent_id
         this.items.children[i].id = translation.children[i].id
 
         if (this.items.children[i].children) {
-          console.log('subitems children element', this.items.children[i].children)
+          // console.log('subitems children element', this.items.children[i].children)
 
           for (let j = 0; j < this.items.children[i].children.length; j++) {
 
             this.items.children[i].children[j].parent_id = translation.children[i].children[j].parent_id
             this.items.children[i].children[j].id = translation.children[i].children[j].id
+            if (this.items.children[i].children[j].children) {
 
+              for (let k = 0; k < this.items.children[i].children[j].children.length; k++) {
+                // console.log('ter items children element', this.items.children[i].children[j].children)
+
+                this.items.children[i].children[j].children[k].parent_id = translation.children[i].children[j].children[k].parent_id
+                this.items.children[i].children[j].children[k].id = translation.children[i].children[j].children[k].id
+
+              }
+            }
           }
         }
       }
