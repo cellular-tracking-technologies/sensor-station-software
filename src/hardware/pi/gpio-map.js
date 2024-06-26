@@ -1,5 +1,7 @@
-import Revision from '../../revision.js'
+import System from '../../system.js'
 import OsInfo from './os.js'
+
+const { Revision } = System
 
 const BookwormPins = {
     V3: {
@@ -57,4 +59,4 @@ const BullseyePins = {
 const Pins = (OsInfo.Release > 11) ? BookwormPins : BullseyePins
 
 // Identify which Station Hardware revision we are using
-export default (Revision.revision >= 3) ? Pins.V3 : Pins.V2
+export default (Revision >= 3) ? Pins.V3 : Pins.V2

@@ -59,11 +59,11 @@ class StationLeds {
   }
 
   async toggleAll(gps) {
-		return Promise.all([
-			this.toggleGps(gps),
-			this.toggleOperational(),
-			this.toggleInternet(),
-		])
+    return Promise.all([
+      this.toggleGps(gps),
+      this.toggleOperational(),
+      this.toggleInternet(),
+    ])
   }
 }
 

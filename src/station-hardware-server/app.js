@@ -8,7 +8,6 @@ import internetRouter from './routes/internet.js'
 import peripheralRouter from './routes/peripherals.js'
 import radioRouter from './routes/radio-server.js'
 import controlRouter from './routes/control.js'
-import revision from '../revision.js'
 import ledRouter from './routes/led.js'
 // import standByRouter from './routes/standby.js'
 

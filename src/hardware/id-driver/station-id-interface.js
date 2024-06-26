@@ -1,5 +1,5 @@
-import { 
-  PollState, 
+import {
+  PollState,
 } from '../io-expander/expander.js'
 
 import i2cScanner from '../i2c/scan.js'
@@ -12,19 +12,19 @@ import fs from 'fs'
 const V3_PREFIX = 'V3'
 
 const IdChips = {
-  DS3231: async() => {
+  DS3231: async () => {
     const buffer = await Ds3231()
-    return V3_PREFIX.concat(buffer.slice(3).toString('hex').toUpperCase())
+    return V3_PREFIX.concat(buffer.subarray(3).toString('hex').toUpperCase())
   },
-  AT24MAC602: async(revision) => {
+  AT24MAC602: async (revision) => {
     const buffer = await At24Mac602.ReadEUI64()
     // for the At24MAC602 chip - slice the first 2 of 3 manufacturer bytes 
-    const sliced_buffer = Buffer.concat([buffer.slice(2,3), buffer.slice(5)])
+    const sliced_buffer = Buffer.concat([buffer.subarray(2, 3), buffer.subarray(5)])
     // V3 prefix  - append V3DD where DD is the provided revision
     const prefix = V3_PREFIX.concat(revision.toString().padStart(2, '0'))
     return prefix.concat(sliced_buffer.toString('hex').toUpperCase())
   },
-  ATSHA204A: async() => {
+  ATSHA204A: async () => {
     return Atsha204a()
   }
 }
@@ -48,7 +48,7 @@ class StationIdInterface {
     // bitwise NOT ... javascript converts to signed 32 bit integers
     // https://stackoverflow.com/questions/6798111/bitwise-operations-on-32-bit-unsigned-ints
     return ((~channel_a >>> 0) & 0xFF) >> 1
-  } 
+  }
 
   async ioExpanderExists() {
     // scan the i2c bus channel 1 for device addresses
@@ -96,9 +96,9 @@ class StationIdInterface {
   async getV3StationId(revision) {
     let id
     const human_revision = revision + 1
-    switch(revision) {
+    switch (revision) {
       case 0:
-        // revision 0 - use DS3231 RTC EEPROM chip for ID
+      // revision 0 - use DS3231 RTC EEPROM chip for ID
       case 127:
         // revision 0 - use DS3231 RTC EEPROM chip for ID
         id = await IdChips.DS3231()
@@ -107,7 +107,7 @@ class StationIdInterface {
         // revision 1 - use AT24MAC602 Serial EEPROM 
         id = await IdChips.AT24MAC602(human_revision)
         break
-      default: 
+      default:
         throw new Error('Cannot identify station revision')
     }
     return id
@@ -132,7 +132,7 @@ class StationIdInterface {
     const version_info = await this.getVersion()
     const { version, revision } = version_info
     let id
-    switch(version) {
+    switch (version) {
       case 3:
         id = await this.getV3StationId(revision)
         break
@@ -154,15 +154,15 @@ class StationIdInterface {
     const { version, revision } = version_info
     let radio_map
 
-    switch(version) {
+    switch (version) {
       case 3:
         radio_map = fs.readFileSync('/etc/ctt/radios/v3-blu-radio-map.js', null, 2)
         break
       case 2:
         radio_map = fs.readFileSync('/etc/ctt/radios/v2-blu-radio-map.js', null, 2)
         break
-      default: 
-      throw new Error('No blu radio map found')
+      default:
+        throw new Error('No blu radio map found')
     }
     return {
       id,

@@ -1,11 +1,13 @@
-import Revision from '../revision.js'
+import System from '../system.js'
 import KernelInfo from '../hardware/kernel/kernel.js'
 const kernel_pins = KernelInfo.getPins()
 // import kernel_pins from '../hardware/kernel/kernel.js'
 
+const { Revision } = System
+
 let Buttons = {}
 
-if (Revision.revision >= 3) {
+if (Revision >= 3) {
 	let { v3: { Buttons: { Up, Down, Select, Back, } } } = kernel_pins
 
 	Buttons = {
