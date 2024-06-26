@@ -43,6 +43,7 @@ class DisableWifi {
           return data
         })
         .then(res => {
+          console.log('disable wifi res', res)
           resolve([this.header, `WiFi disabled:${res.statusText}`])
         })
         .catch(error => {

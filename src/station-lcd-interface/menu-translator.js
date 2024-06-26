@@ -34,26 +34,34 @@ class MenuTranslator {
    */
   constructor(opts) {
     this.language = opts.language
-    // this.items = opts.items
-    this.en_items
-    this.es_items
+    this.items
+    this.lang_string
   }
 
   async createItems() {
-    let lang_string
     switch (this.language) {
       case 'en':
-        lang_string = 'English'
+        this.lang_string = 'English'
         break
       case 'es':
-        lang_string = 'Espagnol'
+        this.lang_string = 'Espagnol'
+        break
+      case 'fr':
+        this.lang_string = 'Francais'
+        break
+      case 'pt':
+        this.lang_string = 'Portugues'
+        break
+      case 'nl':
+        this.lang_string = 'Nederlands'
         break
       default:
-        lang_string = 'English'
+        this.lang_string = 'English'
         break
     }
     const host = 'http://localhost:3000'
-    this.items = new MenuItem(await this.translateString('main', this.language), null, [
+
+    this.items = new MenuItem(this.lang_string, null, [
       new MenuItem('Station Stats', new StandBy(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -103,8 +111,9 @@ class MenuTranslator {
 
   async translateMenu() {
     await this.createItems()
-    // make true copy of menu object
-    // menu = JSON.parse(JSON.stringify(menu))
+
+    this.items.id = this.lang_string
+
     for await (let child of this.items.children) {
       let translated_child = await this.translateString(child.id, this.language)
       // let translated_parent = await this.translateString(child.parent_id, this.language)

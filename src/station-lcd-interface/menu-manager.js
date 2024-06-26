@@ -72,6 +72,7 @@ class MenuManager {
   }
   back() {
     this.autoRefresh_(false)
+    console.log('back button focus parent', this.focus)
     if (this.focus.parent_id != null) {
       this.focus = this.findMenuItem_(this.menu, this.focus.parent_id)
       this.scroller.init(this.focus.childrenNames())
