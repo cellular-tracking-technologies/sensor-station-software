@@ -1,6 +1,6 @@
 #!/bin/bash
-sudo pinctrl set 27 dh
+sudo raspi-gpio set 27 dh
 sleep 1
-sudo pinctrl set 27 dl
+sudo raspi-gpio set 27 dl
 sleep 1
-sudo pinctrl set 27 dh
+sudo raspi-gpio set 27 dh

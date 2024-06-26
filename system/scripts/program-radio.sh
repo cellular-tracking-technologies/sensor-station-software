@@ -68,11 +68,11 @@ fi
 
 
 echo "$CHANNEL"
-pinctrl set $PIN op dl
+raspi-gpio set $PIN op dl
 sleep 0.2
-pinctrl set $PIN op dh
+raspi-gpio set $PIN op dh
 sleep 0.2
-pinctrl set $PIN ip
+raspi-gpio set $PIN ip
 sleep 1 
 
 avrdude -P $CHANNEL -c avr109 -patmega32u4  -b 57600 -D -v -Uflash:w:$FW_FILE:i
