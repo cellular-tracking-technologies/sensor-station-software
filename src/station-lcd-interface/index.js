@@ -89,6 +89,8 @@ let items = new MenuItem('English', null, [
   new MenuItem("Location", new GpsTask(host), []),
 ])
 
+// console.log('items', items)
+
 let menu_translator = new MenuTranslator()
 
 // let en_items = await menu_translator.menuSwitchStrings('English')
@@ -98,6 +100,8 @@ let pt_items = await menu_translator.menuSwitchStrings('Portugues')
 let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
 
 let menu_languages = new MenuItem('Languages', null, [items, es_items, fr_items, pt_items, nl_items])
+// items.children.push(menu_languages)
+// console.log('menu with languages', items)
 /*
     Instantiate a menu manager that operates on a list of 
     menu items organized within a hierarchical structure.

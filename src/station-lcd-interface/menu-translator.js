@@ -185,7 +185,6 @@ class MenuTranslator {
           }
         )
         let languages = JSON.parse(languages_json)
-        console.log('languages', languages)
 
         let translation = Object.values((languages)).find(e => language == e.id)
 
