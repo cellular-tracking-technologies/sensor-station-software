@@ -1,7 +1,6 @@
 // Import Statements
 import MenuItem from "./menu-item.js"
 import MenuManager from "./menu-manager.js"
-import languages from './translated-menus.json' assert { type: 'json'}
 import MenuTranslator from './menu-translator.js'
 
 // Tasks
@@ -90,33 +89,15 @@ let items = new MenuItem('English', null, [
   new MenuItem("Location", new GpsTask(host), []),
 ])
 
-// let en_items = await new MenuTranslator({ language: 'en' }).translateMenu()
-// let es_items = await new MenuTranslator({ language: 'es' }).translateMenu()
-// let fr_items = await new MenuTranslator({ language: 'fr' }).translateMenu()
-// console.log('fr items', fr_items)
-
-// let pt_items = await new MenuTranslator({ language: 'pt' }).translateMenu()
-// let nl_items = await new MenuTranslator({ language: 'nl' }).translateMenu()
-
-
-// let languages = new MenuItem("Languages", null, [
-//   en_items,
-//   es_items,
-//   // fr_items,
-//   // pt_items,
-//   // nl_items
-// ])
-
 let menu_translator = new MenuTranslator()
-let en_items = await menu_translator.menuSwitchStrings('English')
 
+// let en_items = await menu_translator.menuSwitchStrings('English')
 let es_items = await menu_translator.menuSwitchStrings('Espagnol')
 let fr_items = await menu_translator.menuSwitchStrings('Francais')
 let pt_items = await menu_translator.menuSwitchStrings('Portugues')
 let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
-console.log('string switch translated items', es_items)
 
-let menu_languages = new MenuItem('Languages', null, [en_items, es_items, fr_items, pt_items, nl_items])
+let menu_languages = new MenuItem('Languages', null, [items, es_items, fr_items, pt_items, nl_items])
 /*
     Instantiate a menu manager that operates on a list of 
     menu items organized within a hierarchical structure.

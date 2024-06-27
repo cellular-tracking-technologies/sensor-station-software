@@ -1,8 +1,8 @@
 // Import Statements
 import MenuItem from "./menu-item.js"
 import translate from 'translate'
-import languages from './translated-menus.json' assert { type: 'json'}
-// import fs from 'node:fs'
+// import languages from './translated-menus.json' assert { type: 'json'}
+import fs from 'node:fs/promises'
 
 
 // Tasks
@@ -38,29 +38,13 @@ class MenuTranslator {
     // this.language = opts.language
     this.items
     this.lang_string
+    this.language_items
+    this.language_object = {}
+    this.language_array = ['English', 'Espagnol', 'Francais', 'Portugues', 'Nederlands']
   }
 
   async createItems(language) {
-    // switch (this.language) {
-    //   case 'en':
-    //     this.lang_string = 'English'
-    //     break
-    //   case 'es':
-    //     this.lang_string = 'Espagnol'
-    //     break
-    //   case 'fr':
-    //     this.lang_string = 'Francais'
-    //     break
-    //   case 'pt':
-    //     this.lang_string = 'Portugues'
-    //     break
-    //   case 'nl':
-    //     this.lang_string = 'Nederlands'
-    //     break
-    //   default:
-    //     this.lang_string = 'English'
-    //     break
-    // }
+
     const host = 'http://localhost:3000'
 
     this.items = new MenuItem(language, null, [
@@ -104,99 +88,136 @@ class MenuTranslator {
       new MenuItem("Location", new GpsTask(host), []),
     ])
   }
+
   async translateString(str, translateTo) {
     translate.engine = 'google'
     const translated_string = await translate(str, translateTo)
-    // console.log('translated string', translated_string)
     return translated_string
   }
 
   async translateMenu() {
-    await this.createItems()
+    this.language_array.forEach(async (language) => {
 
-    this.items.id = this.lang_string
+      await this.createItems(language)
 
-    for await (let child of this.items.children) {
-      child.id = await this.translateString(child.id, this.language)
-
-      if (child.children) {
-        for await (let subchild of child.children) {
-          subchild.parent_id = await this.translateString(subchild.parent_id, this.language)
-          subchild.id = await this.translateString(subchild.id, this.language)
-
-          if (subchild.children) {
-            for await (let ter_child of subchild.children) {
-              ter_child.parent_id = await this.translateString(ter_child.parent_id, this.language)
-              ter_child.id = await this.translateString(ter_child.id, this.language)
-            }
-          }
-        }
+      switch (language) {
+        case 'English':
+          this.lang_string = 'en'
+          break
+        case 'Espagnol':
+          this.lang_string = 'es'
+          break
+        case 'Francais':
+          this.lang_string = 'fr'
+          break
+        case 'Portugues':
+          this.lang_string = 'pt'
+          break
+        case 'Nederlands':
+          this.lang_string = 'nl'
+          break
+        default:
+          this.lang_string = 'en'
+          break
       }
-    }
-    // fs.writeFile('./translated-menus.json', JSON.stringify(this.items), {}, (err) => {
-    //   if (err) {
-    //     console.error(err)
-    //   }
-    // })
-    // this.menuItemCreator()
-    return this.items
-  }
 
-  async menuItemCreator() {
-    // console.log('json langugages', languages)
-    let items = []
-    let item, item_child
-    Object.values(languages).forEach((lang) => {
-      // console.log('lang', lang)
-      item = new MenuItem(lang.id, null, lang.children)
-      if (lang.children) {
-        lang.children.forEach((child) => {
-          item_child = new MenuItem(child.id,)
-        })
-      }
-      items.push(item)
-    })
-    // console.log('menu item languages', items, 2)
-  }
+      this.items.id = language
+      for await (let child of this.items.children) {
+        child.id = await this.translateString(child.id, this.lang_string)
 
-  async menuSwitchStrings(language) {
-    await this.createItems(language)
-    // console.log('this items', this.items)
+        if (child.children) {
+          for await (let subchild of child.children) {
+            subchild.parent_id = await this.translateString(subchild.parent_id, this.language)
+            subchild.id = await this.translateString(subchild.id, this.lang_string)
 
-    let translation = Object.values((languages)).find(e => language == e.id)
-    // console.log('translated object', translation.children[1].children[0])
-
-    this.items.id = translation.id
-    if (this.items.children) {
-      // console.log('items children', this.items.children)
-      for (let i = 0; i < this.items.children.length; i++) {
-        // console.log('items children element', this.items.children[i])
-
-        this.items.children[i].parent_id = translation.children[i].parent_id
-        this.items.children[i].id = translation.children[i].id
-
-        if (this.items.children[i].children) {
-          // console.log('subitems children element', this.items.children[i].children)
-
-          for (let j = 0; j < this.items.children[i].children.length; j++) {
-
-            this.items.children[i].children[j].parent_id = translation.children[i].children[j].parent_id
-            this.items.children[i].children[j].id = translation.children[i].children[j].id
-            if (this.items.children[i].children[j].children) {
-
-              for (let k = 0; k < this.items.children[i].children[j].children.length; k++) {
-                // console.log('ter items children element', this.items.children[i].children[j].children)
-
-                this.items.children[i].children[j].children[k].parent_id = translation.children[i].children[j].children[k].parent_id
-                this.items.children[i].children[j].children[k].id = translation.children[i].children[j].children[k].id
-
+            if (subchild.children) {
+              for await (let ter_child of subchild.children) {
+                ter_child.parent_id = await this.translateString(ter_child.parent_id, this.lang_string)
+                ter_child.id = await this.translateString(ter_child.id, this.lang_string)
               }
             }
           }
         }
       }
+
+      this.language_items = { [this.lang_string]: this.items }
+      this.language_object = Object.assign(this.language_object, this.language_items)
+
+      if (Object.values(this.language_object).length >= 5) {
+
+        await fs.writeFile('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json',
+          JSON.stringify(this.language_object), {}, (err) => {
+            if (err) {
+              console.log('could not save translated menus', err)
+            } else {
+              console.log('translated menus saved!!!\n')
+            }
+          })
+      }
+    })
+  }
+
+  async checkIfFileExists(filepath) {
+    return new Promise((resolve) => {
+      fs.stat(filepath, (err, stats) => {
+        if (err) {
+          resolve(false)
+          return false
+        } else {
+          resolve(true)
+        }
+      })
+    })
+  }
+
+  async menuSwitchStrings(language) {
+    await this.createItems(language)
+    let file_exist = this.checkIfFileExists('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json')
+
+    if (file_exist) {
+      let languages_json = await fs.readFile('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json', 'utf8',
+        (err, data) => {
+          if (err) throw err
+          return data
+        }
+      )
+      let languages = JSON.parse(languages_json)
+      console.log('languages', languages)
+
+      let translation = Object.values((languages)).find(e => language == e.id)
+
+      this.items.id = translation.id
+      if (this.items.children) {
+        for (let i = 0; i < this.items.children.length; i++) {
+
+          this.items.children[i].parent_id = translation.children[i].parent_id
+          this.items.children[i].id = translation.children[i].id
+
+          if (this.items.children[i].children) {
+
+            for (let j = 0; j < this.items.children[i].children.length; j++) {
+
+              this.items.children[i].children[j].parent_id = translation.children[i].children[j].parent_id
+              this.items.children[i].children[j].id = translation.children[i].children[j].id
+              if (this.items.children[i].children[j].children) {
+
+                for (let k = 0; k < this.items.children[i].children[j].children.length; k++) {
+
+                  this.items.children[i].children[j].children[k].parent_id = translation.children[i].children[j].children[k].parent_id
+                  this.items.children[i].children[j].children[k].id = translation.children[i].children[j].children[k].id
+
+                }
+              }
+            }
+          }
+        }
+      }
+      return this.items
+    } else {
+
+      await this.translateMenu()
+      await menuSwitchStrings(language)
     }
-    return this.items
   }
 }
 
