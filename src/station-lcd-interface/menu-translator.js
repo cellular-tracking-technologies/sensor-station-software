@@ -1,7 +1,7 @@
 // Import Statements
 import MenuItem from "./menu-item.js"
 import translate from 'translate'
-// import languages from './translated-menus.json' assert { type: 'json'}
+import languages from './translated-menus.json' assert { type: 'json'}
 import fs from 'node:fs/promises'
 
 
@@ -41,6 +41,7 @@ class MenuTranslator {
     this.lang_abbrev
     this.language_items
     this.language_array = []
+    this.language_object = {}
   }
 
   async createItems(language) {
@@ -141,36 +142,25 @@ class MenuTranslator {
     }
 
     this.language_items = { [this.lang_string]: this.items }
-    // this.language_array.push(this.language_items)
+    this.language_object = Object.assign(this.language_object, this.language_items)
 
-    await fs.writeFile('translated-menus.json', JSON.stringify(this.language_items), {}, (err) => {
-      if (err) {
-        console.log('could not save translated menus', err)
-      } else {
-        console.log('translated menus saved!!!\n')
-      }
-    })
+    if (Object.values(this.language_object).length >= 5) {
 
-    let data = JSON.parse(await fs.readFile('/translated-menus.json', 'utf8'))
-    console.log('data after being parsed', data)
-    // let new_data = Object.assign(this.language_items, data)
-    this.language_array.push(this.language_items)
-
-    console.log('data after assignment', this.language_array)
-
-    await fs.writeFile('translated-menus.json', JSON.stringify(this.language_array), {}, (err) => {
-      if (err) {
-        console.log('could not save translated menus', err)
-      } else {
-        console.log('translated menus saved!!!\n')
-      }
-    })
+      await fs.writeFile('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json',
+        JSON.stringify(this.language_object), {}, (err) => {
+          if (err) {
+            console.log('could not save translated menus', err)
+          } else {
+            console.log('translated menus saved!!!\n')
+          }
+        })
+    }
     return this.items
   }
 
   async menuSwitchStrings(language) {
     await this.createItems(language)
-    // console.log('this items', this.items)
+    console.log('languages', JSON.stringify(languages, null, 2))
 
     let translation = Object.values((languages)).find(e => language == e.id)
     // console.log('translated object', translation.children[1].children[0])

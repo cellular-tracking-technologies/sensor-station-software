@@ -1,7 +1,6 @@
 // Import Statements
 import MenuItem from "./menu-item.js"
 import MenuManager from "./menu-manager.js"
-// import languages from './translated-menus.json' assert { type: 'json'}
 import MenuTranslator from './menu-translator.js'
 
 // Tasks
@@ -92,18 +91,17 @@ let items = new MenuItem('English', null, [
 
 let menu_translator = new MenuTranslator()
 
-let en_items = await menu_translator.translateMenu('English')
-let es_items = await menu_translator.translateMenu('Espagnol')
-let fr_items = await menu_translator.translateMenu('Francais')
-let pt_items = await menu_translator.translateMenu('Portugues')
-let nl_items = await menu_translator.translateMenu('Nederlands')
+// let en_items = await menu_translator.translateMenu('English')
+// let es_items = await menu_translator.translateMenu('Espagnol')
+// let fr_items = await menu_translator.translateMenu('Francais')
+// let pt_items = await menu_translator.translateMenu('Portugues')
+// let nl_items = await menu_translator.translateMenu('Nederlands')
 
-
-// let en_items = await menu_translator.menuSwitchStrings('English')
-// let es_items = await menu_translator.menuSwitchStrings('Espagnol')
-// let fr_items = await menu_translator.menuSwitchStrings('Francais')
-// let pt_items = await menu_translator.menuSwitchStrings('Portugues')
-// let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
+let en_items = await menu_translator.menuSwitchStrings('English')
+let es_items = await menu_translator.menuSwitchStrings('Espagnol')
+let fr_items = await menu_translator.menuSwitchStrings('Francais')
+let pt_items = await menu_translator.menuSwitchStrings('Portugues')
+let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
 
 let menu_languages = new MenuItem('Languages', null, [en_items, es_items, fr_items, pt_items, nl_items])
 /*
