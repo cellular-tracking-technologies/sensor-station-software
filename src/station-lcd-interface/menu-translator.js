@@ -1,8 +1,8 @@
 // Import Statements
 import MenuItem from "./menu-item.js"
 import translate from 'translate'
-import languages from './translated-menus.json' assert { type: 'json'}
-// import fs from 'node:fs'
+// import languages from './translated-menus.json' assert { type: 'json'}
+import fs from 'node:fs/promises'
 
 
 // Tasks
@@ -38,29 +38,13 @@ class MenuTranslator {
     // this.language = opts.language
     this.items
     this.lang_string
+    this.lang_abbrev
+    this.language_items
+    this.language_array = []
   }
 
   async createItems(language) {
-    // switch (this.language) {
-    //   case 'en':
-    //     this.lang_string = 'English'
-    //     break
-    //   case 'es':
-    //     this.lang_string = 'Espagnol'
-    //     break
-    //   case 'fr':
-    //     this.lang_string = 'Francais'
-    //     break
-    //   case 'pt':
-    //     this.lang_string = 'Portugues'
-    //     break
-    //   case 'nl':
-    //     this.lang_string = 'Nederlands'
-    //     break
-    //   default:
-    //     this.lang_string = 'English'
-    //     break
-    // }
+
     const host = 'http://localhost:3000'
 
     this.items = new MenuItem(language, null, [
@@ -104,59 +88,84 @@ class MenuTranslator {
       new MenuItem("Location", new GpsTask(host), []),
     ])
   }
+
   async translateString(str, translateTo) {
     translate.engine = 'google'
     const translated_string = await translate(str, translateTo)
-    // console.log('translated string', translated_string)
     return translated_string
   }
 
-  async translateMenu() {
-    await this.createItems()
+  async translateMenu(language) {
 
-    this.items.id = this.lang_string
+    await this.createItems(language)
 
+    switch (language) {
+      case 'English':
+        this.lang_string = 'en'
+        break
+      case 'Espagnol':
+        this.lang_string = 'es'
+        break
+      case 'Francais':
+        this.lang_string = 'fr'
+        break
+      case 'Portugues':
+        this.lang_string = 'pt'
+        break
+      case 'Nederlands':
+        this.lang_string = 'nl'
+        break
+      default:
+        this.lang_string = 'en'
+        break
+    }
+
+    this.items.id = language
     for await (let child of this.items.children) {
-      child.id = await this.translateString(child.id, this.language)
+      child.id = await this.translateString(child.id, this.lang_string)
 
       if (child.children) {
         for await (let subchild of child.children) {
           subchild.parent_id = await this.translateString(subchild.parent_id, this.language)
-          subchild.id = await this.translateString(subchild.id, this.language)
+          subchild.id = await this.translateString(subchild.id, this.lang_string)
 
           if (subchild.children) {
             for await (let ter_child of subchild.children) {
-              ter_child.parent_id = await this.translateString(ter_child.parent_id, this.language)
-              ter_child.id = await this.translateString(ter_child.id, this.language)
+              ter_child.parent_id = await this.translateString(ter_child.parent_id, this.lang_string)
+              ter_child.id = await this.translateString(ter_child.id, this.lang_string)
             }
           }
         }
       }
-    }
-    // fs.writeFile('./translated-menus.json', JSON.stringify(this.items), {}, (err) => {
-    //   if (err) {
-    //     console.error(err)
-    //   }
-    // })
-    // this.menuItemCreator()
-    return this.items
-  }
 
-  async menuItemCreator() {
-    // console.log('json langugages', languages)
-    let items = []
-    let item, item_child
-    Object.values(languages).forEach((lang) => {
-      // console.log('lang', lang)
-      item = new MenuItem(lang.id, null, lang.children)
-      if (lang.children) {
-        lang.children.forEach((child) => {
-          item_child = new MenuItem(child.id,)
-        })
+    }
+
+    this.language_items = { [this.lang_string]: this.items }
+    // this.language_array.push(this.language_items)
+
+    await fs.writeFile('translated-menus.json', JSON.stringify(this.language_items), {}, (err) => {
+      if (err) {
+        console.log('could not save translated menus', err)
+      } else {
+        console.log('translated menus saved!!!\n')
       }
-      items.push(item)
     })
-    // console.log('menu item languages', items, 2)
+
+    let data = JSON.parse(await fs.readFile('/translated-menus.json', 'utf8'))
+    console.log('data after being parsed', data)
+    // let new_data = Object.assign(this.language_items, data)
+    this.language_array.push(this.language_items)
+
+    console.log('data after assignment', this.language_array)
+
+    await fs.writeFile('translated-menus.json', JSON.stringify(this.language_array), {}, (err) => {
+      if (err) {
+        console.log('could not save translated menus', err)
+      } else {
+        console.log('translated menus saved!!!\n')
+      }
+    })
+    return this.items
   }
 
   async menuSwitchStrings(language) {
