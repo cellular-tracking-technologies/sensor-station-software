@@ -87,6 +87,7 @@ class MenuTranslator {
       new MenuItem("Temperature", new SensorTemperatureTask(host), []),
       new MenuItem("Location", new GpsTask(host), []),
     ])
+
   }
 
   async translateString(str, translateTo) {
@@ -171,52 +172,57 @@ class MenuTranslator {
   }
 
   async menuSwitchStrings(language) {
-    await this.createItems(language)
-    let file_exist = this.checkIfFileExists('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json')
+    try {
 
-    if (file_exist) {
-      let languages_json = await fs.readFile('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json', 'utf8',
-        (err, data) => {
-          if (err) throw err
-          return data
-        }
-      )
-      let languages = JSON.parse(languages_json)
-      console.log('languages', languages)
+      await this.createItems(language)
+      let file_exist = this.checkIfFileExists('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json')
 
-      let translation = Object.values((languages)).find(e => language == e.id)
+      if (file_exist) {
+        let languages_json = await fs.readFile('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json', 'utf8',
+          (err, data) => {
+            if (err) throw err
+            return data
+          }
+        )
+        let languages = JSON.parse(languages_json)
+        console.log('languages', languages)
 
-      this.items.id = translation.id
-      if (this.items.children) {
-        for (let i = 0; i < this.items.children.length; i++) {
+        let translation = Object.values((languages)).find(e => language == e.id)
 
-          this.items.children[i].parent_id = translation.children[i].parent_id
-          this.items.children[i].id = translation.children[i].id
+        this.items.id = translation.id
+        if (this.items.children) {
+          for (let i = 0; i < this.items.children.length; i++) {
 
-          if (this.items.children[i].children) {
+            this.items.children[i].parent_id = translation.children[i].parent_id
+            this.items.children[i].id = translation.children[i].id
 
-            for (let j = 0; j < this.items.children[i].children.length; j++) {
+            if (this.items.children[i].children) {
 
-              this.items.children[i].children[j].parent_id = translation.children[i].children[j].parent_id
-              this.items.children[i].children[j].id = translation.children[i].children[j].id
-              if (this.items.children[i].children[j].children) {
+              for (let j = 0; j < this.items.children[i].children.length; j++) {
 
-                for (let k = 0; k < this.items.children[i].children[j].children.length; k++) {
+                this.items.children[i].children[j].parent_id = translation.children[i].children[j].parent_id
+                this.items.children[i].children[j].id = translation.children[i].children[j].id
+                if (this.items.children[i].children[j].children) {
 
-                  this.items.children[i].children[j].children[k].parent_id = translation.children[i].children[j].children[k].parent_id
-                  this.items.children[i].children[j].children[k].id = translation.children[i].children[j].children[k].id
+                  for (let k = 0; k < this.items.children[i].children[j].children.length; k++) {
 
+                    this.items.children[i].children[j].children[k].parent_id = translation.children[i].children[j].children[k].parent_id
+                    this.items.children[i].children[j].children[k].id = translation.children[i].children[j].children[k].id
+
+                  }
                 }
               }
             }
           }
         }
-      }
-      return this.items
-    } else {
+        return this.items
+      } else {
 
-      await this.translateMenu()
-      await menuSwitchStrings(language)
+        await this.translateMenu()
+        await menuSwitchStrings(language)
+      }
+    } catch (e) {
+      console.error(e)
     }
   }
 }
