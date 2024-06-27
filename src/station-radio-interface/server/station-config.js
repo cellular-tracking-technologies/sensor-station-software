@@ -72,6 +72,9 @@ class StationConfig {
     return this.data
   }
 
+  /**
+   * save config to disk
+   */
   save() {
     // strip radio path from config to be threaded dynamically on load
     let cloned_config = JSON.parse(JSON.stringify(this.data))
@@ -94,21 +97,21 @@ class StationConfig {
     fs.writeFileSync(this.config_filepath, contents)
   }
 
+  /**
+   * 
+   * @param {Object} opts 
+   * @param {Integer} opts.channel
+   * @param {String} opts.cmd
+   */
   async toggleRadioMode(opts) {
-    // console.log('station config toggle radio mode opts', opts)
-    this.data.radios.forEach((radio) => {
-      if (radio.channel == opts.channel) {
-        console.log('setting radio mode')
-        radio.config = [
-          opts.cmd
-        ]
-      }
-    })
-    let receiver = this.data.blu_receivers.find(receiver => receiver.channel == opts.receiver_channel)
-    let radio = receiver.blu_radios.find(radio => radio.radio == opts.blu_radio_channel)
-
-    radio.radio_state = opts.radio_state
-    radio.poll_interval = opts.poll_interval
+    console.log('station config toggle radio mode opts', opts)
+    const radio = this.data.radios.find(radio => radio.channel == opts.channel)
+    if (radio) {
+      console.log('setting radio mode')
+      radio.config = [
+        opts.cmd
+      ]
+    }
 
     try {
       this.save(this.filename)
@@ -116,6 +119,31 @@ class StationConfig {
       console.log('ERROR saving config file')
       console.error(err)
     }
+  }
+
+  /**
+   * 
+   * @param {Object} opts 
+   * @param {Integer} opts.receiver_channel
+   * @param {Integer} opts.blu_radio_channel
+   * @param {Integer} opts.radio_state
+   * @param {Integer} opts.poll_interval
+   */
+  async toggleBluRadio(opts) {
+    const receiver = this.data.blu_receivers.find(receiver => receiver.channel == opts.receiver_channel)
+    if (receiver) {
+      const blu_radio = receiver.blu_radios.find(radio => radio.radio == opts.blu_radio_channel)
+      blu_radio.radio_state = opts.radio_state
+      blu_radio.poll_interval = opts.poll_interval
+    }
+
+    try {
+      this.save(this.filename)
+    } catch (err) {
+      console.log('ERROR saving config file')
+      console.error(err)
+    }
+
   }
 }
 

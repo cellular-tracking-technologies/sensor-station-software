@@ -2,6 +2,8 @@ import { SerialPort, ReadlineParser } from 'serialport'
 import moment from 'moment'
 import EventEmitter from 'events'
 
+import DataReceiver from '../../hardware/ctt/atmega32u4_receiver.js'
+
 /* event emitter for a radio:   events
   beep  - parsed JSON document from radio
   raw   - radio output not JSON parsable 
@@ -170,7 +172,7 @@ class RadioReceiver extends EventEmitter {
       let raw_beep
       let now = moment(new Date()).utc()
       try {
-        raw_beep = JSON.parse(line)
+        raw_beep = DataReceiver(line)
         raw_beep.channel = this.channel
         raw_beep.received_at = now
         if (raw_beep.firmware) {
