@@ -34,7 +34,7 @@ let LCD = class LCD {
             RW: 0x20 // not used
         };
 
-        this.buffer = new Buffer(3);  //Required for printlnBuffer.
+        this.buffer = Buffer.alloc(3);  //Required for printlnBuffer.
 
         // commands
         this.CLEARDISPLAY = 0x01;
