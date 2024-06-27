@@ -10,15 +10,12 @@ import { ServerApi } from './http/server-api.js'
 import StationLeds from './led/station-leds.js'
 import fetch from 'node-fetch'
 import { spawn } from 'child_process'
-import fs from 'fs'
 import heartbeats from 'heartbeats'
 import path from 'path'
 import _ from 'lodash'
 import moment from 'moment'
 import chokidar from 'chokidar'
 import System from '../../system.js'
-
-const { Version } = System.Hardware
 
 /**
  * manager class for controlling / reading radios
@@ -34,7 +31,6 @@ class BaseStation {
     this.blu_station
     this.blu_receivers = []
     this.active_radios = {}
-    console.log('LEDS', StationLeds)
     this.station_leds = new StationLeds()
     this.gps_client = new GpsClient({
       max_gps_records: 50
@@ -45,7 +41,6 @@ class BaseStation {
       data.msg_type = 'gps'
       this.broadcast(JSON.stringify(data))
     })
-    this.station_id
     this.date_format
     this.gps_logger
     this.data_manager
@@ -84,17 +79,16 @@ class BaseStation {
 
     // pull out config options to start everythign
     this.date_format = this.config.data.record.date_format
-    this.station_id = await this.getId()
     let base_log_dir = this.config.data.record.base_log_directory
 
     this.data_manager = new DataManager({
-      id: this.station_id,
+      id: System.Hardware.Id,
       base_log_dir: base_log_dir,
       date_format: this.date_format,
       flush_data_cache_seconds: this.config.data.record.flush_data_cache_seconds
     })
 
-    this.log_filename = `sensor-station-${this.station_id}.log`
+    this.log_filename = `sensor-station-${System.Hardware.Id}.log`
     this.log_file_uri = path.join(base_log_dir, this.log_filename)
 
     this.gps_client.start()
@@ -109,8 +103,6 @@ class BaseStation {
       blu_firmware: this.firmware,
       server_api: this.server_api,
       config: this.config,
-      // toggleRadioMode: this.toggleRadioMode(),
-      // toggleBluState: this.toggleBluState()
     })
     this.blu_station.startBluWebsocketServer()
     await this.directoryWatcher()
@@ -126,7 +118,7 @@ class BaseStation {
   toggleRadioMode(opts) {
     if (opts.channel in Object.keys(this.active_radios)) {
       this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
-      let radio = this.active_radios[opts.channel]
+      const radio = this.active_radios[opts.channel]
       this.config.toggleRadioMode({
         channel: opts.channel,
         cmd: radio.preset_commands[opts.mode]
@@ -147,7 +139,7 @@ class BaseStation {
  */
   async toggleBluState(opts) {
     // console.log('toggle blu state', opts)
-    await this.config.toggleRadioMode({
+    await this.config.toggleBluRadio({
       receiver_channel: opts.receiver_channel,
       poll_interval: opts.poll_interval,
       blu_radio_channel: opts.blu_radio_channel,
@@ -199,7 +191,7 @@ class BaseStation {
             .then(res => res.json())
             .then(async (json) => {
               let data = json
-              data.station_id = this.station_id
+              data.station_id = System.Hardware.Id
               data.msg_type = 'about'
               data.begin = this.begin
               this.broadcast(JSON.stringify(data))
@@ -352,13 +344,6 @@ class BaseStation {
   }
 
   /**
-   * get base station id
-   */
-  getId() {
-    return fs.readFileSync('/etc/ctt/station-id').toString().trim()
-  }
-
-  /**
    * 
    * @param {*} msg - message to broadcast across the web socket server
    */
@@ -381,7 +366,7 @@ class BaseStation {
   * file watcher using chokidar
   */
   async directoryWatcher() {
-    chokidar.watch('../../../../../../dev/serial/by-path')
+    chokidar.watch('/dev/serial/by-path')
       .on('add', async path => {
         await this.addPath(path)
         this.stationLog(`${path} was added`)
@@ -392,20 +377,17 @@ class BaseStation {
 
       })
 
-    process.on('SIGINT', async () => {
+    process.on('SIGINTx', async () => {
       console.log('sigint, manually closing down program')
       const promises = this.blu_station.blu_receivers.map(async (receiver) => {
-        console.log('receiver path', receiver.path)
         if (receiver.path) {
           receiver.blu_radios.forEach(async (radio) => {
-
             await this.toggleBluState({
               receiver_channel: receiver.port,
               blu_radio_channel: radio.radio,
               poll_interval: radio.poll_interval,
               radio_state: BluLeds.state.off,
             })
-
           })
           this.stationLog(`blu receiver ${receiver.port} turned off`)
           // await this.blu_station.stopBluRadios(receiver.path)
@@ -413,7 +395,7 @@ class BaseStation {
         }
       })
       try {
-        const blu_radios_stop = await Promise.all(promises)
+        await Promise.all(promises)
       } catch (e) {
         console.error('no port to closed in destroyed blu receiver', e)
         try {
@@ -450,7 +432,7 @@ class BaseStation {
         }
       })
       try {
-        const blu_radios_stop = await Promise.all(promises)
+        await Promise.all(promises)
       } catch (e) {
         console.error('no port to closed in destroyed blu receiver', e)
         try {
@@ -473,25 +455,19 @@ class BaseStation {
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
    */
   async addPath(path) {
-    if (Version >= 3) {
+    if (System.Hardware.Version >= 3) {
       // V3 Radio Paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
-
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
-
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
       }
     } else {
       // V2 Radio Paths
       if (path.includes('-port0')) {
-        // await new Promise(r => setTimeout(r, 10000));
         await this.startBluStation(path)
-
         this.stationLog('starting blu receiver')
-
-
       } else if (!path.includes('-port0')) {
         this.startRadios(path)
       }
@@ -503,7 +479,7 @@ class BaseStation {
  * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
  */
   async unlinkPath(path) {
-    if (Version >= 3) {
+    if (System.Hardware.Version >= 3) {
       // V3 Radio paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
         await this.unlinkBluStation(path)
@@ -530,7 +506,7 @@ class BaseStation {
    */
   async startBluStation(path) {
 
-    await this.blu_station.startBluRadios(path.substring(17))
+    await this.blu_station.startBluRadios(path)
     const receiver_to_start = this.findBluReceiveryByPath(path)
 
     receiver_to_start.blu_radios.forEach(async (radio) => {
@@ -562,7 +538,7 @@ class BaseStation {
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
    */
   async unlinkBluStation(path) {
-    let receiver_to_unlink = this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
+    let receiver_to_unlink = this.blu_station.blu_receivers.find(receiver => receiver.path === path)
     // let unlink_port = unlink_receiver.channel
     let unlink_port = receiver_to_unlink.port
     let unlink_obj = {
@@ -570,7 +546,6 @@ class BaseStation {
       port: unlink_port,
     }
     this.broadcast(JSON.stringify(unlink_obj))
-    // await this.blu_station.stopBluRadios(path.substring(17))
     receiver_to_unlink.blu_radios.forEach(async (radio) => {
       // const { poll_interval, radio: radio_channel, } = radio
 
@@ -593,7 +568,7 @@ class BaseStation {
   async unlinkDongleRadio(path) {
     let unlink_dongle = {
       msg_type: "unlink_dongle",
-      path: path.substring(17),
+      path: path,
       port: this.dongle_port,
     }
     this.broadcast(JSON.stringify(unlink_dongle))
@@ -605,10 +580,7 @@ class BaseStation {
    * @returns 
    */
   findRadioPath(path) {
-    let radio_path = path.substring(17)
-    let radio_index = this.config.data.radios.findIndex(radio => radio.path === radio_path)
-    let radio = this.config.data.radios[radio_index]
-    return radio
+    return this.config.data.radios.find(radio => radio.path == path)
   }
 
   /**
@@ -665,7 +637,7 @@ class BaseStation {
  * @returns 
  */
   findBluReceiveryByPath(path) {
-    return this.blu_station.blu_receivers.find(receiver => receiver.path === path.substring(17))
+    return this.blu_station.blu_receivers.find(receiver => receiver.path === path)
   }
 } // end of base station class
 

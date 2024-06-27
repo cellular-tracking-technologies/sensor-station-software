@@ -152,7 +152,7 @@ class BluStation {
    * @param {String} path Radio path from chokidar, already substringed 17 spaces 
    */
   async startBluRadios(path) {
-    let blu_path = this.blu_paths.find(receiver => receiver.path === path)
+    const blu_path = this.blu_paths.find(receiver => receiver.path === path)
     this.blu_receivers.push(
       new BluReceiverManager({
         path: path,
