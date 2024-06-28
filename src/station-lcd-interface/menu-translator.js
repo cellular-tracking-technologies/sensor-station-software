@@ -97,7 +97,6 @@ class MenuTranslator {
   }
 
   async translateMenu() {
-    // this.language_array.forEach(async (language) => {
     for await (let language of this.language_array) {
 
       await this.createItems(language)
@@ -148,7 +147,6 @@ class MenuTranslator {
 
 
       }
-      // })
     }
     return this.language_object
   }
