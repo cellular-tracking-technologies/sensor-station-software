@@ -887,7 +887,9 @@ const handle_blu_dropped = function (data) {
   let port_key = data.port.toString()
   let channel_key = data.channel.toString()
   let dropped = data.blu_dropped
+  if (blu_stats[port_key].channels[channel_key]) {
   blu_stats[port_key].channels[channel_key].blu_dropped = dropped
+  }
   render_dropped_detections(blu_stats);
 }
 
