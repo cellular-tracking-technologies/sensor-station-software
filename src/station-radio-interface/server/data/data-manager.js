@@ -9,6 +9,8 @@ import { BeepStatManager } from './beep-stat-manager.js'
 import { BluFormatter } from './blu-formatter.js'
 import moment from 'moment'
 
+import MessageTypes from '../../../hardware/ctt/messages.js'
+
 /**
  * manager class for incoming beep packets
  */
@@ -72,7 +74,7 @@ class DataManager {
         formatter: new BluFormatter({
           date_format: this.date_format
         })
-      })
+      }),
     }
   }
 
@@ -108,24 +110,32 @@ class DataManager {
           record = this.loggers.blu.addRecord(beep)
           break
         }
-        case 'coded_id': {
+        case MessageTypes.CodedId: {
           record = this.loggers.beep.addRecord(beep)
           this.stats.addBeep(record)
           break
         }
-        case 'node_coded_id': {
+        case MessageTypes.NodeData: {
           record = this.loggers.beep.addRecord(beep)
           this.stats.addBeep(record)
           break
         }
-        case 'node_health': {
+        case MessageTypes.NodeHealth: {
           record = this.loggers.node_health.addRecord(beep)
           this.stats.addNodeHealth(record)
           break
         }
-        case 'telemetry': {
+        case MessageTypes.NodeBluHealth: {
+          record = this.loggers.node_health.addRecord(beep)
+          break
+        }
+        case MessageTypes.Telemetry: {
           record = this.loggers.telemetry.addRecord(beep)
           this.stats.addTelemetryBeep(record)
+          break
+        }
+        case MessageTypes.NodeBluData: {
+          record = this.loggers.blu.addRecord(beep)
           break
         }
         default: {

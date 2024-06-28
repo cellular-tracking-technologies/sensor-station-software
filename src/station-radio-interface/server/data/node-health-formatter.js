@@ -1,4 +1,6 @@
 import moment from 'moment'
+import MessageTypes from '../../../hardware/ctt/messages.js'
+
 /**
  * file formatter for GPS files
  */
@@ -35,29 +37,50 @@ class NodeHealthFormatter {
     // check for new protocol 
     if (record.protocol) {
       // new protocol detected - check if a node origin
-      if (record.meta.source) {
-        node_id = record.meta.source.id
+      const { meta } = record
+      if (meta.source) {
+        node_id = meta.source.id
       }
       if (node_id == null) {
         console.error('no node id in record', record)
         return
       }
-      let recorded_at = moment(new Date(record.data.sent_at * 1000)).utc()
-      return [
-        record.received_at.format(this.date_format),
-        record.channel,
-        node_id,
-        record.meta.rssi,
-        record.data.bat_v / 100,
-        record.data.temp_c,
-        recorded_at.format(this.date_format),
-        record.data.fw,
-        record.data.sol_v / 100,
-        record.data.sol_ma,
-        record.data.sum_sol_ma,
-        record.data.lat ? record.data.lat / 1000000 : '',
-        record.data.lon ? record.data.lon / 1000000 : ''
-      ]
+      const recorded_at = moment(new Date(record.data.sent_at * 1000)).utc()
+      switch (meta.data_type) {
+        case MessageTypes.NodeHealth:
+          return [
+            record.received_at.format(this.date_format),
+            record.channel,
+            node_id,
+            record.meta.rssi,
+            record.data.bat_v / 100,
+            record.data.temp_c,
+            recorded_at.format(this.date_format),
+            record.data.fw,
+            record.data.sol_v / 100,
+            record.data.sol_ma,
+            record.data.sum_sol_ma,
+            record.data.lat ? record.data.lat / 1000000 : '',
+            record.data.lon ? record.data.lon / 1000000 : ''
+          ]
+        case MessageTypes.NodeBluHealth:
+          return [
+            record.received_at.format(this.date_format),
+            record.channel,
+            node_id,
+            record.meta.rssi,
+            record.data.batt_mv / 100,
+            record.data.temp_batt,
+            recorded_at.format(this.date_format),
+            null,
+            null,
+            record.data.charge_ma_avg,
+            record.data.energy_used,
+            record.data.lat ? record.data.lat / 1000000 : '',
+            record.data.lon ? record.data.lon / 1000000 : '',
+            record.data.sd_free,
+          ]
+      }
     } else {
       // old protocol detected
       if (record.data.node_alive == null) {

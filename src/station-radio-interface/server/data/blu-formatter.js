@@ -1,5 +1,6 @@
 import moment from 'moment'
-// import bluParser from './blu-parser.js'
+import MessageTypes from '../../../hardware/ctt/messages.js'
+
 /**
  * file formatter for BLE data
  */
@@ -12,62 +13,66 @@ class BluFormatter {
     this.header = [
       'UsbPort',
       'RadioId',
-      // 'BluRadioId',
       'Time',
       'TagRSSI',
       'TagId',
       'Sync',
       'Product',
       'Revision',
-      // 'Service',
-      // 'Family',
-      // 'Id',
-      'VCC',
-      'Temp',
-      'Payload',
       'NodeId',
-      // 'Broadcast Id',
-      // 'Payload Id',
+      'Payload',
     ]
     this.date_format = opts.date_format
   }
 
   /**
    * 
-   * @param {object} record - GPS record received from GPSD
+   * @param {object} record - Blu tag record
+   * @param {Integer} record.port
+   * @param {Integer} record.channel
+   * @param {Date} record.time
+   * @param {Integer} record.rssi
+   * @param {String} record.id
+   * @param {Integer} record.sync
+   * @param {Integer} record.product
+   * @param {Integer} record.revision
+   * @param {Object} record.payload
    */
   formatRecord(record) {
-    let fields, usb_port, channel, recorded_at, product, tag_rssi, id, sync, revision, raw_payload, solar, temp
-    let node_id = ''
+    const { meta, port, channel } = record
 
-    usb_port = record.port
-    channel = record.channel
-    recorded_at = moment(new Date(record.time)).utc()
-    tag_rssi = record.rssi
-    id = record.id
-    sync = record.sync
-    product = record.product
-    revision = record.revision
-    solar = record.payload.parsed.solar
-    temp = record.payload.parsed.temp
-    raw_payload = record.payload.raw.toString()
-
-    fields = [
-      usb_port,
-      channel,
-      recorded_at.format(this.date_format),
-      tag_rssi,
-      id,
-      sync,
-      product,
-      revision,
-      solar,
-      temp,
-      raw_payload,
-      node_id,
-    ]
-
-    return fields
+    switch (meta?.data_type) {
+      case MessageTypes.BluTag:
+        return [
+          port,
+          channel,
+          moment(new Date(record.time)).utc().format(this.date_format),
+          record.rssi,
+          record.id,
+          record.sync,
+          record.product,
+          record.revision,
+          '',
+          record.payload.raw.toString(),
+        ]
+      case MessageTypes.NodeBluData:
+        const { rssi, id, sync } = record.data
+        return [
+          channel,
+          '',
+          moment(new Date(record.data.rec_at * 1000)).utc().format(this.date_format),
+          rssi,
+          id,
+          sync,
+          '',
+          '',
+          meta.source.id,
+          '',
+        ]
+      default:
+        console.log('unexpected tag to format in blu formatter', meta)
+        console.log(record)
+    }
   }
 }
 

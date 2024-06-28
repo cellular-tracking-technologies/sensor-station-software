@@ -1,3 +1,5 @@
+import MessageTypes from './messages.js'
+
 const defs = Object.freeze({
   protocol: {
     PROTOCOL_OUT_BEEP_0: 0,
@@ -41,7 +43,7 @@ function parse_beep_0(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "coded_id",
+      data_type: MessageTypes.CodedId,
       rssi: buf.readInt8(5)
     },
     data: { id: buf.toString('hex', 1, 5).toUpperCase() }
@@ -63,7 +65,7 @@ function parse_beep_1(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "coded_id",
+      data_type: MessageTypes.CodedId,
       rssi: buf.readInt8(6)
     },
     data: { id: buf.toString('hex', 1, 6).toUpperCase() }
@@ -110,7 +112,7 @@ function parse_es200(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "telemetry",
+      data_type: MessageTypes.Telemetry,
       source: {
         type: "tracker",
         id: buf.readUint32LE(1).toString(16).toUpperCase()
@@ -148,7 +150,7 @@ function parse_node2_health(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "node_health",
+      data_type: MessageTypes.NodeHealth,
       source: {
         type: "node",
         id: buf.readUint32LE(1).toString(16).toUpperCase()
@@ -185,7 +187,7 @@ function parse_node2_beep(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "node_coded_id",
+      data_type: MessageTypes.NodeData,
       source: {
         type: "node",
         id: buf.readUint32LE(1).toString(16).toUpperCase()
@@ -214,7 +216,7 @@ function parse_node3_health(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "node_health",
+      data_type: MessageTypes.NodeBluHealth,
       source: {
         type: "node",
         id: buf.readUint32LE(1).toString(16).toUpperCase()
@@ -247,7 +249,7 @@ function parse_node3_beep_sub_ghz(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "node_coded_id",
+      data_type: MessageTypes.NodeData,
       source: {
         type: "node",
         id: buf.readUint32LE(1).toString(16).toUpperCase()
@@ -276,7 +278,7 @@ function parse_node3_beep_ble(buf) {
   return {
     protocol: "1.0.0",
     meta: {
-      data_type: "node_blu",
+      data_type: MessageTypes.NodeBluData,
       source: {
         type: "node",
         id: buf.readUint32LE(1).toString(16).toUpperCase()
