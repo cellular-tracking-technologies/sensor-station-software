@@ -97,7 +97,8 @@ class MenuTranslator {
   }
 
   async translateMenu() {
-    this.language_array.forEach(async (language) => {
+    // this.language_array.forEach(async (language) => {
+    for await (let language of this.language_array) {
 
       await this.createItems(language)
 
@@ -143,19 +144,24 @@ class MenuTranslator {
 
       this.language_items = { [this.lang_string]: this.items }
       this.language_object = Object.assign(this.language_object, this.language_items)
-
       if (Object.values(this.language_object).length >= 5) {
 
-        await fs.writeFile('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json',
-          JSON.stringify(this.language_object), {}, (err) => {
-            if (err) {
-              console.log('could not save translated menus', err)
-            } else {
-              console.log('translated menus saved!!!\n')
-            }
-          })
+
       }
-    })
+      // })
+    }
+    return this.language_object
+  }
+
+  async saveTranslatedMenus(language_object) {
+    await fs.writeFile('/lib/ctt/sensor-station-software/src/station-lcd-interface/translated-menus.json',
+      JSON.stringify(language_object), {}, (err) => {
+        if (err) {
+          console.log('could not save translated menus', err)
+        } else {
+          console.log('translated menus saved!!!\n')
+        }
+      })
   }
 
   async checkIfFileExists(filepath) {

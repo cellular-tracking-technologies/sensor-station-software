@@ -93,13 +93,17 @@ let items = new MenuItem('English', null, [
 
 let menu_translator = new MenuTranslator()
 
-// let en_items = await menu_translator.menuSwitchStrings('English')
+// let language_object = await menu_translator.translateMenu()
+// console.log('index language object', language_object)
+// await menu_translator.saveTranslatedMenus(language_object)
+
+let en_items = await menu_translator.menuSwitchStrings('English')
 let es_items = await menu_translator.menuSwitchStrings('Espagnol')
 let fr_items = await menu_translator.menuSwitchStrings('Francais')
 let pt_items = await menu_translator.menuSwitchStrings('Portugues')
 let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
 
-let menu_languages = new MenuItem('Languages', null, [items, es_items, fr_items, pt_items, nl_items])
+let menu_languages = new MenuItem('Languages', null, [en_items, es_items, fr_items, pt_items, nl_items])
 // items.children.push(menu_languages)
 // console.log('menu with languages', items)
 /*
@@ -114,6 +118,7 @@ let menu_languages = new MenuItem('Languages', null, [items, es_items, fr_items,
 */
 
 let menu = new MenuManager(menu_languages)
+// let menu = new MenuManager(items)
 menu.init()
 
 /*
