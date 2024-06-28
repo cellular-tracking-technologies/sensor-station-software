@@ -116,14 +116,14 @@ class BaseStation {
    * @param {String} opts.mode
    */
   toggleRadioMode(opts) {
-    if (opts.channel in Object.keys(this.active_radios)) {
-      this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
-      const radio = this.active_radios[opts.channel]
-      this.config.toggleRadioMode({
-        channel: opts.channel,
-        cmd: radio.preset_commands[opts.mode]
-      })
-      radio.issuePresetCommand(opts.mode)
+    if (Object.keys(this.active_radios).includes(opts.channel)) {
+    this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
+    const radio = this.active_radios[opts.channel]
+    this.config.toggleRadioMode({
+      channel: opts.channel,
+      cmd: radio.preset_commands[opts.mode]
+    })
+    radio.issuePresetCommand(opts.mode)
     } else {
       this.stationLog(`invalid radio channel ${opts.channel}`)
     }
@@ -161,6 +161,7 @@ class BaseStation {
       switch (cmd.cmd) {
         case ('toggle_radio'):
           let channel = cmd.data.channel
+          console.log('channel', channel, 'mode', cmd.data.type)
           this.toggleRadioMode({
             channel: channel,
             mode: cmd.data.type

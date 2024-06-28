@@ -93,9 +93,9 @@ let items = new MenuItem('English', null, [
 
 let menu_translator = new MenuTranslator()
 
-let language_object = await menu_translator.translateMenu()
+// let language_object = await menu_translator.translateMenu()
 // console.log('index language object', language_object)
-await menu_translator.saveTranslatedMenus(language_object)
+// await menu_translator.saveTranslatedMenus(language_object)
 
 let en_items = await menu_translator.menuSwitchStrings('English')
 let es_items = await menu_translator.menuSwitchStrings('Espagnol')
