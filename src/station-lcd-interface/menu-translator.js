@@ -128,13 +128,14 @@ class MenuTranslator {
 
         if (child.children) {
           for await (let subchild of child.children) {
-            subchild.parent_id = await this.translateString(subchild.parent_id, this.language)
+            subchild.parent_id = await this.translateString(subchild.parent_id, this.lang_string)
             subchild.id = await this.translateString(subchild.id, this.lang_string)
 
             if (subchild.children) {
               for await (let ter_child of subchild.children) {
                 ter_child.parent_id = await this.translateString(ter_child.parent_id, this.lang_string)
                 ter_child.id = await this.translateString(ter_child.id, this.lang_string)
+
               }
             }
           }
