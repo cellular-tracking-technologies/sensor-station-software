@@ -1,6 +1,6 @@
 import { RadioReceiver } from './radio-receiver.js'
 import BluStation from './blu-base-station.js'
-import BluLeds from '../../hardware/bluseries-receiver/driver/leds.js'
+import BluLeds from '../../hardware/ctt/bluseries-receiver/driver/leds.js'
 
 import { SensorSocketServer } from './http/web-socket-server.js'
 import { GpsClient } from './gps-client.js'
@@ -117,13 +117,13 @@ class BaseStation {
    */
   toggleRadioMode(opts) {
     if (Object.keys(this.active_radios).includes(opts.channel)) {
-    this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
-    const radio = this.active_radios[opts.channel]
-    this.config.toggleRadioMode({
-      channel: opts.channel,
-      cmd: radio.preset_commands[opts.mode]
-    })
-    radio.issuePresetCommand(opts.mode)
+      this.stationLog(`toggling ${opts.mode} mode on channel ${opts.channel}`)
+      const radio = this.active_radios[opts.channel]
+      this.config.toggleRadioMode({
+        channel: opts.channel,
+        cmd: radio.preset_commands[opts.mode]
+      })
+      radio.issuePresetCommand(opts.mode)
     } else {
       this.stationLog(`invalid radio channel ${opts.channel}`)
     }

@@ -1,8 +1,7 @@
-import Leds from '../../hardware/bluseries-receiver/driver/leds.js'
-import { BluReceiver, BluReceiverTask } from '../../hardware/bluseries-receiver/blu-receiver.js'
-import BluFirmwareUpdater from '../../hardware/bluseries-receiver/blu-firmware-updater.js'
+import Leds from './driver/leds.js'
+import { BluReceiver, BluReceiverTask } from './blu-receiver.js'
+import BluFirmwareUpdater from './blu-firmware-updater.js'
 import fs from 'fs'
-import moment from 'moment'
 
 class BluReceiverManager extends BluReceiver {
     constructor(opts) {
@@ -14,9 +13,6 @@ class BluReceiverManager extends BluReceiver {
         this.blu_radios = opts.blu_radios
         this.blu_updater = new BluFirmwareUpdater({})
     }
-
-
-
 
     /**
  * 

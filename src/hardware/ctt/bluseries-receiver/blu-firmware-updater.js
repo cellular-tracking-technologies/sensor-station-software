@@ -1,5 +1,7 @@
 import fs from 'fs'
 
+const FirmwareDirectory = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin'
+
 class BluFirmwareUpdater {
 
 	constructor() {
@@ -22,19 +24,14 @@ class BluFirmwareUpdater {
 	}
 
 	readFirmwareFiles() {
-		this.file_list = fs.readdirSync('/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin')
+		this.file_list = fs.readdirSync(FirmwareDirectory)
 		return this.file_list
 	}
 
 	// async getCurrentFirmware(version) {
 	async getCurrentFirmware() {
 		try {
-			let file_list = this.readFirmwareFiles()
-			// console.log('firmware file list', file_list)
-			// this.current_firmware = file_list.find(file => file.substring(13, 20) == version)
-			// console.log('get current firmware version', version, 'first file', file_list[0].substring(13, 20))
-			// console.log('current firmware', this.current_firmware)
-			// return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.current_firmware
+			const file_list = this.readFirmwareFiles()
 
 			for (let i = 0; i < file_list.length; i++) {
 				for (let j = 1; j < file_list.length; j++) {
@@ -50,8 +47,7 @@ class BluFirmwareUpdater {
 						this.current_firmware = file_list[i]
 					}
 				}
-				return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.current_firmware
-
+				return FirmwareDirectory + this.current_firmware
 			}
 		} catch (e) {
 			console.error(e)
@@ -82,7 +78,7 @@ class BluFirmwareUpdater {
 				}
 
 				console.log('current firmware', this.current_firmware, 'new firmware', this.new_firmware)
-				return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.new_firmware
+				return FirmwareDirectory + this.new_firmware
 
 			}
 		} catch (e) {
@@ -95,7 +91,7 @@ class BluFirmwareUpdater {
 		this.readFirmwareFiles()
 		this.previous_firmware = this.file_list.find(e => e.substring(14, 19) < version)
 		console.log('revert firmware previous firmware', this.previous_firmware)
-		return '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + this.previous_firmware
+		return FirmwareDirectory + this.previous_firmware
 	}
 
 	async updateFirmwareFiles() {
