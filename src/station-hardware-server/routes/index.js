@@ -57,12 +57,12 @@ const get_about_info = () => {
 	} catch (err) {
 		// cannot read station software last update time
 	}
-	let station_id
-	try {
-		station_id = fs.readFileSync('/etc/ctt/station-id').toString().trim()
-	} catch (err) {
-		// cannot read station software last update time
-	}
+	// let station_id
+	// try {
+	// 	station_id = fs.readFileSync('/etc/ctt/station-id').toString().trim()
+	// } catch (err) {
+	// 	// cannot read station software last update time
+	// }
 	return {
 		bootcount: bootcount,
 		station_image: station_image,
@@ -81,6 +81,7 @@ router.get('/about', async (req, res, next) => {
 			info.bootcount = about_info.bootcount
 			info.station_image = about_info.station_image
 			info.station_software = about_info.station_software
+			info.station_id = StationInformation.Id
 			res.json(info)
 		})
 		.catch((err) => {
