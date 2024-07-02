@@ -23,7 +23,13 @@ class NodeHealthFormatter {
       'SolarCurrent',
       'CumulativeSolarCurrent',
       'Latitude',
-      'Longitude'
+      'Longitude',
+      'UpTime',
+      'AverageChargerCurrentMa',
+      'EnergyUsed',
+      'SdFree',
+      'Detections',
+      'Errors'
     ]
     this.date_format = opts.date_format
   }
@@ -64,21 +70,35 @@ class NodeHealthFormatter {
             record.data.lon ? record.data.lon / 1000000 : ''
           ]
         case MessageTypes.NodeBluHealth:
+          const {
+            up_time,
+            charge_ma_avg,
+            temp_batt,
+            energy_used,
+            sd_free,
+            detections,
+            errors,
+          } = record.data
           return [
             record.received_at.format(this.date_format),
             record.channel,
             node_id,
             record.meta.rssi,
             record.data.batt_mv / 100,
-            record.data.temp_batt,
+            temp_batt,
             recorded_at.format(this.date_format),
             null,
             null,
-            record.data.charge_ma_avg,
-            record.data.energy_used,
+            null,
+            null,
             record.data.lat ? record.data.lat / 1000000 : '',
             record.data.lon ? record.data.lon / 1000000 : '',
-            record.data.sd_free,
+            up_time,
+            charge_ma_avg,
+            energy_used,
+            sd_free,
+            detections,
+            errors,
           ]
       }
     } else {
