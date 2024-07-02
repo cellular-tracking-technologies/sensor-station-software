@@ -52,7 +52,7 @@ class BluStation {
  */
   async toggleBluState(opts) {
     // console.log('toggle blu state', opts)
-    await this.config.toggleRadioMode({
+    await this.config.toggleBluRadio({
       receiver_channel: opts.receiver_channel,
       poll_interval: opts.poll_interval,
       blu_radio_channel: opts.blu_radio_channel,
