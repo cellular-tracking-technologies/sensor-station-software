@@ -1,4 +1,3 @@
-import fs from 'fs'
 import { glob } from 'glob'
 import express from 'express'
 import icmp from 'icmp'
@@ -78,76 +77,40 @@ router.get('/disable-wifi', async (req, res) => {
   return res.status(200).send()
 })
 
-const getStatsForDir = (opts) => {
-  return new Promise((resolve, reject) => {
-    let bytes = 0;
-    glob(opts.dir, (err, files) => {
-      if (err) {
-        // can't read the directory - nothing to send
-        resolve({
-          bytes: 0,
-          filecount: 0
-        })
-        return;
-      }
-      files.forEach((file) => {
-        try {
-          let stats = fs.statSync(file);
-          bytes += stats.size;
-        } catch (err) {
-          reject(err);
-        }
-      });
-      resolve({
-        bytes: bytes,
-        file_count: files.length
-      });
-    });
-  });
-};
+const getStatsForDir = async (opts) => {
+  const { dir } = opts
+  const files = await glob(dir, { stat: true, withFileTypes: true })
+  const bytes = files.reduce((total, file) => total += file.size, 0)
+  return {
+    bytes: bytes,
+    file_count: files.length
+  }
+}
 
-const getPendingUploads = () => {
-  return new Promise((resolve, reject) => {
+const getPendingUploads = async () => {
+  const [ctt, sg] = await Promise.all([
+    getStatsForDir({ dir: '/data/rotated/*.gz' }),
+    getStatsForDir({ dir: '/data/SGdata/*/*.gz' }),
+  ])
+  return {
+    ctt,
+    sg,
+  }
+}
 
-    let promises = [
-      getStatsForDir({
-        delay: 0,
-        dir: '/data/rotated/*.gz'
-      }),
-      getStatsForDir({
-        delay: 61 * 60 * 1000,
-        dir: '/data/SGdata/*/*.gz',
-      })
-    ];
-    Promise.all(promises)
-      .then((results) => {
-        resolve({
-          ctt: results[0],
-          sg: results[1]
-        });
-      })
-      .catch((err) => {
-        console.error('something went wrong getting uploads');
-        console.error(err);
-        reject(err);
-      });
-  })
-};
-
-router.get('/pending-upload', (req, res, next) => {
-  getPendingUploads()
-    .then((info) => {
-      res.json(info);
+router.get('/pending-upload', async (req, res, next) => {
+  try {
+    const pending_uploads = await getPendingUploads()
+    res.json(pending_uploads)
+  } catch (err) {
+    console.error('error getting pending uploads')
+    console.error(err)
+    res.json({
+      bytes: -1,
+      file_count: -1
     })
-    .catch((err) => {
-      console.error('error getting pending uploads');
-      console.error(err);
-      res.json({
-        bytes: -1,
-        file_count: -1
-      })
-    });
-});
+  }
+})
 
 router.get('/wifi-networks', (req, res, next) => {
   const wifi = Wifi.GetCurrentNetwork()
