@@ -5,6 +5,7 @@ import StationIdInterface from './hardware/id-driver/station-id-interface.js'
 // Relavant system files
 const Files = {
     Image: '/etc/ctt/station-image',
+    Software: '/etc/ctt/station-software'
 }
 
 // parse station version / revision
@@ -17,6 +18,7 @@ const {
 
 // parse station image date
 const Image = new Date(fs.readFileSync(Files.Image).toString())
+const Software = new Date(fs.readFileSync(Files.Software).toString())
 
 export default Object.freeze({
     Image,
@@ -24,5 +26,6 @@ export default Object.freeze({
         Version,
         Revision,
         Id,
-    }
+    },
+    Software
 })

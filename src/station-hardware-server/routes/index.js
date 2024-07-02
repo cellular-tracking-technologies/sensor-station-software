@@ -80,7 +80,8 @@ router.get('/about', async (req, res, next) => {
 			let about_info = get_about_info()
 			info.bootcount = about_info.bootcount
 			info.station_image = about_info.station_image
-			info.station_software = about_info.station_software
+			// info.station_software = about_info.station_software
+			info.station_software = StationInformation.Software
 			info.station_id = StationInformation.Id
 			res.json(info)
 		})
