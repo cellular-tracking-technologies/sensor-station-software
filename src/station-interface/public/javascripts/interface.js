@@ -334,6 +334,19 @@ const initialize_controls = function () {
     })
   })
 
+  document.querySelectorAll('#bluRadioSwitch').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (document.querySelector('#blu-receiver').style.display !== 'none') {
+        document.querySelector('#blu-receiver').style.display = 'none'
+
+      } else {
+        document.querySelector('#blu-receiver').style.display = ''
+
+
+      }
+    })
+  })
+
   let tag_filter = document.getElementById("tag-filter")
 
   tag_filter.addEventListener('input', (e) => {
@@ -888,7 +901,7 @@ const handle_blu_dropped = function (data) {
   let channel_key = data.channel.toString()
   let dropped = data.blu_dropped
   if (blu_stats[port_key].channels[channel_key]) {
-  blu_stats[port_key].channels[channel_key].blu_dropped = dropped
+    blu_stats[port_key].channels[channel_key].blu_dropped = dropped
   }
   render_dropped_detections(blu_stats);
 }
