@@ -2,7 +2,6 @@
 import { Gpio } from 'onoff'
 import i2c from 'i2c-bus'
 import GpioMap from '../pi/gpio-map.js'
-console.log('GpioMap', GpioMap)
 
 class Ads7924 {
     constructor(i2c_port = 1, address = 0x48, reset_pin = GpioMap.ResetPin) {

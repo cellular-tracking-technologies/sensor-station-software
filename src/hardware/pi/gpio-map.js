@@ -1,5 +1,4 @@
 import System from '../../system.js'
-import OsInfo from './os.js'
 
 const { Version } = System.Hardware
 
@@ -58,7 +57,7 @@ const BullseyePins = {
 }
 
 // Identify which debian version we are running - GPIO numbers changed in Bookworm 
-const Pins = (OsInfo.Release > 11) ? BookwormPins : BullseyePins
+const Pins = (System.Os.Release > 11) ? BookwormPins : BullseyePins
 
 // Identify which Station Hardware Version we are using
 export default (Version >= 3) ? Pins.V3 : Pins.V2

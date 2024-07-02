@@ -1,11 +1,9 @@
 import express from 'express'
 import fs from 'fs'
 import path from 'path'
-import { ComputeModule } from './compute-module.js'
 import { fileURLToPath } from 'url'
-import StationInformation from '../../system.js'
-
-const ModuleInfo = new ComputeModule()
+import System from '../../system.js'
+import Os from '../../hardware/pi/os.js'
 
 const router = express.Router()
 const __filename = fileURLToPath(import.meta.url)
@@ -24,7 +22,7 @@ router.get('/', function (req, res, next) {
 })
 
 router.get('/id', function (req, res, next) {
-	res.json({ id: StationInformation.Hardware.Id })
+	res.json({ id: System.Hardware.Id })
 })
 
 /**
@@ -32,62 +30,27 @@ router.get('/id', function (req, res, next) {
  */
 router.get('/revision', async (req, res) => {
 	res.json({
-		revision: StationInformation.Hardware.Revision,
-		version: StationInformation.Hardware.Version,
+		revision: System.Hardware.Revision,
+		version: System.Hardware.Version,
 	})
 })
 
-const get_about_info = () => {
-	let bootcount
-	try {
-		bootcount = parseInt(fs.readFileSync('/etc/bootcount').toString().trim())
-	} catch (err) {
-		// error reading bootcount
-		bootcount = 0
-	}
-	let station_image
-	try {
-		station_image = fs.readFileSync('/etc/ctt/station-image').toString().trim()
-	} catch (err) {
-		// cannot read station image...
-	}
-	let station_software
-	try {
-		station_software = fs.readFileSync('/etc/ctt/station-software').toString().trim()
-	} catch (err) {
-		// cannot read station software last update time
-	}
-	// let station_id
-	// try {
-	// 	station_id = fs.readFileSync('/etc/ctt/station-id').toString().trim()
-	// } catch (err) {
-	// 	// cannot read station software last update time
-	// }
-	return {
-		bootcount: bootcount,
-		station_image: station_image,
-		station_software: station_software
-	}
-}
-
 router.get('/about', async (req, res, next) => {
-	await ModuleInfo.info()
-		// .then((info) => {
-		// 	// info.station_id = DEVICE_ID
-		// 	return info
-		// })
-		.then((info) => {
-			let about_info = get_about_info()
-			info.bootcount = about_info.bootcount
-			info.station_image = about_info.station_image
-			// info.station_software = about_info.station_software
-			info.station_software = StationInformation.Software
-			info.station_id = StationInformation.Id
-			res.json(info)
-		})
-		.catch((err) => {
-			res.json({ err: err.toString() })
-		})
+	const os_info = Os()
+	res.json({
+		station_id: System.Hardware.Id,
+		bootcount: System.BootCount,
+		station_image: System.Image,
+		station_software: os_info.software_update,
+		hardware: System.Module.Hardware,
+		serial: System.Module.Serial,
+		revision: System.Module.Revision,
+		loadavg_15min: os_info.loadavg_15min,
+		free_mem: os_info.free_mem,
+		total_mem: os_info.total_mem,
+		uptime: os_info.uptime,
+		disk_usage: os_info.disk_usage,
+	})
 })
 
 router.get('/node/version', function (req, res, next) {
