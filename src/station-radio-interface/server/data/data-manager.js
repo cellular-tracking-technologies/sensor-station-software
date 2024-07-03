@@ -106,7 +106,7 @@ class DataManager {
     if (beep.meta) {
       // expect new protocol
       switch (beep.meta.data_type) {
-        case 'blu_tag': {
+        case MessageTypes.BluTag: {
           record = this.loggers.blu.addRecord(beep)
           break
         }

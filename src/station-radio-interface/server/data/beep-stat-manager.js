@@ -174,7 +174,9 @@ class BeepStatManager {
    *  add node health report to health document for given node
    */
   addNodeHealth(record) {
+    console.log('add node health record', record)
     let channel = this.getChannel(record)
+    console.log('add node health channel', channel)
     let node_id = record.NodeId
     delete record.NodeId
     channel.nodes.health[node_id] = record

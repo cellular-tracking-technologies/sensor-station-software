@@ -13,6 +13,19 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
     div(class="row")
       div(class="col-lg-8")
         div(class="row")
+          h2 Nodes
+            table(class="table table-bordered table-sm table-dark" id="node-history")
+              tr(class="table-primary", style="color:#111")
+                th #
+                th Node ID
+                th Last Heard
+                th RSSI
+                th Battery
+                th Firmware
+                th Latitude
+                th Longitude 
+                th GPS Time
+            a(id="download-nodes", class="btn btn-primary btn-block") Download Node Table
 
     hr
     h2 Tag Filter
