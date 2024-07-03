@@ -618,29 +618,6 @@ const handle_stats = function (stats) {
                     reports[node_id] = record;
                 }
             });
-            n = 0;
-            let beeps, node_beeps, telemetry_beeps, blu_beeps;
-            Object.keys(channel_data.beeps).forEach(function (tag_id) {
-                n += channel_data.beeps[tag_id];
-            });
-            beeps = n;
-            n = 0;
-            Object.keys(channel_data.nodes.beeps).forEach(function (tag_id) {
-                n += channel_data.nodes.beeps[tag_id];
-            });
-            node_beeps = n;
-            n = 0;
-            Object.keys(channel_data.telemetry).forEach(function (tag_id) {
-                n += channel_data.telemetry[tag_id];
-            });
-            telemetry_beeps = n;
-
-            channel_stats[channel] = {
-                beeps: beeps,
-                node_beeps: node_beeps,
-                telemetry_beeps: telemetry_beeps,
-            };
-
         });
     };
     nodes = reports;
