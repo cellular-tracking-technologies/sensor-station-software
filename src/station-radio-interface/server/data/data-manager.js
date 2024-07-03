@@ -127,6 +127,7 @@ class DataManager {
         }
         case MessageTypes.NodeBluHealth: {
           record = this.loggers.node_health.addRecord(beep)
+          this.stats.addNodeHealth(record)
           break
         }
         case MessageTypes.Telemetry: {
