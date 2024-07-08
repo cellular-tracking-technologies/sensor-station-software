@@ -272,8 +272,6 @@ class BluReceiverManager extends BluReceiver {
      */
     async updateBluFirmware(radio_object) {
         let { radio: radio_channel, poll_interval } = radio_object
-        // let blu_version = blu_fw[radio_channel]
-        // console.log('update blu firmware version', blu_version)
         let firmware_list = this.blu_updater.readFirmwareFiles()
         let current_firmware = await this.blu_updater.getCurrentFirmware()
             .then((value) => { return value })
@@ -285,27 +283,16 @@ class BluReceiverManager extends BluReceiver {
         try {
             if (new_firmware !== current_firmware) {
                 console.log('Need to update blu firmware')
-
-                // let firmware_file = await this.blu_updater.getNewFirmware().then((value) => { return value }).catch((e) => { console.error(e) })
-                // let full_path = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin/' + firmware_file
                 console.log('firmware file from blu firmware updater class', new_firmware)
                 await this.getBluVersion(radio_channel)
-                // // await this.radioOff(radio_object)
-                // radio_object.beeps = await this.stopDetections(radio_object)
-                // radio_object.dropped = await this.stopStats(radio_object)
                 await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
                 await this.setBluDfu(radio_channel, new_firmware)
                 await this.rebootBluRadio(radio_channel)
-                setTimeout(() => {
-                    // this.schedule({
-                    //     task: BluReceiverTask.VERSION,
-                    //     radio_channel: radio_object.radio,
-                    // })
+                setTimeout(async () => {
+                    await this.getBluVersion(radio_channel)
+                    await this.blu_updater.updateFirmwareFiles()
                 }, 20000)
-                await this.getBluVersion(radio_channel)
-                // radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
-                // radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
-                await this.blu_updater.updateFirmwareFiles()
+
             } else {
                 console.log('Current firmware is latest version')
             }
@@ -322,31 +309,21 @@ class BluReceiverManager extends BluReceiver {
         console.log('blu fw channel version', blu_fw[radio_channel])
         let previous_firmware = this.blu_updater.revertFirmwareUpdate(blu_version)
         console.log('revert blu firmware previous firmware', previous_firmware)
-        // let firmware_list = this.blu_updater.readFirmwareFiles()
-        // let new_firmware = await this.blu_updater.getNewFirmware()
-        //     .then((value) => { return value })
-        //     .catch((e) => { console.error(e) })
 
-        // let previous_firmware = this.blu_updater.previous_firmware
         try {
 
             await this.getBluVersion(radio_channel)
-            // // await this.radioOff(radio_object)
-            // radio_object.beeps = await this.stopDetections(radio_object)
-            // radio_object.dropped = await this.stopStats(radio_object)
             await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
             await this.setBluDfu(radio_channel, previous_firmware)
             await this.rebootBluRadio(radio_channel)
-            setTimeout(() => {
-                // this.schedule({
-                //     task: BluReceiverTask.VERSION,
-                //     radio_channel: radio_object.radio,
-                // })
+
+            setTimeout(async () => {
+                await this.getBluVersion(radio_channel)
+                radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
+                radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
+                await this.blu_updater.updateFirmwareFiles()
             }, 20000)
-            await this.getBluVersion(radio_channel)
-            radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
-            radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
-            await this.blu_updater.updateFirmwareFiles()
+
 
         } catch (e) {
             console.error(e)
@@ -360,10 +337,9 @@ class BluReceiverManager extends BluReceiver {
      */
     async updateConfig(blu_receiver, blu_radio, poll_interval) {
         let station_config = JSON.parse(fs.readFileSync('/etc/ctt/station-config.json'))
-        let receiver_index = station_config.blu_receivers.findIndex(receiver => receiver.channel == blu_receiver.port)
-
-        let radio_index = station_config.blu_receivers[receiver_index].blu_radios.findIndex(radio => radio.radio == blu_radio)
-        station_config.blu_receivers[receiver_index].blu_radios[radio_index].poll_interval = poll_interval
+        let receiver = station_config.blu_receivers.find(receiver => receiver.channel == blu_receiver.port)
+        let radio = receiver.blu_radios.find(radio => radio.radio == blu_radio)
+        radio.poll_interval = poll_interval
 
         fs.writeFileSync('/etc/ctt/station-config.json',
             JSON.stringify(station_config, null, 2),
