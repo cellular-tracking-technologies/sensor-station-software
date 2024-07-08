@@ -365,11 +365,6 @@ class BluReceiverManager extends BluReceiver {
             console.error(e)
         }
     }
-
-    async hardReset() {
-        console.log('Resetting Blu Receiver')
-        await this.hard_reset()
-    }
 }
 
 export default BluReceiverManager

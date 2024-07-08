@@ -281,11 +281,6 @@ class BluReceiver extends EventEmitter {
     this.#data.io.clearlistener(eventType)
   }
 
-  async hard_reset() {
-    await this.#data.io.power_off()
-    // await new Promise(r => setTimeout(r, 10000));
-    // await this.#data.io.power_on()
-  }
 }
 
 export { BluReceiver, BluReceiverTask }
