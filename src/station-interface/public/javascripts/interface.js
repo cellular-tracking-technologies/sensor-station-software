@@ -1614,7 +1614,9 @@ const initialize_software_versions = function () {
 
 const render_gateway = function () {
   fetch('/internet-gateway')
-    .then(function (res) { return res.json() })
+    .then(function (res) {
+      return res.json()
+    })
     .then(function (json) {
       document.querySelector('#internet-gateway').textContent = json.gateway
     })
