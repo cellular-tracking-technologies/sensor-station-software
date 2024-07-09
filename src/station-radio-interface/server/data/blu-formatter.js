@@ -48,7 +48,7 @@ class BluFormatter {
           channel,
           moment(new Date(record.time)).utc().format(this.date_format),
           record.rssi,
-          record.id,
+          record.id.toUpperCase(),
           record.sync,
           record.product,
           record.revision,
