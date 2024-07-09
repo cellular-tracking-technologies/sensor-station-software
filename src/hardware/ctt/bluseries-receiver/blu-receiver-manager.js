@@ -123,7 +123,7 @@ class BluReceiverManager extends BluReceiver {
       console.error('Reboot Blu Radio Error', e)
       try {
 
-        for (i = 1; i < 3; i++) {
+        for (i = 1; i < 3; i++) { // if error try to reboot again three times, is this needed?
           return await this.schedule({
             task: BluReceiverTask.REBOOT,
             radio_channel,
@@ -282,13 +282,15 @@ class BluReceiverManager extends BluReceiver {
 
       let fw_string = this.firmware_dir + fw[0]
       await this.getBluVersion(radio_channel)
+      await this.stopDetections(radio_object)
+      await this.stopStats(radio_object)
       await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
       await this.setBluDfu(radio_channel, fw_string)
       await this.rebootBluRadio(radio_channel)
-      setTimeout(async () => {
-        await this.getBluVersion(radio_channel)
-        // await this.blu_updater.updateFirmwareFiles()
-      }, 20000)
+      // setTimeout(async () => {
+      //   await this.getBluVersion(radio_channel)
+      //   // await this.blu_updater.updateFirmwareFiles()
+      // }, 20000)
 
     } catch (e) {
       console.error('Update firmware error', e)
