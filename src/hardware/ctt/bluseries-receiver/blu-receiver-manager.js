@@ -11,8 +11,10 @@ class BluReceiverManager extends BluReceiver {
     this.path = opts.path
     this.port = opts.port
     this.blu_radios = opts.blu_radios
+    this.firmware_dir = 'src/hardware/ctt/bluseries-receiver/driver/bin/'
     // this.blu_updater = new BluFirmwareUpdater({})
     this.firmware = 'src/hardware/ctt/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+    // this.firmware
 
   }
 
@@ -276,11 +278,12 @@ class BluReceiverManager extends BluReceiver {
     let { radio: radio_channel, poll_interval } = radio_object
 
     try {
-      console.log('Need to update blu firmware')
-      console.log('firmware file from blu firmware updater class', this.firmware)
+      let fw = fs.readdirSync(this.firmware_dir)
+
+      let fw_string = this.firmware_dir + fw[0]
       await this.getBluVersion(radio_channel)
       await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
-      await this.setBluDfu(radio_channel, this.firmware)
+      await this.setBluDfu(radio_channel, fw_string)
       await this.rebootBluRadio(radio_channel)
       setTimeout(async () => {
         await this.getBluVersion(radio_channel)
