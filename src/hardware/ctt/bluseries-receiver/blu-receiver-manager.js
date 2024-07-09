@@ -282,8 +282,8 @@ class BluReceiverManager extends BluReceiver {
 
       let fw_string = this.firmware_dir + fw[0]
       await this.getBluVersion(radio_channel)
-      await this.stopDetections(radio_object)
-      await this.stopStats(radio_object)
+      // await this.stopDetections(radio_object)
+      // await this.stopStats(radio_object)
       await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
       await this.setBluDfu(radio_channel, fw_string)
       await this.rebootBluRadio(radio_channel)

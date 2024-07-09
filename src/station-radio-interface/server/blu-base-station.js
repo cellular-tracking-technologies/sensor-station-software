@@ -110,6 +110,11 @@ class BluStation {
           let poll_receiver = this.findBluReceiver(cmd)
           this.setBluReceiverState(poll_receiver)
           break
+        case ('blu_update_all'):
+          await this.bluRadiosUpdateFirmware(cmd)
+          // let update_receiver = this.findBluReceiver(cmd)
+          // this.setBluReceiverState(update_receiver)
+          break
         case ('toggle_blu'):
           if (cmd.data.type === 'blu_on') {
             let blu_on = await this.bluRadioOn(cmd)
@@ -590,6 +595,28 @@ class BluStation {
     })
 
     return all_poll
+  }
+
+  /**
+ * 
+ * @param {Object} cmd websocket command object
+ */
+  async bluRadiosUpdateFirmware(cmd) {
+    let all_update = this.findBluReceiver(cmd)
+    const radios_update = await Promise.all(all_update.blu_radios.map(async (radio) => {
+      let radio_channel = radio.radio
+      radio.beeps = await all_update.stopDetections(radio)
+      radio.dropped = await all_update.stopStats(radio)
+      radio.radio_state = 0
+
+      await all_update.updateBluFirmware(radio)
+
+    })).then((values) => {
+      console.log('all radios updated', values)
+    }).catch((e) => {
+      console.error('all radios off error', e)
+    })
+    return radios_update
   }
 
   /**
