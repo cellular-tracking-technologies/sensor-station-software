@@ -1,70 +1,32 @@
 import { glob } from 'glob'
 import express from 'express'
-import icmp from 'icmp'
-import { exec } from 'child_process'
 import Wifi from '../../hardware/pi/network/wifi.js'
+import NetworkConnection from '../../hardware/pi/network/connection.js'
 import RunCommand from '../../command.js'
 
 const router = express.Router();
-
-const DEFAULT_PING_COUNT = 3;
-const PING_IP = '8.8.8.8';
-
-const ping = function () {
-  return new Promise((resolve, reject) => {
-    icmp.send(PING_IP)
-      .then((ping_result) => {
-        resolve(ping_result.open);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  })
-}
 
 /**
  * get default route to the internet
  */
 router.get('/gateway', (req, res) => {
-  exec("ip route | grep default | awk '{ print $3 }' | xargs", (err, stdout, stderr) => {
-    if (err) {
-      console.error(err)
-      res.sendStatus(500)
-      return
-    }
-    res.send({ gateway: stdout.trim() })
-  })
+  res.json(NetworkConnection.Gateway())
 })
 
-router.get('/status', (req, res, next) => {
-  console.log('internet status', res)
-  let ping_success = 0;
-  let ping_loss = 0;
-  let ping_count = req.query.ping_count ? req.query.ping_count : DEFAULT_PING_COUNT;
-  // issue a ping to the given IP address
-  let promises = [];
-  for (let i = 0; i < ping_count; i++) {
-    promises.push(ping())
+router.get('/status', async (req, res) => {
+  const { ping_count } = req.query
+  try {
+    const { success, fail } = await NetworkConnection.Ping({ ping_count })
+    res.json({ success, fail })
+  } catch (err) {
+    console.error('error pinging server')
+    console.error(err)
+    res.json({
+      success: 0,
+      fail: ping_count,
+    })
   }
-  Promise.all(promises)
-    .then((results) => {
-      results.forEach((result) => {
-        result ? ping_success++ : ping_loss++;
-      });
-      return res.json({
-        success: ping_success,
-        fail: ping_loss
-      });
-    })
-    .catch((err) => {
-      console.log('something went wrong with ping status...');
-      console.error(err);
-      return res.json({
-        success: 0,
-        fail: ping_count
-      });
-    })
-});
+})
 
 router.get('/enable-wifi', async (req, res) => {
   await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-wifi.sh')
