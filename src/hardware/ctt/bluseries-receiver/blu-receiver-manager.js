@@ -76,7 +76,7 @@ class BluReceiverManager extends BluReceiver {
   async setBluLed(radio_channel, opts) {
 
 
-    return this.schedule({
+    return await this.schedule({
       task: BluReceiverTask.LEDS,
       radio_channel: radio_channel,
       data: {
@@ -96,7 +96,7 @@ class BluReceiverManager extends BluReceiver {
   async setBluDfu(radio_channel, firmware_file) {
     console.log('set blu dfu firmware', firmware_file)
     try {
-      this.schedule({
+      await this.schedule({
         task: BluReceiverTask.DFU,
         radio_channel,
         data: {
@@ -147,7 +147,7 @@ class BluReceiverManager extends BluReceiver {
     const { scan, rx_blink } = opts
     try {
       console.log('turning blu radio', radio_channel, opts.scan)
-      return this.schedule({
+      return await this.schedule({
         task: BluReceiverTask.CONFIG,
         radio_channel,
         data: {
@@ -175,7 +175,7 @@ class BluReceiverManager extends BluReceiver {
   async getBluStats(radio_channel, buffer_interval) {
     let poll_interval = buffer_interval ? buffer_interval : 10000
     try {
-      this.schedule({
+      await this.schedule({
         task: BluReceiverTask.STATS,
         radio_channel,
       })
@@ -282,13 +282,15 @@ class BluReceiverManager extends BluReceiver {
 
       let fw_string = this.firmware_dir + fw[0]
       await this.getBluVersion(radio_channel)
-      // await this.stopDetections(radio_object)
-      // await this.stopStats(radio_object)
+      radio_object.beeps = await this.stopDetections(radio_object)
+      radio_object.dropped = await this.stopStats(radio_object)
       await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
       await this.setBluDfu(radio_channel, fw_string)
-      await this.rebootBluRadio(radio_channel)
+      await this.setBluLed(Number(radio_channel), { led_state: 0, blink_rate: 0, blink_count: 0, })
+      radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
+      radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)
       // setTimeout(async () => {
-      //   await this.getBluVersion(radio_channel)
+      //   await this.rebootBluRadio(radio_channel)
       //   // await this.blu_updater.updateFirmwareFiles()
       // }, 20000)
 

@@ -604,10 +604,10 @@ class BluStation {
   async bluRadiosUpdateFirmware(cmd) {
     let all_update = this.findBluReceiver(cmd)
     const radios_update = await Promise.all(all_update.blu_radios.map(async (radio) => {
-      let radio_channel = radio.radio
-      radio.beeps = await all_update.stopDetections(radio)
-      radio.dropped = await all_update.stopStats(radio)
-      radio.radio_state = 0
+      // let radio_channel = radio.radio
+      // radio.beeps = await all_update.stopDetections(radio)
+      // radio.dropped = await all_update.stopStats(radio)
+      // radio.radio_state = 0
 
       await all_update.updateBluFirmware(radio)
 

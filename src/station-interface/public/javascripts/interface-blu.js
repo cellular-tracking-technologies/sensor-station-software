@@ -960,17 +960,17 @@ const build_blu_receiver = function (port) {
     div.appendChild(col_sm)
 
     // Create All Blu FW Updater Button
-    // col_sm = document.createElement('div')
-    // col_sm.setAttribute('class', 'col-sm')
-    // button = document.createElement('button')
-    // button.setAttribute('class', 'btn btn-lg btn-primary')
-    // button.setAttribute('name', 'all_radios_update')
-    // button.setAttribute('value', port)
-    // button.textContent = 'Update All Radio Firmware'
-    // col_sm.appendChild(button)
-    // div.appendChild(col_sm)
-    // h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
-    // wrapper.appendChild(h2)
+    col_sm = document.createElement('div')
+    col_sm.setAttribute('class', 'col-sm')
+    button = document.createElement('button')
+    button.setAttribute('class', 'btn btn-lg btn-primary')
+    button.setAttribute('name', 'all_radios_update')
+    button.setAttribute('value', port)
+    button.textContent = 'Update All Radio Firmware'
+    col_sm.appendChild(button)
+    div.appendChild(col_sm)
+    h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
+    wrapper.appendChild(h2)
 
     row.appendChild(div)
     wrapper.appendChild(row)
