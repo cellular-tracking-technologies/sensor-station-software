@@ -13,8 +13,8 @@ class BluReceiverManager extends BluReceiver {
     this.blu_radios = opts.blu_radios
     this.firmware_dir = 'src/hardware/ctt/bluseries-receiver/driver/bin/'
     // this.blu_updater = new BluFirmwareUpdater({})
-    this.firmware = 'src/hardware/ctt/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
-    // this.firmware
+    // this.firmware = 'src/hardware/ctt/bluseries-receiver/driver/bin/blu_adapter_v1.0.0+0.bin'
+    this.firmware
 
   }
 
@@ -276,16 +276,18 @@ class BluReceiverManager extends BluReceiver {
    */
   async updateBluFirmware(radio_object) {
     let { radio: radio_channel, poll_interval } = radio_object
-
+    let blu_updater = new BluFirmwareUpdater()
+    blu_updater.getNewFirmware()
+    this.firmware = blu_updater.new_firmware
     try {
-      let fw = fs.readdirSync(this.firmware_dir)
+      // let fw = fs.readdirSync(this.firmware_dir)
 
-      let fw_string = this.firmware_dir + fw[0]
+      // let fw_string = this.firmware_dir + fw[0]
       await this.getBluVersion(radio_channel)
       radio_object.beeps = await this.stopDetections(radio_object)
       radio_object.dropped = await this.stopStats(radio_object)
       await this.setBluLed(Number(radio_channel), { led_state: 2, blink_rate: 100, blink_count: -1, })
-      await this.setBluDfu(radio_channel, fw_string)
+      await this.setBluDfu(radio_channel, this.firmware)
       await this.setBluLed(Number(radio_channel), { led_state: 0, blink_rate: 0, blink_count: 0, })
       radio_object.beeps = await this.getDetections(radio_channel, poll_interval)
       radio_object.dropped = await this.getBluStats(radio_channel, poll_interval)

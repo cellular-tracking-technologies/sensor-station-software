@@ -1,119 +1,53 @@
 import fs from 'fs'
 
-const FirmwareDirectory = '/lib/ctt/sensor-station-software/src/hardware/bluseries-receiver/driver/bin'
+const FirmwareDirectory = 'src/hardware/ctt/bluseries-receiver/driver/bin/'
 
 class BluFirmwareUpdater {
 
-	constructor() {
-		this.file_list = []
-		this.previous_firmware
-		this.current_firmware
-		this.new_firmware
-	}
+  constructor() {
+    this.file_list = []
+    // this.previous_firmware
+    this.current_firmware
+    this.new_firmware
+  }
 
-	async checkIfFileExists(filepath) {
-		return new Promise((resolve) => {
-			fs.stat(filepath, (err, stats) => {
-				if (err) {
-					resolve(false)
-				} else {
-					resolve(true)
-				}
-			})
-		})
-	}
+  async checkIfFileExists(filepath) {
+    return new Promise((resolve) => {
+      fs.stat(filepath, (err, stats) => {
+        if (err) {
+          resolve(false)
+        } else {
+          resolve(true)
+        }
+      })
+    })
+  }
 
-	readFirmwareFiles() {
-		this.file_list = fs.readdirSync(FirmwareDirectory)
-		return this.file_list
-	}
+  readFirmwareFiles() {
+    this.file_list = fs.readdirSync(FirmwareDirectory)
+    return this.file_list
+  }
 
-	// async getCurrentFirmware(version) {
-	async getCurrentFirmware() {
-		try {
-			const file_list = this.readFirmwareFiles()
+  async getNewFirmware() {
+    let file_list = this.readFirmwareFiles()
 
-			for (let i = 0; i < file_list.length; i++) {
-				for (let j = 1; j < file_list.length; j++) {
-					if (file_list[j] < file_list[i]) {
-						console.log('file list i', file_list[i], 'file list j', file_list[j])
-						console.log('current firmware second in array', file_list[j])
-						this.current_firmware = file_list[j]
-					} else if (file_list[i] < file_list[j]) {
-						console.log('current firmware 1st in array', file_list[i])
-						this.current_firmware = file_list[i]
-					} else {
-						console.log('most recent file is current firmware file', file_list[i])
-						this.current_firmware = file_list[i]
-					}
-				}
-				return FirmwareDirectory + this.current_firmware
-			}
-		} catch (e) {
-			console.error(e)
-		}
-	}
+    try {
+      let arranged_list = file_list.reverse()
+      console.log('firmware arranged file list', arranged_list)
 
-	async getNewFirmware() {
-		let file_list = this.readFirmwareFiles()
+      this.new_firmware = FirmwareDirectory + arranged_list[0]
+      this.current_firmware = FirmwareDirectory + arranged_list[1]
+      console.log('new firmware file', this.new_firmware)
+      console.log('current firmware file', this.current_firmware)
 
-		try {
-			console.log('firmware file list', file_list)
-			for (let i = 0; i < file_list.length; i++) {
-				for (let j = 1; j < file_list.length; j++) {
-					if (file_list[j] > file_list[i]) {
-						console.log('file list i', file_list[i], 'file list j', file_list[j])
-						console.log('most recent firmware second in array', file_list[j])
-						this.new_firmware = file_list[j]
-						// return this.new_firmware
-					} else if (file_list[i] > file_list[j]) {
-						console.log('most recent firmware 1st in array', file_list[i])
-						this.new_firmware = file_list[i]
-						// return this.new_firmware
-					} else {
-						console.log('most recent file is oldest file', file_list[i])
-						this.new_firmware = file_list[j]
-						// return this.new_firmware
-					}
-				}
 
-				console.log('current firmware', this.current_firmware, 'new firmware', this.new_firmware)
-				return FirmwareDirectory + this.new_firmware
-
-			}
-		} catch (e) {
-			console.error(e)
-		}
-	}
-
-	revertFirmwareUpdate(version) {
-		console.log('incoming firmware file', version)
-		this.readFirmwareFiles()
-		this.previous_firmware = this.file_list.find(e => e.substring(14, 19) < version)
-		console.log('revert firmware previous firmware', this.previous_firmware)
-		return FirmwareDirectory + this.previous_firmware
-	}
-
-	async updateFirmwareFiles() {
-		this.previous_firmware = this.current_firmware
-		this.current_firmware = this.new_firmware
-	}
-
-	async checkFirmware(version) {
-		console.log('check firmware version', version)
-		this.readFirmwareFiles()
-		console.log('first fw file substring', this.file_list[0].substring(13, 20))
-
-		this.previous_firmware = this.file_list.find(e => e.substring(13, 20) < version)
-		console.log('previous firmware', this.previous_firmware)
-
-		this.current_firmware = this.file_list.find(e => e.substring(13, 20) == version)
-		console.log('current firmware', this.current_firmware)
-
-		this.new_firmware = this.file_list.find(e => e.substring(13, 20) > version)
-		console.log('new firmware', this.new_firmware)
-
-	}
+    } catch (e) {
+      console.error(e)
+    }
+  }
 }
+
+let blu_updater = new BluFirmwareUpdater()
+blu_updater.getNewFirmware()
 
 export default BluFirmwareUpdater
