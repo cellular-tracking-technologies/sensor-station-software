@@ -132,6 +132,9 @@ const initialize_controls = function () {
       cmd: 'upload',
     }));
     document.querySelector('#upload-files').setAttribute('disabled', true);
+    setTimeout(function () {
+      document.querySelector('#upload-files').removeAttribute('disabled');
+    }, 5000)
   });
   document.querySelector('#enable-modem').addEventListener('click', async function (e) {
     let res = window.confirm('Are you sure you want to enable the modem?');
