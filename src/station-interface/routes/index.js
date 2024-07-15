@@ -97,19 +97,20 @@ const prepareData = (filelist) => {
   })
 }
 
-router.get('/ctt-data-current', (req, res, next) => {
-  glob('/data/*.csv', (err, filelist) => {
-    if (filelist.length < 1) {
-      res.send('No data available')
-      return
-    }
-    prepareData(filelist).then((prepare_result) => {
-      let download_name = `ctt-data.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
-      res.download(TMP_FILE, download_name)
-    }).catch((err) => {
-      next(err)
-    })
+router.get('/ctt-data-current', async (req, res, next) => {
+  // glob('/data/*.csv', (err, filelist) => {
+  let filelist = await glob('/data/*.csv')
+  if (filelist.length < 1) {
+    res.send('No data available')
+    return
+  }
+  prepareData(filelist).then((prepare_result) => {
+    let download_name = `ctt-data.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
+    res.download(TMP_FILE, download_name)
+  }).catch((err) => {
+    next(err)
   })
+  // })
 })
 
 router.get('/ctt-logfile', async (req, res, next) => {
@@ -129,64 +130,68 @@ router.get('/ctt-logfile', async (req, res, next) => {
   // })
 })
 
-router.get('/sg-data-rotated', function (req, res, next) {
-  glob('/data/SGdata/*/*.gz', (err, filelist) => {
-    if (filelist.length < 1) {
-      res.send('Nothing to download yet')
-      return
-    }
-    prepareData(filelist).then((prepare_result) => {
-      let download_name = `sg-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
-      res.download(TMP_FILE, download_name)
-    }).catch((err) => {
-      res.send('ERROR processing download request ' + err)
-    })
+router.get('/sg-data-rotated', async (req, res, next) => {
+  let filelist = await glob('/data/SGdata/*/*.gz')
+  // glob('/data/SGdata/*/*.gz', (err, filelist) => {
+  if (filelist.length < 1) {
+    res.send('Nothing to download yet')
+    return
+  }
+  prepareData(filelist).then((prepare_result) => {
+    let download_name = `sg-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
+    res.download(TMP_FILE, download_name)
+  }).catch((err) => {
+    res.send('ERROR processing download request ' + err)
   })
+  // })
 })
 
-router.get('/sg-data-uploaded', function (req, res, next) {
-  glob('/data/uploaded/sg/*/*.gz', (err, filelist) => {
-    if (filelist.length < 1) {
-      res.send('Nothing to download yet')
-      return
-    }
-    prepareData(filelist).then((prepare_result) => {
-      let download_name = `sg-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
-      res.download(TMP_FILE, download_name)
-    }).catch((err) => {
-      res.send('ERROR processing download request ' + err)
-    })
+router.get('/sg-data-uploaded', async (req, res, next) => {
+  let filelist = await glob('/data/uploaded/sg/*/*.gz')
+  // glob('/data/uploaded/sg/*/*.gz', (err, filelist) => {
+  if (filelist.length < 1) {
+    res.send('Nothing to download yet')
+    return
+  }
+  prepareData(filelist).then((prepare_result) => {
+    let download_name = `sg-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
+    res.download(TMP_FILE, download_name)
+  }).catch((err) => {
+    res.send('ERROR processing download request ' + err)
   })
+  // })
 })
 
-router.get('/ctt-data-rotated', function (req, res, next) {
-  glob('/data/rotated/*.gz', (err, filelist) => {
-    if (filelist.length < 1) {
-      res.send('Nothing to download yet')
-      return
-    }
-    prepareData(filelist).then((prepare_result) => {
-      let download_name = `ctt-data-rotated.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
-      res.download(TMP_FILE, download_name)
-    }).catch((err) => {
-      res.send('ERROR processing download request ' + err)
-    })
+router.get('/ctt-data-rotated', async (req, res, next) => {
+  // glob('/data/rotated/*.gz', (err, filelist) => {
+  let filelist = await glob('/data/rotated/*.gz')
+  if (filelist.length < 1) {
+    res.send('Nothing to download yet')
+    return
+  }
+  prepareData(filelist).then((prepare_result) => {
+    let download_name = `ctt-data-rotated.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
+    res.download(TMP_FILE, download_name)
+  }).catch((err) => {
+    res.send('ERROR processing download request ' + err)
   })
+  // })
 })
 
-router.get('/ctt-data-uploaded', function (req, res, next) {
-  glob('/data/uploaded/ctt/*/*.gz', (err, filelist) => {
-    if (filelist.length < 1) {
-      res.send('Nothing to download yet')
-      return
-    }
-    prepareData(filelist).then((prepare_result) => {
-      let download_name = `ctt-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
-      res.download(TMP_FILE, download_name)
-    }).catch((err) => {
-      res.send('ERROR processing download request ' + err)
-    })
+router.get('/ctt-data-uploaded', async (req, res, next) => {
+  // glob('/data/uploaded/ctt/*/*.gz', (err, filelist) => {
+  let filelist = await glob('/data/uploaded/ctt/*/*.gz')
+  if (filelist.length < 1) {
+    res.send('Nothing to download yet')
+    return
+  }
+  prepareData(filelist).then((prepare_result) => {
+    let download_name = `ctt-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
+    res.download(TMP_FILE, download_name)
+  }).catch((err) => {
+    res.send('ERROR processing download request ' + err)
   })
+  // })
 })
 
 router.post('/delete-ctt-data-uploaded', async (req, res) => {
