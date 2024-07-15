@@ -112,19 +112,21 @@ router.get('/ctt-data-current', (req, res, next) => {
   })
 })
 
-router.get('/ctt-logfile', (req, res, next) => {
-  glob('/data/CTT-*-log.csv', (err, filelist) => {
-    if (filelist.length < 1) {
-      res.send('no log file to send')
-      return
-    }
-    prepareData(filelist).then((prepare_result) => {
-      let download_name = `ctt-log.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
-      res.download(TMP_FILE, download_name)
-    }).catch((err) => {
-      res.send('error preparing ctt log files ' + err)
-    })
+router.get('/ctt-logfile', async (req, res, next) => {
+  let filelist = await glob('/data/CTT-*-log.csv')
+  console.log('ctt logfile await', filelist)
+  // glob('/data/CTT-*-log.csv', (err, filelist) => {
+  if (filelist.length < 1) {
+    res.send('no log file to send')
+    return
+  }
+  prepareData(filelist).then((prepare_result) => {
+    let download_name = `ctt-log.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
+    res.download(TMP_FILE, download_name)
+  }).catch((err) => {
+    res.send('error preparing ctt log files ' + err)
   })
+  // })
 })
 
 router.get('/sg-data-rotated', function (req, res, next) {
@@ -209,10 +211,12 @@ router.post('/delete-sg-data-rotated', async (req, res) => {
   res.json({ res: true })
 })
 
-router.post('/clear-log/', (req, res, next) => {
-  let log_file = '/data/sensor-station.log'
-  if (fs.existsSync(log_file)) {
-    fs.unlinkSync(log_file)
+router.post('/clear-log/', async (req, res, next) => {
+  // let log_file = '/data/sensor-station.log'
+  let log_file = await glob('/data/CTT-*-log.csv')
+  console.log('log file', log_file)
+  if (fs.existsSync(log_file[0])) {
+    fs.unlinkSync(log_file[0])
     res.send(JSON.stringify({ res: true }))
     return
   }
