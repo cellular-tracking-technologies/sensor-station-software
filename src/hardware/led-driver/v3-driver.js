@@ -1,8 +1,6 @@
 import { Drive, Toggle } from '../io-expander/expander.js'
 import GpioMap from '../pi/gpio-map.js'
 
-const { GPS: Pins } = GpioMap
-
 class Led {
   #addr
   #interval
@@ -55,19 +53,19 @@ class Led {
 
 class GpsLed extends Led {
   constructor() {
-    super(Pins.GPS)
+    super(GpioMap.GPS)
   }
 }
 
 class DiagALed extends Led {
   constructor() {
-    super(Pins.A)
+    super(GpioMap.A)
   }
 }
 
 class DiagBLed extends Led {
   constructor() {
-    super(Pins.B)
+    super(GpioMap.B)
   }
 }
 
