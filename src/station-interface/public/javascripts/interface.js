@@ -1100,40 +1100,48 @@ const render_modem = function () {
   fetch('/modem-signal-strength')
     .then(function (res) { return res.json() })
     .then(function (json) {
-      let signal = json.signal
-      let state = json.state
 
-      if (state == "connected") {
+      if (json == null) {
+        document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-0')
+        document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
+        document.querySelector('.modem-path0').setAttribute('d', "M0 13.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
+      } else {
 
-        if (signal > 75) {
-          document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-4')
-          document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:#00d747;")
-          document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5z")
+        let signal = json.signal
+        let state = json.state
 
-        } else if (signal <= 75 && signal > 50) {
-          document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-3')
-          document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:#00d747;")
-          document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4 8a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
+        if (state == "connected") {
 
-        } else if (signal <= 50 && signal > 25) {
-          document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-2')
-          document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:#ffff00;")
-          document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4 5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
+          if (signal > 75) {
+            document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-4')
+            document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:#00d747;")
+            document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5z")
 
-        } else if (signal <= 25 && signal > 0) {
-          document.querySelector('#modem-icon').setAttribute('class', 'bi bi-recption-1')
-          document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
-          document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
+          } else if (signal <= 75 && signal > 50) {
+            document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-3')
+            document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:#00d747;")
+            document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4 8a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
 
-        } else if (signal == undefined) {
+          } else if (signal <= 50 && signal > 25) {
+            document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-2')
+            document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:#ffff00;")
+            document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4-3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4 5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
+
+          } else if (signal <= 25 && signal > 0) {
+            document.querySelector('#modem-icon').setAttribute('class', 'bi bi-recption-1')
+            document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
+            document.querySelector('.modem-path0').setAttribute('d', "M0 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm4 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
+
+          } else if (signal == undefined || signal == null) {
+            document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-0')
+            document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
+            document.querySelector('.modem-path0').setAttribute('d', "M0 13.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
+          }
+        } else {
           document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-0')
           document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
           document.querySelector('.modem-path0').setAttribute('d', "M0 13.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
         }
-      } else {
-        document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-0')
-        document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
-        document.querySelector('.modem-path0').setAttribute('d', "M0 13.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
       }
     })
     .catch(function (err) {
