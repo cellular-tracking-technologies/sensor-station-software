@@ -28,6 +28,7 @@ const validate = (opts) => {
   // check if it's an asterisk
   if (typeof (value) === 'string') {
     if (value.trim() === '*') return '*'
+    return Number(value)
   }
   // check if value is within range
   if (typeof (value) === 'number') {
@@ -87,6 +88,7 @@ export default Object.freeze({
     console.log(input_minute, input_hour, input_dom, input_mon, input_dow)
     let minute = validate({ value: input_minute, min: 0, max: 60 })
     minute = minute ? minute : DefaultRebootSchedule.Minute
+
     let hour = validate({ value: input_hour, min: 0, max: 24 })
     hour = hour ? hour : DefaultRebootSchedule.Hour
     let dom = validate({ value: input_dom, min: 1, max: 32 })
@@ -97,6 +99,7 @@ export default Object.freeze({
     dow = dow ? dow : DefaultRebootSchedule.Dow
 
     const when = `${minute} ${hour} ${dom} ${mon} ${dow}`
+    console.log(when)
     const script = REBOOT_TEMPLATE.replace(/WHEN/, when)
     console.log('writing file', script)
     const filename = '/tmp/update-reboot-schedule.sh'
