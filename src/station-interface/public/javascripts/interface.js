@@ -1689,6 +1689,11 @@ const initialize_reboot = function () {
           console.error('invalid response', res.status)
         }
       })
+    alert('Reboot Schedule Updated')
+
+    setTimeout(function () {
+      document.querySelector('#update-reboot-schedule').removeAttribute('disabled');
+    }, 5000)
   })
 
   fetch('/reboot-schedule')
