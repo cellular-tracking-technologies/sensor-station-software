@@ -55,7 +55,6 @@ class MenuManager {
 
     // Launch a custom view by way of submenu transition.
     let row = this.focus.getChild(this.scroller.getSelectedRow())
-    console.log('menu manager row', row)
     if (row.view != null) {
       this.focus = row
       // console.log('this view', this.view_())
@@ -72,7 +71,6 @@ class MenuManager {
   }
   back() {
     this.autoRefresh_(false)
-    console.log('back focus', this.focus)
     if (this.focus.parent_id != null) {
       this.focus = this.findMenuItem_(this.menu, this.focus.parent_id)
       this.scroller.init(this.focus.childrenNames())
