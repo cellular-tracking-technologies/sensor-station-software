@@ -162,7 +162,7 @@ class BeepStatManager {
     let blu_dropped = stats.dropped_detections
 
     let stats_obj = this.getBluPortAndChannel({ UsbPort: port, BluRadioId: channel }) // channel is not being produced?
-    console.log('addBluDroppedDetections stats_obj', stats_obj)
+    // console.log('addBluDroppedDetections stats_obj', stats_obj)
 
     let blu_stats = stats_obj.blu_dropped ? stats_obj.blu_dropped : 0
     this.blu_stats.blu_ports[port].channels[channel].blu_dropped += blu_dropped
