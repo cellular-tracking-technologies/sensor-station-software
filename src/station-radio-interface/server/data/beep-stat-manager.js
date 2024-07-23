@@ -69,8 +69,7 @@ class BeepStatManager {
  */
   getBluPortAndChannel(record) {
     let port = record.UsbPort.toString()
-    let channel = record.RadioId.toString()
-
+    let channel = record.BluRadioId.toString()
 
     if (Object.keys(this.blu_stats.blu_ports).includes(port)) {
 
@@ -134,15 +133,14 @@ class BeepStatManager {
    * @param {Object} record 
    */
   addBluBeep(record) {
-
     let port = record.UsbPort.toString()
-    let channel = record.RadioId.toString()
+    let channel = record.BluRadioId.toString()
     let blu_id = record.TagId.toString().toUpperCase();
 
     let stats_obj = this.getBluPortAndChannel(record) // channel is not being produced?
-
     let blu_stats
-    if (record.NodeId.length > 0) {
+    // if (record.NodeId.length > 0) {
+    if (record.NodeId !== null) {
       // from a node
       blu_stats = stats_obj.nodes.beeps
     } else {
@@ -163,7 +161,9 @@ class BeepStatManager {
     let channel = stats.radio_channel.toString()
     let blu_dropped = stats.dropped_detections
 
-    let stats_obj = this.getBluPortAndChannel({ UsbPort: port, RadioId: channel }) // channel is not being produced?
+    let stats_obj = this.getBluPortAndChannel({ UsbPort: port, BluRadioId: channel }) // channel is not being produced?
+    console.log('addBluDroppedDetections stats_obj', stats_obj)
+
     let blu_stats = stats_obj.blu_dropped ? stats_obj.blu_dropped : 0
     this.blu_stats.blu_ports[port].channels[channel].blu_dropped += blu_dropped
   }

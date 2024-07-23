@@ -12,6 +12,7 @@ class BluFormatter {
   constructor(opts) {
     this.header = [
       'UsbPort',
+      'BluRadioId',
       'RadioId',
       'Time',
       'TagRSSI',
@@ -21,6 +22,8 @@ class BluFormatter {
       'Revision',
       'NodeId',
       'Payload',
+      'Solar',
+      'Temp',
     ]
     this.date_format = opts.date_format
   }
@@ -46,28 +49,32 @@ class BluFormatter {
         return [
           port,
           channel,
+          null,
           moment(new Date(record.time)).utc().format(this.date_format),
           record.rssi,
           record.id.toUpperCase(),
           record.sync,
           record.product,
           record.revision,
-          '',
+          null,
           record.payload.raw.toString(),
+          record.payload.parsed.solar,
+          record.payload.parsed.temp,
         ]
       case MessageTypes.NodeBluData:
         const { rssi, id, sync } = record.data
         return [
+          null,
+          null,
           channel,
-          '',
           moment(new Date(record.data.rec_at * 1000)).utc().format(this.date_format),
           rssi,
           id,
           sync,
-          '',
-          '',
+          null,
+          null,
           meta.source.id,
-          '',
+          null,
         ]
       default:
         console.log('unexpected tag to format in blu formatter', meta)
