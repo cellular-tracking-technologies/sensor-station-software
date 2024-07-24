@@ -37,11 +37,16 @@ router.get('/signal-strength', (req, res) => {
 })
 
 router.get('/enable-modem', async (req, res) => {
-  await RunCommand('nmcli connection up station-modem')
+
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-modem.sh')
+  // await RunCommand('nmcli connection up station-modem')
+
   return res.status(200).send()
 })
 router.get('/disable-modem', async (req, res) => {
-  await RunCommand('nmcli connection down station-modem')
+  // await RunCommand('nmcli connection down station-modem')
+
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/disable-modem.sh')
   return res.status(200).send()
 })
 

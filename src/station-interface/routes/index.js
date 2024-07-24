@@ -395,11 +395,15 @@ router.post('/update-reboot-schedule', (req, res) => {
 })
 
 router.post('/modem/enable', async (req, res) => {
-  await RunCommand('nmcli connection up station-modem')
+  // await RunCommand('nmcli connection up station-modem')
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-modem.sh')
+
   return res.status(200).send()
 })
 router.post('/modem/disable', async (req, res) => {
-  await RunCommand('nmcli connection down station-modem')
+  // await RunCommand('nmcli connection down station-modem')
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/disable-modem.sh')
+
   return res.status(200).send()
 })
 
