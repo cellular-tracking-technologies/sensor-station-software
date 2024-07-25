@@ -6,42 +6,6 @@ import command from '../../command.js'
 
 const router = express.Router()
 
-// class WifiConfig {
-//   /**
-//    * 
-//    * @param {*} country 
-//    */
-//   constructor(country) {
-//     if (!country) {
-//       // default to US
-//       country = 'US'
-//     }
-//     this.country = country
-//     this.wpa_supplicant_location = '/etc/wpa_supplicant/wpa_supplicant.conf'
-//     this.wifi_header = `ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\ncountry=${country}\n`
-//   }
-
-//   /**
-//    * write wpa_supplicant.conf file - only supports 1 network at a time
-//    * @param {*} opts.ssid
-//    * @param {*} opts.psk
-//    */
-//   write(opts) {
-//     let valid_opts = false
-//     if (opts.ssid) {
-//       if (opts.psk) {
-//         valid_opts = true
-//       }
-//     }
-//     if (valid_opts) {
-//       console.log('station-hardware connecting to internet')
-
-//     } else {
-//       throw new Error('missing ssid and/or psk')
-//     }
-//   }
-// }
-
 const usb = new UsbStorage()
 
 /* GET home page. */
@@ -113,9 +77,10 @@ router.get('/wifi', function (req, res, next) {
       var data = JSON.parse(fs.readFileSync(path, 'utf8'))
       if (data.hasOwnProperty("psk")) {
         command(`sudo nmcli dev wifi connect ${data.ssid} password "${data.psk}"`)
+        command(`sudo nmcli c mod ${data.ssid} ipv4.method auto`)
       } else {
         command(`sudo nmcli dev wifi connect ${data.ssid}`)
-
+        command(`sudo nmcli c mod ${data.ssid} ipv4.method auto`)
       }
       // command('sudo rm /etc/wpa_supplicant/.wpa_supplicant.conf.swp') // remove bad lock file
 
