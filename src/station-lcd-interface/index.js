@@ -69,6 +69,9 @@ let items = new MenuItem('English', null, [
     new MenuItem("Bash Update", new BashUpdateTask(), [])
   ]),
   new MenuItem("Network", null, [
+    new MenuItem("Ip Address", new IpAddressTask(), []),
+    new MenuItem("Ping", new InternetTask(host), []),
+    new MenuItem("Hostname", new HostnameTask(), []),
     new MenuItem('WiFi', null, [
       new MenuItem("Enable Wifi", new EnableWifi(host), []),
       new MenuItem("Disable Wifi", new DisableWifi(host), []),
@@ -79,9 +82,7 @@ let items = new MenuItem('English', null, [
       new MenuItem("Ids", new CellularIds(host), []),
       new MenuItem("Carrier", new CellularCarrier(host), [])
     ]),
-    new MenuItem("Ping", new InternetTask(host), []),
-    new MenuItem("Hostname", new HostnameTask(), []),
-    new MenuItem("Ip Address", new IpAddressTask(), []),
+
   ]),
   new MenuItem("Server", new ServerConnectRequest(host), []),
   new MenuItem("Power", new SensorVoltageTask(host), []),
