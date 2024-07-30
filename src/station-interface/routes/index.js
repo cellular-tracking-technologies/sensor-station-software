@@ -309,7 +309,7 @@ router.post('/radio-restart', (req, res) => {
 
 router.post('/program-radios', async (req, res) => {
   fetch('http://localhost:3000/program-radios')
-    .then(async (data) => {
+    .then(() => {
       res.sendStatus(200)
     })
     .catch((err) => {

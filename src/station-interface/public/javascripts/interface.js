@@ -129,11 +129,10 @@ const initialize_controls = function () {
     if (result) {
       document.querySelector('#update-radios').setAttribute('disabled', true)
       const response = await fetch('/program-radios', { method: 'POST' })
-      console.log('update radios response', response)
       if (response.ok) {
         alert('434 Radios were updated to latest firmware')
       } else {
-        alert('error updating radio firmware', response)
+        alert('error updating radio firmware')
       }
       // $.ajax({
       //   url: '/program-radios',
