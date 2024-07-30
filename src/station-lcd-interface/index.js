@@ -104,8 +104,7 @@ let pt_items = await menu_translator.menuSwitchStrings('Portugues')
 let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
 
 let menu_languages = new MenuItem('Languages', null, [en_items, es_items, fr_items, pt_items, nl_items])
-// items.children.push(menu_languages)
-// console.log('menu with languages', items)
+
 /*
     Instantiate a menu manager that operates on a list of 
     menu items organized within a hierarchical structure.
