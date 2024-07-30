@@ -26,6 +26,8 @@ import { BashUpdateTask } from './tasks/bash-update.js'
 import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
 import { StandBy } from './standby.js'
+import { ProgramRadios } from './tasks/program-radios.js'
+
 
 /**
  * 
@@ -48,6 +50,7 @@ class MenuTranslator {
     const host = 'http://localhost:3000'
 
     this.items = new MenuItem(language, null, [
+      new MenuItem('Program Radios', new ProgramRadios(host), []),
       new MenuItem('Station Stats', new StandBy(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -68,6 +71,9 @@ class MenuTranslator {
         new MenuItem("Bash Update", new BashUpdateTask(), [])
       ]),
       new MenuItem("Network", null, [
+        new MenuItem("Ip Address", new IpAddressTask(), []),
+        new MenuItem("Ping", new InternetTask(host), []),
+        new MenuItem("Hostname", new HostnameTask(), []),
         new MenuItem('WiFi', null, [
           new MenuItem("Enable Wifi", new EnableWifi(host), []),
           new MenuItem("Disable Wifi", new DisableWifi(host), []),
@@ -78,9 +84,7 @@ class MenuTranslator {
           new MenuItem("Ids", new CellularIds(host), []),
           new MenuItem("Carrier", new CellularCarrier(host), [])
         ]),
-        new MenuItem("Ping", new InternetTask(host), []),
-        new MenuItem("Hostname", new HostnameTask(), []),
-        new MenuItem("Ip Address", new IpAddressTask(), []),
+
       ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),
       new MenuItem("Power", new SensorVoltageTask(host), []),

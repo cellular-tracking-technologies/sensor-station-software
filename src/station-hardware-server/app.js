@@ -9,6 +9,7 @@ import peripheralRouter from './routes/peripherals.js'
 import radioRouter from './routes/radio-server.js'
 import controlRouter from './routes/control.js'
 import ledRouter from './routes/led.js'
+import programRadiosRouter from './routes/program-radios.js'
 // import standByRouter from './routes/standby.js'
 
 var app = express()
@@ -26,6 +27,8 @@ app.use('/peripherals', peripheralRouter)
 app.use('/internet', internetRouter)
 app.use('/radio', radioRouter)
 app.use('/control', controlRouter)
+app.use('/program-radios', programRadiosRouter)
+
 // app.use('/standby', standByRouter)
 
 

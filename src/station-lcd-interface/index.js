@@ -23,6 +23,7 @@ import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
 import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
+import { ProgramRadios } from './tasks/program-radios.js'
 import { StandBy } from './standby.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
@@ -49,6 +50,7 @@ const host = 'http://localhost:3000'
 */
 
 let items = new MenuItem('English', null, [
+  new MenuItem('Program Radios', new ProgramRadios(host), []),
   new MenuItem('Station Stats', new StandBy(host), []),
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -90,12 +92,9 @@ let items = new MenuItem('English', null, [
   new MenuItem("Location", new GpsTask(host), []),
 ])
 
-// console.log('items', items)
-
 let menu_translator = new MenuTranslator()
 
 // let language_object = await menu_translator.translateMenu()
-// console.log('index language object', language_object)
 // await menu_translator.saveTranslatedMenus(language_object)
 
 let en_items = await menu_translator.menuSwitchStrings('English')
