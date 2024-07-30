@@ -16,7 +16,8 @@ class ProgramRadios {
                     return data
                 })
                 .then(res => {
-                    resolve([this.header, `R:${res.statusText}`])
+                    // resolve([this.header, `:${res.statusText}`])
+                    resolve([this.header, 'Radios updated to', 'latest firmware'])
                 })
                 .catch(error => {
                     resolve([this.header, `Could not program radios`])
