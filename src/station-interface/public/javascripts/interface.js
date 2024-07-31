@@ -134,16 +134,6 @@ const initialize_controls = function () {
       } else {
         alert('error updating radio firmware')
       }
-      // $.ajax({
-      //   url: '/program-radios',
-      //   method: 'post',
-      //   success: function (res) {
-      //     alert('434 Radios were updated to latest firmware.')
-      //   },
-      //   error: function (err) {
-      //     alert('error updating radio firmware')
-      //   }
-      // })
     }
     setTimeout(function () {
       document.querySelector('#update-radios').removeAttribute('disabled');

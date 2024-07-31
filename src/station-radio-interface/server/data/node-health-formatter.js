@@ -84,7 +84,7 @@ class NodeHealthFormatter {
             record.channel,
             node_id,
             record.meta.rssi,
-            record.data.batt_mv / 100,
+            record.data.batt_mv / 1000,
             temp_batt,
             recorded_at.format(this.date_format),
             null,
