@@ -424,6 +424,7 @@ const format_beep = function (beep) {
         rssi = beep.data.rssi
         tag_id = beep.data.id
         tag_at = moment(new Date(beep.data.rec_at * 1000)).utc();
+        data_type = 'node_blue'
 
       }
       if (beep.meta.data_type == 'node_coded_id') {
@@ -704,6 +705,8 @@ const handle_tag_beep = function (beep) {
 
   if (validated == true) {
     tr.style.border = "2px solid #22dd22";
+  } else if (beep?.data_type == 'node_blue') {
+    tr.style.border = "2px solid blue"
   } else {
     tr.style.border = "2px solid red";
   }
