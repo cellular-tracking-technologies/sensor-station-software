@@ -57,7 +57,7 @@ class NodeHealthFormatter {
           return [
             record.received_at.format(this.date_format),
             record.channel,
-            node_id,
+            node_id.toString(),
             record.meta.rssi,
             record.data.bat_v / 100,
             record.data.temp_c,
@@ -67,7 +67,7 @@ class NodeHealthFormatter {
             record.data.sol_ma,
             record.data.sum_sol_ma,
             record.data.lat ? record.data.lat / 1000000 : '',
-            record.data.lon ? record.data.lon / 1000000 : ''
+            record.data.lon ? record.data.lon / 1000000 : '',
           ]
         case MessageTypes.NodeBluHealth:
           const {
@@ -82,7 +82,7 @@ class NodeHealthFormatter {
           return [
             record.received_at.format(this.date_format),
             record.channel,
-            node_id,
+            node_id.toString(),
             record.meta.rssi,
             record.data.batt_mv / 1000,
             temp_batt,
@@ -120,7 +120,7 @@ class NodeHealthFormatter {
         '',
         '',
         '',
-        ''
+        '',
       ]
       return fields
     }

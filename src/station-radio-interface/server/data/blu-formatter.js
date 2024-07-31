@@ -22,8 +22,6 @@ class BluFormatter {
       'Revision',
       'NodeId',
       'Payload',
-      'Solar',
-      'Temp',
     ]
     this.date_format = opts.date_format
   }
@@ -43,7 +41,6 @@ class BluFormatter {
    */
   formatRecord(record) {
     const { meta, port, channel } = record
-
     switch (meta?.data_type) {
       case MessageTypes.BluTag:
         return [
@@ -58,8 +55,6 @@ class BluFormatter {
           record.revision,
           null,
           record.payload.raw.toString(),
-          record.payload.parsed.solar,
-          record.payload.parsed.temp,
         ]
       case MessageTypes.NodeBluData:
         const { rssi, id, sync } = record.data

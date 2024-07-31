@@ -210,7 +210,7 @@ class BluStation {
               beep.vcc = solar
               beep.temp = temp
               this.broadcast(JSON.stringify(beep))
-              this.data_manager.handleBluBeep(beep)
+              this.data_manager.handleRadioBeep(beep)
               let blu_beep_sum = this.data_manager.stats.blu_stats.blu_ports[beep.port.toString()].channels[beep.channel.toString()].beeps
               let blu_sum = {
                 port: blu_receiver.port,

@@ -419,6 +419,13 @@ const format_beep = function (beep) {
         vcc = beep.vcc
         temp = beep.temp
       }
+      if (beep.meta.data_type == 'node_blue') {
+        node_id = beep.meta.source.id
+        rssi = beep.data.rssi
+        tag_id = beep.data.id
+        tag_at = moment(new Date(beep.data.rec_at * 1000)).utc();
+
+      }
       if (beep.meta.data_type == 'node_coded_id') {
         node_id = beep.meta.source.id;
         rssi = beep.data.rssi;
@@ -526,6 +533,9 @@ const handle_beep = function (beep) {
         handle_blu_beep(format_beep(beep));
         poll_interval = beep.poll_interval;
         break;
+      case 'node_blue':
+        handle_tag_beep(format_beep(beep))
+        break
       default:
         break;
     }
@@ -993,10 +1003,11 @@ const render_nodes = function (reports) {
   let report;
   let tr, td;
   Object.keys(reports).forEach(function (node_id, i) {
+    console.log('render nodes', node_id)
     report = reports[node_id];
     tr = document.createElement('tr');
     tr.appendChild(createElement(i + 1));
-    tr.appendChild(createElement(node_id));
+    tr.appendChild(createElement(node_id.toString()));
     tr.appendChild(createElement(moment(report.Time).format(DATE_FMT)));
     tr.appendChild(createElement(report.NodeRSSI));
     tr.appendChild(createElement(report.Battery));

@@ -69,8 +69,8 @@ class DataManager {
         })
       }),
       blu: new Logger({
-        fileuri: this.file_manager.getFileUri('ble'), // getting same raw data as radio beeps and using conditionals
-        suffix: 'ble', // try ble suffix and if that doesn't work, switch to raw-data
+        fileuri: this.file_manager.getFileUri('blu'), // getting same raw data as radio beeps and using conditionals
+        suffix: 'blu',
         formatter: new BluFormatter({
           date_format: this.date_format
         })
@@ -108,6 +108,7 @@ class DataManager {
       switch (beep.meta.data_type) {
         case MessageTypes.BluTag: {
           record = this.loggers.blu.addRecord(beep)
+          this.stats.addBluBeep(record)
           break
         }
         case MessageTypes.CodedId: {
@@ -136,6 +137,7 @@ class DataManager {
           break
         }
         case MessageTypes.NodeBluData: {
+          // console.log('data manager node blu beep', beep)
           record = this.loggers.blu.addRecord(beep)
           break
         }

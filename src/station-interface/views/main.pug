@@ -19,7 +19,7 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
             tr(class="table-primary", style="color:#111")
               th #
               th Node ID
-              th Last Heard
+              th Time Since
               th RSSI
               th Battery
               th Firmware
@@ -115,6 +115,10 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
             th Station Image
             td
               span(id="station-image")
+          tr
+            th Update Radio Firmware
+            td(colspan=2)
+              button(class="btn btn-sm btn-primary btn-block", id="update-radios") Update Radio Firmware
 
         div(class="row")
           div(class="col-sm")
@@ -187,10 +191,6 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
             th Radio Data Server Restart
             td(colspan=2)
               button(class="btn btn-sm btn-primary btn-block", id="restart-radios") Restart Radio Software
-          tr
-            th Update Radio Firmware
-            td(colspan=2)
-              button(class="btn btn-sm btn-primary btn-block", id="update-radios") Update Radio Firmware
         h2 Display Control
         p Limit radio tables to a set number of rows.
         table(class="table table-bordered table-sm table-dark")
