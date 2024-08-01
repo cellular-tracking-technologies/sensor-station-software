@@ -1005,12 +1005,13 @@ const render_nodes = function (reports) {
   }
   let report;
   let tr, td;
+  let node_id_padded
   Object.keys(reports).forEach(function (node_id, i) {
-    console.log('render nodes', node_id)
     report = reports[node_id];
+    node_id_padded = report.Firmware === null ? node_id.padStart(8, '0') : node_id
     tr = document.createElement('tr');
     tr.appendChild(createElement(i + 1));
-    tr.appendChild(createElement(node_id.toString()));
+    tr.appendChild(createElement(node_id_padded));
     tr.appendChild(createElement(moment(report.Time).format(DATE_FMT)));
     tr.appendChild(createElement(report.NodeRSSI));
     tr.appendChild(createElement(report.Battery));
