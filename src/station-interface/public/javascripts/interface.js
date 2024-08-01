@@ -706,7 +706,7 @@ const handle_tag_beep = function (beep) {
   if (validated == true) {
     tr.style.border = "2px solid #22dd22";
   } else if (beep?.data_type == 'node_blue') {
-    tr.style.border = "2px solid blue"
+    tr.style.border = "2px solid #007FFF"
   } else {
     tr.style.border = "2px solid red";
   }
