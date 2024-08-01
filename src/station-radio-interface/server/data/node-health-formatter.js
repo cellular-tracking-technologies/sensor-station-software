@@ -88,7 +88,7 @@ class NodeHealthFormatter {
           return [
             record.received_at.format(this.date_format),
             record.channel,
-            node_id.toString(),
+            node_id.padStart(8, '0'),
             record.meta.rssi,
             record.data.batt_mv / 1000,
             temp_batt,
