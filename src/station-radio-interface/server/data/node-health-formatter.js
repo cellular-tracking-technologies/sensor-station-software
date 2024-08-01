@@ -68,6 +68,12 @@ class NodeHealthFormatter {
             record.data.sum_sol_ma,
             record.data.lat ? record.data.lat / 1000000 : '',
             record.data.lon ? record.data.lon / 1000000 : '',
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
           ]
         case MessageTypes.NodeBluHealth:
           const {
