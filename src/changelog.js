@@ -45,8 +45,11 @@ export default [
             'Dynamic blu-receiver instantiation and display',
             'Individual blu-receiver and blu-radio control',
         ],
+        changes: [],
         bugs: [
             'Fixed multiple radio instantiation.',
         ],
+        removed: [],
+        fixed: [],
         security: [],
     }]
