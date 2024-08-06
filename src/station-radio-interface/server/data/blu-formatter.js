@@ -54,7 +54,7 @@ class BluFormatter {
           record.product,
           record.revision,
           null,
-          record.payload.raw.toString(),
+          record.payload.raw.toString().toUpperCase(),
         ]
       case MessageTypes.NodeBluData:
         const { rssi, id, sync } = record.data
