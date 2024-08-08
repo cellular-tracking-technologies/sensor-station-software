@@ -75,7 +75,7 @@ class MenuTranslator {
         new MenuItem("Ip Address", new IpAddressTask(), []),
         new MenuItem("Ping", new InternetTask(host), []),
         new MenuItem("Hostname", new HostnameTask(), []),
-        new MenuItem('WiFi', null, [
+        new MenuItem(`WiFi-${language}`, null, [
           new MenuItem("Enable Wifi", new EnableWifi(host), []),
           new MenuItem("Disable Wifi", new DisableWifi(host), []),
         ]),
@@ -85,7 +85,7 @@ class MenuTranslator {
           new MenuItem("Ids", new CellularIds(host), []),
           new MenuItem("Carrier", new CellularCarrier(host), [])
         ]),
-        new MenuItem('P2P', null, [
+        new MenuItem(`P2P-${language}`, null, [
           new MenuItem('Enable P2P', new EnableP2P(host), []),
           new MenuItem('Disable P2P', new DisableP2P(host), []),
         ])
