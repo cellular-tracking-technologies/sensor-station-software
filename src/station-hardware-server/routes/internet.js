@@ -39,6 +39,18 @@ router.get('/disable-wifi', async (req, res) => {
   return res.status(200).send()
 })
 
+router.get('/enable-p2p', async (req, res) => {
+  await RunCommand('sudo nmcli con add type ethernet con-name p2p ipv4.method link-local')
+  await RunCommand('sudo systemctl restart NetworkManager')
+  return res.status(200).send()
+})
+
+router.get('/disable-p2p', async (req, res) => {
+  await RunCommand('sudo nmcli con delete p2p')
+  await RunCommand('sudo systemctl restart NetworkManager')
+  return res.status(200).send()
+})
+
 const getStatsForDir = async (opts) => {
   const { dir } = opts
   const files = await glob(dir, { stat: true, withFileTypes: true })

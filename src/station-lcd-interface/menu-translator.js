@@ -25,6 +25,7 @@ import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
 import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
+import { EnableP2P, DisableP2P } from './tasks/enable-disable-p2p-task.js'
 import { StandBy } from './standby.js'
 import { ProgramRadios } from './tasks/program-radios.js'
 
@@ -84,6 +85,10 @@ class MenuTranslator {
           new MenuItem("Ids", new CellularIds(host), []),
           new MenuItem("Carrier", new CellularCarrier(host), [])
         ]),
+        new MenuItem('P2P', null, [
+          new MenuItem('Enable P2P', new EnableP2P(host), []),
+          new MenuItem('Disable P2P', new DisableP2P(host), []),
+        ])
 
       ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),

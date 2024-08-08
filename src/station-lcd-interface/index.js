@@ -23,6 +23,7 @@ import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
 import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
+import { EnableP2P, DisableP2P } from './tasks/enable-disable-p2p-task.js'
 import { ProgramRadios } from './tasks/program-radios.js'
 import { StandBy } from './standby.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
@@ -94,8 +95,8 @@ let items = new MenuItem('English', null, [
 
 let menu_translator = new MenuTranslator()
 
-// let language_object = await menu_translator.translateMenu()
-// await menu_translator.saveTranslatedMenus(language_object)
+let language_object = await menu_translator.translateMenu()
+await menu_translator.saveTranslatedMenus(language_object)
 
 let en_items = await menu_translator.menuSwitchStrings('English')
 let es_items = await menu_translator.menuSwitchStrings('Espagnol')
