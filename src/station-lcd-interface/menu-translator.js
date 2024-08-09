@@ -46,7 +46,7 @@ class MenuTranslator {
     this.language_array = ['English', 'Espagnol', 'Francais', 'Portugues', 'Nederlands']
   }
 
-  async createItems(language) {
+  async createItems(language, lang_string) {
 
     const host = 'http://localhost:3000'
 
@@ -75,7 +75,7 @@ class MenuTranslator {
         new MenuItem("Ip Address", new IpAddressTask(), []),
         new MenuItem("Ping", new InternetTask(host), []),
         new MenuItem("Hostname", new HostnameTask(), []),
-        new MenuItem(`WiFi-${language}`, null, [
+        new MenuItem(`WiFi-${lang_string}`, null, [
           new MenuItem("Enable Wifi", new EnableWifi(host), []),
           new MenuItem("Disable Wifi", new DisableWifi(host), []),
         ]),
@@ -85,7 +85,7 @@ class MenuTranslator {
           new MenuItem("Ids", new CellularIds(host), []),
           new MenuItem("Carrier", new CellularCarrier(host), [])
         ]),
-        new MenuItem(`P2P-${language}`, null, [
+        new MenuItem(`P2P-${lang_string}`, null, [
           new MenuItem('Enable P2P', new EnableP2P(host), []),
           new MenuItem('Disable P2P', new DisableP2P(host), []),
         ])
@@ -108,7 +108,6 @@ class MenuTranslator {
   async translateMenu() {
     for await (let language of this.language_array) {
 
-      await this.createItems(language)
 
       switch (language) {
         case 'English':
@@ -130,6 +129,8 @@ class MenuTranslator {
           this.lang_string = 'en'
           break
       }
+
+      await this.createItems(language, this.lang_string)
 
       this.items.id = language
       for await (let child of this.items.children) {

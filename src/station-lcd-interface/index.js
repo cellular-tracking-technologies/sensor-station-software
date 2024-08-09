@@ -95,7 +95,8 @@ let items = new MenuItem('English', null, [
 
 let menu_translator = new MenuTranslator()
 
-// Uncomment the following lines to get an updated translated menus
+/**Uncomment the following lines to get an updated translated menus**/
+
 // let language_object = await menu_translator.translateMenu()
 // await menu_translator.saveTranslatedMenus(language_object)
 
