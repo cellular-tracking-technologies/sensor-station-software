@@ -108,7 +108,6 @@ class MenuTranslator {
   async translateMenu() {
     for await (let language of this.language_array) {
 
-
       switch (language) {
         case 'English':
           this.lang_string = 'en'

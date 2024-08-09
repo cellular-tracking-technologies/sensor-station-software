@@ -50,7 +50,21 @@ const host = 'http://localhost:3000'
     Note: All menu items must have unique names!
 */
 
-let items = new MenuItem('English', null, [
+let menu_translator = new MenuTranslator()
+
+/**Uncomment the following lines to get an updated translated menus**/
+
+// let language_object = await menu_translator.translateMenu()
+// await menu_translator.saveTranslatedMenus(language_object)
+
+// let en_items = await menu_translator.menuSwitchStrings('English')
+let es_items = await menu_translator.menuSwitchStrings('Espagnol')
+let fr_items = await menu_translator.menuSwitchStrings('Francais')
+let pt_items = await menu_translator.menuSwitchStrings('Portugues')
+let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
+
+
+let items = new MenuItem('main', null, [
   new MenuItem('Program Radios', new ProgramRadios(host), []),
   new MenuItem('Station Stats', new StandBy(host), []),
   new MenuItem("File Transfer", null, [
@@ -91,22 +105,11 @@ let items = new MenuItem('English', null, [
   new MenuItem("Power", new SensorVoltageTask(host), []),
   new MenuItem("Temperature", new SensorTemperatureTask(host), []),
   new MenuItem("Location", new GpsTask(host), []),
+  new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
 ])
 
-let menu_translator = new MenuTranslator()
 
-/**Uncomment the following lines to get an updated translated menus**/
 
-// let language_object = await menu_translator.translateMenu()
-// await menu_translator.saveTranslatedMenus(language_object)
-
-let en_items = await menu_translator.menuSwitchStrings('English')
-let es_items = await menu_translator.menuSwitchStrings('Espagnol')
-let fr_items = await menu_translator.menuSwitchStrings('Francais')
-let pt_items = await menu_translator.menuSwitchStrings('Portugues')
-let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
-
-let menu_languages = new MenuItem('Languages', null, [en_items, es_items, fr_items, pt_items, nl_items])
 
 /*
     Instantiate a menu manager that operates on a list of 
@@ -119,8 +122,7 @@ let menu_languages = new MenuItem('Languages', null, [en_items, es_items, fr_ite
         D) back()   - Exits a dir within a menu.
 */
 
-let menu = new MenuManager(menu_languages)
-// let menu = new MenuManager(items)
+let menu = new MenuManager(items)
 menu.init()
 
 /*
