@@ -1,6 +1,5 @@
 import fetch from 'node-fetch'
 import url from 'url'
-import { exec } from 'child_process'
 
 import Network from '../hardware/pi/network/index.js'
 import display from './display-driver.js'
@@ -15,7 +14,7 @@ class StandBy {
   constructor(base_url, refresh = 300000) {
     this.volt_url = url.resolve(base_url, 'sensor/voltages')
     this.temp_url = url.resolve(base_url, 'sensor/temperature')
-
+    this.p2p = url.resolve(base_url, 'internet/p2p')
     this.autoRefresh = refresh
   }
   loading() {

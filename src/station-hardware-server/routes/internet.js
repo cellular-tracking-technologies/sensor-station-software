@@ -39,14 +39,19 @@ router.get('/disable-wifi', async (req, res) => {
   return res.status(200).send()
 })
 
+// router.get('/p2p', async (req, res) => {
+//   await RunCommand('nmcli device status | grep ")
+// })
+
 router.get('/enable-p2p', async (req, res) => {
-  await RunCommand('sudo nmcli con add type ethernet con-name p2p ipv4.method link-local')
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-p2p.sh')
   await RunCommand('sudo systemctl restart NetworkManager')
   return res.status(200).send()
 })
 
 router.get('/disable-p2p', async (req, res) => {
-  await RunCommand('sudo nmcli con delete p2p')
+  // await RunCommand('sudo nmcli con delete p2p')
+  await RunCommand('sudo rm /etc/NetworkManager/system-connections/p2p*')
   await RunCommand('sudo systemctl restart NetworkManager')
   return res.status(200).send()
 })
