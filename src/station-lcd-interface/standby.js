@@ -1,5 +1,6 @@
 import fetch from 'node-fetch'
 import url from 'url'
+import { execSync } from 'child_process'
 
 import Network from '../hardware/pi/network/index.js'
 import display from './display-driver.js'
@@ -14,7 +15,7 @@ class StandBy {
   constructor(base_url, refresh = 300000) {
     this.volt_url = url.resolve(base_url, 'sensor/voltages')
     this.temp_url = url.resolve(base_url, 'sensor/temperature')
-    this.p2p = url.resolve(base_url, 'internet/p2p')
+    // this.p2p_url = url.resolve(base_url, 'internet/p2p')
     this.autoRefresh = refresh
   }
   loading() {
@@ -23,28 +24,46 @@ class StandBy {
   }
   async results() {
     try {
-      const [voltages, temperature] = await Promise.all([
+      const [voltages, temperature,] = await Promise.all([
         fetch(this.volt_url),
         fetch(this.temp_url),
-      ]).then(([voltages, temperature]) => {
+        // fetch(this.p2p_url),
+      ]).then(([voltages, temperature,]) => {
         return [
           voltages.json(),
           temperature.json(),
+          // p2p.json(),
         ]
       })
-
+      // console.log('results p2p', p2p)
       await this.getSolarVoltage(await voltages)
       await this.getBattVoltage(await voltages)
       await this.getTempValues(await temperature)
 
       const network = Network.Wifi.GetCurrentNetwork()
       const modem = Network.Modem.info()
+      const p2p = execSync('find /etc/NetworkManager/system-connections/ -name p2p* | wc -l').toString()
+
       const wifi_signal = network && network.connected == true ? network.signal : undefined
       const modem_signal = modem && modem.state == 'connected' ? modem.signal : undefined
+
       await this.createWifiChar(wifi_signal)
       await this.createCellChar(modem_signal)
+      await this.displayP2P(p2p)
     } catch (err) {
       console.error('lcd client error', err)
+    }
+  }
+
+  async displayP2P(p2p) {
+    console.log('display p2p', p2p)
+    display.lcd.setCursor(0, 2)
+    if (p2p > 0) {
+      display.lcd.print('P2P')
+    } else {
+      display.lcd.setCursor(0, 2)
+      display.lcd.print('Ethernet')
+
     }
   }
 

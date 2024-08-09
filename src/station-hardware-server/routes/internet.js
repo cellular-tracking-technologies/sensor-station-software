@@ -40,7 +40,8 @@ router.get('/disable-wifi', async (req, res) => {
 })
 
 // router.get('/p2p', async (req, res) => {
-//   await RunCommand('nmcli device status | grep ")
+//   const p2p = await RunCommand('/bin/bash find /etc/NetworkManager/system-connections/ -name p2p* | wc -l')
+//   res.json(p2p)
 // })
 
 router.get('/enable-p2p', async (req, res) => {
