@@ -28,8 +28,6 @@ import { ProgramRadios } from './tasks/program-radios.js'
 import { StandBy } from './standby.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
-// import { en_items, es_items } from './translated-menus.js'
-
 const { Buttons: ButtonMap } = GpioMap
 
 // Require Statements
@@ -63,17 +61,36 @@ let fr_items = await menu_translator.menuSwitchStrings('Francais')
 let pt_items = await menu_translator.menuSwitchStrings('Portugues')
 let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
 
-
 let items = new MenuItem('main', null, [
-  new MenuItem('Program Radios', new ProgramRadios(host), []),
   new MenuItem('Station Stats', new StandBy(host), []),
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
     new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
     new MenuItem("Download", new UsbDownloadTask(host), []),
-    new MenuItem("Get WiFi", new UsbWifiUploadTask(host), [])
+  ]),
+  new MenuItem("Network", null, [
+    new MenuItem("Ip Address", new IpAddressTask(), []),
+    new MenuItem('WiFi', null, [
+      new MenuItem("Enable Wifi", new EnableWifi(host), []),
+      new MenuItem("Disable Wifi", new DisableWifi(host), []),
+      new MenuItem("Mount Usb", new MountUsbTask(host), []),
+      new MenuItem("Get WiFi", new UsbWifiUploadTask(host), []),
+    ]),
+    new MenuItem("Cellular", null, [
+      new MenuItem('Enable Modem', new EnableModem(host), []),
+      new MenuItem('Disable Modem', new DisableModem(host), []),
+      new MenuItem("Ids", new CellularIds(host), []),
+      new MenuItem("Carrier", new CellularCarrier(host), [])
+    ]),
+    new MenuItem("P2P", null, [
+      new MenuItem('Enable P2P', new EnableP2P(host), []),
+      new MenuItem('Disable P2P', new DisableP2P(host), []),
+    ]),
+    new MenuItem("Ping", new InternetTask(host), []),
+    new MenuItem("Hostname", new HostnameTask(), []),
   ]),
   new MenuItem("System", null, [
+    new MenuItem('Program Radios', new ProgramRadios(host), []),
     new MenuItem("About", null, [
       new MenuItem("Image", new SystemImageTask(host), []),
       new MenuItem("Ids", new SystemIdsTask(host), []),
@@ -85,31 +102,12 @@ let items = new MenuItem('main', null, [
     new MenuItem("Restart", new SystemRestartTask(), []),
     new MenuItem("Bash Update", new BashUpdateTask(), [])
   ]),
-  new MenuItem("Network", null, [
-    new MenuItem("Ip Address", new IpAddressTask(), []),
-    new MenuItem("Ping", new InternetTask(host), []),
-    new MenuItem("Hostname", new HostnameTask(), []),
-    new MenuItem('WiFi', null, [
-      new MenuItem("Enable Wifi", new EnableWifi(host), []),
-      new MenuItem("Disable Wifi", new DisableWifi(host), []),
-    ]),
-    new MenuItem("Cellular", null, [
-      new MenuItem('Enable Modem', new EnableModem(host), []),
-      new MenuItem('Disable Modem', new DisableModem(host), []),
-      new MenuItem("Ids", new CellularIds(host), []),
-      new MenuItem("Carrier", new CellularCarrier(host), [])
-    ]),
-
-  ]),
   new MenuItem("Server", new ServerConnectRequest(host), []),
   new MenuItem("Power", new SensorVoltageTask(host), []),
   new MenuItem("Temperature", new SensorTemperatureTask(host), []),
   new MenuItem("Location", new GpsTask(host), []),
   new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
 ])
-
-
-
 
 /*
     Instantiate a menu manager that operates on a list of 
