@@ -56,7 +56,6 @@ class StandBy {
   }
 
   async displayP2P(p2p) {
-    console.log('display p2p', p2p)
     display.lcd.setCursor(0, 2)
     if (p2p > 0) {
       display.lcd.print('P2P')
