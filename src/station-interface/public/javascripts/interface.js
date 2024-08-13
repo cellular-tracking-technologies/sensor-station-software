@@ -622,6 +622,8 @@ const handle_blu_beep = function (beep) {
     let input = document.createElement('input');
     input.setAttribute('type', 'text');
     input.setAttribute('class', 'form-input');
+    input.setAttribute('style', 'color:white')
+
     let alias = localStorage.getItem(tag_id);
     if (alias) {
       input.setAttribute('value', alias);
@@ -762,6 +764,7 @@ const handle_tag_beep = function (beep) {
     let input = document.createElement('input');
     input.setAttribute('type', 'text');
     input.setAttribute('class', 'form-input');
+    input.setAttribute('style', 'color:white')
     let alias = localStorage.getItem(tag_id);
     if (alias) {
       input.setAttribute('value', alias);
