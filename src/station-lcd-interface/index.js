@@ -23,7 +23,6 @@ import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
 import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
-import { EnableP2P, DisableP2P } from './tasks/enable-disable-p2p-task.js'
 import { ProgramRadios } from './tasks/program-radios.js'
 import { StandBy } from './standby.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
@@ -81,10 +80,6 @@ let items = new MenuItem('main', null, [
       new MenuItem('Disable Modem', new DisableModem(host), []),
       new MenuItem("Ids", new CellularIds(host), []),
       new MenuItem("Carrier", new CellularCarrier(host), [])
-    ]),
-    new MenuItem("P2P", null, [
-      new MenuItem('Enable P2P', new EnableP2P(host), []),
-      new MenuItem('Disable P2P', new DisableP2P(host), []),
     ]),
     new MenuItem("Ping", new InternetTask(host), []),
     new MenuItem("Hostname", new HostnameTask(), []),
