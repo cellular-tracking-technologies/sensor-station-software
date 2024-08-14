@@ -20,7 +20,7 @@ class CellularCarrier {
           let carrier = res.carrier
           let signal = res.signal.toString()
 
-          resolve([this.header, carrier, signal])
+          resolve([this.header, carrier, `${signal}%`])
           // resolve([this.header, res.carrier, res.signal])
         })
         .catch(error => {
