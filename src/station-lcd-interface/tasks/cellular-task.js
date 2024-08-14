@@ -17,7 +17,11 @@ class CellularCarrier {
           return data.json()
         })
         .then(res => {
-          resolve([this.header, res.carrier, res.signal])
+          let carrier = res.carrier
+          let signal = res.signal.toString()
+
+          resolve([this.header, carrier, signal])
+          // resolve([this.header, res.carrier, res.signal])
         })
         .catch(error => {
           resolve([this.header, `error`])
