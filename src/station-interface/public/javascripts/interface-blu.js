@@ -581,7 +581,7 @@ const handle_blu_beep = function (beep) {
 
     // individual beeps table data goes here!!!
     tr.appendChild(createElement(beep.rssi));
-    tr.appendChild(createElement(beep.node_id));
+    // tr.appendChild(createElement(beep.node_id));
     tr.appendChild(createElement(beep.vcc))
     tr.appendChild(createElement(beep.temp))
 
@@ -1024,9 +1024,9 @@ const build_blu_radio = function (port, radio) {
     th = document.createElement('th')
     th.textContent = 'RSSI'
     tr.appendChild(th)
-    th = document.createElement('th')
-    th.textContent = 'Node'
-    tr.appendChild(th)
+    // th = document.createElement('th')
+    // th.textContent = 'Node'
+    // tr.appendChild(th)
     th = document.createElement('th')
     th.textContent = 'Voltage (V)'
     tr.appendChild(th)
