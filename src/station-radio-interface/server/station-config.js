@@ -65,7 +65,13 @@ class StationConfig {
       config = this.default_config
     } else {
       // load config from file
-      config = JSON.parse(fs.readFileSync(this.config_filepath).toString())
+      try {
+        config = JSON.parse(fs.readFileSync(this.config_filepath).toString())
+
+      } catch (e) {
+        console.log('Station Config is corrupted, using default config', e)
+        config = this.default_config
+      }
     }
 
     this.data = this.threadRadioMapsWithConfig(config)
