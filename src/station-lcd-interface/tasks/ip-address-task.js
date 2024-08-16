@@ -3,6 +3,7 @@ import os from 'os'
 class IpAddressTask {
   constructor() {
     this.header = "Ip Address"
+    this.autoRefresh = 5000
   }
   loading() {
     return [this.header]
