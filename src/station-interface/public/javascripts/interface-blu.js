@@ -959,16 +959,17 @@ const build_blu_receiver = function (port) {
     col_sm.appendChild(button)
     div.appendChild(col_sm)
 
-    // Create All Blu FW Updater Button
-    col_sm = document.createElement('div')
-    col_sm.setAttribute('class', 'col-sm')
-    button = document.createElement('button')
-    button.setAttribute('class', 'btn btn-lg btn-primary')
-    button.setAttribute('name', 'all_radios_update')
-    button.setAttribute('value', port)
-    button.textContent = 'Update All Radio Firmware'
-    col_sm.appendChild(button)
-    div.appendChild(col_sm)
+    // // Create All Blu FW Updater Button
+    // col_sm = document.createElement('div')
+    // col_sm.setAttribute('class', 'col-sm')
+    // button = document.createElement('button')
+    // button.setAttribute('class', 'btn btn-lg btn-primary')
+    // button.setAttribute('name', 'all_radios_update')
+    // button.setAttribute('value', port)
+    // button.textContent = 'Update All Radio Firmware'
+    // col_sm.appendChild(button)
+    // div.appendChild(col_sm)
+
     h2.textContent = `Bl${umacr} Receiver on USB Port ` + port
     wrapper.appendChild(h2)
 
@@ -1111,16 +1112,16 @@ const build_blu_buttons = function (port, radio) {
     document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
 
-    col_sm = document.createElement('div')
-    col_sm.setAttribute('class', 'col-sm')
-    button = document.createElement('button')
-    button.setAttribute('class', 'btn btn-sm btn-info')
-    button.setAttribute('name', 'update_blu_firmware')
-    button.setAttribute('value', `${port}-${radio}`)
-    button.textContent = `Update Bl${umacr} Radio Firmware`
-    col_sm.appendChild(button)
-    div.appendChild(col_sm)
-    document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
+    // col_sm = document.createElement('div')
+    // col_sm.setAttribute('class', 'col-sm')
+    // button = document.createElement('button')
+    // button.setAttribute('class', 'btn btn-sm btn-info')
+    // button.setAttribute('name', 'update_blu_firmware')
+    // button.setAttribute('value', `${port}-${radio}`)
+    // button.textContent = `Update Bl${umacr} Radio Firmware`
+    // col_sm.appendChild(button)
+    // div.appendChild(col_sm)
+    // document.querySelector(`#blu-column-${port}-${radio}`).appendChild(div)
 
 }
 
