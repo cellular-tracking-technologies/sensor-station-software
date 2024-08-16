@@ -32,7 +32,7 @@ class StandBy {
           temperature.json(),
         ]
       })
-      await this.getSolarVoltage(await voltages)
+      // await this.getSolarVoltage(await voltages)
       await this.getBattVoltage(await voltages)
       await this.getTempValues(await temperature)
 
@@ -116,10 +116,12 @@ class StandBy {
 
   async getBattVoltage(voltage) {
     try {
-      await this.createBattChar(Number(voltage.battery))
+      display.lcd.setCursor(6, 0)
+      display.lcd.print(`Batt.: ${voltage.battery} V`)
+      // await this.createBattChar(Number(voltage.battery))
     } catch (e) {
       console.error('lcd voltage error', e)
-      await this.createBattChar(null)
+      // await this.createBattChar(null)
     }
   }
 
@@ -230,18 +232,18 @@ class StandBy {
     try {
       let { celsius, fahrenheit } = temperature
 
-      if (!celsius) {
-        display.lcd.setCursor(14, 0)
-        display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
+      if (celsius == -100) {
+        // display.lcd.setCursor(14, 0)
+        // display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
 
-        display.lcd.setCursor(14, 1)
-        display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
+        // display.lcd.setCursor(14, 1)
+        // display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
       } else {
 
-        display.lcd.setCursor(14, 0)
+        display.lcd.setCursor(0, 1)
         display.lcd.print(`${celsius.toString()}${temp.degree.hex}C`)
 
-        display.lcd.setCursor(14, 1)
+        display.lcd.setCursor(0, 2)
         display.lcd.print(`${fahrenheit}${temp.degree.hex}F`)
       }
     } catch (e) {
