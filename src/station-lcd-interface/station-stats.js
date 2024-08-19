@@ -114,11 +114,13 @@ class StationStats {
   }
 
   async getBattVoltage(voltage) {
+    const battery_round = Math.floor(voltage.battery * 10) / 10
+    const solar_round = Math.floor(voltage.solar * 10) / 10
     try {
       display.lcd.setCursor(6, 0) // column, then row
-      display.lcd.print(`B:${voltage.battery}V`)
+      display.lcd.print(`B:${battery_round}V`)
       display.lcd.setCursor(6, 1)
-      display.lcd.print(`S:${voltage.solar}V`)
+      display.lcd.print(`S:${solar_round}V`)
       // await this.createBattChar(Number(voltage.battery))
     } catch (e) {
       console.error('lcd voltage error', e)
