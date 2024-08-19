@@ -116,10 +116,10 @@ class StationStats {
 
   async getBattVoltage(voltage) {
     try {
-      display.lcd.setCursor(0, 2) // column, then row
-      display.lcd.print(`B:${voltage.battery} V`)
-      display.lcd.setCursor(0, 3)
-      display.lcd.print(`S:${voltage.solar} V`)
+      display.lcd.setCursor(6, 0) // column, then row
+      display.lcd.print(`B:${voltage.battery}V`)
+      display.lcd.setCursor(6, 1)
+      display.lcd.print(`S:${voltage.solar}V`)
       // await this.createBattChar(Number(voltage.battery))
     } catch (e) {
       console.error('lcd voltage error', e)
@@ -240,6 +240,9 @@ class StationStats {
 
         display.lcd.setCursor(14, 1)
         display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
+      } else if (celsius == -100) {
+
+
       } else {
 
         display.lcd.setCursor(14, 0)
