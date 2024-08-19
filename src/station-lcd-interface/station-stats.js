@@ -117,10 +117,14 @@ class StationStats {
     const battery_round = Math.floor(voltage.battery * 10) / 10
     const solar_round = Math.floor(voltage.solar * 10) / 10
     try {
+
+      display.lcd.createChar(battery.power.char, battery.power.byte)
       display.lcd.setCursor(6, 0) // column, then row
-      display.lcd.print(`B:${battery_round}V`)
+      display.lcd.print(`${battery.power.hex}:${battery_round}V`)
+
+      display.lcd.createChar(solar.sun.char, solar.sun.byte)
       display.lcd.setCursor(6, 1)
-      display.lcd.print(`S:${solar_round}V`)
+      display.lcd.print(`${solar.sun.hex}:${solar_round}V`)
       // await this.createBattChar(Number(voltage.battery))
     } catch (e) {
       console.error('lcd voltage error', e)

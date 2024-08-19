@@ -49,6 +49,11 @@ const battery = {
         char: null,
         hex: `\x21`,
     },
+    power: {
+        byte: Uint8Array.from(Buffer.from([0x00, 0x04, 0x0E, 0x15, 0x15, 0x11, 0x11, 0x0E], 'hex')),
+        char: 3,
+        hex: `\x03`,
+    }
 }
 
 const solar = {
@@ -70,6 +75,11 @@ const solar = {
         char: 5,
         hex: `\x05`,
     },
+    sun: {
+        byte: Uint8Array.from(Buffer.from([0x00, 0x04, 0x15, 0x0E, 0x1F, 0x0E, 0x15, 0x04], 'hex')),
+        char: 5,
+        hex: `\x05`,
+    }
 }
 
 const cell = {
