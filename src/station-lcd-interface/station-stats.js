@@ -248,7 +248,7 @@ class StationStats {
 
         display.lcd.setCursor(14, 1)
         display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
-        // } else if (celsius == -100) {
+        } else if (celsius == -100) {
 
 
       } else {
