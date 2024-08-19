@@ -239,13 +239,16 @@ class StationStats {
     try {
       let { celsius, fahrenheit } = temperature
 
+      celsius = Math.floor(celsius * 10) / 10
+      fahrenheit = Math.floor(fahrenheit * 10) / 10
+
       if (!celsius) {
         display.lcd.setCursor(14, 0)
         display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
 
         display.lcd.setCursor(14, 1)
         display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
-      } else if (celsius == -100) {
+        // } else if (celsius == -100) {
 
 
       } else {
