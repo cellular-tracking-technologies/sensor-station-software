@@ -1,6 +1,5 @@
 import fetch from 'node-fetch'
 import url from 'url'
-import { execSync } from 'child_process'
 
 import Network from '../hardware/pi/network/index.js'
 import display from './display-driver.js'
