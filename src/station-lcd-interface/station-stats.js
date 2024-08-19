@@ -8,7 +8,7 @@ import { wifi, battery, cell, temp, solar, thresholds } from './lcd-chars.js'
 /**
  * 
  */
-class StandBy {
+class StationStats {
   /**
    * @param {String} host ip address of server
    */
@@ -116,8 +116,10 @@ class StandBy {
 
   async getBattVoltage(voltage) {
     try {
-      display.lcd.setCursor(6, 0)
-      display.lcd.print(`Batt.: ${voltage.battery} V`)
+      display.lcd.setCursor(0, 2) // column, then row
+      display.lcd.print(`B:${voltage.battery} V`)
+      display.lcd.setCursor(0, 3)
+      display.lcd.print(`S:${voltage.solar} V`)
       // await this.createBattChar(Number(voltage.battery))
     } catch (e) {
       console.error('lcd voltage error', e)
@@ -232,18 +234,18 @@ class StandBy {
     try {
       let { celsius, fahrenheit } = temperature
 
-      if (celsius == -100) {
-        // display.lcd.setCursor(14, 0)
-        // display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
+      if (!celsius) {
+        display.lcd.setCursor(14, 0)
+        display.lcd.print(`${temp.warning.hex}${temp.degree.hex}C`)
 
-        // display.lcd.setCursor(14, 1)
-        // display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
+        display.lcd.setCursor(14, 1)
+        display.lcd.print(`${temp.warning.hex}${temp.degree.hex}F`)
       } else {
 
-        display.lcd.setCursor(0, 1)
+        display.lcd.setCursor(14, 0)
         display.lcd.print(`${celsius.toString()}${temp.degree.hex}C`)
 
-        display.lcd.setCursor(0, 2)
+        display.lcd.setCursor(14, 1)
         display.lcd.print(`${fahrenheit}${temp.degree.hex}F`)
       }
     } catch (e) {
@@ -252,4 +254,4 @@ class StandBy {
   }
 }
 
-export { StandBy }
+export { StationStats }

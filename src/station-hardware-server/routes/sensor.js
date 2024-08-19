@@ -23,8 +23,8 @@ router.get('/voltages', function (req, res, next) {
   res.json(sensor_data.voltages)
 })
 
-router.get('/temperature', function (req, res, next) {
-  res.json(sensor_data.temperature)
+router.get('/temperature', async (req, res, next) => {
+  await res.json(sensor_data.temperature)
 })
 
 router.get('/details', (req, res, next) => {

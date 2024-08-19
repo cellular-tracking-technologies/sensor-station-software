@@ -24,7 +24,7 @@ import { BashUpdateTask } from './tasks/bash-update.js'
 import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
 import { ProgramRadios } from './tasks/program-radios.js'
-import { StandBy } from './standby.js'
+import { StationStats } from './station-stats.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
 const { Buttons: ButtonMap } = GpioMap
@@ -61,7 +61,7 @@ let pt_items = await menu_translator.menuSwitchStrings('Portugues')
 let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
 
 let items = new MenuItem('main', null, [
-  new MenuItem('Station Stats', new StandBy(host), []),
+  new MenuItem('Station Stats', new StationStats(host), []),
   new MenuItem("File Transfer", null, [
     new MenuItem("Mount Usb", new MountUsbTask(host), []),
     new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
