@@ -27,6 +27,7 @@ import { ProgramRadios } from './tasks/program-radios.js'
 import { StationStats } from './station-stats.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
+import items from './menu-items.js'
 const { Buttons: ButtonMap } = GpioMap
 
 // Require Statements
@@ -51,58 +52,15 @@ let menu_translator = new MenuTranslator()
 
 /**Uncomment the following lines to get an updated translated menus**/
 
-// let language_object = await menu_translator.translateMenu()
-// await menu_translator.saveTranslatedMenus(language_object)
+let language_object = await menu_translator.translateMenu()
+
+await menu_translator.saveTranslatedMenus(language_object)
 
 // let en_items = await menu_translator.menuSwitchStrings('English')
 let es_items = await menu_translator.menuSwitchStrings('Espagnol')
 let fr_items = await menu_translator.menuSwitchStrings('Francais')
 let pt_items = await menu_translator.menuSwitchStrings('Portugues')
 let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
-
-let items = new MenuItem('main', null, [
-  new MenuItem('Station Stats', new StationStats(host), []),
-  new MenuItem("File Transfer", null, [
-    new MenuItem("Mount Usb", new MountUsbTask(host), []),
-    new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
-    new MenuItem("Download", new UsbDownloadTask(host), []),
-  ]),
-  new MenuItem("Network", null, [
-    new MenuItem("Ip Address", new IpAddressTask(), []),
-    new MenuItem('WiFi', null, [
-      new MenuItem("Enable Wifi", new EnableWifi(host), []),
-      new MenuItem("Disable Wifi", new DisableWifi(host), []),
-      new MenuItem("Mount Usb", new MountUsbTask(host), []),
-      new MenuItem("Get WiFi", new UsbWifiUploadTask(host), []),
-    ]),
-    new MenuItem("Cellular", null, [
-      new MenuItem('Enable Modem', new EnableModem(host), []),
-      new MenuItem('Disable Modem', new DisableModem(host), []),
-      new MenuItem("Ids", new CellularIds(host), []),
-      new MenuItem("Carrier", new CellularCarrier(host), [])
-    ]),
-    new MenuItem("Ping", new InternetTask(host), []),
-    new MenuItem("Hostname", new HostnameTask(), []),
-  ]),
-  new MenuItem("System", null, [
-    new MenuItem('Program Radios', new ProgramRadios(host), []),
-    new MenuItem("About", null, [
-      new MenuItem("Image", new SystemImageTask(host), []),
-      new MenuItem("Ids", new SystemIdsTask(host), []),
-      new MenuItem("Memory", new SystemMemoryTask(host), []),
-      new MenuItem("Uptime", new SystemUptimeTask(host), [])
-    ]),
-    new MenuItem("QAQC", new QaqcRequest(host), []),
-    new MenuItem("Time", new SystemTimeTask(host), []),
-    new MenuItem("Restart", new SystemRestartTask(), []),
-    new MenuItem("Bash Update", new BashUpdateTask(), [])
-  ]),
-  new MenuItem("Server", new ServerConnectRequest(host), []),
-  new MenuItem("Power", new SensorVoltageTask(host), []),
-  new MenuItem("Temperature", new SensorTemperatureTask(host), []),
-  new MenuItem("Location", new GpsTask(host), []),
-  new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
-])
 
 /*
     Instantiate a menu manager that operates on a list of 
@@ -115,7 +73,13 @@ let items = new MenuItem('main', null, [
         D) back()   - Exits a dir within a menu.
 */
 
+let languages = new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
+items.children[8] = languages
+items.children[8].parent_id = 'main'
+// console.log('items', items)
+
 let menu = new MenuManager(items)
+// console.log('menu', menu)
 menu.init()
 
 /*
