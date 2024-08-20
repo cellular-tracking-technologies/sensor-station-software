@@ -49,7 +49,7 @@ class MenuTranslator {
 
     const host = 'http://localhost:3000'
 
-    this.items = new MenuItem('main', null, [
+    this.items = new MenuItem(language, null, [
       new MenuItem('Station Stats', new StationStats(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -58,7 +58,7 @@ class MenuTranslator {
       ]),
       new MenuItem("Network", null, [
         new MenuItem("Ip Address", new IpAddressTask(), []),
-        new MenuItem('WiFi', null, [
+        new MenuItem(`WiFi-${lang_string}`, null, [
           new MenuItem("Enable Wifi", new EnableWifi(host), []),
           new MenuItem("Disable Wifi", new DisableWifi(host), []),
           new MenuItem("Mount Usb", new MountUsbTask(host), []),

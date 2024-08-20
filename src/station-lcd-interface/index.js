@@ -4,27 +4,6 @@ import MenuManager from "./menu-manager.js"
 import MenuTranslator from './menu-translator.js'
 
 // Tasks
-import { IpAddressTask } from "./tasks/ip-address-task.js"
-import { CellularIds, CellularCarrier } from "./tasks/cellular-task.js"
-import { GpsTask } from "./tasks/gps-task.js"
-import { SensorTemperatureTask } from "./tasks/sensor-temp-task.js"
-import { SensorVoltageTask } from "./tasks/sensor-voltage-task.js"
-import { ServerConnectRequest } from "./tasks/server-task.js"
-import { SystemImageTask, SystemIdsTask, SystemMemoryTask, SystemUptimeTask } from "./tasks/system-about-task.js"
-import { SystemRestartTask } from "./tasks/system-restart-task.js"
-import { SystemTimeTask } from "./tasks/system-time-task.js"
-import { UsbDownloadTask } from "./tasks/usb-download-task.js"
-import { MountUsbTask } from "./tasks/usb-mount-task.js"
-import { UnmountUsbTask } from "./tasks/usb-unmount-task.js"
-import { UsbWifiUploadTask } from "./tasks/usb-wifi-upload-task.js"
-import { HostnameTask } from "./tasks/hostname-task.js"
-import { InternetTask } from "./tasks/internet-task.js"
-import { QaqcRequest } from './tasks/qaqc-task.js'
-import { BashUpdateTask } from './tasks/bash-update.js'
-import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
-import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
-import { ProgramRadios } from './tasks/program-radios.js'
-import { StationStats } from './station-stats.js'
 import GpioMap from '../hardware/pi/gpio-map.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
 import items from './menu-items.js'
@@ -52,8 +31,8 @@ let menu_translator = new MenuTranslator()
 
 /**Uncomment the following lines to get an updated translated menus**/
 
-let language_object = await menu_translator.translateMenu()
-await menu_translator.saveTranslatedMenus(language_object)
+// let language_object = await menu_translator.translateMenu()
+// await menu_translator.saveTranslatedMenus(language_object)
 
 // let en_items = await menu_translator.menuSwitchStrings('English')
 let es_items = await menu_translator.menuSwitchStrings('Espagnol')
