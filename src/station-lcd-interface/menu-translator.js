@@ -98,7 +98,7 @@ class MenuTranslator {
   async translateString(str, translateTo) {
     translate.engine = 'google'
     const translated_string = await translate(str, translateTo)
-    return translated_string
+    return translated_string.normalize('NFD').replace(/\p{Diacritic}/gu, '')
   }
 
   async translateMenu() {
