@@ -6,7 +6,6 @@ import MenuTranslator from './menu-translator.js'
 // Tasks
 import GpioMap from '../hardware/pi/gpio-map.js'
 import { Gpio } from 'onoff' // RaspberryPI Gpio functions
-import items from './menu-items.js'
 const { Buttons: ButtonMap } = GpioMap
 
 // Require Statements
@@ -34,7 +33,7 @@ let menu_translator = new MenuTranslator()
 // let language_object = await menu_translator.translateMenu()
 // await menu_translator.saveTranslatedMenus(language_object)
 
-// let en_items = await menu_translator.menuSwitchStrings('English')
+let items = await menu_translator.menuSwitchStrings('English')
 let es_items = await menu_translator.menuSwitchStrings('Espagnol')
 let fr_items = await menu_translator.menuSwitchStrings('Francais')
 let pt_items = await menu_translator.menuSwitchStrings('Portugues')
@@ -53,11 +52,9 @@ let nl_items = await menu_translator.menuSwitchStrings('Nederlands')
 
 let languages = new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
 items.children[8] = languages
-items.children[8].parent_id = 'main'
-// console.log('items', items)
+items.children[8].parent_id = 'English'
 
 let menu = new MenuManager(items)
-// console.log('menu', menu)
 menu.init()
 
 /*

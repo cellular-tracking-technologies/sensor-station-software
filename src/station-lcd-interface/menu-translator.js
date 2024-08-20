@@ -128,9 +128,10 @@ class MenuTranslator {
       await this.createItems(language, this.lang_string)
 
       this.items.id = language
+
       for await (let child of this.items.children) {
         child.id = await this.translateString(child.id, this.lang_string)
-        child.parent_id = language
+        // child.parent_id = await this.translateString(child.parent_id, this.lang_string)
         if (child.children) {
           for await (let subchild of child.children) {
             subchild.parent_id = await this.translateString(subchild.parent_id, this.lang_string)
@@ -196,7 +197,10 @@ class MenuTranslator {
         )
         let languages = JSON.parse(languages_json)
 
-        let translation = Object.values((languages)).find(e => language == e.id)
+        let translation = Object.values((languages)).find((e) => {
+          // console.log('e', e)
+          return language == e.id
+        })
 
         this.items.id = translation.id
         if (this.items.children) {
