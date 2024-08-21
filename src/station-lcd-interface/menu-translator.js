@@ -55,11 +55,26 @@ class MenuTranslator {
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
         new MenuItem("Unmount Usb", new UnmountUsbTask(host), []),
         new MenuItem("Download", new UsbDownloadTask(host), []),
-        new MenuItem("Get WiFi", new UsbWifiUploadTask(host), [])
+      ]),
+      new MenuItem("Network", null, [
+        new MenuItem("Ip Address", new IpAddressTask(), []),
+        new MenuItem(`WiFi-${lang_string}`, null, [
+          new MenuItem("Enable Wifi", new EnableWifi(host), []),
+          new MenuItem("Disable Wifi", new DisableWifi(host), []),
+          new MenuItem("Mount Usb", new MountUsbTask(host), []),
+          new MenuItem("Get WiFi", new UsbWifiUploadTask(host), []),
+        ]),
+        new MenuItem("Cellular", null, [
+          new MenuItem('Enable Modem', new EnableModem(host), []),
+          new MenuItem('Disable Modem', new DisableModem(host), []),
+          new MenuItem("Ids", new CellularIds(host), []),
+          new MenuItem("Carrier", new CellularCarrier(host), [])
+        ]),
+        new MenuItem("Ping", new InternetTask(host), []),
+        new MenuItem("Hostname", new HostnameTask(), []),
       ]),
       new MenuItem("System", null, [
         new MenuItem('Program Radios', new ProgramRadios(host), []),
-
         new MenuItem("About", null, [
           new MenuItem("Image", new SystemImageTask(host), []),
           new MenuItem("Ids", new SystemIdsTask(host), []),
@@ -71,25 +86,11 @@ class MenuTranslator {
         new MenuItem("Restart", new SystemRestartTask(), []),
         new MenuItem("Bash Update", new BashUpdateTask(), [])
       ]),
-      new MenuItem("Network", null, [
-        new MenuItem("Ip Address", new IpAddressTask(), []),
-        new MenuItem(`WiFi-${lang_string}`, null, [
-          new MenuItem("Enable Wifi", new EnableWifi(host), []),
-          new MenuItem("Disable Wifi", new DisableWifi(host), []),
-        ]),
-        new MenuItem("Cellular", null, [
-          new MenuItem('Enable Modem', new EnableModem(host), []),
-          new MenuItem('Disable Modem', new DisableModem(host), []),
-          new MenuItem("Ids", new CellularIds(host), []),
-          new MenuItem("Carrier", new CellularCarrier(host), [])
-        ]),
-        new MenuItem("Ping", new InternetTask(host), []),
-        new MenuItem("Hostname", new HostnameTask(), []),
-      ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),
       new MenuItem("Power", new SensorVoltageTask(host), []),
       new MenuItem("Temperature", new SensorTemperatureTask(host), []),
       new MenuItem("Location", new GpsTask(host), []),
+      // new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
     ])
 
   }
@@ -97,7 +98,7 @@ class MenuTranslator {
   async translateString(str, translateTo) {
     translate.engine = 'google'
     const translated_string = await translate(str, translateTo)
-    return translated_string
+    return translated_string.normalize('NFD').replace(/\p{Diacritic}/gu, '')
   }
 
   async translateMenu() {
@@ -127,9 +128,10 @@ class MenuTranslator {
       await this.createItems(language, this.lang_string)
 
       this.items.id = language
+
       for await (let child of this.items.children) {
         child.id = await this.translateString(child.id, this.lang_string)
-
+        // child.parent_id = await this.translateString(child.parent_id, this.lang_string)
         if (child.children) {
           for await (let subchild of child.children) {
             subchild.parent_id = await this.translateString(subchild.parent_id, this.lang_string)
@@ -195,7 +197,10 @@ class MenuTranslator {
         )
         let languages = JSON.parse(languages_json)
 
-        let translation = Object.values((languages)).find(e => language == e.id)
+        let translation = Object.values((languages)).find((e) => {
+          // console.log('e', e)
+          return language == e.id
+        })
 
         this.items.id = translation.id
         if (this.items.children) {

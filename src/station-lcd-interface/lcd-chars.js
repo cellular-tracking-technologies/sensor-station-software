@@ -129,7 +129,7 @@ const thresholds = {
         min: 11.3,
     },
     cell: {
-        max: 100,
+        max: 75,
         med: 50,
         min: 25,
     },
