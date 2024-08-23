@@ -1,0 +1,33 @@
+[
+    {
+        "version": "1.2.2",
+        "date": "2024-08-21",
+        "notes": "",
+        "features": [
+            "Update npm libraries"
+        ],
+        "bugs": [
+            "Remove accents from LCD menu",
+            "Remove duplicate languages from LCD menu"
+        ],
+        "security": []
+    },
+    {
+        "version": "1.2.1",
+        "date": "2024-08-15",
+        "notes": "",
+        "features": [
+            "Add percent sign to network signal quality"
+        ],
+        "bugs": [],
+        "security": []
+    },
+    {
+        "version": "1.2.0",
+        "date": "2023-07-11",
+        "notes": "Initial version for Sensor Station image with BluSeries integration",
+        "features": [],
+        "bugs": [],
+        "security": []
+    }
+]
