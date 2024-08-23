@@ -39,7 +39,6 @@
         "bugs": [
             "Station time in UTC",
             "Enable upload data button after 5s",
-            "Made glob async",
             "Fix data management buttons",
             "Persist disabled modem after reboot",
             "Modify WiFi network profile to auto connect"
