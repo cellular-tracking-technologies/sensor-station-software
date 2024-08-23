@@ -26,12 +26,8 @@
             "Cell network displayed as percent in LCD menu",
             "Create point-to-point connection",
             "Update 434 MHz radio firmware through LCD menu",
-            "Enable/disable options for WiFi on LCD interface",
-            "Enable/disable options for cell modem on LCD interface",
             "Display blu tags in Node tables, outlined in blue",
             "Pipe Node detected blu tags into stats summary and blu.csv",
-            "Use NetworkManager to manage internet connections",
-            "Use ModemManager to manage cellular modem connections",
             "Switch modem protocol from ppp to QMI",
             "Add WiFi credentials through nmcli",
             "Toggle/hide buttons for radios"
@@ -52,23 +48,27 @@
         "features": [
             "Update Node to v20.14.0",
             "Update Linux kernel to v6.1.21-v7+",
-            "Create Station Stats menu",
-            "Detect tags from BluSeries family",
-            "Display and control individual BluReceivers and BluRadios",
-            "Update 434 MHz radios to v4 firmware",
-            "Connect to WiFi networks without passwords",
-            "Organize BlūSeries and Atmega32 directories within hardware/ctt directory",
             "Move USB tools to api, streamline import",
             "Network connection API",
             "Move cron util to api folder",
+            "Move BlūSeries and Atmega32 directories to hardware/ctt",
+            "Centralize os, system info",
+            "Use NetworkManager to manage networks",
+            "Use ModemManager to manage cellular modem connections",
+            "Create Station Stats menu",
+            "Add Languages option to LCD menu",
+            "Enable/disable options for WiFi on LCD interface",
+            "Enable/disable options for cell modem on LCD interface",
             "Display Nodes on Blu interface",
-            "Centralize os, system info"
+            "Detect tags from BluSeries family",
+            "Display and control individual BluReceivers and BluRadios",
+            "Update 434 MHz radios to v4 firmware"
         ],
         "bugs": [
             "Multiple radio instantiation",
-            "Blu tags all caps",
+            "Made blu tag IDs all caps",
             "Fix Internet gateway on interface",
-            "Blu radio poll interval saves to station-config.json"
+            "Fix blu radio poll interval saving to station-config"
         ],
         "security": []
     }
