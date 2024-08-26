@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.2.3",
+        "date": "2024-08-26",
+        "notes": "testing if ctt-documentation repo can read updates to json"
+    },
+    {
         "version": "1.2.2",
         "date": "2024-08-21",
         "notes": "",
