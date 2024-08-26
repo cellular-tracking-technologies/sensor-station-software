@@ -89,7 +89,7 @@ const initialize_controls = function () {
     }
   })
   document.querySelector('#disable-wifi').addEventListener('click', async (e) => {
-    let res = window.confirm('Are you sure you want to disable wifi?');
+    let res = window.confirm('Are you sure you want to disable wifi? If you are only connected to the Web Interface through WiFi, you will not be able to access the Web Interface again until WiFi is enabled.');
     if (res) {
       const response = await fetch('/wifi/disable', { method: 'POST' })
       if (response.ok) {
@@ -165,7 +165,7 @@ const initialize_controls = function () {
     }
   });
   document.querySelector('#disable-modem').addEventListener('click', async function (e) {
-    let res = window.confirm('WARNING: Are you sure you want to PERMANENTLY diable the modem?');
+    let res = window.confirm('WARNING: Are you sure you want to disable the modem? To re-enable the modem, you will need to have access to the Web or LCD interface.');
     if (res) {
       const response = await fetch('/modem/disable', { method: 'POST' })
       if (response.ok) {
