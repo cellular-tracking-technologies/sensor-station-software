@@ -285,6 +285,8 @@ class BluStation {
         let blu_add = {
           port: blu_receiver.port,
           msg_type: "add_port",
+          blu_channel: radio_channel,
+          poll_interval: poll_interval
         }
         this.broadcast(JSON.stringify(blu_add))
 

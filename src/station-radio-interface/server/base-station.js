@@ -514,8 +514,9 @@ class BaseStation {
       const { poll_interval, radio: radio_channel, } = radio
       this.broadcast(JSON.stringify({
         msg_type: 'add_port',
+        blu_channel: radio_channel,
         poll_interval: poll_interval,
-        port: receiver_to_start.port
+        port: receiver_to_start.port,
       }))
       this.stationLog(`starting blu radios ${radio_channel} on USB Port ${receiver_to_start.port}`)
 

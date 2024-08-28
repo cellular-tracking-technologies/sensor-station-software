@@ -647,15 +647,20 @@ const createElement = function (text) {
 };
 
 const handle_add_port = function (data) {
+    // if (!data?.tag_id) {
+    console.log('handle port data', data)
+    // }
     let add_port = data.port.toString()
 
     if (blu_ports.includes(add_port)) {
+
     } else {
         blu_ports.push(add_port)
     }
 
     blu_ports.forEach((port) => {
         document.querySelector(`#blu-receiver-${port}`).style.display = ''
+        document.querySelector(`#poll_interval_${data.port}-${data.blu_channel}`).textContent = data.poll_interval / 1000
     })
 }
 
