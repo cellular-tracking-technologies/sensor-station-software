@@ -57,7 +57,7 @@ class MenuManager {
     let row = this.focus.getChild(this.scroller.getSelectedRow())
     if (row.view != null) {
       this.focus = row
-      // console.log('this view', this.view_())
+      console.log('this focus', this.focus)
 
       this.view_()
       return
