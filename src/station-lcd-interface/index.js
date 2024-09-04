@@ -58,9 +58,9 @@ let menu = new MenuManager(items)
 menu.init()
 
 // switch to station stats menu after a period of time
-setTimeout(() => {
-  menu.select(items.children[0])
-}, 300000)
+// setTimeout(() => {
+//   menu.select(items.children[0])
+// }, 300000)
 
 /*
     Configure Pi buttons and mount callbacks for when they are pushed.

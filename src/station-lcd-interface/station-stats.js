@@ -11,7 +11,7 @@ class StationStats {
   /**
    * @param {String} host ip address of server
    */
-  constructor(base_url, refresh = 300000) {
+  constructor(base_url, refresh = 10000) {
     this.volt_url = url.resolve(base_url, 'sensor/voltages')
     this.temp_url = url.resolve(base_url, 'sensor/temperature')
     this.autoRefresh = refresh
