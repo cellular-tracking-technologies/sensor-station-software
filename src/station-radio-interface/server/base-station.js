@@ -466,7 +466,7 @@ class BaseStation {
       }
     } else {
       // V2 Radio Paths
-      if (path.includes('-port0')) {
+      if (path.includes('-port0') && !path.includes('0:1.2.1:1')) {
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
       } else if (!path.includes('-port0')) {

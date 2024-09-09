@@ -866,9 +866,6 @@ const handle_stats = function (stats) {
 };
 
 const handle_add_port = function (data) {
-  // if (!data?.tag_id) {
-  console.log('handle port data', data)
-  // }
   let add_port = data.port.toString()
 
   if (blu_ports.includes(add_port)) {
