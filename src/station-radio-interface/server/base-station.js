@@ -491,7 +491,7 @@ class BaseStation {
       }
     } else {
       // V2 Radio Paths
-      if (path.includes('-port0')) {
+      if (path.includes('-port0') && !path.includes('0:1.2.1:1')) {
         await this.unlinkBluStation(path)
         this.stationLog('removed blu receiver')
 

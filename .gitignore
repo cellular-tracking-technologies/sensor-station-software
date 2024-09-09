@@ -2,3 +2,4 @@ node_modules/*
 lib/*
 *.swp
 src/station-lcd-interface/translated-menus copy.json
+v2_modem_fix.sh
