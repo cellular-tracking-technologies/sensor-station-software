@@ -58,7 +58,7 @@ class MenuTranslator {
       ]),
       new MenuItem("Network", null, [
         new MenuItem("Ip Address", new IpAddressTask(), []),
-        new MenuItem(`WiFi-${lang_string}`, null, [
+        new MenuItem(lang_string == 'en' ? `WiFi` : `WiFi-${lang_string}`, null, [
           new MenuItem("Enable Wifi", new EnableWifi(host), []),
           new MenuItem("Disable Wifi", new DisableWifi(host), []),
           new MenuItem("Mount Usb", new MountUsbTask(host), []),
