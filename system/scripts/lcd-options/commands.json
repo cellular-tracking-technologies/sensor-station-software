@@ -11,7 +11,7 @@
     "enable_wifi": "curl -s 'http://localhost:3000/internet/enable-wifi'",
     "disable_wifi": "curl -s 'http://localhost:3000/internet/disable-wifi'",
     "pending_upload": "curl -s 'http://localhost:3000/internet/pending-upload'",
-    "wifi-networks": "curl -s 'http://localhost:3000/internet/wifi-networks'",
+    "wifi_networks": "curl -s 'http://localhost:3000/internet/wifi-networks'",
     "modem_info": "curl -s 'http://localhost:3000/modem'",
     "get_ppp": "curl -s 'http://localhost:3000/modem/ppp'",
     "peripherals": "curl -s 'http://localhost:3000/peripherals'",

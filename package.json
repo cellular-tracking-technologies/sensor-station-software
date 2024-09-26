@@ -8,7 +8,8 @@
     "start-hardware-server": "node ./src/station-hardware-server/bin/www.js",
     "start-radio-interface": "node ./src/station-radio-interface/index.js",
     "start-lcd-interface": "node ./src/station-lcd-interface/index.js",
-    "start-web-interface": "node ./src/station-interface/bin/www.js"
+    "start-web-interface": "node ./src/station-interface/bin/www.js",
+    "lcd-option": "bash ./system/scripts/lcd-options/run-lcd-options.sh"
   },
   "author": "Bob Fogg",
   "license": "ISC",
