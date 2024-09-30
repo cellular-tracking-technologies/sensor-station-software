@@ -264,19 +264,27 @@ const initialize_controls = function () {
   });
   document.querySelector('#save-deployment').addEventListener('click', (evt) => {
     let data = document.querySelector('#sg-deployment');
-    $.ajax({
-      url: '/save-sg-deployment',
-      method: 'post',
-      data: {
-        contents: data.value
-      },
-      success: function (data) {
-        alert('saved sg deployment file to disk');
-      },
-      error: function (err) {
-        alert('error saving sg deployment file ' + err.toString());
-      }
-    });
+    try {
+      JSON.parse(data.value)
+      $.ajax({
+        url: '/save-sg-deployment',
+        method: 'post',
+        data: {
+          contents: data.value
+        },
+        success: function (data) {
+          alert('saved sg deployment file to disk');
+        },
+        error: function (err) {
+          alert('error saving sg deployment file ' + err.toString());
+        }
+      });
+    } catch (error) {
+      alert('Your deployment file contains invalid JSON. Please correctly edit the file and try to save it again.')
+    }
+
+    // console.log('data', JSON.parse(data.value))
+
   });
   document.querySelector('#server-checkin').addEventListener('click', function (evt) {
     socket.send(JSON.stringify({
