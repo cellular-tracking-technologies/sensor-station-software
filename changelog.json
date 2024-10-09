@@ -1,5 +1,19 @@
 [
     {
+        "version": "1.4.0",
+        "date": "2024-10-09",
+        "notes": "Re-enable 434 MHz radio restart_on_close, access LCD menu options from terminal.",
+        "features": [
+            "Add terminal commands for LCD menu options. Use command 'npm run lcd-option *command* to access LCD menu options."
+        ],
+        "bugs": [
+            "Re-enable 434 MHz radio restart_on_close.",
+            "Add try/catch around SensorGnome 'save-deployment' event listener.",
+            "Remove 'en' label from English WiFi menu option."
+        ],
+        "security": []
+    },
+    {
         "version": "1.3.0",
         "date": "2024-09-10",
         "notes": "V2 Sensor Stations with a modem were not initializing properly.",
