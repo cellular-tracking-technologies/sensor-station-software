@@ -61,6 +61,13 @@ class NodeMetaData {
 
             let counter, fields
 
+            // clear packet.nodes object of previous data
+
+            if (collect_id == 0 && idx == 0) {
+                delete this.packet.nodes[node_id]
+                console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
+            }
+
             if (Object.keys(this.packet.nodes).includes(node_id)) {
                 // this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = counter++
                 // console.log('existing node updated', JSON.stringify(this.packet.nodes, null, 2))
@@ -155,6 +162,7 @@ class NodeMetaData {
                 received_at,
             } = record
             let fields
+
             if (Object.keys(this.packet.nodes[node_id].node_type[data_type].collections).includes(collect_id.toString())) {
                 let iterate = this.packet.nodes[node_id].node_type[data_type].collections[collect_id]
                 // console.log('iterate', iterate, 'idx', idx)
@@ -226,8 +234,24 @@ class NodeMetaData {
      */
 
     formatRecord(record) {
-
         try {
+            let {
+                protocol,
+                meta: {
+                    data_type,
+                    source: {
+                        type,
+                        id: node_id,
+                    },
+                    collection: { id: collect_id, count, idx },
+                    rssi,
+                },
+                data: {
+                    rec_at,
+                },
+                received_at,
+            } = record
+
             let fields = this.addNode(record)
 
             if (fields)
