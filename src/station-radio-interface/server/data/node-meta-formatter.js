@@ -69,15 +69,10 @@ class NodeMetaData {
             }
 
             if (Object.keys(this.packet.nodes).includes(node_id)) {
-                // this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = counter++
-                // console.log('existing node updated', JSON.stringify(this.packet.nodes, null, 2))
-
-                fields = this.addNodeType(counter, record, recorded_at)
+                fields = this.addCollection(counter, record, recorded_at)
             } else {
                 // counter = idx
                 this.packet.nodes[node_id] = node_data
-                // this.packet.nodes[node_id].node_type[data_type] = collections
-                // this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = counter
                 this.addNewCollection(counter, record)
                 console.log('new node added', JSON.stringify(this.packet.nodes, null, 2))
             }
@@ -89,52 +84,6 @@ class NodeMetaData {
 
         } catch (err) {
             console.error('addNode error', err)
-        }
-    }
-
-    /**
-     * 
-     * @param {Number} counter - program counting index to compare; used to find missing packets
-     * @param {Number} idx - index of collection id
-     */
-    addNodeType(counter, record, recorded_at) {
-        try {
-            let {
-                protocol,
-                meta: {
-                    data_type,
-                    source: {
-                        type,
-                        id: node_id,
-                    },
-                    collection: { id: collect_id, count, idx },
-                    rssi,
-                },
-                data: {
-                    rec_at,
-                },
-                received_at,
-            } = record
-
-            let fields
-
-            if (Object.keys(this.packet.nodes[node_id].node_type).includes(data_type)) {
-                // this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = counter++
-                // console.log('existing node type updated', JSON.stringify(this.packet.nodes, null, 2))
-
-                fields = this.addCollection(counter, record, recorded_at)
-            } else {
-                this.addNewCollection(counter, record)
-                // counter = idx
-                // this.packet.nodes[node_id].node_type[data_type] = collections
-                // this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = counter
-                // console.log('new node type added', JSON.stringify(this.packet.nodes, null, 2))
-            }
-
-            if (fields)
-                return fields
-        } catch (err) {
-            console.error('addNodeType error', err)
         }
     }
 
@@ -163,9 +112,15 @@ class NodeMetaData {
             } = record
             let fields
 
-            if (Object.keys(this.packet.nodes[node_id].node_type[data_type].collections).includes(collect_id.toString())) {
-                let iterate = this.packet.nodes[node_id].node_type[data_type].collections[collect_id]
-                // console.log('iterate', iterate, 'idx', idx)
+            if (Object.keys(this.packet.nodes[node_id].collections)
+                .includes(collect_id.toString())) {
+
+                // get previous index from collection
+                let iterate = this.packet.nodes[node_id].collections[collect_id]
+
+                // console.log('collection id', collect_id, 'idx', idx, 'iterate', iterate)
+
+                // check if index is sequential
                 if (idx !== iterate + 1) {
                     console.log('missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
                     fields = [
@@ -176,16 +131,16 @@ class NodeMetaData {
                         idx - 1,
                         // iterate + 1,
                     ]
+
                     // reset iterate to match idx
                     iterate = idx - 1
                 }
-                this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = iterate += 1
+                this.packet.nodes[node_id].collections[collect_id] = iterate += 1
 
             } else {
                 counter = idx
-                // this.packet.nodes[node_id].node_type[data_type] = collections
-                this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = counter
-                console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
+                this.packet.nodes[node_id].collections[collect_id] = counter
+                // console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
             }
 
             if (fields)
@@ -218,12 +173,13 @@ class NodeMetaData {
             },
             received_at,
         } = record
+
         try {
             let collections = { collections: {} }
             counter = idx
-            this.packet.nodes[node_id].node_type[data_type] = collections
-            this.packet.nodes[node_id].node_type[data_type].collections[collect_id] = counter
-            console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
+            this.packet.nodes[node_id] = collections
+            this.packet.nodes[node_id].collections[collect_id] = counter
+            // console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
         } catch (err) {
             console.error('addNewCollection error', err)
         }
