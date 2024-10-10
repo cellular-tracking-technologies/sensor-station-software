@@ -7,6 +7,7 @@ import { NodeHealthFormatter } from './node-health-formatter.js'
 import { TelemetryFormatter } from './telemetry-formatter.js'
 import { BeepStatManager } from './beep-stat-manager.js'
 import { BluFormatter } from './blu-formatter.js'
+import { NodeMetaData } from './node-meta-formatter.js'
 import moment from 'moment'
 
 import MessageTypes from '../../../hardware/ctt/messages.js'
@@ -75,6 +76,13 @@ class DataManager {
           date_format: this.date_format
         })
       }),
+      node_meta: new Logger({
+        fileuri: this.file_manager.getFileUri('node-meta'),
+        suffix: 'node-meta',
+        formatter: new NodeMetaData({
+          data_format: this.date_format
+        })
+      })
     }
   }
 
@@ -102,7 +110,7 @@ class DataManager {
    * @param {*} beep 
    */
   handleRadioBeep(beep) {
-    let record, id, stats
+    let record, id, stats, node_meta, node_meta_blu
     if (beep.meta) {
       // expect new protocol
       switch (beep.meta.data_type) {
@@ -118,6 +126,7 @@ class DataManager {
         }
         case MessageTypes.NodeData: {
           record = this.loggers.beep.addRecord(beep)
+          node_meta = this.loggers.node_meta.addRecord(beep)
           this.stats.addBeep(record)
           break
         }
@@ -137,8 +146,8 @@ class DataManager {
           break
         }
         case MessageTypes.NodeBluData: {
-          // console.log('data manager node blu beep', beep)
           record = this.loggers.blu.addRecord(beep)
+          node_meta_blu = this.loggers.node_meta.addRecord(beep)
           break
         }
         default: {
