@@ -8,6 +8,7 @@ import { TelemetryFormatter } from './telemetry-formatter.js'
 import { BeepStatManager } from './beep-stat-manager.js'
 import { BluFormatter } from './blu-formatter.js'
 import { NodeMetaData } from './node-meta-formatter.js'
+import { NodeMetaData } from './node-meta-formatter.js'
 import moment from 'moment'
 
 import MessageTypes from '../../../hardware/ctt/messages.js'
@@ -126,8 +127,7 @@ class DataManager {
         }
         case MessageTypes.NodeData: {
           record = this.loggers.beep.addRecord(beep)
-          this.loggers.node_meta.addRecord(beep)
-          // node_meta = this.loggers.node_meta.addRecord(beep)
+          node_meta = this.loggers.node_meta.addRecord(beep)
           this.stats.addBeep(record)
           break
         }
@@ -148,8 +148,7 @@ class DataManager {
         }
         case MessageTypes.NodeBluData: {
           record = this.loggers.blu.addRecord(beep)
-          this.loggers.node_meta.addRecord(beep)
-          // node_meta_blu = this.loggers.node_meta.addRecord(beep)
+          node_meta_blu = this.loggers.node_meta.addRecord(beep)
           break
         }
         default: {
