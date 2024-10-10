@@ -72,7 +72,9 @@ class NodeMetaData {
                 fields = this.addCollection(counter, record, recorded_at)
             } else {
                 // counter = idx
-                this.packet.nodes[node_id] = node_data
+                let collections = { collections: {} }
+
+                this.packet.nodes[node_id] = collections
                 this.addNewCollection(counter, record)
                 console.log('new node added', JSON.stringify(this.packet.nodes, null, 2))
             }
@@ -110,6 +112,7 @@ class NodeMetaData {
                 },
                 received_at,
             } = record
+
             let fields
 
             if (Object.keys(this.packet.nodes[node_id].collections)
@@ -118,7 +121,7 @@ class NodeMetaData {
                 // get previous index from collection
                 let iterate = this.packet.nodes[node_id].collections[collect_id]
 
-                // console.log('collection id', collect_id, 'idx', idx, 'iterate', iterate)
+                console.log('collection id', collect_id, 'idx', idx, 'iterate', iterate)
 
                 // check if index is sequential
                 if (idx !== iterate + 1) {
@@ -138,8 +141,9 @@ class NodeMetaData {
                 this.packet.nodes[node_id].collections[collect_id] = iterate += 1
 
             } else {
-                counter = idx
-                this.packet.nodes[node_id].collections[collect_id] = counter
+                this.addNewCollection(counter, record)
+                // counter = idx
+                // this.packet.nodes[node_id].collections[collect_id] = counter
                 // console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
             }
 
@@ -175,11 +179,11 @@ class NodeMetaData {
         } = record
 
         try {
-            let collections = { collections: {} }
+            // let collections = { collections: {} }
             counter = idx
-            this.packet.nodes[node_id] = collections
+            // this.packet.nodes[node_id] = collections
             this.packet.nodes[node_id].collections[collect_id] = counter
-            // console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
+            console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
         } catch (err) {
             console.error('addNewCollection error', err)
         }
