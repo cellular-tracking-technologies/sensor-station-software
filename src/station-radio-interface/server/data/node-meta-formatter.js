@@ -214,8 +214,8 @@ class NodeMetaData {
 
             let fields = this.addNode(record)
 
-            if (fields)
-                return fields
+            // if (fields)
+            // return fields
         } catch (err) {
             console.error('node meta data format record error', err)
         }
