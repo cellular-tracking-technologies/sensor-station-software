@@ -1,5 +1,4 @@
 import moment from 'moment'
-import MessageTypes from '../../../hardware/ctt/messages.js'
 
 /**
  * file formatter for Node Meta Data files
@@ -20,11 +19,6 @@ class NodeMetaData {
       'Protocol',
     ]
     this.date_format = opts.date_format
-    this.count_collection = 49
-    this.collection_array = []
-    this.collect_id
-    this.node_id
-    this.idx
     this.packet = {
       nodes: {},
     }
@@ -42,7 +36,7 @@ class NodeMetaData {
 
       let fields
 
-      // clear packet.nodes object of previous data after collection number restarts
+      // clear packet.nodes object of previous data after collection id restarts
       if (collect_id == 0 && idx == 0) {
         delete this.packet.nodes[node_id]
         console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
@@ -116,8 +110,10 @@ class NodeMetaData {
         fields = this.addNewCollection(record)
       }
 
-      if (fields)
+      if (fields) {
+        console.log('fields', fields)
         return fields
+      }
 
     } catch (err) {
       console.error('updateCollection error', err)
@@ -153,8 +149,10 @@ class NodeMetaData {
       this.packet.nodes[node_id].collections[collect_id] = idx
       console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
 
-      if (fields)
+      if (fields) {
+        console.log('fields', fields)
         return fields
+      }
     } catch (err) {
       console.error('addNewCollection error', err)
     }
