@@ -126,7 +126,8 @@ class DataManager {
         }
         case MessageTypes.NodeData: {
           record = this.loggers.beep.addRecord(beep)
-          node_meta = this.loggers.node_meta.addRecord(beep)
+          this.loggers.node_meta.addRecord(beep)
+          // node_meta = this.loggers.node_meta.addRecord(beep)
           this.stats.addBeep(record)
           break
         }
@@ -147,7 +148,8 @@ class DataManager {
         }
         case MessageTypes.NodeBluData: {
           record = this.loggers.blu.addRecord(beep)
-          node_meta_blu = this.loggers.node_meta.addRecord(beep)
+          this.loggers.node_meta.addRecord(beep)
+          // node_meta_blu = this.loggers.node_meta.addRecord(beep)
           break
         }
         default: {
