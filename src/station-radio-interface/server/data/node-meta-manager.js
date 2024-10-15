@@ -81,15 +81,8 @@ class NodeMetaManager {
             // check if index is sequential
             if (idx !== iterate + 1) {
                 console.log('missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
-                fields = [
-                    node_id,
-                    data_type,
-                    recorded_at,
-                    collect_id,
-                    idx - 1,
-                    rssi,
-                    protocol,
-                ]
+
+                fields = this.createFields(record)
 
                 // reset iterate to match idx
                 iterate = idx - 1
@@ -112,28 +105,17 @@ class NodeMetaManager {
      */
     addNewCollection(record) {
         const {
-            protocol,
             meta: {
                 source: { id: node_id },
                 collection: { id: collect_id, idx },
-                rssi,
             },
-
         } = record
 
         let fields
 
         if (idx - 1 == 0) {
             console.log('missing index 0 packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
-            fields = [
-                node_id,
-                data_type,
-                recorded_at,
-                collect_id,
-                idx - 1,
-                rssi,
-                protocol,
-            ]
+            fields = this.createFields(record)
         }
         this.packet.nodes[node_id].collections[collect_id] = idx
         console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
@@ -142,6 +124,32 @@ class NodeMetaManager {
             console.log('new collection fields', fields)
             return fields
         }
+    }
+
+    createFields(record) {
+        const {
+            protocol,
+            meta: {
+                data_type,
+                source: { id: node_id },
+                collection: { id: collect_id, idx },
+                rssi,
+            },
+            data: { rec_at },
+        } = record
+
+        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+
+        let fields = [
+            node_id,
+            data_type,
+            recorded_at,
+            collect_id,
+            idx - 1,
+            rssi,
+            protocol,
+        ]
+        return fields
     }
 
 }
