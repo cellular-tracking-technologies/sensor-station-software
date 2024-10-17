@@ -46,7 +46,7 @@ class NodeMetaManager {
         }
 
         if (fields) {
-            console.log('add node fields', fields)
+            // console.log('add node fields', fields)
             return fields
         }
     }
@@ -74,9 +74,8 @@ class NodeMetaManager {
             .includes(collect_id.toString())) {
 
             // get previous index from collection
-            let iterate = this.packet.nodes[node_id].collections[collect_id]
-
-            // console.log('collection id', collect_id, 'idx', idx, 'iterate', iterate)
+            let iterate = this.packet.nodes[node_id].collections[collect_id].idx
+            let collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent
 
             // check if index is sequential
             if (idx !== iterate + 1) {
@@ -86,9 +85,13 @@ class NodeMetaManager {
 
                 // reset iterate to match idx
                 iterate = idx - 1
+
+                console.log('existing collection updated', JSON.stringify(this.packet.nodes, null, 2))
             }
-            this.packet.nodes[node_id].collections[collect_id] = iterate += 1
-            // console.log('existing collection updated', JSON.stringify(this.packet.nodes, null, 2))
+            this.packet.nodes[node_id].collections[collect_id].idx = idx
+            this.packet.nodes[node_id].collections[collect_id].collections_sent += 1
+            this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((collections_sent) / idx) * 100)
+
         } else {
             fields = this.addNewCollection(record)
         }
@@ -117,8 +120,12 @@ class NodeMetaManager {
             console.log('missing index 0 packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
             fields = this.createFields(record)
         }
-        this.packet.nodes[node_id].collections[collect_id] = idx
-        console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
+        this.packet.nodes[node_id].collections[collect_id] = {
+            idx: idx,
+            collections_sent: 1,
+            percent_success: 100,
+        }
+        // console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
 
         if (fields) {
             console.log('new collection fields', fields)
