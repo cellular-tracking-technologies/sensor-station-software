@@ -67,7 +67,6 @@ class NodeMetaManager {
             data: { rec_at },
         } = record
 
-        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
         let fields
 
         if (Object.keys(this.packet.nodes[node_id].collections)
@@ -75,7 +74,6 @@ class NodeMetaManager {
 
             // get previous index from collection
             let iterate = this.packet.nodes[node_id].collections[collect_id].idx
-            let collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent
 
             // check if index is sequential
             if (idx !== iterate + 1) {
@@ -90,7 +88,8 @@ class NodeMetaManager {
             }
             this.packet.nodes[node_id].collections[collect_id].idx = idx
             this.packet.nodes[node_id].collections[collect_id].collections_sent += 1
-            this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((collections_sent) / idx) * 100)
+            // console.log('separate variable', collections_sent, 'part of object', this.packet.nodes[node_id].collections[collect_id].collections_sent)
+            this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((this.packet.nodes[node_id].collections[collect_id].collections_sent) / (idx + 1)) * 100)
 
         } else {
             fields = this.addNewCollection(record)
