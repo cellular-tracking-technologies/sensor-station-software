@@ -32,7 +32,7 @@ class NodeMetaManager {
         // clear packet.nodes object of previous data after collection id restarts
         if (collect_id == 0 && idx == 0) {
             delete this.packet.nodes[node_id]
-            console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
+            // console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
         }
 
         // if node is present in object
@@ -44,11 +44,14 @@ class NodeMetaManager {
             this.packet.nodes[node_id] = collections
 
             this.addNewCollection(record)
-            console.log('new node added', JSON.stringify(this.packet.nodes, null, 2))
+            // console.log('new node added', JSON.stringify(this.packet.nodes, null, 2))
         }
 
         if (fields) {
             // console.log('add node fields', fields)
+            // for (let i = 0; i < fields.length; i++) {
+            //     return fields.shift
+            // }
             return fields
         }
     }
@@ -68,8 +71,12 @@ class NodeMetaManager {
             },
             data: { rec_at },
         } = record
+        // console.log('updateCollection record', record)
+        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+
 
         let fields
+        // let fields_array = []
 
         if (Object.keys(this.packet.nodes[node_id].collections)
             .includes(collect_id.toString())) {
@@ -79,20 +86,34 @@ class NodeMetaManager {
 
             // check if index is sequential
             if (idx !== iterate + 1) {
-                console.log('missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
-                console.log('array of missing values', this.range(iterate + 1, idx, 1))
+                // console.log('updateCollection missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
+                // console.log('updateCollection array of missing values', this.range(iterate + 1, idx, 1))
 
                 let missing_values = this.range(iterate + 1, idx, 1)
+                // fields = this.findMissingValues(missing_values, record)
 
-                missing_values.forEach((value) => {
-                    fields = this.createFields(record, value)
+                fields = missing_values.flatMap((value, i, arr) => {
+                    // console.log('update collection missing values arr', arr)
+                    let fields_array = []
+                    fields_array.push(this.createFields(record, value))
+                    // let fields_array = this.createFields(record, value)
+                    if (arr.length > 1) {
+
+                        fields_array.push(['\n'])
+
+                        // remove last newline
+                        if (i + 1 == arr.length) {
+                            fields_array.splice(-1)
+                        }
+                    }
+                    // console.log('update collection fields array', fields_array)
+
+                    return fields_array
                 })
-
-                // fields = this.createFields(record)
+                // console.log('forEach fields out of loop', fields)
 
                 // reset iterate to match idx
                 iterate = idx - 1
-
                 // console.log('existing collection updated', JSON.stringify(this.packet.nodes, null, 2))
             }
 
@@ -101,16 +122,36 @@ class NodeMetaManager {
 
             let collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent
             this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round((collections_sent / 50) * 100)
+            this.packet.nodes[node_id].collections[collect_id].recorded_at = recorded_at
             // console.log('collection missing last packet', Object.values(this.packet.nodes[node_id].collections)[index - 1])
 
         } else {
             fields = this.addNewCollection(record)
         }
 
-        if (fields) {
-            // console.log('update collection fields', fields)
+        if (fields)
             return fields
+    }
+
+    returnFields(fields) {
+        // console.log('return fields', fields)
+        return fields
+    }
+
+    findMissingValues(missing_values, record) {
+        let fields
+        // missing_values.forEach((value) => {
+        //     console.log('missing values', value)
+        //     fields = this.createFields(record, value)
+        //     console.log('find missing values fields', fields)
+        // })
+        for (const i of missing_values) {
+            // console.log('missing values', i)
+            fields = this.createFields(record, i)
         }
+
+        // if (fields)
+        return fields
     }
 
     /**
@@ -119,6 +160,7 @@ class NodeMetaManager {
      */
     addNewCollection(record) {
         let {
+            protocol,
             meta: {
                 data_type,
                 source: { id: node_id },
@@ -130,16 +172,37 @@ class NodeMetaManager {
 
         const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
 
-        if (node_id.length < 8) {
-            // record.collection.idx = 0
-            console.log('v2 node record', record)
-        }
-
         let fields
 
-        if (idx - 1 == 0) {
-            console.log('missing index 0 packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
-            fields = this.createFields(record, 0)
+        if (idx !== 0) {
+            // console.log('missing index 0 packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
+
+            // console.log('missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
+            // console.log('new collection array of missing values', this.range(0, idx, 1))
+
+            let missing_values = this.range(0, idx, 1)
+
+            fields = missing_values.flatMap((value, i, arr) => {
+                // console.log('add new collection missing values arr', arr)
+                // let fields_array = this.createFields(record, value)
+                let fields_array = []
+                fields_array.push(this.createFields(record, value))
+                if (arr.length > 1) {
+
+                    fields_array.push(['\n'])
+
+                    // remove last newline
+                    if (i + 1 == arr.length) {
+                        fields_array.splice(-1)
+                    }
+                }
+                return fields_array
+            })
+            // console.log('add new collection fields array', fields)
+
+
+            // console.log('existing collection updated', JSON.stringify(this.packet.nodes, null, 2))
+
         }
 
         this.packet.nodes[node_id].collections[collect_id] = {
@@ -147,46 +210,97 @@ class NodeMetaManager {
             collections_sent: 1,
             percent_success: (1 / 50) * 100,
             data_type,
+            recorded_at,
         }
 
         // check if previous collection did not get last beep
-        // console.log('new collection added', JSON.stringify(this.packet.nodes, null, 2))
         let index = Object.keys(this.packet.nodes[node_id].collections).findIndex((el) => Number(el) == collect_id)
 
         // if v3 node is missing last beep
         if (node_id.length == 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 49) {
-            // console.log('collection missing last packet', Object.values(this.packet.nodes[node_id].collections)[index - 1])
-            console.log('collection missing last packet', Object.values(this.packet.nodes[node_id].collections)[index - 1])
 
-            fields = [
-                node_id,
-                Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
-                null,
-                Object.keys(this.packet.nodes[node_id].collections)[index - 1],
-                49,
-                null,
-                null,
-            ]
+            let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
+            let prev_idx = this.packet.nodes[node_id].collections[prev_collect].idx
+            let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
+
+            // console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
+
+            let missing_values = this.range(prev_idx + 1, 50, 1)
+
+            fields = missing_values.flatMap((value, i, arr) => {
+                // fields = this.createFields(record, value)
+                let fields_array = []
+
+                let fields_elem = [
+                    node_id,
+                    Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
+                    prev_recordat,
+                    prev_collect,
+                    value,
+                    rssi, //rssi
+                    protocol, // protocol
+                    // '\n'
+                ]
+                fields_array.push(fields_elem)
+                // console.log('v3 fields array', fields_array)
+                if (arr.length > 1) {
+
+                    fields_array.push(['\n'])
+
+                    // remove last newline
+                    if (i + 1 == arr.length) {
+                        fields_array.splice(-1)
+                    }
+                }
+                return fields_array
+                // return fields_elem
+            })
+
         }
 
         // if v2 node is missing last beep
         if (node_id.length < 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 50) {
-            // console.log('collection missing last packet', Object.values(this.packet.nodes[node_id].collections)[index - 1])
-            console.log('collection missing last packet in v2 node', Object.values(this.packet.nodes[node_id].collections)[index - 1])
 
-            fields = [
-                node_id,
-                Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
-                null,
-                Object.keys(this.packet.nodes[node_id].collections)[index - 1],
-                50,
-                null,
-                null,
-            ]
+
+            let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
+            let prev_idx = Object.values(this.packet.nodes[node_id].collections)[index - 1].idx
+            let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
+
+            // console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
+
+            let missing_values = this.range(prev_idx + 1, 51, 1)
+
+            fields = missing_values.flatMap((value, i, arr) => {
+                // fields = this.createFields(record, value)
+                let fields_array = []
+                let fields_elem = [
+                    node_id, // node_id
+                    Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type, // node_type, blue or coded_id
+                    prev_recordat, // recorded at
+                    prev_collect,
+                    value, // beep
+                    rssi, //rssi
+                    protocol, // protocol
+                    // '\n'
+                ]
+                // console.log('v2 fields array', fields_array)
+                fields_array.push(fields_elem)
+                if (arr.length > 1) {
+
+                    fields_array.push(['\n'])
+
+                    // remove last newline
+                    if (i + 1 == arr.length) {
+                        fields_array.splice(-1)
+                    }
+                }
+                return fields_array
+                // return fields_elem
+            })
         }
 
         if (fields) {
-            console.log('new collection fields', fields)
+            // console.log('new collection fields', fields)
             return fields
         }
     }
@@ -214,8 +328,9 @@ class NodeMetaManager {
             value,
             rssi,
             protocol,
+            // '\n'
         ]
-        console.log('create fields', fields)
+        // console.log('create fields', fields)
         return fields
     }
 

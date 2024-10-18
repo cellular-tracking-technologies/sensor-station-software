@@ -35,8 +35,9 @@ class NodeMetaData {
   formatRecord(record) {
     const fields = this.node_meta.addNode(record)
 
-    if (fields)
+    if (fields) {
       return fields
+    }
 
   }
 }
