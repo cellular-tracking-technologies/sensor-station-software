@@ -90,26 +90,11 @@ class NodeMetaManager {
                 // console.log('updateCollection array of missing values', this.range(iterate + 1, idx, 1))
 
                 let missing_values = this.range(iterate + 1, idx, 1)
+                let min = Math.min(...missing_values)
+                let max = Math.max(...missing_values)
                 // fields = this.findMissingValues(missing_values, record)
 
-                fields = missing_values.flatMap((value, i, arr) => {
-                    // console.log('update collection missing values arr', arr)
-                    let fields_array = []
-                    fields_array.push(this.createFields(record, value))
-                    // let fields_array = this.createFields(record, value)
-                    if (arr.length > 1) {
-
-                        fields_array.push(['\n'])
-
-                        // remove last newline
-                        if (i + 1 == arr.length) {
-                            fields_array.splice(-1)
-                        }
-                    }
-                    // console.log('update collection fields array', fields_array)
-
-                    return fields_array
-                })
+                fields = this.createFields(record, min, max)
                 // console.log('forEach fields out of loop', fields)
 
                 // reset iterate to match idx
@@ -133,26 +118,6 @@ class NodeMetaManager {
             return fields
     }
 
-    returnFields(fields) {
-        // console.log('return fields', fields)
-        return fields
-    }
-
-    findMissingValues(missing_values, record) {
-        let fields
-        // missing_values.forEach((value) => {
-        //     console.log('missing values', value)
-        //     fields = this.createFields(record, value)
-        //     console.log('find missing values fields', fields)
-        // })
-        for (const i of missing_values) {
-            // console.log('missing values', i)
-            fields = this.createFields(record, i)
-        }
-
-        // if (fields)
-        return fields
-    }
 
     /**
      * 
@@ -178,29 +143,17 @@ class NodeMetaManager {
             // console.log('missing index 0 packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
 
             // console.log('missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
-            // console.log('new collection array of missing values', this.range(0, idx, 1))
+            console.log('no starting idx array of missing values', this.range(0, idx, 1))
 
             let missing_values = this.range(0, idx, 1)
+            let min = Math.min(...missing_values)
+            let max = Math.max(...missing_values)
 
-            fields = missing_values.flatMap((value, i, arr) => {
-                // console.log('add new collection missing values arr', arr)
-                // let fields_array = this.createFields(record, value)
-                let fields_array = []
-                fields_array.push(this.createFields(record, value))
-                if (arr.length > 1) {
+            console.log('min', min, 'max', max)
 
-                    fields_array.push(['\n'])
+            fields = this.createFields(record, min, max)
 
-                    // remove last newline
-                    if (i + 1 == arr.length) {
-                        fields_array.splice(-1)
-                    }
-                }
-                return fields_array
-            })
-            // console.log('add new collection fields array', fields)
-
-
+            console.log('no starting idx fields', fields)
             // console.log('existing collection updated', JSON.stringify(this.packet.nodes, null, 2))
 
         }
@@ -223,38 +176,23 @@ class NodeMetaManager {
             let prev_idx = this.packet.nodes[node_id].collections[prev_collect].idx
             let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
 
-            // console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
+            console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
 
             let missing_values = this.range(prev_idx + 1, 50, 1)
+            let min = Math.min(...missing_values)
+            let max = Math.max(...missing_values)
 
-            fields = missing_values.flatMap((value, i, arr) => {
-                // fields = this.createFields(record, value)
-                let fields_array = []
-
-                let fields_elem = [
-                    node_id,
-                    Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
-                    prev_recordat,
-                    prev_collect,
-                    value,
-                    rssi, //rssi
-                    protocol, // protocol
-                    // '\n'
-                ]
-                fields_array.push(fields_elem)
-                // console.log('v3 fields array', fields_array)
-                if (arr.length > 1) {
-
-                    fields_array.push(['\n'])
-
-                    // remove last newline
-                    if (i + 1 == arr.length) {
-                        fields_array.splice(-1)
-                    }
-                }
-                return fields_array
-                // return fields_elem
-            })
+            fields = [
+                node_id,
+                Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
+                prev_recordat,
+                prev_collect,
+                min, // missing idx start
+                max, // missing idx end
+                rssi, //rssi
+                protocol, // protocol
+            ]
+            console.log('v3 node fields', fields)
 
         }
 
@@ -266,38 +204,24 @@ class NodeMetaManager {
             let prev_idx = Object.values(this.packet.nodes[node_id].collections)[index - 1].idx
             let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
 
-            // console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
+            console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
 
             let missing_values = this.range(prev_idx + 1, 51, 1)
+            let min = Math.min(...missing_values)
+            let max = Math.max(...missing_values)
 
-            fields = missing_values.flatMap((value, i, arr) => {
-                // fields = this.createFields(record, value)
-                let fields_array = []
-                let fields_elem = [
-                    node_id, // node_id
-                    Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type, // node_type, blue or coded_id
-                    prev_recordat, // recorded at
-                    prev_collect,
-                    value, // beep
-                    rssi, //rssi
-                    protocol, // protocol
-                    // '\n'
-                ]
-                // console.log('v2 fields array', fields_array)
-                fields_array.push(fields_elem)
-                if (arr.length > 1) {
-
-                    fields_array.push(['\n'])
-
-                    // remove last newline
-                    if (i + 1 == arr.length) {
-                        fields_array.splice(-1)
-                    }
-                }
-                return fields_array
-                // return fields_elem
-            })
+            fields = [
+                node_id,
+                Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
+                prev_recordat,
+                prev_collect,
+                min, // missing idx start
+                max, // missing idx end
+                rssi, //rssi
+                protocol, // protocol
+            ]
         }
+        console.log('v2 node fields', fields)
 
         if (fields) {
             // console.log('new collection fields', fields)
@@ -305,7 +229,7 @@ class NodeMetaManager {
         }
     }
 
-    createFields(record, value) {
+    createFields(record, min, max) {
         const {
             protocol,
             meta: {
@@ -324,11 +248,10 @@ class NodeMetaManager {
             data_type,
             recorded_at,
             collect_id,
-            // idx - 1,
-            value,
+            min,
+            max,
             rssi,
             protocol,
-            // '\n'
         ]
         // console.log('create fields', fields)
         return fields
