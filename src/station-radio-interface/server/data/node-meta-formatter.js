@@ -15,7 +15,8 @@ class NodeMetaData {
       'NodeSource',
       'Date',
       'CollectionId',
-      'CollectionIndex',
+      'MissingIndexStart',
+      'MissingIndexEnd',
       'RSSI',
       'Protocol',
     ]
@@ -34,7 +35,7 @@ class NodeMetaData {
 
   formatRecord(record) {
     const fields = this.node_meta.addNode(record)
-
+    // console.log('format record fields', fields)
     if (fields) {
       return fields
     }
