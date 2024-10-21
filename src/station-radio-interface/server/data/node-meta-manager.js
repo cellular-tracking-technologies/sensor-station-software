@@ -145,15 +145,12 @@ class NodeMetaManager {
             // console.log('missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
             console.log('no starting idx array of missing values', this.range(0, idx, 1))
 
+            // create a range of missing values, from 0 to whatever the idx is
             let missing_values = this.range(0, idx, 1)
             let min = Math.min(...missing_values)
             let max = Math.max(...missing_values)
 
-            console.log('min', min, 'max', max)
-
             fields = this.createFields(record, min, max)
-
-            console.log('no starting idx fields', fields)
             // console.log('existing collection updated', JSON.stringify(this.packet.nodes, null, 2))
 
         }
@@ -165,6 +162,86 @@ class NodeMetaManager {
             data_type,
             recorded_at,
         }
+
+        // check if previous collection is missing last beep
+        fields = this.checkPreviousCollection(record)
+
+        // // check if previous collection did not get last beep
+        // let index = Object.keys(this.packet.nodes[node_id].collections).findIndex((el) => Number(el) == collect_id)
+
+        // // if v3 node is missing last beep
+        // if (node_id.length == 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 49) {
+
+        //     let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
+        //     let prev_idx = this.packet.nodes[node_id].collections[prev_collect].idx
+        //     let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
+
+        //     console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
+
+        //     let missing_values = this.range(prev_idx + 1, 50, 1)
+        //     let min = Math.min(...missing_values)
+        //     let max = Math.max(...missing_values)
+
+        //     fields = [
+        //         node_id,
+        //         Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
+        //         prev_recordat,
+        //         prev_collect,
+        //         min, // missing idx start
+        //         max, // missing idx end
+        //         rssi, //rssi
+        //         protocol, // protocol
+        //     ]
+        //     console.log('v3 node fields', fields)
+
+        // }
+
+        // // if v2 node is missing last beep
+        // if (node_id.length < 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 50) {
+
+
+        //     let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
+        //     let prev_idx = Object.values(this.packet.nodes[node_id].collections)[index - 1].idx
+        //     let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
+
+        //     console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
+
+        //     let missing_values = this.range(prev_idx + 1, 51, 1)
+        //     let min = Math.min(...missing_values)
+        //     let max = Math.max(...missing_values)
+
+        //     fields = [
+        //         node_id,
+        //         Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
+        //         prev_recordat,
+        //         prev_collect,
+        //         min, // missing idx start
+        //         max, // missing idx end
+        //         rssi, //rssi
+        //         protocol, // protocol
+        //     ]
+        // }
+        // console.log('v2 node fields', fields)
+
+        if (fields) {
+            // console.log('new collection fields', fields)
+            return fields
+        }
+    }
+
+    checkPreviousCollection(record) {
+        let {
+            protocol,
+            meta: {
+                data_type,
+                source: { id: node_id },
+                collection: { id: collect_id, idx },
+                rssi,
+            },
+            data: { rec_at },
+        } = record
+
+        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
 
         // check if previous collection did not get last beep
         let index = Object.keys(this.packet.nodes[node_id].collections).findIndex((el) => Number(el) == collect_id)
@@ -182,6 +259,10 @@ class NodeMetaManager {
             let min = Math.min(...missing_values)
             let max = Math.max(...missing_values)
 
+            const num_missing = max - min
+            const percent_loss = (num_missing / 50) * 100
+            const percent_success = 100 - percent_loss
+
             fields = [
                 node_id,
                 Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
@@ -189,6 +270,9 @@ class NodeMetaManager {
                 prev_collect,
                 min, // missing idx start
                 max, // missing idx end
+                num_missing,
+                percent_loss,
+                percent_success,
                 rssi, //rssi
                 protocol, // protocol
             ]
@@ -210,6 +294,10 @@ class NodeMetaManager {
             let min = Math.min(...missing_values)
             let max = Math.max(...missing_values)
 
+            const num_missing = max - min
+            const percent_loss = (num_missing / 50) * 100
+            const percent_success = 100 - percent_loss
+
             fields = [
                 node_id,
                 Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
@@ -217,6 +305,9 @@ class NodeMetaManager {
                 prev_collect,
                 min, // missing idx start
                 max, // missing idx end
+                num_missing,
+                percent_loss,
+                percent_success,
                 rssi, //rssi
                 protocol, // protocol
             ]
@@ -243,6 +334,10 @@ class NodeMetaManager {
 
         const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
 
+        const num_missing = max - min
+        const percent_loss = (num_missing / 50) * 100
+        const percent_success = 100 - percent_loss
+
         let fields = [
             node_id,
             data_type,
@@ -250,6 +345,9 @@ class NodeMetaManager {
             collect_id,
             min,
             max,
+            num_missing,
+            percent_loss,
+            percent_success,
             rssi,
             protocol,
         ]
