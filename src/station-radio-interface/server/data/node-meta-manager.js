@@ -27,12 +27,15 @@ class NodeMetaManager {
             },
         } = record
 
+        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+
+
         let fields
 
         // clear packet.nodes object of previous data after collection id restarts
-        if (collect_id == 0 && idx == 0) {
+        if (collect_id == 0 && recorded_at !== this.packet.nodes[node_id].collections[collect_id].recorded_at) {
             delete this.packet.nodes[node_id]
-            // console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
+            console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
         }
 
         // if node is present in object
@@ -49,9 +52,6 @@ class NodeMetaManager {
 
         if (fields) {
             // console.log('add node fields', fields)
-            // for (let i = 0; i < fields.length; i++) {
-            //     return fields.shift
-            // }
             return fields
         }
     }
@@ -89,10 +89,7 @@ class NodeMetaManager {
                 // console.log('updateCollection missing packet', 'collection id', collect_id, 'idx', idx, 'iterate', iterate)
                 // console.log('updateCollection array of missing values', this.range(iterate + 1, idx, 1))
 
-                let missing_values = this.range(iterate + 1, idx, 1)
-                let min = Math.min(...missing_values)
-                let max = Math.max(...missing_values)
-                // fields = this.findMissingValues(missing_values, record)
+                const { min, max } = this.getMinMax(iterate + 1, idx)
 
                 fields = this.createFields(record, min, max)
                 // console.log('forEach fields out of loop', fields)
@@ -146,13 +143,10 @@ class NodeMetaManager {
             console.log('no starting idx array of missing values', this.range(0, idx, 1))
 
             // create a range of missing values, from 0 to whatever the idx is
-            let missing_values = this.range(0, idx, 1)
-            let min = Math.min(...missing_values)
-            let max = Math.max(...missing_values)
+            const { min, max } = this.getMinMax(0, idx)
 
             fields = this.createFields(record, min, max)
             // console.log('existing collection updated', JSON.stringify(this.packet.nodes, null, 2))
-
         }
 
         this.packet.nodes[node_id].collections[collect_id] = {
@@ -165,62 +159,6 @@ class NodeMetaManager {
 
         // check if previous collection is missing last beep
         fields = this.checkPreviousCollection(record)
-
-        // // check if previous collection did not get last beep
-        // let index = Object.keys(this.packet.nodes[node_id].collections).findIndex((el) => Number(el) == collect_id)
-
-        // // if v3 node is missing last beep
-        // if (node_id.length == 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 49) {
-
-        //     let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
-        //     let prev_idx = this.packet.nodes[node_id].collections[prev_collect].idx
-        //     let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
-
-        //     console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
-
-        //     let missing_values = this.range(prev_idx + 1, 50, 1)
-        //     let min = Math.min(...missing_values)
-        //     let max = Math.max(...missing_values)
-
-        //     fields = [
-        //         node_id,
-        //         Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
-        //         prev_recordat,
-        //         prev_collect,
-        //         min, // missing idx start
-        //         max, // missing idx end
-        //         rssi, //rssi
-        //         protocol, // protocol
-        //     ]
-        //     console.log('v3 node fields', fields)
-
-        // }
-
-        // // if v2 node is missing last beep
-        // if (node_id.length < 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 50) {
-
-
-        //     let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
-        //     let prev_idx = Object.values(this.packet.nodes[node_id].collections)[index - 1].idx
-        //     let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
-
-        //     console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
-
-        //     let missing_values = this.range(prev_idx + 1, 51, 1)
-        //     let min = Math.min(...missing_values)
-        //     let max = Math.max(...missing_values)
-
-        //     fields = [
-        //         node_id,
-        //         Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
-        //         prev_recordat,
-        //         prev_collect,
-        //         min, // missing idx start
-        //         max, // missing idx end
-        //         rssi, //rssi
-        //         protocol, // protocol
-        //     ]
-        // }
         // console.log('v2 node fields', fields)
 
         if (fields) {
@@ -249,23 +187,17 @@ class NodeMetaManager {
         // if v3 node is missing last beep
         if (node_id.length == 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 49) {
 
-            let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
-            let prev_idx = this.packet.nodes[node_id].collections[prev_collect].idx
-            let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
+            const { prev_collect, prev_idx, prev_recordat } = this.getPreviousCollection(node_id, index)
 
             console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
 
-            let missing_values = this.range(prev_idx + 1, 50, 1)
-            let min = Math.min(...missing_values)
-            let max = Math.max(...missing_values)
+            const { min, max } = this.getMinMax(prev_idx + 1, 50, 1)
 
-            const num_missing = max - min
-            const percent_loss = (num_missing / 50) * 100
-            const percent_success = 100 - percent_loss
+            const { num_missing, percent_loss, percent_success } = this.getMissingStats(min, max)
 
             fields = [
                 node_id,
-                Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
+                prev_collect.data_type,
                 prev_recordat,
                 prev_collect,
                 min, // missing idx start
@@ -283,24 +215,16 @@ class NodeMetaManager {
         // if v2 node is missing last beep
         if (node_id.length < 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 50) {
 
-
-            let prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
-            let prev_idx = Object.values(this.packet.nodes[node_id].collections)[index - 1].idx
-            let prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
-
+            const { prev_collect, prev_idx, prev_recordat } = this.getPreviousCollection(node_id, index)
             console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
 
-            let missing_values = this.range(prev_idx + 1, 51, 1)
-            let min = Math.min(...missing_values)
-            let max = Math.max(...missing_values)
-
-            const num_missing = max - min
-            const percent_loss = (num_missing / 50) * 100
-            const percent_success = 100 - percent_loss
+            // let missing_values = this.range(prev_idx + 1, 51, 1)
+            const { min, max } = this.getMissingValues(prev_idx + 1, 51)
+            const { num_missing, percent_loss, percent_success } = this.getMissingStats(min, max)
 
             fields = [
                 node_id,
-                Object.values(this.packet.nodes[node_id].collections)[index - 1].data_type,
+                prev_collect.data_type,
                 prev_recordat,
                 prev_collect,
                 min, // missing idx start
@@ -334,9 +258,7 @@ class NodeMetaManager {
 
         const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
 
-        const num_missing = max - min
-        const percent_loss = (num_missing / 50) * 100
-        const percent_success = 100 - percent_loss
+        const { num_missing, percent_loss, percent_success } = this.getMissingStats(min, max)
 
         let fields = [
             node_id,
@@ -368,6 +290,29 @@ class NodeMetaManager {
             { length: Math.ceil((stop - start) / step) },
             (_, i) => start + i * step,
         );
+    }
+
+    getMinMax(start, stop) {
+        let missing_values = this.range(start, stop, 1)
+        let min = Math.min(...missing_values)
+        let max = Math.max(...missing_values)
+
+        return { min, max }
+    }
+
+    getMissingStats(min, max) {
+        const num_missing = max - min
+        const percent_loss = (num_missing / 50) * 100
+        const percent_success = 100 - percent_loss
+        return { num_missing, percent_loss, percent_success }
+    }
+
+    getPreviousCollection(node_id, index) {
+        const prev_collect = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
+        const prev_idx = Object.values(this.packet.nodes[node_id].collections)[index - 1].idx
+        const prev_recordat = Object.values(this.packet.nodes[node_id].collections)[index - 1].recorded_at
+
+        return { prev_collect, prev_idx, prev_recordat }
     }
 
 }
