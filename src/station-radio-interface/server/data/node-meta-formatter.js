@@ -14,12 +14,14 @@ class NodeMetaData {
       'DataType',
       'NodeSource',
       'Date',
+      'Protocol',
       'CollectionId',
       'MissingIndexStart',
       'MissingIndexEnd',
+      'NumberMissing',
       'TotalMissingFromCollection',
-      'RSSI',
-      'Protocol',
+      'PercentLoss',
+      'PercentSuccess',
     ]
     this.date_format = opts.date_format
     this.packet = {
