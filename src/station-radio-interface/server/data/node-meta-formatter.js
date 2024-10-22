@@ -17,6 +17,7 @@ class NodeMetaData {
       'CollectionId',
       'MissingIndexStart',
       'MissingIndexEnd',
+      'TotalMissingFromCollection',
       'RSSI',
       'Protocol',
     ]
@@ -34,10 +35,16 @@ class NodeMetaData {
    */
 
   formatRecord(record) {
-    const fields = this.node_meta.addNode(record)
-    // console.log('format record fields', fields)
-    if (fields) {
-      return fields
+    try {
+
+      // console.log('format record record', record)
+      const fields = this.node_meta.addNode(record)
+      // console.log('format record fields', fields)
+      if (fields) {
+        return fields
+      }
+    } catch (err) {
+      console.error('node meta error', err)
     }
 
   }
