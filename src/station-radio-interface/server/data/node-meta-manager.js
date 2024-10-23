@@ -27,20 +27,23 @@ class NodeMetaManager {
                 collection: { id: collect_id, idx },
             },
             data: { rec_at },
+            received_at
 
         } = record
 
-        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+        // const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+        const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
 
         let fields
 
-        // clear packet.nodes object of previous data after collection id restarts
-        if (collect_id == 0 && recorded_at !== this.packet.nodes[node_id].collections[collect_id]?.recorded_at) {
-            // if (collect_id == 0 && idx == 0) {
-            console.log('previous beeps in collection id', this.packet.nodes[node_id].collections)
-            delete this.packet.nodes[node_id]
-            console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
-        }
+        // // clear packet.nodes object of previous data after collection id restarts
+        // if (collect_id == 0 && recorded_at !== this.packet.nodes[node_id].collections[collect_id]?.recorded_at) {
+        //     // if (collect_id == 0 && idx == 0) {
+        //     console.log('previous beeps in collection id', this.packet.nodes[node_id].collections)
+        //     // delete this.packet.nodes[node_id]
+        //     this.packet.nodes = {}
+        //     console.log('packet counter reset, clear existing packets', JSON.stringify(this.packet.nodes, null, 2))
+        // }
 
         // if node is present in object
         if (Object.keys(this.packet.nodes).includes(node_id)) {
@@ -53,6 +56,8 @@ class NodeMetaManager {
             this.addNewCollection(record)
         }
 
+
+
         if (fields) {
             return fields
         }
@@ -63,7 +68,6 @@ class NodeMetaManager {
      * @param {Number} idx - index of collection id
      */
     updateCollection(record) {
-        // console.log('updateCollection record', record)
         const {
             protocol,
             meta: {
@@ -73,9 +77,12 @@ class NodeMetaManager {
                 rssi,
             },
             data: { rec_at },
+            received_at
         } = record
         // console.log('updateCollection record', record)
-        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+        // const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+        const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
+
 
         let fields, min, max, num_missing
 
@@ -87,6 +94,7 @@ class NodeMetaManager {
 
             // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
             if (idx !== iterate + 1 && idx > iterate + 1) {
+                // if (idx !== iterate + 1) {
                 console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
 
                 let missing = this.getMinMax(iterate + 1, idx)
@@ -115,8 +123,21 @@ class NodeMetaManager {
             fields = this.addNewCollection(record)
         }
 
+        // clear packet.nodes object of previous data after collection id restarts
+        this.clearNodePackets(node_id, collect_id)
+
         if (fields)
             return fields
+    }
+
+    clearNodePackets(node_id, collect_id) {
+        console.log('collections sent', this.packet.nodes[node_id].collections[collect_id].collections_sent)
+        // clear v3 node objects
+        if (Object.keys(this.packet.nodes[node_id]?.collections).length >= 10 && this.packet.nodes[node_id].collections[collect_id].collections_sent === 50) {
+            this.packet.nodes[node_id].collections = {}
+            console.log('node', node_id, 'collections deleted', Object.keys(this.packet.nodes[node_id]?.collections).length)
+        }
+        console.log('nodes length', Object.keys(this.packet.nodes[node_id]?.collections).length)
     }
 
 
@@ -135,9 +156,12 @@ class NodeMetaManager {
                 rssi,
             },
             data: { rec_at },
+            received_at
         } = record
 
-        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+        // const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+        const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
+
 
         let fields, min, max, num_missing
 
@@ -169,10 +193,11 @@ class NodeMetaManager {
             data_type,
             recorded_at,
         }
-        console.log('add new collection missing', node_id, collect_id, this.packet.nodes[node_id].collections[collect_id].missing)
+        // console.log('add new collection missing', node_id, collect_id, this.packet.nodes[node_id].collections[collect_id].missing)
+        console.log('add new collection', this.packet.nodes[node_id].collections)
 
 
-        // need to work on logic for checking previous collections
+        // check if previous collection is missing last beep - need to work on logic for checking previous collections
         if (this.packet.nodes[node_id].collections[collect_id - 1] && this.packet.nodes[node_id].collections[collect_id - 1].idx !== 49) {
 
             // check if previous collection is missing last beep
@@ -196,10 +221,9 @@ class NodeMetaManager {
                 collection: { id: collect_id, idx },
                 rssi,
             },
-            data: { rec_at },
         } = record
 
-        const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
+        // const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
 
         // check if previous collection did not get last beep
         let index = Object.keys(this.packet.nodes[node_id].collections).findIndex((el) => Number(el) == collect_id)
