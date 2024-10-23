@@ -75,7 +75,6 @@ class NodeMetaManager {
                 min = missing.min
                 max = missing.max
                 num_missing = (max - min) + 1
-                console.log('update collection missing values', node_id, collect_id, missing)
 
                 fields = this.createFields(protocol, data_type, node_id, collect_id, rssi, recorded_at, min, max, num_missing)
 
@@ -104,14 +103,21 @@ class NodeMetaManager {
             return fields
     }
 
+    /**
+     * 
+     * @param {Number} node_id 
+     * @param {Number} collect_id 
+     */
     clearNodePackets(node_id, collect_id) {
-        console.log('collections sent', this.packet.nodes[node_id].collections[collect_id].collections_sent)
-        // clear v3 node objects
-        if (Object.keys(this.packet.nodes[node_id]?.collections).length >= 10 && this.packet.nodes[node_id].collections[collect_id].collections_sent === 50) {
+        // console.log('collections sent', this.packet.nodes[node_id].collections[collect_id].collections_sent)
+
+        let length = Object.keys(this.packet.nodes[node_id]?.collections).length
+        let collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent
+
+        if (length >= 10 && collections_sent === 50) {
             this.packet.nodes[node_id].collections = {}
             console.log('node', node_id, 'collections deleted', Object.keys(this.packet.nodes[node_id]?.collections).length)
         }
-        console.log('nodes length', Object.keys(this.packet.nodes[node_id]?.collections).length)
     }
 
 
@@ -202,7 +208,6 @@ class NodeMetaManager {
             min = missing.min
             max = missing.max
             num_missing = (max - min) + 1
-            console.log('v3 node min max', min, max, num_missing)
 
             fields = this.createFields(protocol, data_type, node_id, prev_collect, rssi, prev_recordat, min, max, num_missing)
             console.log('v3 node fields', fields)
@@ -219,14 +224,11 @@ class NodeMetaManager {
             max = missing.max
             num_missing = (max - min) + 1
 
-            console.log('v2 node min max', min, max, num_missing)
-
             fields = this.createFields(protocol, data_type, node_id, prev_collect, rssi, prev_recordat, min, max, num_missing)
             console.log('v2 node fields', fields)
         }
 
         if (fields) {
-            // console.log('new collection fields', fields)
             return fields
         }
     }
@@ -246,15 +248,11 @@ class NodeMetaManager {
      */
 
     createFields(protocol, data_type, node_id, collect_id, rssi, recorded_at, min, max, num_missing) {
-        console.log('create fields min', min, 'max', max, 'num missing', num_missing)
-        // const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
 
         let current_missing = this.packet.nodes[node_id].collections[collect_id]?.missing ?? 0
         let total_missing = current_missing + num_missing
         let percent_loss = Math.floor((total_missing / 50) * 100)
         let percent_success = 100 - percent_loss
-
-        console.log('create fields current missing', current_missing, 'total missing', total_missing, 'percent loss', percent_loss, 'percent success', percent_success)
 
         let fields = [
             node_id,
@@ -288,11 +286,9 @@ class NodeMetaManager {
     }
 
     getMinMax(start, stop) {
-        console.log('getMinMax start', start, 'stop', stop)
         let missing_values = this.range(start, stop, 1)
         let min = Math.min(...missing_values)
         let max = Math.max(...missing_values)
-        console.log('get min', min, 'get max', max)
         return { min, max }
     }
 
