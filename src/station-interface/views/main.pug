@@ -1,0 +1,367 @@
+html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
+  head
+    title= title
+    link(rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css" type="text/css")
+    link(rel="stylesheet" href="/stylesheets/style.css" type="text/css")
+    link(rel="icon" type="image/x-icon" href="/favicon.ico")
+  body(style="font-size:0.8em;background-color: #333; color: #D1FF00;")
+    div(class="row")
+      div(class="col-sm-3")
+        div(style="text-align:center;")
+          img(src="/ctt_logo_300DPI.png" style="height:100px;")
+      div(class="col-sm-9")
+        h1(style="") CTT Sensor Station Overview
+    div(class="row")
+      div(class="col-lg-8")
+        div(class="row")
+          h2 Nodes
+          table(class="table table-bordered table-sm table-dark" id="node-history")
+            tr(class="table-primary", style="color:#111")
+              th #
+              th Node ID
+              th Time Since
+              th RSSI
+              th Battery
+              th Firmware
+              th Latitude
+              th Longitude 
+              th GPS Time
+          a(id="download-nodes", class="btn btn-primary btn-block") Download Node Table
+
+        div(class="row")
+          div(style="overflow-y: scroll; height:400px;")
+            div
+              h2 Live Tags
+              table(class="table table-bordered table-sm table-dark" id="tags")
+                tr(class="table-primary", style="color:#111") 
+                  th Tag ID
+                  th Count
+                  th Beep Rate (Beeps/s)
+                  th Alias
+                  th 
+                  th 
+        div(style="min-height:250px;", id="tag_hist")
+
+        h2 Sensor Station Log
+        div(style="overflow-y: scroll; height:400px;")
+          table(class="table table-bordered table-sm table-dark" id="raw_log")
+            tr(class="table-primary", style="color:#111") 
+              th Time
+              th Message
+
+      div(class="col-lg-4")
+        h2 Station
+        table(class="table table-bordered table-sm table-dark")
+          tr
+            th ID
+            td
+              span(id="station-id")
+          tr
+            th Software Start
+            td
+              span(id="software-start")
+          tr
+            th Last Software Update
+            td
+              span(id="software-update")
+          tr
+            th Compute Module Serial
+            td
+              span(id="serial")
+          tr
+            th Module Hardware
+            td
+              span(id="hardware")
+          tr
+            th Module Revision
+            td
+              span(id="revision")
+          tr
+            th Boot Count
+            td
+              span(id="bootcount")
+          tr
+            th Total Memory
+            td
+              span(id="memory")
+          tr
+            th Last Boot
+            td
+              span(id="uptime")
+          tr
+            th Internet Gateway
+            td
+              span(id="internet-gateway")
+          tr
+            th Wifi Signal Strength
+            td
+              div(id="wifi-signal-strength" style="display:inline-flex; align-items:flex-end; justify-content:flex-end; width:auto; height:35px; padding:4px")
+                svg(id='wifi-icon' xmlns="http://www.w3.org/2000/svg" style="width:50; height:30; fill:none;")
+                  g(class="wifi-scale" transform="scale(2)")
+                    path(class='wifi-path0')
+                    path(class='wifi-path1')
+          tr
+            th Cellular Modem Signal Strength
+            td
+              div(id="modem-signal-strength", style="display:inline-flex; align-itmes:flex-end; justify-content:flex-end; width:auto; height:35px; padding:4px")
+                svg(id='modem-icon' xmlns="http://www.w3.org/2000/svg" style="width:50; height:30; fill:none;")
+                  g(class="modem-scale" transform="scale(2)")
+                      path(class='modem-path0')
+
+           
+        h2 System Versioning Details
+        table(class="table table-sm table-bordered table-dark", id="meta")
+          tr
+            th Station Image
+            td
+              span(id="station-image")
+          tr
+            th Update Radio Firmware
+            td(colspan=2)
+              button(class="btn btn-sm btn-primary btn-block", id="update-radios") Update Radio Firmware
+
+        div(class="row")
+          div(class="col-sm")
+            h3 Memory Usage
+            div(id="mem-chart", style="height:150px;")
+          div(class="col-sm")
+            h3 CPU Usage
+            div(id="cpu-chart", style="height:150px;")
+
+        h2(style="text-align:center;") Time Sync Stats
+        pre(style="min-height:100px;font-family:monospace; color:#EEE;font-size:1.2em;" id="chrony")
+
+        h2 GPS
+        table(class="table table-bordered table-sm table-dark")
+          tr
+            th Time
+            td
+              span(id="time")
+          tr
+            th Number of Satellites
+            td
+              span(id="nsats")
+          tr
+            th Latitude
+            td
+              span(id="lat")
+          tr
+            th Longitude
+            td
+              span(id="lng")
+          tr
+            th Altitude
+            td
+              span(id="alt")
+        h2 Server Utilitites
+        table(class="table table-bordered table-sm table-dark")
+          tr
+            th Checkin
+            td
+              button(class="btn btn-sm btn-primary btn-block", id="server-checkin") Server Checkin
+          tr
+            th Upload
+            td
+              button(class="btn btn-sm btn-primary btn-block", id="upload-files") Upload Data
+          tr
+            th Station Software Update
+            td
+              a(href="/update-station", class="btn btn-sm btn-primary btn-block") Station Update
+        h2 Network Control 
+        p If running multiple FUNcubes - you should disable either the modem or wifi for optimal performance.
+        table(class="table table-bordered table-sm table-dark")
+          tr
+            th(colspan=2) Modem
+          tr
+            td
+              button(class="btn btn-sm btn-primary btn-block", id="enable-modem") Enable Modem
+            td 
+              button(class="btn btn-sm btn-primary btn-block", id="disable-modem") Disable Modem
+          tr
+            th(colspan=2) WiFi
+          tr
+            td
+              button(class="btn btn-sm btn-primary btn-block", id="enable-wifi") Enable Wifi
+            td
+              button(class="btn btn-sm btn-primary btn-block", id="disable-wifi") Disable Wifi
+        h2 Radio Software Control
+        p You can restart the radio software with this control, which will require a page refresh after it is complete.
+        table(class="table table-bordered table-sm table-dark")
+          tr
+            th Radio Data Server Restart
+            td(colspan=2)
+              button(class="btn btn-sm btn-primary btn-block", id="restart-radios") Restart Radio Software
+        h2 Display Control
+        p Limit radio tables to a set number of rows.
+        table(class="table table-bordered table-sm table-dark")
+          tr
+            th Max Row Count
+            td
+              input(type="number",value="10000",id="max-row-count", class="form-control")
+            td
+              button(type="button",class="btn btn-sm btn-danger btn-block", id="update-max-row-count") Update
+          tr
+            th Reset radio tag data tables.
+            td(colspan=2)
+              button(class="btn btn-block btn-primary btn-block", id="clear") Clear 
+        h2 Reboot Control
+        p Specify reboot schedule
+        table(class="table table-bordered table-sm table-dark")
+          tr
+            th Checkin Time
+            td
+              span
+                input(class="time", id="reboot-hour", type="number", style="width:3em;") 
+              span :
+              span
+                input(class="time", id="reboot-minute", type="number", style="width:3em;")
+              span UTC
+          tr
+            th Weekly
+            td
+              select(class="form-control", id="reboot-dow")
+                option(value='*') Every Day
+                option(value='0') Sunday
+                option(value='1') Monday
+                option(value='2') Tuesday
+                option(value='3') Wednsday
+                option(value='4') Thursday
+                option(value='5') Friday 
+                option(value='6') Saturday
+          tr
+            th Specify Day Of Month
+            td
+              select(class="form-control", id="reboot-dom")
+          tr
+            td(colspan=2)
+              button(class="btn btn-danger btn-sm btn-block", id="update-reboot-schedule") Update Reboot Schedule
+    hr
+    h2 Tag Filter
+    nav(class="navbar navbar-dark bg-dark", id="tag-filter")
+      form(class="form-inline")
+        input(class="form-control mr-sm-2", id="tag-filter-input", type="search", placeholder="Filter Tags", aria-label="Tag ID", value="", autocomplete="on")
+        //- button(class="btn btn-outline-success my-2 my-sm-0" type="submit") Search
+    
+    hr
+    div(class="form-check form-switch", id="main-radio-switch")
+      div(style="font-size:2em; font-weight:bold; text-align:left; border-bottom:2px solid #ccc;")
+        input(class="form-check-input", type="checkbox", role="switch", autocomplete="off", id="mainRadiosSwitch" checked)
+        label(class="form-check-label") Display 434 MHz Radios
+    div(class="row", id="main-radios", style="display:'';")
+
+    div(class="form-check form-switch", id="dongle-radio-switch")
+      div(style="font-size:2em; font-weight:bold; text-align:left; border-bottom:3px solid #ccc;")
+        input(class="form-check-input", type="checkbox", role="switch", autocomplete="off", id="dongleRadioSwitch", style="display:none" checked)
+        label(class="form-check-label", id="dongleRadioLabel", style="display:none") Display Dongle Radios
+    div(class="row", id="dongles", style="display:none;")
+      div(style="font-size:2em; font-weight:bold; text-align:left; border-bottom:3px solid #ccc;") Dongle Radios
+      div(id="extra-radios", class="row")
+
+    hr
+    div(class="form-check form-switch", id="blu-receiver-switch")
+      div(style="font-size:2em; font-weight:bold; text-align:left; border-bottom:2px solid #ccc; color: #007FFF")
+        input(class="form-check-input", type="checkbox", role="switch", autocomplete="off", id="bluRadioSwitch" checked)
+        label(class="form-check-label") Display Bl&umacr; Receivers and Radios
+    div(class="row", id="blu-receiver")
+     
+      //- div(class="row", id="blu-port")
+      //- div(id="blu-radios", class="row")
+      //- hr
+      //- div(class="row" id="blu-on-off")
+      //-   button(class="btn btn-block btn-sm btn-info" name="toggle_radio_on") Bl&umacr; Radios On
+      //- div(class="row" id="blu-on-off")
+      //-   button(class="btn btn-block btn-sm btn-info" name="toggle_radio_off") Bl&umacr; Radios Off
+
+    hr
+    h2(style="text-align:center") Data Management
+    div(class="row")
+      div(class="col-sm")
+        div(style="border: 1px solid white;padding:5px;")
+          h3(style="text-align:center;") Station Log
+          div(class="row")
+            div(class="col-sm")
+              button(class="btn btn-block btn-danger", id="clear-log") Clear Log File
+            div(class="col-sm")
+              a(class="btn btn-block btn-primary", href="/ctt-logfile") Download Log File
+
+      div(class="col-sm")
+        div(style="border: 1px solid white;padding:5px;")
+          h3(style="text-align:center;") CTT Tag Data
+          div(style="text-align:center;")
+            a(class="btn btn-primary", href="/ctt-data-current") Download Current Data
+            div(style="height:5px;")
+          div(class="row")
+            div(class="col-sm")
+              a(class="btn btn-block btn-primary", href="/ctt-data-rotated") Download Data Not Uploaded
+            div(class="col-sm")
+              a(class="btn btn-block btn-primary", href="/ctt-data-uploaded") Download Data Already Uploaded
+          div(style="height:5px;")
+          div(class="row")
+            div(class="col-sm")
+              button(class="btn btn-danger btn-block" name="delete-data" value="ctt-rotated") Delete Data Not Uploaded
+            div(class="col-sm")
+              button(class="btn btn-danger btn-block" name="delete-data" value="ctt-uploaded") Delete Data Already Uploaded
+
+      div(class="col-sm")
+        div(style="border: 1px solid white;padding:5px;")
+          h3(style="text-align:center;") Nanotag Data
+          div(class="row")
+            div(class="col-sm")
+              a(class="btn btn-block btn-primary", href="/sg-data-rotated") Download Data Not Uploaded
+            div(class="col-sm")
+              a(class="btn btn-block btn-primary", href="/sg-data-uploaded") Download Data Already Uploaded
+          div(style="height:5px;")
+          div(class="row")
+            div(class="col-sm")
+              button(class="btn btn-danger btn-block" name="delete-data" value="sg-rotated") Delete Data Not Uploaded
+            div(class="col-sm")
+              button(class="btn btn-danger btn-block" name="delete-data" value="sg-uploaded") Delete Data Already Uploaded
+
+      //- div(class="col-sm")
+      //-   div(style="border: 1px solid white;padding:5px;")
+      //-     h3(style="text-align:center;") Bl&umacr; Series Tag Data
+      //-     div(style="text-align:center;")
+      //-       a(class="btn btn-primary", href="/ctt-blu-data-current") Download Current Data
+      //-       div(style="height:5px;")
+      //-     div(class="row")
+      //-       div(class="col-sm")
+      //-         a(class="btn btn-block btn-primary", href="/ctt-blu-data-rotated") Download Data Not Uploaded
+      //-       div(class="col-sm")
+      //-         a(class="btn btn-block btn-primary", href="/ctt-blu-data-uploaded") Download Data Already Uploaded
+      //-     div(style="height:5px;")
+      //-     div(class="row")
+      //-       div(class="col-sm")
+      //-         button(class="btn btn-danger btn-block" name="delete-blu-data" value="ctt-blu-rotated") Delete Data Not Uploaded
+      //-       div(class="col-sm")
+      //-         button(class="btn btn-danger btn-block" name="delete-blu-data" value="ctt-blu-uploaded") Delete Data Already Uploaded
+
+    hr
+    h2(style="text-align:center;") Nanotag Data
+    div(style="text-align:center;")
+      a(href='#', target="sg", id="sg_link", class="btn btn-primary" style="font-size:2em;") Sensorgnome Interface 
+    div(class="row")
+      div(class="col-sm")
+        div(style="text-align:center;")
+          h3 Sensorgnome Deployment File
+          textarea(cols="90", rows="50", id="sg-deployment")
+    div(style="height:10px;")
+    div(class="row")
+      div(class="col-sm")
+        div(style="text-align:center;")
+          button(class="btn btn-danger" id="save-deployment") Save Changes
+    div(class="row")
+      div(class="col-sm")
+        div(style="text-align:center;")
+          input(type="file" id="tag-db-file" name="tag-db")
+          button(class="btn btn-danger" id="upload-sensorgnome-tag-db") Upload Tag Database File
+
+    div(style="min-height:15px")
+    div(class="row")
+      button(class="btn btn-danger" id="reboot") Reboot
+
+    script(src="/jquery/dist/jquery.min.js")
+    script(src="/moment/min/moment-with-locales.min.js")
+    script(src="/bootstrap/dist/js/bootstrap.min.js")
+    script(src="/highcharts/highcharts.js")
+    script(src="/highcharts/themes/dark-unica.js")
+    script(src="/javascripts/interface.js?v=1.14")

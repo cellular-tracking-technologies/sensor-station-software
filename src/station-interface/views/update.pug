@@ -1,0 +1,11 @@
+html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
+  head
+    title= title
+    link(rel="stylesheet" href="/bootstrap/css/bootstrap.min.css" type="text/css")
+    link(rel="stylesheet" href="/javascripts/highcharts/code/css/highcharts-dark-unica.css" type="text/css")
+    link(rel="stylesheet" href="/stylesheets/style.css" type="text/css")
+  body(style="font-size:0.8em;background-color: #333; color: #D1FF00;")
+    h1(style="text-align: center;") CTT Sensor Station Overview
+    input(type="file", accept=".sh", id="upload_file", class="form-control")
+    button(class="btn btn-block btn-danger", id="update") Update
+    script(src="/javascripts/update.js")

@@ -1,0 +1,22 @@
+html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
+  head
+    title= title
+    link(rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css" type="text/css")
+    link(rel="stylesheet" href="/highcharts/css/highcharts-dark-unica.css" type="text/css")
+    link(rel="stylesheet" href="/stylesheets/style.css" type="text/css")
+  body(style="font-size:0.8em;background-color: #333; color: #eee;")
+    h1 Sensor Station Software Updater
+    h4 Console Messages
+    pre(id="terminal" style="border: 2px solid #ccc;width=600px;min-height:600px;color:#ccc;font-family:courier;") 
+    h5 This process takes time to complete.  The station should have a steady internet connection.  Be sure to let the process run through completion once started.
+    div You will see system messages piped to the console message box above.  There may be numerous messages depending on how many updates the system needs.  
+    div Upon completion, the updater should restart all the necessary software.  When this happens - you'll see an alert box pop up with the message:
+    div(style="font-family:courier;font-size:1.4em;font-weight:bold; text-align:center; padding:13px;") station connection disconnected
+    div After that - you can load the main interface with the updates in place.
+    <hr/>
+    div 
+      button(class="btn btn-sm btn-danger btn-block" id="station-update") Update Station
+    <hr>
+    div
+      a(class="btn btn-sm btn-primary btn-block" href="/") Back to Main Interface
+    script(src="/javascripts/station-update.js")

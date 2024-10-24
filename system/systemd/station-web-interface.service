@@ -1,0 +1,13 @@
+[Unit]
+Description=start station-web-interface
+After=station-hardware-server.service
+
+[Service]
+Type=simple
+WorkingDirectory=/lib/ctt/sensor-station-software
+ExecStart=npm run start-web-interface
+Restart=on-failure
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

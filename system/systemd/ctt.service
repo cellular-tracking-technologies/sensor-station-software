@@ -1,0 +1,11 @@
+# https://alesnosek.com/blog/2016/12/04/controlling-a-multi-service-application-with-systemd/
+[Unit]
+Description=CTT Services
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

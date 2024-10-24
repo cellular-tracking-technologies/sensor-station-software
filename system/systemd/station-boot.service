@@ -1,0 +1,11 @@
+[Unit]
+Description=Station ID
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/save-station-id.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target 

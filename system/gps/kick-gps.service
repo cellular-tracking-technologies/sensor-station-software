@@ -1,0 +1,11 @@
+[Unit]
+Description=Kick GPS
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/ctt/kick-gps.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target 

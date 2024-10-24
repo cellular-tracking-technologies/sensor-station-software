@@ -1,0 +1,5 @@
+apps:
+  - name: 'beeps'
+    instances: 1
+    script: 'npm start'
+    cwd: '/home/pi/ctt/station-radio-interface'
