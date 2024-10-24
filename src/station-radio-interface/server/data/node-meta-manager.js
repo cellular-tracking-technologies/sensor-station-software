@@ -87,8 +87,9 @@ class NodeMetaManager {
             this.packet.nodes[node_id].collections[collect_id].idx = idx
             this.packet.nodes[node_id].collections[collect_id].collections_sent += 1
 
-            let collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent
-            this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round((collections_sent / 50) * 100)
+            // let collections_sent = Math.floor(this.packet.nodes[node_id].collections[collect_id].collections_sent)
+            // this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
+            // this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((collections_sent / 50) * 100) / num_channels.length)
             this.packet.nodes[node_id].collections[collect_id].recorded_at = recorded_at
             this.packet.nodes[node_id].collections[collect_id].missing = num_missing ? this.packet.nodes[node_id].collections[collect_id].missing + num_missing : this.packet.nodes[node_id].collections[collect_id].missing + 0
 
