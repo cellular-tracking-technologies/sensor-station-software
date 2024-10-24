@@ -89,7 +89,7 @@ class NodeMetaManager {
             // this.packet.nodes[node_id].collections[collect_id].collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
 
 
-            let collections_sent = Math.floor(this.packet.nodes[node_id].collections[collect_id].collections_sent)
+            // let collections_sent = Math.floor(this.packet.nodes[node_id].collections[collect_id].collections_sent)
             // this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
             // this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((collections_sent / 50) * 100) / num_channels.length)
             this.packet.nodes[node_id].collections[collect_id].recorded_at = recorded_at
