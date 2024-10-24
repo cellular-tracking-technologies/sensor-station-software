@@ -55,47 +55,48 @@ class NodeMetaManager {
                 collection: { id: collect_id, idx },
                 rssi,
             },
-            received_at
+            received_at,
+            channel,
         } = record
 
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
         let fields, min, max, num_missing
 
-        if (Object.keys(this.packet.nodes[node_id].collections)
-            .includes(collect_id.toString())) {
+        if (Object.keys(this.packet.nodes[node_id].collections).includes(collect_id.toString())) {
+            if (this.packet.nodes[node_id].collections[collect_id].channel == channel) {
+                // get previous index from collection
+                let iterate = this.packet.nodes[node_id].collections[collect_id].idx
 
-            // get previous index from collection
-            let iterate = this.packet.nodes[node_id].collections[collect_id].idx
+                // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
+                if (idx !== iterate + 1 && idx > iterate + 1) {
+                    console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
 
-            // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
-            if (idx !== iterate + 1 && idx > iterate + 1) {
-                console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
+                    let missing = this.getMinMax(iterate + 1, idx)
+                    min = missing.min
+                    max = missing.max
+                    num_missing = (max - min) + 1
 
-                let missing = this.getMinMax(iterate + 1, idx)
-                min = missing.min
-                max = missing.max
-                num_missing = (max - min) + 1
+                    fields = this.createFields(protocol, data_type, node_id, collect_id, recorded_at, min, max, num_missing)
 
-                fields = this.createFields(protocol, data_type, node_id, collect_id, recorded_at, min, max, num_missing)
+                    console.log('update collection fields', fields)
 
-                console.log('update collection fields', fields)
+                    // reset iterate to match idx
+                    iterate = idx - 1
+                }
 
-                // reset iterate to match idx
-                iterate = idx - 1
+                this.packet.nodes[node_id].collections[collect_id].idx = idx
+                // this.packet.nodes[node_id].collections[collect_id].collections_sent += 1
+                // this.packet.nodes[node_id].collections[collect_id].collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
+
+
+                // let collections_sent = Math.floor(this.packet.nodes[node_id].collections[collect_id].collections_sent)
+                // this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
+                // this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((collections_sent / 50) * 100) / num_channels.length)
+                this.packet.nodes[node_id].collections[collect_id].recorded_at = recorded_at
+                this.packet.nodes[node_id].collections[collect_id].missing = num_missing ? this.packet.nodes[node_id].collections[collect_id].missing + num_missing : this.packet.nodes[node_id].collections[collect_id].missing + 0
+
+                // console.log('update collection', this.packet.nodes[node_id].collections[collect_id], collect_id)
             }
-
-            this.packet.nodes[node_id].collections[collect_id].idx = idx
-            // this.packet.nodes[node_id].collections[collect_id].collections_sent += 1
-            // this.packet.nodes[node_id].collections[collect_id].collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
-
-
-            // let collections_sent = Math.floor(this.packet.nodes[node_id].collections[collect_id].collections_sent)
-            // this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
-            // this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((collections_sent / 50) * 100) / num_channels.length)
-            this.packet.nodes[node_id].collections[collect_id].recorded_at = recorded_at
-            this.packet.nodes[node_id].collections[collect_id].missing = num_missing ? this.packet.nodes[node_id].collections[collect_id].missing + num_missing : this.packet.nodes[node_id].collections[collect_id].missing + 0
-
-            // console.log('update collection', this.packet.nodes[node_id].collections[collect_id], collect_id)
         } else {
             fields = this.addNewCollection(record)
         }
@@ -142,6 +143,7 @@ class NodeMetaManager {
                 collection: { id: collect_id, idx },
                 rssi,
             },
+            channel,
             received_at
         } = record
 
@@ -149,8 +151,8 @@ class NodeMetaManager {
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
         let fields, min, max, num_missing
 
-        if (idx !== 0) {
-            console.log('no starting idx array of missing values', this.range(0, idx, 1))
+        if (idx !== 0 && this.packet.nodes[node_id].collections[collect_id]?.channel === channel) {
+            console.log('no starting idx array of missing values', this.range(0, idx, 1), collect_id)
 
             // create a range of missing values, from 0 to whatever the idx is
             let missing = this.getMinMax(0, idx)
@@ -170,7 +172,7 @@ class NodeMetaManager {
             missing: num_missing ? num_missing : 0,
             data_type,
             recorded_at,
-            num_channels,
+            channel,
         }
 
         console.log('add new collection', this.packet.nodes[node_id].collections)
@@ -271,9 +273,9 @@ class NodeMetaManager {
             min,
             max,
             num_missing,
-            total_missing,
-            percent_loss,
-            percent_success,
+            // total_missing,
+            // percent_loss,
+            // percent_success,
         ]
         return fields
     }
