@@ -13,28 +13,43 @@ class NodeMetaManager {
         this.packet = {
             nodes: {},
         }
+        this.nodes = new Map()
     }
 
     /**
      * @param {Object} record - Node meta data
      */
     addNode(record) {
-        // console.log('add node record', record)
         const {
-            meta: { source: { id: node_id } },
-            received_at
+            protocol,
+            meta: {
+                data_type,
+                source: { id: node_id },
+                collection: { id: collect_id, idx },
+                rssi,
+            },
+            received_at,
+            channel,
         } = record
+        // const {
+        //     meta: { source: { id: node_id } },
+        //     received_at
+        // } = record
 
         let fields
 
         // if node is present in object
         if (Object.keys(this.packet.nodes).includes(node_id)) {
             fields = this.updateCollection(record)
+            // this.nodes.set('node id', node_id).set('collect_id', collect_id).set('idx', idx)
+            // console.log('this nodes', this.nodes)
         } else {
             // add new node object if not present
             let collections = { collections: {} }
             this.packet.nodes[node_id] = collections
             this.addNewCollection(record)
+            // this.nodes.set('node id', node_id).set('collect_id', collect_id).set('idx', idx)
+            // console.log('this nodes', this.nodes)
         }
 
         if (fields) {
@@ -76,26 +91,19 @@ class NodeMetaManager {
                     max = missing.max
                     num_missing = (max - min) + 1
 
-                    fields = this.createFields(protocol, data_type, node_id, collect_id, recorded_at, min, max, num_missing)
+                    // fields = this.createFields(protocol, data_type, node_id, collect_id, recorded_at, min, max, num_missing)
 
-                    console.log('update collection fields', fields)
+                    // console.log('update collection fields', fields)
 
                     // reset iterate to match idx
                     iterate = idx - 1
                 }
 
+                this.packet.nodes[node_id].collections[collect_id].end_date = recorded_at
                 this.packet.nodes[node_id].collections[collect_id].idx = idx
-                // this.packet.nodes[node_id].collections[collect_id].collections_sent += 1
-                // this.packet.nodes[node_id].collections[collect_id].collections_sent = this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
-
-
-                // let collections_sent = Math.floor(this.packet.nodes[node_id].collections[collect_id].collections_sent)
-                // this.packet.nodes[node_id].collections[collect_id].collections_sent / num_channels.length
-                // this.packet.nodes[node_id].collections[collect_id].percent_success = Math.round(((collections_sent / 50) * 100) / num_channels.length)
-                this.packet.nodes[node_id].collections[collect_id].recorded_at = recorded_at
                 this.packet.nodes[node_id].collections[collect_id].missing = num_missing ? this.packet.nodes[node_id].collections[collect_id].missing + num_missing : this.packet.nodes[node_id].collections[collect_id].missing + 0
 
-                // console.log('update collection', this.packet.nodes[node_id].collections[collect_id], collect_id)
+                // console.log('this packet nodes', this.packet.nodes[node_id].collections)
             }
         } else {
             fields = this.addNewCollection(record)
@@ -120,10 +128,10 @@ class NodeMetaManager {
 
         if (length >= 10 && idx === 49 && node_id.length == 8) {
             this.packet.nodes[node_id].collections = {}
-            console.log('node', node_id, 'v3 node collections deleted', Object.keys(this.packet.nodes[node_id]?.collections).length)
+            // console.log('node', node_id, 'v3 node collections deleted', Object.keys(this.packet.nodes[node_id]?.collections).length)
         } else if (length >= 10 && idx === 50 && node_id.length == 6) {
             this.packet.nodes[node_id].collections = {}
-            console.log('node', node_id, 'v2 node collections deleted', Object.keys(this.packet.nodes[node_id]?.collections).length)
+            // console.log('node', node_id, 'v2 node collections deleted', Object.keys(this.packet.nodes[node_id]?.collections).length)
 
         }
     }
@@ -147,6 +155,8 @@ class NodeMetaManager {
             received_at
         } = record
 
+
+        // console.log('collection array', Object.keys(this.packet.nodes[node_id].collections))
         // const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
         let fields, min, max, num_missing
@@ -159,35 +169,70 @@ class NodeMetaManager {
             min = missing.min
             max = missing.max
             num_missing = (max - min) + 1
-            // console.log('add new collection missing values', node_id, collect_id, missing)
+            console.log('add new collection missing values', node_id, collect_id, missing)
 
-            fields = this.createFields(protocol, data_type, node_id, collect_id, recorded_at, min, max, num_missing)
+            // fields = this.createFields(protocol, data_type, node_id, collect_id, recorded_at, min, max, num_missing)
+
+            // fields = [
+            //     node_id,
+            //     data_type,
+            //     recorded_at,
+            //     recorded_at,
+            //     // protocol,
+            //     collect_id,
+            //     num_missing,
+            //     idx= idx+1,
+            // ]
             // console.log('add new collection fields', fields)
+
         }
 
         this.packet.nodes[node_id].collections[collect_id] = {
             idx: idx,
+            start_date: recorded_at,
+            end_date: recorded_at,
             // collections_sent: 1 / num_channels.length,
             // percent_success: (1 / 50) * 100,
             missing: num_missing ? num_missing : 0,
             data_type,
-            recorded_at,
+            // recorded_at,
             channel,
         }
 
-        console.log('add new collection', this.packet.nodes[node_id].collections)
+        let index = Object.keys(this.packet.nodes[node_id].collections).findIndex((el) => el == collect_id)
+        console.log('add new collection index', index)
+
+
+        // console.log('add new collection', this.packet.nodes[node_id].collections)
 
         // check if previous collection is missing last beep - need to work on logic for checking previous collections
         if (this.packet.nodes[node_id].collections[collect_id - 1] && this.packet.nodes[node_id].collections[collect_id - 1].idx !== 49) {
 
             // check if previous collection is missing last beep
-            console.log('previous collection id is missing last beep', this.packet.nodes[node_id].collections[collect_id - 1], 'current collection id', collect_id)
-            fields = this.checkPreviousCollection(record)
+            // console.log('previous collection id is missing last beep', this.packet.nodes[node_id].collections[collect_id - 1], 'current collection id', collect_id)
+            // fields = this.checkPreviousCollection(record)
             // console.log('v2 node fields', fields)
         }
 
-        if (fields) {
-            // console.log('new collection fields', fields)
+        let previous_collection = Object.values(this.packet.nodes[node_id].collections)[index - 1]
+        let previous_collection_key = Object.keys(this.packet.nodes[node_id].collections)[index - 1]
+
+        if (previous_collection && previous_collection.missing > 0) {
+
+            console.log('previous collection', previous_collection)
+
+            fields = [
+                node_id,
+                previous_collection.data_type,
+                previous_collection.start_date,
+                previous_collection.end_date,
+                // protocol,
+                previous_collection_key,
+                previous_collection.missing,
+                idx = previous_collection.idx + 1
+            ]
+
+            console.log('new collection fields', fields)
             return fields
         }
     }
@@ -211,8 +256,8 @@ class NodeMetaManager {
         if (node_id.length == 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1]?.idx !== 49) {
 
             const { prev_collect, prev_idx, prev_recordat } = this.getPreviousCollection(node_id, index)
-            console.log(' v3 previous collection', prev_collect, prev_idx, prev_recordat)
-            console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
+            // console.log(' v3 previous collection', prev_collect, prev_idx, prev_recordat)
+            // console.log('v3 node array of missing values', this.range(prev_idx + 1, 50, 1))
 
             let missing = this.getMinMax(prev_idx + 1, 50, 1)
             min = missing.min
@@ -220,14 +265,14 @@ class NodeMetaManager {
             num_missing = (max - min) + 1
 
             fields = this.createFields(protocol, data_type, node_id, prev_collect, prev_recordat, min, max, num_missing)
-            console.log('v3 node fields', fields)
+            // console.log('v3 node fields', fields)
         }
 
         // if v2 node is missing last beep
         if (node_id.length < 8 && Object.values(this.packet.nodes[node_id].collections)[index - 1].idx !== 50) {
 
             const { prev_collect, prev_idx, prev_recordat } = this.getPreviousCollection(node_id, index)
-            console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
+            // console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
 
             let missing = this.getMissingValues(prev_idx + 1, 51)
             min = missing.min
@@ -235,7 +280,7 @@ class NodeMetaManager {
             num_missing = (max - min) + 1
 
             fields = this.createFields(protocol, data_type, node_id, prev_collect, prev_recordat, min, max, num_missing)
-            console.log('v2 node fields', fields)
+            // console.log('v2 node fields', fields)
         }
 
         if (fields) {
