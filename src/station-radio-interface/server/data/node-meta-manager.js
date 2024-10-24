@@ -13,7 +13,6 @@ class NodeMetaManager {
         this.packet = {
             nodes: {},
         }
-        this.num_channels
     }
 
     /**
@@ -56,24 +55,14 @@ class NodeMetaManager {
                 collection: { id: collect_id, idx },
                 rssi,
             },
-            channel,
             received_at
         } = record
 
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
-
         let fields, min, max, num_missing
 
         if (Object.keys(this.packet.nodes[node_id].collections)
             .includes(collect_id.toString())) {
-
-            if (this.packet.nodes[node_id].collections[collect_id].num_channels.includes(channel)) {
-
-            } else {
-                this.packet.nodes[node_id].collections[collect_id].num_channels.push(channel)
-            }
-
-            let num_channels = this.packet.nodes[node_id].collections[collect_id].num_channels
 
             // get previous index from collection
             let iterate = this.packet.nodes[node_id].collections[collect_id].idx
@@ -153,20 +142,11 @@ class NodeMetaManager {
                 collection: { id: collect_id, idx },
                 rssi,
             },
-            channel,
             received_at
         } = record
-        let num_channels = []
-        console.log('channel', channel)
+
         // const recorded_at = moment(new Date(rec_at * 1000)).utc().format(this.date_format)
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
-
-        if (num_channels.includes(channel)) {
-
-        } else {
-            num_channels.push(channel)
-        }
-        console.log('num channels', num_channels)
         let fields, min, max, num_missing
 
         if (idx !== 0) {
