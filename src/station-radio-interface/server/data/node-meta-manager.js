@@ -37,15 +37,12 @@ class NodeMetaManager {
         // if node is present in object
         if (Object.keys(this.packet.nodes).includes(node_id)) {
             fields = this.updateCollection(record)
-            // this.nodes.set('node id', node_id).set('collect_id', collect_id).set('idx', idx)
-            // console.log('this nodes', this.nodes)
+
         } else {
             // add new node object if not present
             let collections = { collections: {} }
             this.packet.nodes[node_id] = collections
             this.addNewCollection(record)
-            // this.nodes.set('node id', node_id).set('collect_id', collect_id).set('idx', idx)
-            // console.log('this nodes', this.nodes)
         }
 
         if (fields) {
@@ -190,6 +187,7 @@ class NodeMetaManager {
                 Number(prev_idx),
                 prev_obj.missing,
             ]
+            console.log('add new collection fields', fields)
             return fields
         }
     }
@@ -199,21 +197,8 @@ class NodeMetaManager {
      * @param {Number} index 
      */
     checkPreviousCollection(node_id, index) {
-        // let {
-        //     protocol,
-        //     meta: {
-        //         data_type,
-        //         source: { id: node_id },
-        //         collection: { id: collect_id, idx },
-        //         rssi,
-        //     },
-        // } = record
 
-
-        // check if previous collection did not get last beep
-        // let index = Object.keys(this.packet.nodes[node_id].collections).findIndex((el) => Number(el) == collect_id)
-
-        console.log('previous object', Object.values(this.packet.nodes[node_id].collections)[index - 1], Object.keys(this.packet.nodes[node_id].collections)[index - 1])
+        // console.log('previous object', Object.values(this.packet.nodes[node_id].collections)[index - 1], Object.keys(this.packet.nodes[node_id].collections)[index - 1])
         let min, max, num_missing
 
         // if v3 node is missing last beep
@@ -221,13 +206,12 @@ class NodeMetaManager {
             && Object.values(this.packet.nodes[node_id].collections)[index - 1]?.idx !== 49) {
 
             const { prev_collect, prev_idx, } = this.getPreviousCollection(node_id, index)
-            console.log('previous collect', prev_collect, prev_idx)
+            console.log('v3 missing values previous collect', prev_collect, prev_idx)
             let missing = this.getMinMax(prev_idx + 1, 50, 1)
             min = missing.min
             max = missing.max
             num_missing = (max - min) + 1
             console.log('v3 missing values', this.packet.nodes[node_id].collections[prev_collect].missing)
-
 
             this.packet.nodes[node_id].collections[prev_collect].missing += num_missing
             console.log('v3 missing records', this.packet.nodes[node_id].collections[prev_collect])
@@ -239,14 +223,13 @@ class NodeMetaManager {
 
             const { prev_collect, prev_idx, } = this.getPreviousCollection(node_id, index)
             // console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
-            console.log('previous collect', prev_collect, prev_idx)
+            console.log('v2 missing values previous collect', prev_collect, prev_idx)
 
             let missing = this.getMissingValues(prev_idx + 1, 51)
             min = missing.min
             max = missing.max
             num_missing = (max - min) + 1
             console.log('v2 missing values', this.packet.nodes[node_id].collections[prev_collect].missing)
-
 
             this.packet.nodes[node_id].collections[prev_collect].missing += num_missing
             console.log('v2 missing records', this.packet.nodes[node_id].collections[prev_collect])
