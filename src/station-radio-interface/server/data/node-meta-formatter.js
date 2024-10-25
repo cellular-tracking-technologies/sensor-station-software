@@ -13,15 +13,12 @@ class NodeMetaData {
     this.header = [
       'DataType',
       'NodeSource',
-      'Date',
       'Protocol',
+      'StartDate',
+      'EndDate',
       'CollectionId',
-      'MissingIndexStart',
-      'MissingIndexEnd',
-      'NumberMissing',
-      'TotalMissingFromCollection',
-      'PercentLoss',
-      'PercentSuccess',
+      'CollectionCount',
+      'MissingBeeps',
     ]
     this.date_format = opts.date_format
     this.packet = {
