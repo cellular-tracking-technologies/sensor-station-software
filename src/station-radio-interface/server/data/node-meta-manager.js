@@ -14,27 +14,96 @@ class NodeMetaManager {
         this.packet = {
             nodes: {},
         }
-        this.nodes = new Map()
+        // this.nodes = new Map()
+        this.nodes = {}
     }
 
     /**
      * @param {Object} record - Node meta data
      */
     addNode(record) {
-        const { meta: { source: { id: node_id } } } = record
+        const {
+            protocol,
+            meta: {
+                data_type,
+                source: { id: node_id },
+                collection: { id: collect_id, idx },
+            },
+            channel,
+            received_at
+        } = record
+
+        const node_type = data_type == MessageTypes.NodeData ? 1 : 2
+
+
+        const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
 
         let fields
 
         // if node is present in object
-        if (Object.keys(this.packet.nodes).includes(node_id)) {
-            fields = this.updateCollection(record)
+        if (this.nodes[node_id]) {
+            if (this.nodes[node_id].get('collect_id') === collect_id) {
+
+                let iterate = this.nodes[node_id].get('idx')
+                console.log('iterate', iterate)
+
+                if (iterate + 1 !== idx) {
+                    console.log('missing index', this.nodes[node_id].get('idx'), idx)
+
+                    let missing = this.getMinMax(iterate + 1, idx)
+                    let min = missing.min
+                    let max = missing.max
+                    let num_missing = (max - min) + 1
+
+                    this.nodes[node_id].set('missing', num_missing)
+
+                    fields = [
+                        node_id,
+                        node_type,
+                        this.nodes[node_id].get('start_date'),
+                        this.nodes[node_id].get('end_date'),
+                        protocol,
+                        collect_id,
+                        this.nodes[node_id].get('missing')
+                    ]
+                }
+                this.nodes[node_id].set('idx', idx).set('end_date', recorded_at)
+
+            } else {
+                this.nodes[node_id].set('collect_id', collect_id).set('idx', idx).set('end_date', recorded_at)
+            }
+
+            this.nodes[node_id].set('idx', idx)
+            // this.nodes[node_id].set(collect_id, {
+            //     idx,
+            //     start_date: recorded_at,
+            //     end_date: recorded_at,
+            //     protocol,
+            //     missing: 0,
+            //     data_type,
+            //     channel
+            // })
+
+            // fields = this.updateCollection(record)
+            // this.nodes.set()
+            // console.log('this nodes has node', this.nodes[node_id])
 
         } else {
-            // add new node object if not present
-            let collections = { collections: {} }
-            this.packet.nodes[node_id] = collections
-            this.addNewCollection(record)
+            this.nodes[node_id] = new Map()
+            this.nodes[node_id].set('collect_id', collect_id).set('idx', idx).set('start_date', recorded_at).set('end_date', recorded_at).set('missing', 0)
+
+            // console.log('this nodes', this.nodes[node_id])
+            // this.addNewCollection(record)
         }
+        // if (Object.keys(this.packet.nodes).includes(node_id)) {
+        //     fields = this.updateCollection(record)
+
+        // } else {
+        //     // add new node object if not present
+        //     let collections = { collections: {} }
+        //     this.packet.nodes[node_id] = collections
+        //     this.addNewCollection(record)
+        // }
 
         if (fields) {
             return fields
@@ -58,32 +127,36 @@ class NodeMetaManager {
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
         let fields, min, max, num_missing
 
-        if (Object.keys(this.packet.nodes[node_id].collections).includes(collect_id.toString())) {
-            if (this.packet.nodes[node_id].collections[collect_id].channel == channel) {
-                // get previous index from collection
-                let iterate = this.packet.nodes[node_id].collections[collect_id].idx
+        console.log('this node has collection', this.nodes.has(node_id))
 
-                // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
-                if (idx !== iterate + 1 && idx > iterate + 1) {
-                    console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
+        // if (Object.keys(this.packet.nodes[node_id].collections).includes(collect_id.toString())) {
+        // if (this.packet.nodes[node_id].collections[collect_id].channel == channel) {
+        // get previous index from collection
+        // let iterate = this.packet.nodes[node_id].collections[collect_id].idx
+        let iterate = this.nodes.values()
+        console.log('iterate', iterate.idx)
 
-                    let missing = this.getMinMax(iterate + 1, idx)
-                    min = missing.min
-                    max = missing.max
-                    num_missing = (max - min) + 1
+        // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
+        if (idx !== iterate + 1 && idx > iterate + 1) {
+            console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
 
-                    // reset iterate to match idx
-                    iterate = idx - 1
-                }
+            let missing = this.getMinMax(iterate + 1, idx)
+            min = missing.min
+            max = missing.max
+            num_missing = (max - min) + 1
 
-                this.packet.nodes[node_id].collections[collect_id].end_date = recorded_at
-                this.packet.nodes[node_id].collections[collect_id].idx = idx
-                this.packet.nodes[node_id].collections[collect_id].missing = num_missing ? this.packet.nodes[node_id].collections[collect_id].missing + num_missing : this.packet.nodes[node_id].collections[collect_id].missing + 0
-                // console.log('this packet nodes', this.packet.nodes[node_id].collections)
-            }
-        } else {
-            fields = this.addNewCollection(record)
+            // reset iterate to match idx
+            iterate = idx - 1
         }
+
+        this.packet.nodes[node_id].collections[collect_id].end_date = recorded_at
+        this.packet.nodes[node_id].collections[collect_id].idx = idx
+        this.packet.nodes[node_id].collections[collect_id].missing = num_missing ? this.packet.nodes[node_id].collections[collect_id].missing + num_missing : this.packet.nodes[node_id].collections[collect_id].missing + 0
+        // console.log('this packet nodes', this.packet.nodes[node_id].collections)
+        // }
+        // } else {
+        fields = this.addNewCollection(record)
+        // }
 
         if (fields)
             return fields
