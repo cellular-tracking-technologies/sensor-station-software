@@ -79,7 +79,6 @@ class NodeMetaManager {
                 this.packet.nodes[node_id].collections[collect_id].end_date = recorded_at
                 this.packet.nodes[node_id].collections[collect_id].idx = idx
                 this.packet.nodes[node_id].collections[collect_id].missing = num_missing ? this.packet.nodes[node_id].collections[collect_id].missing + num_missing : this.packet.nodes[node_id].collections[collect_id].missing + 0
-
                 // console.log('this packet nodes', this.packet.nodes[node_id].collections)
             }
         } else {
@@ -105,7 +104,6 @@ class NodeMetaManager {
         }
     }
 
-
     /**
      * 
      * @param {Number} idx - index of collection id
@@ -118,13 +116,10 @@ class NodeMetaManager {
                 data_type,
                 source: { id: node_id },
                 collection: { id: collect_id, idx },
-                rssi,
             },
             channel,
             received_at
         } = record
-
-        // clear packet.nodes object of previous data after collection id restarts
 
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
         let fields, min, max, num_missing
@@ -160,7 +155,7 @@ class NodeMetaManager {
             const { prev_obj, prev_collect, prev_idx } = this.getPreviousCollection(node_id, index)
 
             // node type: 1 = node_coded_id, 2 = node_blue
-            const node_type = prev_obj.data_type == 'node_coded_id' ? 1 : 2
+            const node_type = prev_obj.data_type == MessageTypes.NodeData ? 1 : 2
 
             if (prev_obj && prev_obj.missing > 0) {
                 fields = [
@@ -177,8 +172,8 @@ class NodeMetaManager {
                 console.log('add new collection fields', fields)
                 return fields
             }
+            // clear packet.nodes object of previous data after collection id restarts
             this.clearNodePackets(record.meta.source.id)
-
         }
     }
 
