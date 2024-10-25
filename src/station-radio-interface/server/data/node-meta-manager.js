@@ -1,4 +1,5 @@
 import moment from 'moment'
+import MessageTypes from '../../../hardware/ctt/messages.js'
 
 /**
  * file formatter for Node Meta Data files
@@ -20,17 +21,7 @@ class NodeMetaManager {
      * @param {Object} record - Node meta data
      */
     addNode(record) {
-        const {
-            protocol,
-            meta: {
-                data_type,
-                source: { id: node_id },
-                collection: { id: collect_id, idx },
-                rssi,
-            },
-            received_at,
-            channel,
-        } = record
+        const { meta: { source: { id: node_id } } } = record
 
         let fields
 
@@ -56,12 +47,9 @@ class NodeMetaManager {
      */
     updateCollection(record) {
         const {
-            protocol,
             meta: {
-                data_type,
                 source: { id: node_id },
                 collection: { id: collect_id, idx },
-                rssi,
             },
             received_at,
             channel,
@@ -123,7 +111,6 @@ class NodeMetaManager {
      * @param {Number} idx - index of collection id
      */
     addNewCollection(record) {
-        // console.log('add new collection record', record)
 
         let {
             protocol,
@@ -138,7 +125,6 @@ class NodeMetaManager {
         } = record
 
         // clear packet.nodes object of previous data after collection id restarts
-        this.clearNodePackets(node_id)
 
         const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
         let fields, min, max, num_missing
@@ -170,25 +156,29 @@ class NodeMetaManager {
 
         if (index > 0) {
             this.checkPreviousCollection(node_id, index)
-        }
 
-        const { prev_obj, prev_collect, prev_idx } = this.getPreviousCollection(node_id, index)
-        // console.log('prev obj', prev_obj, prev_collect, prev_idx)
+            const { prev_obj, prev_collect, prev_idx } = this.getPreviousCollection(node_id, index)
 
-        if (prev_obj && prev_obj.missing > 0) {
+            // node type: 1 = node_coded_id, 2 = node_blue
+            const node_type = prev_obj.data_type == 'node_coded_id' ? 1 : 2
 
-            fields = [
-                node_id,
-                prev_obj.data_type,
-                prev_obj.start_date,
-                prev_obj.end_date,
-                protocol,
-                Number(prev_collect),
-                Number(prev_idx),
-                prev_obj.missing,
-            ]
-            console.log('add new collection fields', fields)
-            return fields
+            if (prev_obj && prev_obj.missing > 0) {
+                fields = [
+                    node_id,
+                    node_type,
+                    prev_obj.start_date,
+                    prev_obj.end_date,
+                    protocol,
+                    Number(prev_collect),
+                    Number(prev_idx),
+                    prev_obj.missing,
+                ]
+
+                console.log('add new collection fields', fields)
+                return fields
+            }
+            this.clearNodePackets(record.meta.source.id)
+
         }
     }
 
@@ -235,43 +225,6 @@ class NodeMetaManager {
             console.log('v2 missing records', this.packet.nodes[node_id].collections[prev_collect])
 
         }
-    }
-
-    /**
-     * 
-     * @param {String} protocol 
-     * @param {String} data_type 
-     * @param {String} node_id 
-     * @param {Number} collect_id 
-     * @param {Number} rssi 
-     * @param {DateTime} rec_at 
-     * @param {Number} min 
-     * @param {Number} max 
-     * @param {Number} num_missing 
-     * @returns {Array} fields
-     */
-
-    createFields(protocol, data_type, node_id, collect_id, rssi, recorded_at, min, max, num_missing) {
-
-        let current_missing = this.packet.nodes[node_id].collections[collect_id]?.missing ?? 0
-        let total_missing = current_missing + num_missing
-        let percent_loss = Math.floor((total_missing / 50) * 100)
-        let percent_success = 100 - percent_loss
-
-        let fields = [
-            node_id,
-            data_type,
-            recorded_at,
-            protocol,
-            collect_id,
-            min,
-            max,
-            num_missing,
-            // total_missing,
-            // percent_loss,
-            // percent_success,
-        ]
-        return fields
     }
 
     /**
