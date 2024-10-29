@@ -84,7 +84,6 @@ class NodeMetaManager {
         console.log('add new collection index', index)
 
         if (index > 0) {
-            this.checkPreviousCollection(node_id, index)
 
             const { prev_obj, prev_collect, } = this.getPreviousCollection(node_id, index)
             const node_type = prev_obj.data_type == MessageTypes.NodeData ? 1 : 2
@@ -100,16 +99,16 @@ class NodeMetaManager {
                     prev_obj.idx,
                     prev_obj.missing,
                 ]
-
-                console.log('add new collection fields', fields)
-                return fields
             }
             // clear packet.nodes object of previous data after collection id restarts
-            let length = [...this.nodes[node_id].keys()].length
+            const length = [...this.nodes[node_id].keys()].length
 
-            if (length > 10)
+            if (length > 10) {
                 this.clearNodePackets(node_id)
+            }
         }
+        console.log('add new collection fields', fields)
+        return fields
     }
 
     /**
@@ -169,50 +168,6 @@ class NodeMetaManager {
 
         this.nodes[node_id].clear()
         console.log('node', node_id, 'node collections deleted', [...this.nodes[node_id].keys()].length)
-    }
-
-    /**
-     * 
-     * @param {Number} index 
-     */
-    checkPreviousCollection(node_id, index) {
-
-        console.log('previous index', [...this.nodes[node_id].values()][index - 1].idx)
-        // console.log('previous object', Object.values(this.nodes[node_id].collections)[index - 1], Object.keys(this.nodes[node_id].collections)[index - 1])
-        let min, max, num_missing
-
-        // if v3 node is missing last beep
-        if (node_id.length == 8 && [...this.nodes[node_id].values()][index - 1].idx !== 49) {
-
-            const { prev_obj, prev_collect, prev_idx, } = this.getPreviousCollection(node_id, index)
-            console.log('v3 missing values previous collect', prev_obj, prev_collect, prev_idx)
-            let missing = this.getMinMax(prev_idx + 1, 50, 1)
-            min = missing.min
-            max = missing.max
-            num_missing = (max - min) + 1
-            console.log('v3 missing values', num_missing)
-
-            prev_obj.missing += num_missing
-
-        }
-
-        // if v2 node is missing last beep
-        if (node_id.length < 8 && [...this.nodes[node_id].values()][index - 1].idx !== 50) {
-
-            const { prev_obj, prev_collect, prev_idx, } = this.getPreviousCollection(node_id, index)
-            // console.log('v2 node array of missing values', this.range(prev_idx + 1, 51, 1))
-            console.log('v2 missing values previous collect', prev_obj, prev_collect, prev_idx)
-
-            let missing = this.getMissingValues(prev_idx + 1, 51)
-            min = missing.min
-            max = missing.max
-            num_missing = (max - min) + 1
-            console.log('v2 missing values', prev_obj.missing)
-
-            prev_obj.missing += num_missing
-            console.log('v2 missing records', prev_obj)
-
-        }
     }
 
     /**
