@@ -21,9 +21,7 @@ class NodeMetaData {
       'MissingBeeps',
     ]
     this.date_format = opts.date_format
-    this.packet = {
-      nodes: {},
-    }
+
     this.node_meta = new NodeMetaManager({
       date_format: this.date_format,
     })
