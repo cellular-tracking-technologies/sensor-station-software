@@ -18,7 +18,7 @@ class NodeMetaManager {
      * @param {Object} record - Node meta data
      */
     addNode(record) {
-        const { meta: { source: { id: node_id } }, received_at } = record
+        const { meta: { source: { id: node_id } } } = record
         let fields
 
         // if node is present in object
@@ -41,6 +41,8 @@ class NodeMetaManager {
  * @param {Number} idx - index of collection id
  */
     addNewCollection(record) {
+
+
 
         let {
             protocol,
@@ -100,15 +102,23 @@ class NodeMetaManager {
                     prev_obj.missing,
                 ]
             }
-            // clear packet.nodes object of previous data after collection id restarts
-            const length = [...this.nodes[node_id].keys()].length
-
-            if (length > 10) {
-                this.clearNodePackets(node_id)
-            }
         }
-        console.log('add new collection fields', fields)
-        return fields
+
+        // clear packet.nodes object of previous data after collection id restarts
+        const length = [...this.nodes[node_id]].length
+
+        if (length > 10) {
+            this.clearNodePackets(node_id)
+            // [...this.nodes[node_id]].shift(0, 1)
+            // console.log('length is greater than 10!!!')
+        }
+
+        console.log('new nodes length', [...this.nodes[node_id]].length, [...this.nodes[node_id]])
+
+        if (fields) {
+            console.log('add new collection fields', fields)
+            return fields
+        }
     }
 
     /**
