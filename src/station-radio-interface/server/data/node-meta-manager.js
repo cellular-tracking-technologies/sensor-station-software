@@ -18,8 +18,8 @@ class NodeMetaManager {
      * @param {Object} record - Node meta data
      */
     addNode(record) {
-        const { meta: { source: { id: node_id } } } = record
-
+        const { meta: { source: { id: node_id } }, received_at } = record
+        // console.log('received at', received_at)
         let fields
 
         // if node is present in object
@@ -54,7 +54,8 @@ class NodeMetaManager {
             received_at
         } = record
 
-        const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
+        const recorded_at = moment(new Date(received_at)).utc().format(this.date_format)
+        console.log('recorded at', recorded_at)
         let fields, min, max, num_missing
 
         let collect_obj = {
@@ -98,6 +99,7 @@ class NodeMetaManager {
                     prev_obj.end_date,
                     protocol,
                     Number(prev_collect),
+                    prev_obj.idx,
                     prev_obj.missing,
                 ]
 
@@ -125,7 +127,7 @@ class NodeMetaManager {
             channel,
         } = record
 
-        const recorded_at = moment(new Date(received_at * 1000)).utc().format(this.date_format)
+        const recorded_at = moment(new Date(received_at)).utc().format(this.date_format)
         let fields, min, max
         let num_missing = 0
 
@@ -151,7 +153,7 @@ class NodeMetaManager {
                 this.nodes[node_id].get(collect_id).idx = idx
                 this.nodes[node_id].get(collect_id).missing += num_missing
 
-                console.log('this packet nodes', this.nodes[node_id].keys(), collect_id)
+                // console.log('this packet nodes', this.nodes[node_id].keys(), collect_id)
 
             }
         } else {
