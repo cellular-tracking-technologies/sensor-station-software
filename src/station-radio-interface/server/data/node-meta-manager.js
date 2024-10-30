@@ -12,6 +12,9 @@ class NodeMetaManager {
     constructor(opts) {
         this.date_format = opts.date_format
         this.nodes = new Map()
+        this.stats = new Map()
+        this.total_records = 0
+        this.missing_records = 0
     }
 
     /**
@@ -45,7 +48,7 @@ class NodeMetaManager {
             meta: {
                 data_type,
                 source: { id: node_id },
-                collection: { id: collect_id, collect, idx },
+                collection: { id: collect_id, idx },
             },
             channel,
             received_at
@@ -53,11 +56,26 @@ class NodeMetaManager {
 
         const recorded_at = moment(new Date(received_at)).utc().format(this.date_format)
         let fields, min, max, num_missing
+        const node_type = data_type == MessageTypes.NodeData ? 1 : 2
 
         const previous_collection = this.nodes.get(node_id)
-        // console.log('previous collection', previous_collection)
+        let expected_records
 
-        if (previous_collection && previous_collection.missing > 0) {
+        if (previous_collection) {
+            if (node_id.length === 8) {
+                expected_records = this.stats.get(node_id) ? this.stats.get(node_id).expected_records + (previous_collection.idx + 1) : 0 + (previous_collection.idx + 1)
+            } else {
+                expected_records = this.stats.get(node_id) ? this.stats.get(node_id).expected_records + previous_collection.idx : 0 + previous_collection.idx
+            }
+
+            const missing_records = this.stats.get(node_id) ? this.stats.get(node_id).missing_records + previous_collection.missing : 0 + previous_collection.missing
+            const total_records = expected_records - missing_records
+
+            this.stats.set(node_id, { expected_records, missing_records, total_records, })
+
+        }
+
+        if (previous_collection?.missing > 0) {
             fields = [
                 node_id,
                 previous_collection.node_type,
@@ -69,8 +87,6 @@ class NodeMetaManager {
                 previous_collection.missing,
             ]
         }
-
-        const node_type = data_type == MessageTypes.NodeData ? 1 : 2
 
         let collect_obj = {
             node_type,
@@ -97,14 +113,13 @@ class NodeMetaManager {
         }
 
         if (fields) {
-            console.log('add new collection fields', fields)
             return fields
         }
     }
 
     /**
      * 
-     * @param {Number} idx - index of collection id
+     * @param {Number} record - record
      */
     updateCollection(record) {
         const {
@@ -120,15 +135,13 @@ class NodeMetaManager {
         let fields, min, max
         let num_missing = 0
 
-        // console.log('update collection nodes', this.nodes)
-
         if (this.nodes.get(node_id).collect_id === collect_id) {
             if (this.nodes.get(node_id).channel == channel) {
                 let iterate = this.nodes.get(node_id).idx
 
                 // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
                 if (idx !== iterate + 1 && idx > iterate + 1) {
-                    console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
+                    // console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
 
                     let missing = this.getMinMax(iterate + 1, idx)
                     min = missing.min
