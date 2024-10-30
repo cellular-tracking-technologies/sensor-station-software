@@ -11,11 +11,11 @@ class NodeMetaData {
    */
   constructor(opts) {
     this.header = [
+      'NodeId',
       'DataType',
-      'NodeSource',
-      'Protocol',
       'StartDate',
       'EndDate',
+      'Protocol',
       'CollectionId',
       'CollectionCount',
       'MissingBeeps',
