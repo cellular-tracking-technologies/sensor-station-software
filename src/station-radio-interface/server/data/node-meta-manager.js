@@ -62,16 +62,17 @@ class NodeMetaManager {
         let expected_records
 
         if (previous_collection) {
+            expected_records = this.stats.get(node_id) ? this.stats.get(node_id).expected_records + previous_collection.idx : 0 + previous_collection.idx
+
             if (node_id.length === 8) {
-                expected_records = this.stats.get(node_id) ? this.stats.get(node_id).expected_records + (previous_collection.idx + 1) : 0 + (previous_collection.idx + 1)
-            } else {
-                expected_records = this.stats.get(node_id) ? this.stats.get(node_id).expected_records + previous_collection.idx : 0 + previous_collection.idx
+                expected_records += 1
             }
 
             const missing_records = this.stats.get(node_id) ? this.stats.get(node_id).missing_records + previous_collection.missing : 0 + previous_collection.missing
             const total_records = expected_records - missing_records
 
             this.stats.set(node_id, { expected_records, missing_records, total_records, })
+            console.log('this stats', this.stats)
 
         }
 
