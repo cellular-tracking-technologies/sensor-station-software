@@ -11,7 +11,7 @@ class NodeMetaManager {
      */
     constructor(opts) {
         this.date_format = opts.date_format
-        this.nodes = {}
+        this.nodes = new Map()
     }
 
     /**
@@ -22,12 +22,10 @@ class NodeMetaManager {
         let fields
 
         // if node is present in object
-        if (Object.keys(this.nodes).includes(node_id)) {
+        if (this.nodes.keys().next().value == node_id) {
             fields = this.updateCollection(record)
 
         } else {
-            // add new node object if not present
-            this.nodes[node_id] = new Map()
             this.addNewCollection(record)
         }
 
@@ -42,38 +40,54 @@ class NodeMetaManager {
  */
     addNewCollection(record) {
 
-
-
-        let {
+        const {
             protocol,
             meta: {
                 data_type,
                 source: { id: node_id },
-                collection: { id: collect_id, idx },
+                collection: { id: collect_id, collect, idx },
             },
             channel,
             received_at
         } = record
 
         const recorded_at = moment(new Date(received_at)).utc().format(this.date_format)
-        console.log('recorded at', recorded_at)
         let fields, min, max, num_missing
 
+        const previous_collection = this.nodes.get(node_id)
+        // console.log('previous collection', previous_collection)
+
+        if (previous_collection && previous_collection.missing > 0) {
+            fields = [
+                node_id,
+                previous_collection.node_type,
+                previous_collection.start_date,
+                previous_collection.end_date,
+                previous_collection.protocol,
+                Number(previous_collection.collect_id),
+                previous_collection.idx,
+                previous_collection.missing,
+            ]
+        }
+
+        const node_type = data_type == MessageTypes.NodeData ? 1 : 2
+
         let collect_obj = {
-            idx: idx,
+            node_type,
+            collect_id,
+            idx,
             start_date: recorded_at,
             end_date: recorded_at,
             protocol,
-            missing: num_missing ? num_missing : 0,
+            missing: 0,
             data_type,
             channel,
         }
 
-        this.nodes[node_id].set(collect_id, collect_obj)
+        this.nodes.set(node_id, collect_obj)
 
         // check if incoming collection is missing the first beeps
-        if (idx !== 0 && this.nodes[node_id].get(collect_id).channel === channel) {
-            // console.log('no starting idx array of missing values', this.range(0, idx, 1), collect_id)
+        if (idx !== 0 && this.nodes.get(node_id).channel == channel) {
 
             // create a range of missing values, from 0 to whatever the idx is
             let missing = this.getMinMax(0, idx)
@@ -81,39 +95,6 @@ class NodeMetaManager {
             max = missing.max
             num_missing = (max - min) + 1
         }
-
-        let index = [...this.nodes[node_id].keys()].findIndex((el) => el == collect_id)
-        console.log('add new collection index', index)
-
-        if (index > 0) {
-
-            const { prev_obj, prev_collect, } = this.getPreviousCollection(node_id, index)
-            const node_type = prev_obj.data_type == MessageTypes.NodeData ? 1 : 2
-
-            if (prev_obj && prev_obj.missing > 0) {
-                fields = [
-                    node_id,
-                    node_type,
-                    prev_obj.start_date,
-                    prev_obj.end_date,
-                    protocol,
-                    Number(prev_collect),
-                    prev_obj.idx,
-                    prev_obj.missing,
-                ]
-            }
-        }
-
-        // clear packet.nodes object of previous data after collection id restarts
-        const length = [...this.nodes[node_id]].length
-
-        if (length > 10) {
-            this.clearNodePackets(node_id)
-            // [...this.nodes[node_id]].shift(0, 1)
-            // console.log('length is greater than 10!!!')
-        }
-
-        console.log('new nodes length', [...this.nodes[node_id]].length, [...this.nodes[node_id]])
 
         if (fields) {
             console.log('add new collection fields', fields)
@@ -139,9 +120,11 @@ class NodeMetaManager {
         let fields, min, max
         let num_missing = 0
 
-        if ([...this.nodes[node_id].keys()].includes(collect_id)) {
-            if (this.nodes[node_id].get(collect_id).channel == channel) {
-                let iterate = this.nodes[node_id].get(collect_id).idx
+        // console.log('update collection nodes', this.nodes)
+
+        if (this.nodes.get(node_id).collect_id === collect_id) {
+            if (this.nodes.get(node_id).channel == channel) {
+                let iterate = this.nodes.get(node_id).idx
 
                 // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
                 if (idx !== iterate + 1 && idx > iterate + 1) {
@@ -154,12 +137,11 @@ class NodeMetaManager {
 
                     // reset iterate to match idx
                     iterate = idx - 1
-
                 }
 
-                this.nodes[node_id].get(collect_id).end_date = recorded_at
-                this.nodes[node_id].get(collect_id).idx = idx
-                this.nodes[node_id].get(collect_id).missing += num_missing
+                this.nodes.get(node_id).end_date = recorded_at
+                this.nodes.get(node_id).idx = idx
+                this.nodes.get(node_id).missing += num_missing
             }
         } else {
             fields = this.addNewCollection(record)
@@ -167,17 +149,6 @@ class NodeMetaManager {
 
         if (fields)
             return fields
-    }
-
-    /**
-     * 
-     * @param {Number} node_id 
-     * @param {Number} collect_id 
-     */
-    clearNodePackets(node_id) {
-
-        this.nodes[node_id].clear()
-        console.log('node', node_id, 'node collections deleted', [...this.nodes[node_id].keys()].length)
     }
 
     /**
@@ -206,20 +177,6 @@ class NodeMetaManager {
         let min = Math.min(...missing_values)
         let max = Math.max(...missing_values)
         return { min, max }
-    }
-
-    /**
-     * 
-     * @param {Number} node_id 
-     * @param {Number} index 
-     * @returns {Object} prev_obj, prev_collect, prev_idx,
-     */
-    getPreviousCollection(node_id, index) {
-        const prev_obj = [...this.nodes[node_id].values()][index - 1]
-        const prev_collect = [...this.nodes[node_id].keys()][index - 1]
-        const prev_idx = [...this.nodes[node_id].values()][index - 1]?.idx
-
-        return { prev_obj, prev_collect, prev_idx, }
     }
 
 }
