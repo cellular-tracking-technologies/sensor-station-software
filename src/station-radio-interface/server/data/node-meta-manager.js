@@ -24,8 +24,7 @@ class NodeMetaManager {
         const { meta: { source: { id: node_id } } } = record
         let fields
 
-        // if node is present in object
-        if (this.nodes.keys().next().value == node_id) {
+        if ([...this.nodes.keys()].includes(node_id.toString())) {
             fields = this.updateCollection(record)
 
         } else {
@@ -86,6 +85,10 @@ class NodeMetaManager {
                 Number(previous_collection.collect_id),
                 previous_collection.idx,
                 previous_collection.missing,
+                // this.stats.get(node_id).expected_records,
+                // this.stats.get(node_id).missing_records,
+                // this.stats.get(node_id).total_records,
+
             ]
         }
 
@@ -142,7 +145,7 @@ class NodeMetaManager {
 
                 // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
                 if (idx !== iterate + 1 && idx > iterate + 1) {
-                    // console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
+                    console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
 
                     let missing = this.getMinMax(iterate + 1, idx)
                     min = missing.min
@@ -156,6 +159,7 @@ class NodeMetaManager {
                 this.nodes.get(node_id).end_date = recorded_at
                 this.nodes.get(node_id).idx = idx
                 this.nodes.get(node_id).missing += num_missing
+                // console.log('nodes missing', this.nodes.get(node_id).missing)
             }
         } else {
             fields = this.addNewCollection(record)
