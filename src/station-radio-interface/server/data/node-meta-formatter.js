@@ -19,9 +19,10 @@ class NodeMetaData {
       'CollectionId',
       'CollectionCount',
       'MissingBeeps',
-      'ExpectedRecords',
+      // 'ExpectedRecords',
       'MissingRecords',
       'TotalRecords',
+      'PercentSuccess',
     ]
     this.date_format = opts.date_format
 
