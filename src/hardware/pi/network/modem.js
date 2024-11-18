@@ -62,6 +62,7 @@ const pollModemInfo = (modem_index) => {
     const sim_info = pollSimInfo({ modem_index, sim_index })
     const signal = generic_info['signal-quality']
     const state = generic_info.state
+    const rssi = Math.floor(2 * ((parseInt(signal.value) * 31) / 100) - 113)
     return {
       signal: parseInt(signal.value),
       imsi: sim_info.sim.properties.imsi,
@@ -73,6 +74,7 @@ const pollModemInfo = (modem_index) => {
       access_tech: generic_info['access-technologies'],
       tower: broadband['operator-code'],
       state: state,
+      rssi: rssi.toString(),
     }
   } catch (err) {
     console.error(`unable to poll modem index ${modem_index}`)

@@ -41,8 +41,10 @@ class StationStats {
       const wifi_signal = network && network.connected == true ? network.signal : undefined
       const modem_signal = modem && modem.state == 'connected' ? modem.signal : undefined
 
+      const modem_rssi = modem_signal ? Math.floor(2 * ((modem_signal * 31) / 100) - 113).toString() : undefined
+
       await this.createWifiChar(wifi_signal)
-      await this.createCellChar(modem_signal)
+      await this.createCellChar(modem_signal, modem_rssi)
     } catch (err) {
       console.error('lcd client error', err)
     }
@@ -54,63 +56,90 @@ class StationStats {
 
 
   async createWifiChar(percent) {
-    if (percent > thresholds.wifi.max) {
 
-      display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.high)
+    if (percent) {
+      display.lcd.createChar(wifi.block.char, wifi.block.byte)
       display.lcd.setCursor(0, 0)
-      display.lcd.print(wifi.block_left.hex)
+      display.lcd.print(wifi.block.hex)
 
-      display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.high)
       display.lcd.setCursor(1, 0)
-      display.lcd.print(wifi.block_right.hex)
-
-    } else if (percent <= thresholds.wifi.max && percent > thresholds.wifi.med) {
-
-      display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.med)
-      display.lcd.setCursor(0, 0)
-      display.lcd.print(wifi.block_left.hex)
-
-      display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.med)
-      display.lcd.setCursor(1, 0)
-      display.lcd.print(wifi.block_right.hex)
+      display.lcd.print(`:${percent}%`)
 
     } else {
       display.lcd.setCursor(1, 0)
       display.lcd.print(wifi.warning.hex)
     }
+    // if (percent > thresholds.wifi.max) {
+
+    //   display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.high)
+    //   display.lcd.setCursor(0, 0)
+    //   display.lcd.print(wifi.block_left.hex)
+
+    //   display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.high)
+    //   display.lcd.setCursor(1, 0)
+    //   display.lcd.print(wifi.block_right.hex)
+
+    // } else if (percent <= thresholds.wifi.max && percent > thresholds.wifi.med) {
+
+    //   display.lcd.createChar(wifi.block_left.char, wifi.block_left.byte.med)
+    //   display.lcd.setCursor(0, 0)
+    //   display.lcd.print(wifi.block_left.hex)
+
+    //   display.lcd.createChar(wifi.block_right.char, wifi.block_right.byte.med)
+    //   display.lcd.setCursor(1, 0)
+    //   display.lcd.print(wifi.block_right.hex)
+
+    // } else {
+    //   display.lcd.setCursor(1, 0)
+    //   display.lcd.print(wifi.warning.hex)
+    // }
   }
 
 
-  async createCellChar(rssi) {
+  async createCellChar(signal, rssi) {
 
-    if (rssi > thresholds.cell.max) {
-      display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
-      display.lcd.setCursor(3, 0)
-      display.lcd.print(cell.block_left.hex)
+    if (signal) {
+      display.lcd.createChar(cell.block.char, cell.block.byte)
+      display.lcd.setCursor(0, 2)
+      display.lcd.print(cell.block.hex)
 
-      display.lcd.createChar(cell.block_right.char, cell.block_right.byte.high)
-      display.lcd.setCursor(4, 0)
-      display.lcd.print(cell.block_right.hex)
-
-    } else if (rssi <= thresholds.cell.max && rssi > thresholds.cell.med) {
-      display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
-      display.lcd.setCursor(3, 0)
-      display.lcd.print(cell.block_left.hex)
-
-      display.lcd.createChar(cell.block_right.char, cell.block_right.byte.med)
-      display.lcd.setCursor(4, 0)
-      display.lcd.print(cell.block_right.hex)
-
-    } else if (rssi <= thresholds.cell.med) {
-
-      display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
-      display.lcd.setCursor(3, 0)
-      display.lcd.print(cell.block_left.hex)
-
+      display.lcd.setCursor(1, 2)
+      display.lcd.print(`:${signal}%`)
+      display.lcd.setCursor(1, 3)
+      display.lcd.print(`:${rssi} dBm`)
     } else {
-      display.lcd.setCursor(3, 0)
+      display.lcd.setCursor(0, 2)
       display.lcd.print(cell.warning.hex)
     }
+
+    // if (rssi > thresholds.cell.max) {
+    //   display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
+    //   display.lcd.setCursor(3, 0)
+    //   display.lcd.print(cell.block_left.hex)
+
+    //   display.lcd.createChar(cell.block_right.char, cell.block_right.byte.high)
+    //   display.lcd.setCursor(4, 0)
+    //   display.lcd.print(cell.block_right.hex)
+
+    // } else if (rssi <= thresholds.cell.max && rssi > thresholds.cell.med) {
+    //   display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
+    //   display.lcd.setCursor(3, 0)
+    //   display.lcd.print(cell.block_left.hex)
+
+    //   display.lcd.createChar(cell.block_right.char, cell.block_right.byte.med)
+    //   display.lcd.setCursor(4, 0)
+    //   display.lcd.print(cell.block_right.hex)
+
+    // } else if (rssi <= thresholds.cell.med) {
+
+    //   display.lcd.createChar(cell.block_left.char, cell.block_left.byte.low)
+    //   display.lcd.setCursor(3, 0)
+    //   display.lcd.print(cell.block_left.hex)
+
+    // } else {
+    //   display.lcd.setCursor(3, 0)
+    //   display.lcd.print(cell.warning.hex)
+    // }
   }
 
   async getBattVoltage(voltage) {
