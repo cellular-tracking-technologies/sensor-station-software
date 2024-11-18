@@ -69,8 +69,11 @@ class NodeMetaManager {
 
             const missing_records = this.stats.get(node_id) ? this.stats.get(node_id).missing_records + previous_collection.missing : 0 + previous_collection.missing
             const total_records = expected_records - missing_records
+            const percent_success = Math.floor((total_records / expected_records) * 100)
+            // const percent_success = (total_records / expected_records)
 
-            this.stats.set(node_id, { expected_records, missing_records, total_records, })
+
+            this.stats.set(node_id, { expected_records, missing_records, total_records, percent_success })
             console.log('this stats', this.stats)
 
         }
@@ -86,8 +89,9 @@ class NodeMetaManager {
                 previous_collection.idx,
                 previous_collection.missing,
                 // this.stats.get(node_id).expected_records,
-                // this.stats.get(node_id).missing_records,
-                // this.stats.get(node_id).total_records,
+                this.stats.get(node_id).missing_records,
+                this.stats.get(node_id).total_records,
+                this.stats.get(node_id).percent_success,
 
             ]
         }
