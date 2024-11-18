@@ -19,8 +19,10 @@ class CellularCarrier {
         .then(res => {
           let carrier = res.carrier
           let signal = res.signal.toString()
+          let rssi = res.rssi.toString()
 
-          resolve([this.header, carrier, `${signal}%`])
+          resolve([this.header, carrier, `${signal}%`, `${rssi} dBm`])
+
           // resolve([this.header, res.carrier, res.signal])
         })
         .catch(error => {
