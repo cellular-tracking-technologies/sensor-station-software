@@ -41,7 +41,8 @@ class StationStats {
       const wifi_signal = network && network.connected == true ? network.signal : undefined
       const modem_signal = modem && modem.state == 'connected' ? modem.signal : undefined
 
-      const modem_rssi = modem_signal ? Math.floor(2 * ((modem_signal * 31) / 100) - 113).toString() : undefined
+      const modem_rssi = modem_signal ? modem.rssi : undefined
+
 
       await this.createWifiChar(wifi_signal)
       await this.createCellChar(modem_signal, modem_rssi)

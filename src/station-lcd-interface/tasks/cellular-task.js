@@ -26,7 +26,7 @@ class CellularCarrier {
           // resolve([this.header, res.carrier, res.signal])
         })
         .catch(error => {
-          resolve([this.header, `error`])
+          resolve([this.header, `error`, 'is modem enabled?'])
         })
     })
   }
