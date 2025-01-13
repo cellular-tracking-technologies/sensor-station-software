@@ -10,6 +10,7 @@ import radioRouter from './routes/radio-server.js'
 import controlRouter from './routes/control.js'
 import ledRouter from './routes/led.js'
 import programRadiosRouter from './routes/program-radios.js'
+import listDevicesRouter from './routes/list-devices.js'
 // import standByRouter from './routes/standby.js'
 
 var app = express()
@@ -28,6 +29,7 @@ app.use('/internet', internetRouter)
 app.use('/radio', radioRouter)
 app.use('/control', controlRouter)
 app.use('/program-radios', programRadiosRouter)
+app.use('/list-devices', listDevicesRouter)
 
 // app.use('/standby', standByRouter)
 
