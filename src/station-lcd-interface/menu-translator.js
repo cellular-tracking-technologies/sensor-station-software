@@ -27,6 +27,7 @@ import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
 import { StationStats } from './station-stats.js'
 import { ProgramRadios } from './tasks/program-radios.js'
+import { ListDevices } from './tasks/list-devices.js'
 
 
 /**
@@ -50,6 +51,7 @@ class MenuTranslator {
     const host = 'http://localhost:3000'
 
     this.items = new MenuItem(language, null, [
+      new MenuItem('List Devices', new ListDevices(host), []),
       new MenuItem('Station Stats', new StationStats(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
