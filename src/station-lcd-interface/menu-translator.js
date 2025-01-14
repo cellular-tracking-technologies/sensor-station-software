@@ -52,8 +52,6 @@ class MenuTranslator {
     const host = 'http://localhost:3000'
 
     this.items = new MenuItem(language, null, [
-      new MenuItem('Delete Connections', new DeleteConnections(host), []),
-      new MenuItem('List Devices', new ListDevices(host), []),
       new MenuItem('Station Stats', new StationStats(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -67,6 +65,7 @@ class MenuTranslator {
           new MenuItem("Disable Wifi", new DisableWifi(host), []),
           new MenuItem("Mount Usb", new MountUsbTask(host), []),
           new MenuItem("Get WiFi", new UsbWifiUploadTask(host), []),
+          new MenuItem('Delete Connections', new DeleteConnections(host), []),
         ]),
         new MenuItem("Cellular", null, [
           new MenuItem('Enable Modem', new EnableModem(host), []),
@@ -79,6 +78,7 @@ class MenuTranslator {
       ]),
       new MenuItem("System", null, [
         new MenuItem('Program Radios', new ProgramRadios(host), []),
+        new MenuItem('List Devices', new ListDevices(host), []),
         new MenuItem("About", null, [
           new MenuItem("Image", new SystemImageTask(host), []),
           new MenuItem("Ids", new SystemIdsTask(host), []),
