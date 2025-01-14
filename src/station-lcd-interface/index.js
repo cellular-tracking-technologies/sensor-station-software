@@ -29,6 +29,7 @@ const host = 'http://localhost:3000'
 let menu_translator = new MenuTranslator()
 
 /**Uncomment the following lines to get an updated translated menus**/
+/**ALWAYS COMMENT OUT BELOW LINES BEFORE COMMITTING CHANGES!!! */
 
 // let language_object = await menu_translator.translateMenu()
 // await menu_translator.saveTranslatedMenus(language_object)
