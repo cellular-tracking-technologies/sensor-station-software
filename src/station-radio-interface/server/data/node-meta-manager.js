@@ -74,7 +74,7 @@ class NodeMetaManager {
 
 
             this.stats.set(node_id, { expected_records, missing_records, total_records, percent_success })
-            console.log('this stats', this.stats)
+            // console.log('this stats', this.stats)
 
         }
 

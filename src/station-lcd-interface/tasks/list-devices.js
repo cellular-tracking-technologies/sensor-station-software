@@ -13,14 +13,14 @@ class ListDevices {
         return new Promise((resolve, reject) => {
             fetch(this.url)
                 .then(data => {
-
                     return data.json()
                 })
                 .then(res => {
-                    const { usb_devices, usb_ports, i2c_devices } = res
+                    const { usb_devices, usb_ports, i2c_devices } = JSON.parse(res)
                     resolve([this.header, `Usb Devices: ${usb_devices}`, `Usb Ports: ${usb_ports}`, `I2C: ${i2c_devices}`])
                 })
                 .catch(error => {
+                    console.error('list devices error', error.message)
                     resolve([this.header, 'error'])
                 })
         })

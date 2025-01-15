@@ -17,6 +17,8 @@ function create_js_object(){
 	local i2c_devices="$3"
 
 	echo "{ \"usb_devices\": $usb_devices, \"usb_ports\": $usb_ports, \"i2c_devices\": $i2c_devices}"
+	# echo "{ usb_devices: $usb_devices, usb_ports: $usb_ports, i2c_devices: $i2c_devices}"
+
 }
 
 for address in ${i2c_bus[@]:16}	# skip first 16 addresses due to how i2cdetect prints headers
