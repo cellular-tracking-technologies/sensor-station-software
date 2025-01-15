@@ -7,7 +7,7 @@ const router = express.Router()
 router.get('/', async (req, res, next) => {
     try {
         const devices = await command('sudo bash system/scripts/list-devices.sh')
-        res.send(devices)
+        res.json(devices)
 
     } catch (e) {
         console.error('could not program radios', e)
