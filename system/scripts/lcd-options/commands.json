@@ -26,5 +26,7 @@
     "usb_mount": "curl -s 'http://localhost:3000/usb/mount'",
     "unmount_usb": "curl -s 'http://localhost:3000/usb/unmount'",
     "download_data": "curl -s 'http://localhost:3000/usb/data'",
-    "upload_wifi": "curl -s 'http://localhost:3000/usb/wifi'"
+    "upload_wifi": "curl -s 'http://localhost:3000/usb/wifi'",
+    "list_devices": "curl -s 'http://localhost:3000/list-devices'",
+    "delete_connections": "curl -s 'http://localhost:3000/internet/delete-connections'"
 }
