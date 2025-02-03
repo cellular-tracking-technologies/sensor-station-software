@@ -1,0 +1,5 @@
+# pack-refs with: peeled fully-peeled sorted 
+da47ed93a95123d7e68f464d43adbbc8509c4587 refs/remotes/origin/lts-dev
+bea3157bad7344e153452c81da082f88f0433836 refs/remotes/origin/lts_24-06.iso
+3030dd91de3176ee36719d0a4105fa58258fdb94 refs/remotes/origin/master
+4da42fecba81f2708d7b5fc22453108ebbd94a53 refs/remotes/origin/modem-update

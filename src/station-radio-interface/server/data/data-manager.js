@@ -8,7 +8,6 @@ import { TelemetryFormatter } from './telemetry-formatter.js'
 import { BeepStatManager } from './beep-stat-manager.js'
 import { BluFormatter } from './blu-formatter.js'
 import { NodeMetaData } from './node-meta-formatter.js'
-import { NodeMetaData } from './node-meta-formatter.js'
 import moment from 'moment'
 
 import MessageTypes from '../../../hardware/ctt/messages.js'

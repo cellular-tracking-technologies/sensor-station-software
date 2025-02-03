@@ -40,8 +40,9 @@ class NodeMetaData {
 
       // console.log('format record record', record)
       const fields = this.node_meta.addNode(record)
-      // console.log('format record fields', fields)
       if (fields) {
+        // console.log('format record fields', fields)
+
         return fields
       }
     } catch (err) {
