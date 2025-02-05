@@ -27,7 +27,7 @@ router.get('/', function (req, res, next) {
   if (users.length === 0) {
     res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
   } else if (users.length > 0 && email && password) {
-    res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+    res.render('login', { title: 'CTT Login', message: 'pug' })
 
   } else {
     res.redirect('/login')
@@ -41,13 +41,11 @@ router.get('/login', (req, res) => {
 
 router.get('/register', (req, res) => {
   if (users.length === 0) {
-    res.render('registration', { title: 'CTT Registration', message: 'pug' })
+    res.render('register', { title: 'CTT Registration', message: 'pug' })
   } else if (email && password && users.length > 0) {
-    res.render('registration', { title: 'CTT Registration', message: 'pug' })
-    // res.redirect('/login')
-
+    res.render('register', { title: 'CTT Registration', message: 'pug' })
   } else {
-    res.render('login')
+    res.redirect('/login')
   }
 
 })
@@ -69,7 +67,7 @@ router.post('/register', async (req, res) => {
       fs.writeFileSync('src/station-interface/public/javascripts/data.json', JSON.stringify(users))
       console.log('User list', users)
 
-      res.render('register_success')
+      res.render('register-success', { title: 'Registration Successful', message: 'pug' })
     } else {
       res.send("<h1>Registration failed</h1>")
     }
@@ -83,6 +81,7 @@ router.post('/login', async (req, res) => {
   console.log('login users', users)
   try {
     let foundUser = users.find((data) => req.body.email === data.email)
+    console.log('found user', foundUser)
     if (foundUser) {
       let submittedPass = req.body.password
       let storedPass = foundUser.password
@@ -92,8 +91,41 @@ router.post('/login', async (req, res) => {
       const passwordMatch = await bcrypt.compare(submittedPass, storedPass)
 
       if (passwordMatch) {
-        res.redirect('/')
-        // res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+        // res.redirect('/')
+        res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+        // window.history.replaceState(url = '/')
+        // res.send(`<div align='center'><h2>login successful</h2></div><br><br><br><div align='center'><h3>Hello ${usrname}</h3></div><br><br><div align='center'><a href='/'>main page</a></div>`)
+      } else {
+        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")
+      }
+    } else {
+      let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
+      await bcrypt.compare(req.body.password, fakePass)
+
+      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again<a><div>")
+    }
+  } catch {
+    res.send('Internal server error')
+  }
+})
+
+router.post('/register-success', async (req, res) => {
+  console.log('register-success users', users)
+  try {
+    let foundUser = users.find((data) => req.body.email === data.email)
+    console.log('found user', foundUser)
+    if (foundUser) {
+      let submittedPass = req.body.password
+      let storedPass = foundUser.password
+
+      email = foundUser.email
+      password = foundUser.password
+      const passwordMatch = await bcrypt.compare(submittedPass, storedPass)
+
+      if (passwordMatch) {
+        // res.redirect('/')
+        res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+        // window.history.replaceState(url = '/')
         // res.send(`<div align='center'><h2>login successful</h2></div><br><br><br><div align='center'><h3>Hello ${usrname}</h3></div><br><br><div align='center'><a href='/'>main page</a></div>`)
       } else {
         res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")

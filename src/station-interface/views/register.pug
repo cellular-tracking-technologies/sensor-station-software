@@ -11,6 +11,14 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
           img(src="/ctt_logo_300DPI.png" style="height:100px;")
       div(class="col-sm-9")
         h1(style="") Register
-			form(id="login-form")
-				input(type="text" name="username" id="username-field" class="login-form-field" placeholder="Username")
-				input(type="password" name="password" id="password-field" class="login-form-field" placeholder="Password")
+          div(class="register-form-div")
+            form(id="register-form" method="POST")
+              label(class="register-label-email") Email
+                input(type="email" id="email" name="email" placeholder="abc@example.com" required)
+                br
+                br
+              label(class="register-label-password") Password
+                input(type="password" name="password" id="password" placeholder="Password" required)
+                br
+                br
+                button(type="submit" value="register" id="register-form-submit")
