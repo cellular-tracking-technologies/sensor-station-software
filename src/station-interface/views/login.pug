@@ -11,13 +11,17 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
           img(src="/ctt_logo_300DPI.png" style="height:100px;")
       div(class="col-sm-9")
         h1(style="") Login
-          form(id="login-form" method="POST")
-            label Email
-              input(type="email" name="email" id="email" class="login-form-field" placeholder="abc@example.com")
-              br
-              br
-            label Password  
-              input(type="password" name="password" id="password-field" class="login-form-field" placeholder="Password")
-              br
-              br
-              input(type="submit" value="Login" id="login-form-submit")
+        br
+        br
+        h2(style="")
+          div(class="login-form-div")
+            form(id="login-form" method="POST")
+              label Email
+                input(type="email" name="email" id="email" class="login-form-field" placeholder="abc@example.com")
+                br
+                br
+              label Password  
+                input(type="password" name="password" id="password-field" class="login-form-field" placeholder="Password")
+                br
+                br
+                input(type="submit" value="Login" id="login-form-submit")
