@@ -26,9 +26,9 @@ const router = express.Router()
 router.get('/', function (req, res, next) {
   // check if user is authenticated
   // console.log('request', req.session)
-  if (users.length === 0) {
+  if (users.length === 0 || email !== null && password !== null) {
     res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
-  } else if (users.length > 0 && email && password) {
+  } else if (users.length > 0 && email === null && password === null) {
     res.render('login', { title: 'CTT Login', message: 'pug' })
 
   } else {
@@ -103,7 +103,8 @@ router.post('/login', async (req, res) => {
         // save session in cookie?
         res.cookie('SessionID', secret, options)
 
-        res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+        // res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+        res.redirect('/')
       } else {
         res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")
       }
