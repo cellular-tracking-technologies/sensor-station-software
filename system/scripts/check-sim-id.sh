@@ -17,6 +17,10 @@ country_code=${iccid:2:2}
 echo 'country code' $country_code
 
 # change apn based on country code
-if [ country_code==46 ]; then
+if [ $country_code -eq 46 ]; then
+    echo 'telenor sim'
     sudo nmcli c modify station-modem apn internet.cxn
+else
+    echo 'twilio sim'
+    sudo nmcli c modify station-modem apn super
 fi
