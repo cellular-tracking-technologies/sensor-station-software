@@ -62,6 +62,15 @@ const pollModemInfo = (modem_index) => {
     const sim_info = pollSimInfo({ modem_index, sim_index })
     const signal = generic_info['signal-quality']
     const state = generic_info.state
+    const rssi = Math.floor(2 * ((parseInt(signal.value) * 31) / 100) - 113)
+    // const country_code = sim_info.sim.properties.iccid.substring(2, 4)
+    // if (country_code === '46') {
+    //   execSync('sudo nmcli c modify station-modem apn internet.cxn')
+    //   // execSync('sudo nmcli c modify station-modem apn super')
+    // } else {
+
+    // }
+
     return {
       signal: parseInt(signal.value),
       imsi: sim_info.sim.properties.imsi,
@@ -73,6 +82,7 @@ const pollModemInfo = (modem_index) => {
       access_tech: generic_info['access-technologies'],
       tower: broadband['operator-code'],
       state: state,
+      rssi: rssi.toString(),
     }
   } catch (err) {
     console.error(`unable to poll modem index ${modem_index}`)
@@ -87,6 +97,7 @@ const pollModemInfo = (modem_index) => {
 export default Object.freeze({
   info: () => {
     const index = getModemIndex()
+    console.log(index)
     return (index >= 0) ? pollModemInfo(index) : null
   }
 })

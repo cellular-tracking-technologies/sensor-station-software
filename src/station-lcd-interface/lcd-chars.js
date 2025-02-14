@@ -1,23 +1,10 @@
 // import display from './display-driver'
 
 const wifi = {
-    block_left: {
-        byte: {
-            high: Uint8Array.from(Buffer.from([0x07, 0x08, 0x10, 0x07, 0x08, 0x03, 0x04, 0x01], 'hex')),
-            med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x07, 0x08, 0x03, 0x04, 0x01], 'hex')),
-            low: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x01], 'hex')),
-        },
+    block: {
+        byte: Uint8Array.from(Buffer.from([0x0E, 0x11, 0x0E, 0x11, 0x04, 0x0A, 0x00, 0x04], 'hex')),
         char: 0,
         hex: `\x00`,
-    },
-    block_right: {
-        byte: {
-            high: Uint8Array.from(Buffer.from([0x1C, 0x02, 0x01, 0x1C, 0x02, 0x18, 0x04, 0x10], 'hex')),
-            med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x1C, 0x02, 0x18, 0x04, 0x10], 'hex')),
-            low: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x04, 0x10], 'hex'))
-        },
-        char: 1,
-        hex: `\x01`,
     },
     warning: {
         byte: null,
@@ -83,20 +70,10 @@ const solar = {
 }
 
 const cell = {
-    block_left: {
-        byte: {
-            low: Uint8Array.from(Buffer.from([0x1F, 0x0E, 0x04, 0x04, 0x04, 0x04, 0x05, 0x05], 'hex')),
-        },
+    block: {
+        byte: Uint8Array.from(Buffer.from([0x01, 0x01, 0x03, 0x03, 0x07, 0x07, 0x0F, 0x1F], 'hex')),
         char: 6,
-        hex: `\x06`,
-    },
-    block_right: {
-        byte: {
-            high: Uint8Array.from(Buffer.from([0x01, 0x01, 0x01, 0x01, 0x09, 0x09, 0x09, 0x09], 'hex')),
-            med: Uint8Array.from(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x08, 0x08, 0x08, 0x08], 'hex')),
-        },
-        char: 7,
-        hex: `\x07`,
+        hex: `\x06`
     },
     warning: {
         byte: null,

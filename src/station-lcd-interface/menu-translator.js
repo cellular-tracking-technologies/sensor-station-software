@@ -27,6 +27,8 @@ import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
 import { StationStats } from './station-stats.js'
 import { ProgramRadios } from './tasks/program-radios.js'
+import { ListDevices } from './tasks/list-devices.js'
+import { DeleteConnections } from './tasks/delete-connections-task.js'
 
 
 /**
@@ -63,6 +65,7 @@ class MenuTranslator {
           new MenuItem("Disable Wifi", new DisableWifi(host), []),
           new MenuItem("Mount Usb", new MountUsbTask(host), []),
           new MenuItem("Get WiFi", new UsbWifiUploadTask(host), []),
+          new MenuItem('Delete Connections', new DeleteConnections(host), []),
         ]),
         new MenuItem("Cellular", null, [
           new MenuItem('Enable Modem', new EnableModem(host), []),
@@ -75,6 +78,7 @@ class MenuTranslator {
       ]),
       new MenuItem("System", null, [
         new MenuItem('Program Radios', new ProgramRadios(host), []),
+        new MenuItem('List Devices', new ListDevices(host), []),
         new MenuItem("About", null, [
           new MenuItem("Image", new SystemImageTask(host), []),
           new MenuItem("Ids", new SystemIdsTask(host), []),

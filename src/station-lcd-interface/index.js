@@ -29,6 +29,7 @@ const host = 'http://localhost:3000'
 let menu_translator = new MenuTranslator()
 
 /**Uncomment the following lines to get an updated translated menus**/
+/**ALWAYS COMMENT OUT BELOW LINES BEFORE COMMITTING CHANGES!!! */
 
 // let language_object = await menu_translator.translateMenu()
 // await menu_translator.saveTranslatedMenus(language_object)
@@ -56,11 +57,6 @@ items.children[8].parent_id = 'English'
 
 let menu = new MenuManager(items)
 menu.init()
-
-// switch to station stats menu after a period of time
-// setTimeout(() => {
-//   menu.select(items.children[0])
-// }, 300000)
 
 /*
     Configure Pi buttons and mount callbacks for when they are pushed.

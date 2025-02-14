@@ -1,0 +1,27 @@
+html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
+  head
+    title= title
+    link(rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css" type="text/css")
+    link(rel="stylesheet" href="/stylesheets/style.css" type="text/css")
+    link(rel="icon" type="image/x-icon" href="/favicon.ico")
+  body(style="font-size:0.8em;background-color: #333; color: #D1FF00;")
+    div(class="row")
+      div(class="col-sm-3")
+        div(style="text-align:center;")
+          img(src="/ctt_logo_300DPI.png" style="height:100px;")
+      div(class="col-sm-9")
+        h1(style="") Login
+        br
+        br
+        h2(style="")
+          div(class="login-form-div")
+            form(id="login-form" method="POST")
+              label Email: 
+                input(type="email" name="email" id="email" class="login-form-field" placeholder="abc@example.com")
+                br
+                br
+              label Password:   
+                input(type="password" name="password" id="password-field" class="login-form-field" placeholder="Password")
+                br
+                br
+                input(type="submit" value="Login" id="login-form-submit")

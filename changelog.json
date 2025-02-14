@@ -1,5 +1,18 @@
 [
     {
+        "version": "1.5.0",
+        "date": "2024-02-05",
+        "notes": "Add menu options for QAQC, RSSI values for cell modem menu options, and create register/login pages for security.",
+        "features": [
+            "Add List Devices and Delete Connections for QAQC.",
+            "Add RSSI values calculated from Signal Quality on Station Stats and Cell Modem Signal LCD menu options."
+        ],
+        "bugs": [],
+        "security": [
+            "Add register and login pages for the web interface."
+        ]
+    },
+    {
         "version": "1.4.0",
         "date": "2024-10-09",
         "notes": "Re-enable 434 MHz radio restart_on_close, access LCD menu options from terminal.",

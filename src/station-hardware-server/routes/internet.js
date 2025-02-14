@@ -87,4 +87,10 @@ router.get('/wifi-networks', (req, res, next) => {
 
 })
 
+router.get('/delete-connections', async (req, res, next) => {
+  const results = await RunCommand('/bin/bash system/scripts/delete-credentials.sh')
+  // return res.status(200).send()
+  res.send(results)
+})
+
 export default router
