@@ -46,4 +46,4 @@ else
 	sudo raspi-gpio set 27 op dh
 fi
 
-/bin/bash /usr/lib/ctt/sensor-station-software/system/scripts/check-sim-id.sh
+# /bin/bash /usr/lib/ctt/sensor-station-software/system/scripts/check-sim-id.sh

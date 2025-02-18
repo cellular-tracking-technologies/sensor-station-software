@@ -1,7 +1,13 @@
-#!/bin/bash
+#!/usr/bin/bash
+
+# # start modem manager
+# sudo systemctl enable ModemManager.service
+# sudo systemctl start ModemManager.service
 
 # finding modem index
 modem_index="$(/usr/bin/mmcli -L | grep -o 'Modem/[0-9]' | grep -o '[0-9]')" 
+# modem_index="$(mmcli -L | grep -o 'Modem/[0-9]' | grep -o '[0-9]')" 
+
 echo 'modem index' $modem_index
 
 # finding sim index
