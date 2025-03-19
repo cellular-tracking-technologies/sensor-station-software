@@ -1,12 +1,8 @@
 import { exec } from 'child_process'
-import { SystemMemoryTask } from "./system-about-task.js"
-import url from 'url'
-
 
 class DeleteDataTask {
-    constructor(base_url) {
-        this.url = url.resolve(base_url, 'about')
-        this.header = "Delete Data"
+    constructor() {
+        this.header = "System"
     }
     loading() {
         return [this.header, "Deleting Data..."]
@@ -19,9 +15,7 @@ class DeleteDataTask {
                 }
             })
             child.stdout.on('data', (data) => {
-                console.log('system memory data', JSON.parse(data))
-                const { memory, disk } = JSON.parse(data)
-                resolve(['All data deleted.', memory, disk])
+                resolve(['All data deleted.'])
             })
         })
     }

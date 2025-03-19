@@ -29,7 +29,7 @@ import { StationStats } from './station-stats.js'
 import { ProgramRadios } from './tasks/program-radios.js'
 import { ListDevices } from './tasks/list-devices.js'
 import { DeleteConnections } from './tasks/delete-connections-task.js'
-
+import { DeleteDataTask } from './tasks/system-delete-data-task.js'
 
 /**
  * 
@@ -91,7 +91,7 @@ class MenuTranslator {
         new MenuItem("Bash Update", new BashUpdateTask(), []),
         new MenuItem('Delete Data', null, [
           new MenuItem('Delete All Data?', null, []),
-          new MenuItem('Yes', new DeleteDataTask(), []),
+          new MenuItem('Yes', new DeleteDataTask(host), []),
           new MenuItem('No', null, [])
         ]),
       ]),
