@@ -29,7 +29,7 @@ import { StationStats } from './station-stats.js'
 import { ProgramRadios } from './tasks/program-radios.js'
 import { ListDevices } from './tasks/list-devices.js'
 import { DeleteConnections } from './tasks/delete-connections-task.js'
-
+import { DeleteDataTask } from './tasks/system-delete-data-task.js'
 
 /**
  * 
@@ -88,7 +88,8 @@ class MenuTranslator {
         new MenuItem("QAQC", new QaqcRequest(host), []),
         new MenuItem("Time", new SystemTimeTask(host), []),
         new MenuItem("Restart", new SystemRestartTask(), []),
-        new MenuItem("Bash Update", new BashUpdateTask(), [])
+        new MenuItem("Bash Update", new BashUpdateTask(), []),
+        new MenuItem('Delete Data', new DeleteDataTask(host), []),
       ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),
       new MenuItem("Power", new SensorVoltageTask(host), []),

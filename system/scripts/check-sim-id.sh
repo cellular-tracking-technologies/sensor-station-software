@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-# # start modem manager
+# start modem manager
 sudo systemctl enable ModemManager.service
 sudo systemctl start ModemManager.service
 
