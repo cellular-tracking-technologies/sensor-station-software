@@ -88,7 +88,12 @@ class MenuTranslator {
         new MenuItem("QAQC", new QaqcRequest(host), []),
         new MenuItem("Time", new SystemTimeTask(host), []),
         new MenuItem("Restart", new SystemRestartTask(), []),
-        new MenuItem("Bash Update", new BashUpdateTask(), [])
+        new MenuItem("Bash Update", new BashUpdateTask(), []),
+        new MenuItem('Delete Data', null, [
+          new MenuItem('Delete All Data?', null, []),
+          new MenuItem('Yes', new DeleteDataTask(), []),
+          new MenuItem('No', null, [])
+        ]),
       ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),
       new MenuItem("Power", new SensorVoltageTask(host), []),
