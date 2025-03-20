@@ -42,32 +42,24 @@ class NoDeleteDataTask {
       })
 
       child.stdout.on('data', (data) => {
-        const json_data = JSON.parse(data)
-        this.start_disk = json_data.start_disk
-        this.curr_disk = json_data.current_disk
+        const { total_disk, start_avail, current_avail } = JSON.parse(data)
+        let start_free = Number(start_avail) / Number(total_disk) * 100
 
-        resolve(['All data deleted.', `Disk Start ${this.start_disk}`, `Disk Now ${this.curr_disk}`])
+        if (typeof start_free !== undefined) {
+          start_free = start_free.toFixed(2)
+        }
+
+        let current_free = Number(current_avail) / Number(total_disk) * 100
+
+        if (typeof current_free !== undefined) {
+          current_free = current_free.toFixed(2)
+        }
+        const start_disk = `${(100 - start_free).toFixed(2).toString()}% Full`
+        const current_disk = `${(100 - current_free).toFixed(2).toString()}% Full`
+
+        resolve(['No data deleted.', `Disk Start ${start_disk}`, `Disk Now ${current_disk}`])
       })
-
-      // fetch(this.url)
-      //     .then(data => {
-      //         return data.json()
-      //     })
-      //     .then(res => {
-
-      //         let percent_free_disk = res.disk_usage.available / res.disk_usage.total * 100
-      //         if (typeof percent_free_disk !== undefined) {
-      //             percent_free_disk = percent_free_disk.toFixed(2)
-      //         }
-      //         this.start_disk = `${(100 - percent_free_disk).toFixed(2).toString()}% Full`
-
-      //         resolve(['No data deleted.', `Disk Start ${this.start_disk}`, `Disk Now ${this.start_disk}`])
-
-      //     })
-
-
     })
-
   }
 }
 

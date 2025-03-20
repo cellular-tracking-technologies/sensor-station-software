@@ -37,10 +37,7 @@ class DeleteDataTask {
     return [this.header, "Deleting Data..."]
   }
   results() {
-    const start_disk = this.getDisk().then(results => results)
     return new Promise((resolve, reject) => {
-      const disk_usage = Os.disk_usage
-      console.log('disk usage', this.disk_usage)
       let child = exec('/bin/bash /lib/ctt/sensor-station-software/system/scripts/delete-data.sh', (error, stdout, stderr) => {
         if (error) {
           resolve(null)
@@ -48,19 +45,24 @@ class DeleteDataTask {
       })
 
       child.stdout.on('data', (data) => {
-        console.log('data', data)
-        const json_data = JSON.parse(data)
-        this.start_disk = json_data.start_disk
-        this.curr_disk = json_data.current_disk
+        const { total_disk, start_avail, current_avail } = JSON.parse(data)
+        let start_free = Number(start_avail) / Number(total_disk) * 100
 
-        resolve(['All data deleted.', `Disk Start ${this.start_disk}`, `Disk Now ${this.curr_disk}`])
+        if (typeof start_free !== undefined) {
+          start_free = start_free.toFixed(2)
+        }
+
+        let current_free = Number(current_avail) / Number(total_disk) * 100
+
+        if (typeof current_free !== undefined) {
+          current_free = current_free.toFixed(2)
+        }
+        const start_disk = `${(100 - start_free).toFixed(2).toString()}% Full`
+        const current_disk = `${(100 - current_free).toFixed(2).toString()}% Full`
+
+        resolve(['All data deleted.', `Disk Start ${start_disk}`, `Disk Now ${current_disk}`])
 
       })
-      // const curr_disk = this.getDisk()
-
-      // console.log('start disk', start_disk, 'current disk', curr_disk)
-      // console.log('system memory data', JSON.parse(data))
-      // const { memory, disk } = JSON.parse(data)
     })
   }
 }
