@@ -71,10 +71,26 @@ class MenuManager {
   }
   back() {
     this.autoRefresh_(false)
-    if (this.focus.parent_id != null) {
+    console.log('this menu', this.menu)
+    console.log('menu back', this.focus)
+    if (this.focus.parent_id === 'Delete Data') {
+      this.focus = this.findMenuItem_(this.menu, 'English')
+    } else if (this.focus.parent_id === 'Eliminar datos') {
+      this.focus = this.findMenuItem_(this.menu, 'Espagnol')
+    } else if (this.focus.parent_id === 'Supprimer les donnees') {
+      this.focus = this.findMenuItem_(this.menu, 'Francais')
+      this.scroller.init(this.focus.childrenNames())
+    } else if (this.focus.parent_id === 'Excluir dados') {
+      this.focus = this.findMenuItem_(this.menu, 'Portugues')
+    } else if (this.focus.parent_id === 'Gegevens verwijderen') {
+      this.focus = this.findMenuItem_(this.menu, 'Nederlands')
+    } else if (this.focus.parent_id != null) {
       this.focus = this.findMenuItem_(this.menu, this.focus.parent_id)
       this.scroller.init(this.focus.childrenNames())
     }
+    console.log('new focus', this.focus)
+    this.scroller.init(this.focus.childrenNames())
+
     this.update_()
   }
   view_() {
