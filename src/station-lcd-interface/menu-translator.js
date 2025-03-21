@@ -53,11 +53,6 @@ class MenuTranslator {
     const host = 'http://localhost:3000'
 
     this.items = new MenuItem(language, null, [
-      new MenuItem('Delete Data', null, [
-        new MenuItem('Delete All Data?', null, []),
-        new MenuItem('Yes', new DeleteDataTask(host), []),
-        new MenuItem('No', new NoDeleteDataTask(host), [])
-      ]),
       new MenuItem('Station Stats', new StationStats(host), []),
       new MenuItem("File Transfer", null, [
         new MenuItem("Mount Usb", new MountUsbTask(host), []),
@@ -95,6 +90,11 @@ class MenuTranslator {
         new MenuItem("Time", new SystemTimeTask(host), []),
         new MenuItem("Restart", new SystemRestartTask(), []),
         new MenuItem("Bash Update", new BashUpdateTask(), []),
+        new MenuItem('Delete Data', null, [
+          new MenuItem('Delete All Data?', null, []),
+          new MenuItem('Yes', new DeleteDataTask(host), []),
+          new MenuItem('No', new NoDeleteDataTask(host), [])
+        ]),
       ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),
       new MenuItem("Power", new SensorVoltageTask(host), []),

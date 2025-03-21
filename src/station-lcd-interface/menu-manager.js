@@ -16,23 +16,23 @@ class MenuManager {
     this.refresh_
     this.language_array = [
       {
-        language: 'English',
+        language: 'System',
         phrase: 'Delete Data'
       },
       {
-        language: 'Espagnol',
+        language: 'Sistema',
         phrase: 'Eliminar datos'
       },
       {
-        language: 'Francais',
+        language: 'Systeme',
         phrase: 'Supprimer les donnees'
       },
       {
-        language: 'Portugues',
+        language: 'Sistema',
         phrase: 'Excluir dados'
       },
       {
-        language: 'Nederlands',
+        language: 'Systeem',
         phrase: 'Gegevens verwijderen'
       },
     ]
