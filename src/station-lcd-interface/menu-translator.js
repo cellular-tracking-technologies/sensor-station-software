@@ -77,7 +77,7 @@ class MenuTranslator {
         new MenuItem("Ping", new InternetTask(host), []),
         new MenuItem("Hostname", new HostnameTask(), []),
       ]),
-      new MenuItem("System", null, [
+      new MenuItem(lang_string == 'pt' ? `System-${lang_string}` : 'System', null, [
         new MenuItem('Program Radios', new ProgramRadios(host), []),
         new MenuItem('List Devices', new ListDevices(host), []),
         new MenuItem("About", null, [

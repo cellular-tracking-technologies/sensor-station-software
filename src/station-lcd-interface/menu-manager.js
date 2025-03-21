@@ -28,7 +28,7 @@ class MenuManager {
         phrase: 'Supprimer les donnees'
       },
       {
-        language: 'Sistema',
+        language: 'Sistema-PT',
         phrase: 'Excluir dados'
       },
       {
