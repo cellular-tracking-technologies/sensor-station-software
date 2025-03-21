@@ -96,11 +96,12 @@ class MenuTranslator {
           new MenuItem('Yes', new DeleteDataTask(host), []),
           new MenuItem('No', new NoDeleteDataTask(host), [])
         ]),
-      new MenuItem("Server", new ServerConnectRequest(host), []),
-      new MenuItem("Power", new SensorVoltageTask(host), []),
-      new MenuItem("Temperature", new SensorTemperatureTask(host), []),
-      new MenuItem("Location", new GpsTask(host), []),
-      // new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
+        new MenuItem("Server", new ServerConnectRequest(host), []),
+        new MenuItem("Power", new SensorVoltageTask(host), []),
+        new MenuItem("Temperature", new SensorTemperatureTask(host), []),
+        new MenuItem("Location", new GpsTask(host), []),
+        // new MenuItem('Languages', null, [es_items, fr_items, pt_items, nl_items])
+      ])
     ])
 
   }
