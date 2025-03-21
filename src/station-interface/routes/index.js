@@ -9,7 +9,6 @@ import fetch from 'node-fetch'
 import RunCommand from '../../command.js'
 import userDB from '../public/javascripts/data.json' with {type: 'json'}
 import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
 
 const TMP_FILE = '/tmp/download.zip'
 const SG_DEPLOYMENT_FILE = '/data/sg_files/deployment.txt'

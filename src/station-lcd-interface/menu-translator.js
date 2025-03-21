@@ -32,6 +32,7 @@ import { DeleteConnections } from './tasks/delete-connections-task.js'
 import { DeleteDataTask } from './tasks/system-delete-data-task.js'
 import { NoDeleteDataTask } from './tasks/system-no-delete-data-task.js'
 
+
 /**
  * 
  */
@@ -95,7 +96,6 @@ class MenuTranslator {
           new MenuItem('Yes', new DeleteDataTask(host), []),
           new MenuItem('No', new NoDeleteDataTask(host), [])
         ]),
-      ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),
       new MenuItem("Power", new SensorVoltageTask(host), []),
       new MenuItem("Temperature", new SensorTemperatureTask(host), []),
