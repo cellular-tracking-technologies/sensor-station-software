@@ -16,6 +16,8 @@ const read_package_version = () => {
 
 const package_info = read_package_version()
 
+console.log('station hardware system', System.Hardware.Id)
+
 /* GET home page. */
 router.get('/', function (req, res, next) {
 	res.json({ welcome: true })
