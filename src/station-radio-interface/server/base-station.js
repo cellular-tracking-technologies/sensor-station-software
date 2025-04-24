@@ -17,8 +17,6 @@ import moment from 'moment'
 import chokidar from 'chokidar'
 import System from '../../system.js'
 import fs from 'fs'
-import IdDriver from '../../hardware/id-driver/index.js'
-// import getStationId from '../../hardware/pi/station_id.js'
 
 /**
  * manager class for controlling / reading radios
@@ -56,6 +54,7 @@ class BaseStation {
     this.poll_data
     this.dongle_port
     this.blu_radio_filemap
+    this.station_id = fs.readFileSync('/etc/ctt/station-id').toString().trim()
   }
 
   /**
@@ -70,11 +69,11 @@ class BaseStation {
    * load config - start the data manager, gps client, web socket server, timers, radios
    */
   async init() {
-    console.log('radio interface system id', System.Hardware.Id)
+    // console.log('radio interface system id', System.Hardware.Id)
 
-    const chip_id = await IdDriver.FromChip()
-    const file_id = IdDriver.FromFile()
-    console.log('chip id', chip_id, 'file id', file_id)
+    // const chip_id = await IdDriver.FromChip()
+    // const file_id = IdDriver.FromFile()
+    // console.log('chip id', chip_id, 'file id', file_id)
 
     await this.config.load()
     /** DO NOT MERGE DEFAULT CONFIG for now...
@@ -91,19 +90,16 @@ class BaseStation {
 
     this.data_manager = new DataManager({
       // id: System.Hardware.Id,
-      id: chip_id === file_id ? chip_id : file_id,
+      id: this.station_id,
       base_log_dir: this.config.data.record.base_log_directory,
       date_format: this.config.data.record.date_format,
       flush_data_cache_seconds: this.config.data.record.flush_data_cache_seconds
     })
 
-    console.log('data manager station id', this.data_manager.id)
-
-
     this.blu_receivers = this.config.data.blu_receivers
 
-    console.log('this.data_manager id', this.data_manager.id)
-    this.log_filename = `sensor-station-${System.Hardware.Id}.log`
+    // this.log_filename = `sensor-station-${System.Hardware.Id}.log`
+    this.log_filename = `sensor-station-${this.station_id}.log`
     this.log_file_uri = path.join(this.config.data.record.base_log_directory, this.log_filename)
 
     this.gps_client.start()
@@ -207,7 +203,8 @@ class BaseStation {
             .then(res => res.json())
             .then(async (json) => {
               let data = json
-              data.station_id = this.station_id ?? System.Hardware.Id
+              // data.station_id = System.Hardware.Id
+              data.station_id = this.station_id
               data.msg_type = 'about'
               data.begin = this.begin
               this.broadcast(JSON.stringify(data))
@@ -663,37 +660,6 @@ class BaseStation {
     return this.blu_station.blu_receivers.find(receiver => receiver.path === path)
   }
 
-  /**
-   * 
-   * @param {String} id 
-   */
-  checkStationId() {
-    let id
-    // let rand_num = Math.random() * 1
-    let rand_num = 0.4
-
-    if (rand_num <= 0.5) {
-      id = System.Hardware.Id + 'BAD'
-      console.log('system id', id)
-    } else {
-      id = System.Hardware.Id
-      console.log('system id', id)
-    }
-    // const id = System.Hardware.Id
-
-    const filepath_id = fs.readFileSync('/etc/ctt/station-id').toString().trim()
-    console.log('station id from filepath', filepath_id)
-
-    if (id !== filepath_id) {
-      console.log('station id read incorrectly', id)
-      // this.station_id = filepath_id
-      this.data_manager.id = filepath_id + 'CORRECTED'
-    } else {
-      console.log('station id correct', id)
-      // this.station_id = null
-    }
-    console.log('data manager id', this.data_manager.id)
-  }
 }
 
 export { BaseStation }

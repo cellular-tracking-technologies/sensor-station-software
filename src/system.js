@@ -71,7 +71,7 @@ const {
   revision: Revision,
   id: Id,
 } = await id_interface.getHardwareInfo()
-console.log('system station id:', Id)
+// console.log('system station id:', Id)
 // parse station image date
 const Image = new Date(fs.readFileSync(Files.Image).toString())
 
