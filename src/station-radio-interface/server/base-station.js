@@ -54,7 +54,7 @@ class BaseStation {
     this.poll_data
     this.dongle_port
     this.blu_radio_filemap
-    this.station_id = fs.readFileSync('/etc/ctt/station-id').toString().trim()
+    this.station_id = System.Hardware.Id
   }
 
   /**
@@ -85,8 +85,6 @@ class BaseStation {
     this.config.save()
 
     // get station id from hardware server
-    // this.station_id = await getStationId() // this doesn't always work!!!
-
 
     this.data_manager = new DataManager({
       // id: System.Hardware.Id,
@@ -96,6 +94,8 @@ class BaseStation {
       flush_data_cache_seconds: this.config.data.record.flush_data_cache_seconds
     })
 
+    console.log('radio interface station id', this.station_id)
+    console.log('data manager station id', this.data_manager.id)
     this.blu_receivers = this.config.data.blu_receivers
 
     // this.log_filename = `sensor-station-${System.Hardware.Id}.log`
