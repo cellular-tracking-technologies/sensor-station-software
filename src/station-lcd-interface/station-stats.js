@@ -58,11 +58,11 @@ class StationStats {
 
   async createWifiChar(percent) {
 
-    if (percent) {
-      display.lcd.createChar(wifi.block.char, wifi.block.byte)
-      display.lcd.setCursor(0, 0)
-      display.lcd.print(wifi.block.hex)
+    display.lcd.createChar(wifi.block.char, wifi.block.byte)
+    display.lcd.setCursor(0, 0)
+    display.lcd.print(wifi.block.hex)
 
+    if (percent) {
       display.lcd.setCursor(1, 0)
       display.lcd.print(`:${percent}%`)
 
