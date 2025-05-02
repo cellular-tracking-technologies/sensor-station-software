@@ -4,8 +4,7 @@ import fs from 'fs'
 
 const Filenames = {
   ID: '/etc/ctt/station-id',
-  REVISION: '/etc/ctt/station-revision',
-  VERSION: '/etc/ctt/station-version'
+  VERSION: '/etc/ctt/station-revision'
 }
 
 /**
@@ -21,10 +20,9 @@ const run = async () => {
     await InitializeExpander()
   }
   const hardware_info = await id_interface.getHardwareInfo()
-  const { version, id, revision } = hardware_info
+  const { version, id, } = hardware_info
   fs.writeFileSync(Filenames.ID, id.trim())
   fs.writeFileSync(Filenames.VERSION, version.toString())
-  fs.writeFileSync(Filenames.REVISION, revision.toString())
 }
 
 run()
