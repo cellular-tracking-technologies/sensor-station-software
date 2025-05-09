@@ -1,7 +1,7 @@
 [
     {
         "version": "1.5.0",
-        "date": "2024-02-05",
+        "date": "2025-02-05",
         "notes": "Add menu options for QAQC, RSSI values for cell modem menu options, and create register/login pages for security.",
         "features": [
             "Add List Devices and Delete Connections for QAQC.",
