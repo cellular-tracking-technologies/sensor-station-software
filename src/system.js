@@ -69,7 +69,7 @@ const Os = getDistribution()
 
 // parse station version / revision once
 const Id = fs.readFileSync(Files.Id).toString()
-const Version = fs.readFileSync(Files.Version).toString()
+const Version = fs.readFileSync(Files.Revision).toString()
 const Revision = fs.readFileSync(Files.Revision).toString()
 // const id_interface = new StationIdInterface()
 // const {
