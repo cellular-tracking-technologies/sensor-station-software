@@ -9,6 +9,7 @@ import fetch from 'node-fetch'
 import RunCommand from '../../command.js'
 import userDB from '../public/javascripts/data.json' with {type: 'json'}
 import bcrypt from 'bcrypt'
+import session from 'express-session'
 
 const TMP_FILE = '/tmp/download.zip'
 const SG_DEPLOYMENT_FILE = '/data/sg_files/deployment.txt'
@@ -22,17 +23,31 @@ let email, password
 console.log('users', users.length)
 const router = express.Router()
 
+router.use(session({
+  secret: 'sample-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 60000,
+  },
+  sameSite: true,
+}));
+
 router.get('/', function (req, res, next) {
   // check if user is authenticated
-  // console.log('request', req.session)
-  if (users.length === 0 || email !== null && password !== null) {
-    res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
-  } else if (users.length > 0 && email === null && password === null) {
-    res.render('login', { title: 'CTT Login', message: 'pug' })
-
+  if (req.session.user) {
+    if (users.length === 0 || email !== undefined && password !== undefined) {
+      res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+    } else if (users.length > 0 && email === undefined && password === undefined) {
+      // res.render('login', { title: 'CTT Login', message: 'pug' })
+      res.redirect('/login')
+    } else {
+      res.redirect('/login')
+    }
   } else {
     res.redirect('/login')
   }
+
 })
 
 router.get('/login', (req, res) => {
@@ -48,7 +63,6 @@ router.get('/register', (req, res) => {
   } else {
     res.redirect('/login')
   }
-
 })
 
 router.post('/register', async (req, res) => {
@@ -75,8 +89,17 @@ router.post('/register', async (req, res) => {
   } catch (err) {
     res.send('Internal server error', err)
   }
-
 })
+
+function checkSignIn(req, res, next) {
+  if (req.session.user) {
+    next()
+  } else {
+    const err = new Error("Not logged in!")
+    console.log(req.session.user)
+    next(err)
+  }
+}
 
 router.post('/login', async (req, res) => {
   console.log('login users', users)
@@ -103,6 +126,8 @@ router.post('/login', async (req, res) => {
         res.cookie('SessionID', secret, options)
 
         // res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+        console.log('request', req.session)
+        req.session.user = foundUser
         res.redirect('/')
       } else {
         res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")
@@ -149,6 +174,13 @@ router.post('/register-success', async (req, res) => {
   } catch {
     res.send('Internal server error')
   }
+})
+
+router.get('/logout', async (req, res) => {
+  req.session.destroy(() => {
+    console.log('user logged out')
+  })
+  res.redirect('/login')
 })
 
 router.get('/blu', function (req, res, next) {

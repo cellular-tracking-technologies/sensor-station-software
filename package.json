@@ -22,6 +22,7 @@
     "cookie-parser": "^1.4.6",
     "drivelist": "^12.0.2",
     "express": "^4.19.2",
+    "express-session": "^1.18.1",
     "glob": "^10.4.1",
     "heartbeats": "^5.0.1",
     "highcharts": "^11.4.3",
