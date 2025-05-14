@@ -69,22 +69,44 @@ router.post('/register', async (req, res) => {
 
   // console.log('request', req, 'response', res)
   try {
-    let foundUser = users.find((data) => req.body.email === data.email)
-    if (!foundUser) {
-      let hashPassword = await bcrypt.hash(req.body.password, 10)
-
-      let newUser = {
-        id: Date.now(),
-        email: req.body.email,
-        password: hashPassword,
-      }
-      users.push(newUser)
-      fs.writeFileSync('src/station-interface/public/javascripts/data.json', JSON.stringify(users))
-      console.log('User list', users)
-
-      res.render('register-success', { title: 'Registration Successful', message: 'pug' })
+    if (!req.body.email || !req.body.password) {
+      res.status('400')
+      res.send('Invalid details!')
     } else {
-      res.send("<h1>Registration failed</h1>")
+
+      let foundUser = users.find((data) => req.body.email === data.email)
+      if (!foundUser) {
+        let hashPassword = await bcrypt.hash(req.body.password, 10)
+
+        let newUser = {
+          id: Date.now(),
+          email: req.body.email,
+          password: hashPassword,
+        }
+        users.push(newUser)
+        fs.writeFileSync('src/station-interface/public/javascripts/data.json',
+          JSON.stringify(users))
+        console.log('User list', users)
+
+        res.render('register-success',
+          {
+            title: 'Registration Successful',
+            message: 'pug'
+          })
+      } else if (foundUser) {
+        res.render('register-fail',
+          {
+            headerText: 'Email already exists! Login or choose another email address.',
+            message: 'pug'
+          })
+      } else {
+        res.render('register-fail',
+          {
+            title: 'Registration failed.',
+            headerText: 'An error has occurred. Please try again',
+            message: 'pug'
+          })
+      }
     }
   } catch (err) {
     res.send('Internal server error', err)
@@ -97,7 +119,8 @@ function checkSignIn(req, res, next) {
   } else {
     const err = new Error("Not logged in!")
     console.log(req.session.user)
-    next(err)
+    // next(err)
+    res.redirect('/login')
   }
 }
 
@@ -130,14 +153,14 @@ router.post('/login', async (req, res) => {
         req.session.user = foundUser
         res.redirect('/')
       } else {
-        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")
+        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login'>login again</a></div>")
       }
 
     } else {
       let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
       await bcrypt.compare(req.body.password, fakePass)
 
-      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again<a><div>")
+      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again<a><div>")
     }
   } catch {
     res.send('Internal server error')
@@ -163,13 +186,13 @@ router.post('/register-success', async (req, res) => {
         // window.history.replaceState(url = '/')
         // res.send(`<div align='center'><h2>login successful</h2></div><br><br><br><div align='center'><h3>Hello ${usrname}</h3></div><br><br><div align='center'><a href='/'>main page</a></div>`)
       } else {
-        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")
+        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again</a></div>")
       }
     } else {
       let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
       await bcrypt.compare(req.body.password, fakePass)
 
-      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again<a><div>")
+      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again<a><div>")
     }
   } catch {
     res.send('Internal server error')
