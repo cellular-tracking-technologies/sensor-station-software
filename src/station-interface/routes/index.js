@@ -36,18 +36,22 @@ router.use(session({
 router.get('/', function (req, res, next) {
   // check if user is authenticated
   if (req.session.user) {
-    if (users.length === 0 || email !== undefined && password !== undefined) {
+    console.log('users', users.length, 'email', email, 'password', password)
+    if (users.length > 0 && email !== undefined && password !== undefined) {
+      console.log('first time opening interface', users.length, email, password)
       res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
     } else if (users.length > 0 && email === undefined && password === undefined) {
-      // res.render('login', { title: 'CTT Login', message: 'pug' })
+      console.log('user registered')
       res.redirect('/login')
     } else {
       res.redirect('/login')
     }
+  } else if (!req.session.user && users.length === 0) {
+    console.log('accessing interface no session and no users')
+    res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
   } else {
     res.redirect('/login')
   }
-
 })
 
 router.get('/login', (req, res) => {
