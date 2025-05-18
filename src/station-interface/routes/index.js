@@ -237,9 +237,7 @@ router.post('/register-success', async (req, res) => {
 })
 
 router.get('/logout', async (req, res) => {
-  res.destroy(() => {
-    console.log('user logged out')
-  })
+  res.clearCookie('name')
   res.redirect('/login')
 })
 
