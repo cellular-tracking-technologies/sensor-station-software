@@ -44,6 +44,7 @@ function getUsers() {
 }
 
 function insertRow(email, password) {
+    //check to see if you need to make these anarray beforehand
     db.run(`INSERT INTO users (email, password) VALUES (?, ?)`,
         [email, password],
         function (error) {

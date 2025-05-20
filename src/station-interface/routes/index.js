@@ -111,7 +111,6 @@ router.get('/register', (req, res) => {
 
 router.post('/register', async (req, res) => {
 
-  console.log('request', req.body)
   try {
     if (!req.body.email || !req.body.password) {
       res.status('400')
@@ -127,9 +126,10 @@ router.post('/register', async (req, res) => {
           email: req.body.email,
           password: hashPassword,
         }
-        users.push(newUser)
-        fs.writeFileSync('src/station-interface/public/javascripts/data.json',
-          JSON.stringify(users))
+        insertRow(req.body.email, hashPassword)
+        // users.push(newUser)
+        // fs.writeFileSync('src/station-interface/public/javascripts/data.json',
+        // JSON.stringify(users))
         console.log('User list', users)
 
         res.render('register-success',
@@ -169,23 +169,15 @@ function checkSignIn(req, res, next) {
 }
 
 router.post('/login', async (req, res) => {
-  console.log('login users', users)
-  // console.log('request', req.body)
-  console.log('login post email', req.body.email, 'password', req.body.password)
 
   try {
     let foundUser = users.find((data) => req.body.email === data.email)
     console.log('found user', foundUser)
     if (foundUser) {
-      console.log('foundUser conditional')
-      // let submittedPass = req.body.password
       let storedPass = foundUser.password
-      console.log('storedPass', storedPass)
       email = foundUser.email
       password = foundUser.password
-      console.log('email', email, 'password', password)
       const passwordMatch = await bcrypt.compare(req.body.password, storedPass)
-      console.log('password matches')
       if (passwordMatch) {
 
         const token = jwt.sign({ email: email },
