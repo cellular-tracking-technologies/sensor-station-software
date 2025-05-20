@@ -1,29 +1,42 @@
 import sqlite3 from 'sqlite3'
-const db = new sqlite3.Database(':memory:');
+import fs from 'fs'
 
-db.serialize(() => {
-  db.run("CREATE TABLE lorem (info TEXT)");
+const filepath = '../users.db'
 
-  const stmt = db.prepare("INSERT INTO lorem VALUES (?)");
-  for (let i = 0; i < 10; i++) {
-    stmt.run("Ipsum " + i);
-  }
-  stmt.finalize();
+function createDbConnection() {
+    if (fs.existsSync(filepath)) {
+        return new sqlite3.Database(filepath)
+    } else {
+        const db = new sqlite3.Database(filepath, (error) => {
+            if (error) {
+                return console.error(error.message)
+            }
+            createTable(db)
+        })
+        console.log('connection with sqlite has been established')
+        return db
+    }
+}
 
-  db.each("SELECT rowid AS id, info FROM lorem", (err, row) => {
-    console.log(row.id + ": " + row.info);
-  });
-});
+function createTable(db) {
+    db.exec(`
+        CREATE TABLE users
+        (
+            id INTEGER,
+            email VARCHAR(100) NOT NULL,
+            password VARCHAR(100) NOT NULL
+        )
+    `)
+}
 
-db.close();
-
-// import duckdb from '@duckdb/node-api';
-// import bcrypt from "bcrypt";
-
-// const db = await duckdb.DuckDBInstance.create('./my_duckdb.db');
-// const connection = await db.connect();
-
-// connection.exec('CREATE SCHEMA IF NOT EXISTS user_schema')
-// connection.exec('CREATE TABLE IF NOT EXISTS user_schema.users (email TEXT, password TEXT)')
-
-// const result = connection.exec()
+function insertRow(email, password) {
+    db.run(`INSERT INTO users (email, password) VALUES (?, ?)`,
+        [email, password],
+        function (error) {
+            if (error) {
+                console.error(error.message)
+            }
+            console.log('Inserted a row with')
+        }
+    )
+}
