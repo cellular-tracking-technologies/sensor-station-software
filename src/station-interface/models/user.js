@@ -20,13 +20,27 @@ function createDbConnection() {
 
 function createTable(db) {
     db.exec(`
-        CREATE TABLE users
+        CREATE TABLE IF NOT EXISTS users
         (
             id INTEGER,
             email VARCHAR(100) NOT NULL,
             password VARCHAR(100) NOT NULL
         )
     `)
+}
+
+function getUsers() {
+    let users
+    db.all(`SELECT * FROM users`,
+        [],
+        (error, rows) => {
+            if (error) {
+                throw new Error(error.message);
+            }
+            // console.log(row);
+            return rows
+        }
+    )
 }
 
 function insertRow(email, password) {
@@ -40,3 +54,15 @@ function insertRow(email, password) {
         }
     )
 }
+
+function disconnectDb() {
+    // Close the database
+    db.close((err) => {
+        if (err) {
+            console.error(err.message);
+        }
+        console.log('Closed the database connection.');
+    });
+}
+
+export { createDbConnection, getUsers, insertRow, disconnectDb }

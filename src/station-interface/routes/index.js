@@ -12,6 +12,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import * as crypto from 'crypto'
 import cookieParser from 'cookie-parser'
+import { createDbConnection, getUsers, insertRow } from '../models/user.js'
 // import duckdb from '@duckdb/node-api';
 
 const TMP_FILE = '/tmp/download.zip'
@@ -20,12 +21,16 @@ const LOG_FILE = '/data/sensor-station.log'
 const ConfigFileURI = '/etc/ctt/station-config.json'
 const secret = crypto.randomBytes(20).toString('hex')
 console.log('secret', secret)
-let users = userDB
+// let users = userDB
+
 let email, password
 
-console.log('users', users.length, 'email', email, 'password', password)
 const router = express.Router()
 express().use(cookieParser())
+
+// connect to database
+createDbConnection()
+let users = getUsers() ? getUsers() : []
 
 const verifySession = async (req, res, next) => {
   try {
