@@ -7,12 +7,12 @@ import archiver from 'archiver'
 import bodyParser from 'body-parser'
 import fetch from 'node-fetch'
 import RunCommand from '../../command.js'
-import userDB from '../public/javascripts/data.json' with {type: 'json'}
+// import userDB from '../public/javascripts/data.json' with {type: 'json'}
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import * as crypto from 'crypto'
 import cookieParser from 'cookie-parser'
-import { createDbConnection, getUsers, insertRow } from '../models/user.js'
+import { createDbConnection, getUsers, insertRow, disconnectDb } from '../models/user.js'
 // import duckdb from '@duckdb/node-api';
 
 const TMP_FILE = '/tmp/download.zip'
@@ -29,8 +29,11 @@ const router = express.Router()
 express().use(cookieParser())
 
 // connect to database
-createDbConnection()
-let users = getUsers() ? getUsers() : []
+const db = createDbConnection()
+let users = await getUsers(db)
+console.log('first time getting users', users)
+// disconnect to database
+disconnectDb(db)
 
 const verifySession = async (req, res, next) => {
   try {
@@ -110,23 +113,31 @@ router.get('/register', (req, res) => {
 })
 
 router.post('/register', async (req, res) => {
+  console.log('req email', req.body.email, 'req password', req.body.password)
 
   try {
     if (!req.body.email || !req.body.password) {
       res.status('400')
       res.send('Invalid details!')
     } else {
-
+      console.log('there is an email and password', req.body.email, req.body.password)
+      console.log('users', users)
       let foundUser = users.find((data) => req.body.email === data.email)
-      if (!foundUser) {
+      console.log('found a user in the database', foundUser)
+
+      if (foundUser === undefined) {
         let hashPassword = await bcrypt.hash(req.body.password, 10)
+        console.log('hash password', hashPassword)
 
         let newUser = {
           id: Date.now(),
           email: req.body.email,
           password: hashPassword,
         }
-        insertRow(req.body.email, hashPassword)
+        const db = createDbConnection()
+        await insertRow(db, req.body.email, hashPassword)
+        users = await getUsers(db)
+        disconnectDb(db)
         // users.push(newUser)
         // fs.writeFileSync('src/station-interface/public/javascripts/data.json',
         // JSON.stringify(users))
@@ -153,7 +164,8 @@ router.post('/register', async (req, res) => {
       }
     }
   } catch (err) {
-    res.send('Internal server error', err)
+    // res.send('Internal server error', err)
+    res.sendStatus(400).send('Internal server error')
   }
 })
 
@@ -169,6 +181,10 @@ function checkSignIn(req, res, next) {
 }
 
 router.post('/login', async (req, res) => {
+  const db = createDbConnection()
+  let users = await getUsers(db)
+  console.log('login post', users)
+  disconnectDb(db)
 
   try {
     let foundUser = users.find((data) => req.body.email === data.email)
@@ -187,18 +203,24 @@ router.post('/login', async (req, res) => {
         res.cookie('name', token, { maxAge: 300000 });
         res.redirect('/')
       } else {
-        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login'>login again</a></div>")
+        // res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login'>login again</a></div>")
+        res.redirect('/login-fail')
       }
 
     } else {
       let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
       await bcrypt.compare(req.body.password, fakePass)
 
-      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again<a><div>")
+      // res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again<a><div>")
+      res.redirect('/login-fail')
     }
   } catch {
     res.send('Internal server error')
   }
+})
+
+router.get('/login-fail', async (req, res) => {
+  res.render('login-fail', { title: 'Login Failed', message: 'pug' })
 })
 
 router.post('/register-success', async (req, res) => {
