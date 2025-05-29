@@ -38,12 +38,6 @@ disconnectDb(db)
 const verifySession = async (req, res, next) => {
   try {
     const authHeader = req.headers["cookie"]; // get the session cookie from request header
-    // if (authHeader === undefined) {
-    //   console.log('redirecting to login')
-    //   res.redirect('/login')
-
-    //   // return res.sendStatus(401); // if there is no cookie from request header, send an unauthorized response.
-    // }
     const cookie = authHeader.split("=")[1]; // If there is, split the cookie string to get the actual jwt
 
     // Verify using jwt to see if token has been tampered with or if it has expired.
@@ -63,12 +57,6 @@ const verifySession = async (req, res, next) => {
     });
   } catch (err) {
     res.redirect('/login')
-    // res.status(500).json({
-    //   status: "error",
-    //   code: 500,
-    //   data: [],
-    //   message: "Internal Server Error",
-    // });
   }
 }
 
@@ -80,14 +68,13 @@ router.get('/', async function (req, res, next) {
   // check if user is authenticated
   if (users.length === 0 && email === undefined && password === undefined) {
     res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
-  } else if (users.length > 0 && email === undefined && password === undefined) {
-    // res.render('login', { title: 'CTT Login', message: 'pug' })
-    res.redirect('/login')
-  } else if (users.length > 0 && email !== undefined && password !== undefined) {
-    console.log('first time logging in')
 
+  } else if (users.length > 0 && email === undefined && password === undefined) {
+    res.redirect('/login')
+
+  } else if (users.length > 0 && email !== undefined && password !== undefined) {
     await verifySession(req, res)
-    console.log('req user after verification', req.user)
+
     if (req.user) {
       res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
     }
@@ -100,7 +87,6 @@ router.get('/', async function (req, res, next) {
 router.get('/login', (req, res) => {
   res.render('login', { title: 'CTT Login', message: 'pug' })
 })
-
 
 router.get('/register', (req, res) => {
   if (users.length === 0) {
@@ -120,14 +106,10 @@ router.post('/register', async (req, res) => {
       res.status('400')
       res.send('Invalid details!')
     } else {
-      console.log('there is an email and password', req.body.email, req.body.password)
-      console.log('users', users)
       let foundUser = users.find((data) => req.body.email === data.email)
-      console.log('found a user in the database', foundUser)
 
       if (foundUser === undefined) {
         let hashPassword = await bcrypt.hash(req.body.password, 10)
-        console.log('hash password', hashPassword)
 
         let newUser = {
           id: Date.now(),
@@ -138,10 +120,6 @@ router.post('/register', async (req, res) => {
         await insertRow(db, req.body.email, hashPassword)
         users = await getUsers(db)
         disconnectDb(db)
-        // users.push(newUser)
-        // fs.writeFileSync('src/station-interface/public/javascripts/data.json',
-        // JSON.stringify(users))
-        console.log('User list', users)
 
         res.render('register-success',
           {
@@ -169,33 +147,20 @@ router.post('/register', async (req, res) => {
   }
 })
 
-function checkSignIn(req, res, next) {
-  if (req.session.user) {
-    next()
-  } else {
-    const err = new Error("Not logged in!")
-    console.log(req.session.user)
-    // next(err)
-    res.redirect('/login')
-  }
-}
-
 router.post('/login', async (req, res) => {
   const db = createDbConnection()
   let users = await getUsers(db)
-  console.log('login post', users)
   disconnectDb(db)
 
   try {
     let foundUser = users.find((data) => req.body.email === data.email)
-    console.log('found user', foundUser)
     if (foundUser) {
       let storedPass = foundUser.password
       email = foundUser.email
       password = foundUser.password
       const passwordMatch = await bcrypt.compare(req.body.password, storedPass)
-      if (passwordMatch) {
 
+      if (passwordMatch) {
         const token = jwt.sign({ email: email },
           secret,
           { expiresIn: '5m' })
@@ -203,16 +168,19 @@ router.post('/login', async (req, res) => {
         res.cookie('name', token, { maxAge: 300000 });
         res.redirect('/')
       } else {
-        // res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login'>login again</a></div>")
-        res.redirect('/login-fail')
+        res.render('login-fail', {
+          message: 'pug',
+          headerText: 'Password is incorrect, please login again.'
+        })
       }
 
     } else {
       let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
       await bcrypt.compare(req.body.password, fakePass)
-
-      // res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again<a><div>")
-      res.redirect('/login-fail')
+      res.render('login-fail', {
+        message: 'pug',
+        headerText: 'Email not found.'
+      })
     }
   } catch {
     res.send('Internal server error')
@@ -224,10 +192,8 @@ router.get('/login-fail', async (req, res) => {
 })
 
 router.post('/register-success', async (req, res) => {
-  console.log('register-success users', users)
   try {
     let foundUser = users.find((data) => req.body.email === data.email)
-    console.log('found user', foundUser)
     if (foundUser) {
       let submittedPass = req.body.password
       let storedPass = foundUser.password
@@ -237,12 +203,12 @@ router.post('/register-success', async (req, res) => {
       const passwordMatch = await bcrypt.compare(submittedPass, storedPass)
 
       if (passwordMatch) {
-        // res.redirect('/')
         res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
-        // window.history.replaceState(url = '/')
-        // res.send(`<div align='center'><h2>login successful</h2></div><br><br><br><div align='center'><h3>Hello ${usrname}</h3></div><br><br><div align='center'><a href='/'>main page</a></div>`)
+
       } else {
-        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again</a></div>")
+        res.redirect('/login-fail')
+
+        // res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again</a></div>")
       }
     } else {
       let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
