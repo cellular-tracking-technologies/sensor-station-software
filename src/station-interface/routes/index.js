@@ -34,10 +34,8 @@ disconnectDb(db)
 const verifySession = async (req, res, next) => {
   try {
     const authHeader = req.headers["cookie"]; // get the session cookie from request header
-    console.log('auth header', authHeader)
     // const cookie = authHeader.split("=")[2]; // If there is, split the cookie string to get the actual jwt
     const cookie = authHeader.match(/(?<=name=).+/g)[0]
-    console.log('cookie', cookie)
 
     // Verify using jwt to see if token has been tampered with or if it has expired.
     // that's like checking the integrity of the cookie
@@ -64,9 +62,6 @@ const verifySession = async (req, res, next) => {
 }
 
 router.get('/', async function (req, res, next) {
-  console.log('get main users', users.length,
-    'email', email,
-    'password', password)
 
   // check if user is authenticated
   if (users.length === 0 && email === undefined && password === undefined) {
@@ -102,8 +97,6 @@ router.get('/register', (req, res) => {
 })
 
 router.post('/register', async (req, res) => {
-  console.log('req email', req.body.email, 'req password', req.body.password)
-
   try {
     if (!req.body.email || !req.body.password) {
       res.status('400')
