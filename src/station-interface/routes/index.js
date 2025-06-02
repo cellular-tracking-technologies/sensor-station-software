@@ -27,7 +27,6 @@ express().use(cookieParser())
 // connect to database
 const db = createDbConnection()
 let users = await getUsers(db)
-console.log('first time getting users', users)
 // disconnect to database
 disconnectDb(db)
 
@@ -62,7 +61,6 @@ const verifySession = async (req, res, next) => {
 }
 
 router.get('/', async function (req, res, next) {
-
   // check if user is authenticated
   if (users.length === 0 && email === undefined && password === undefined) {
     res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
@@ -107,11 +105,11 @@ router.post('/register', async (req, res) => {
       if (foundUser === undefined) {
         let hashPassword = await bcrypt.hash(req.body.password, 10)
 
-        let newUser = {
-          id: Date.now(),
-          email: req.body.email,
-          password: hashPassword,
-        }
+        // let newUser = {
+        //   id: Date.now(),
+        //   email: req.body.email,
+        //   password: hashPassword,
+        // }
         const db = createDbConnection()
         await insertRow(db, req.body.email, hashPassword)
         users = await getUsers(db)
