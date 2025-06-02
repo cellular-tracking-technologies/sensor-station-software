@@ -7,21 +7,17 @@ import archiver from 'archiver'
 import bodyParser from 'body-parser'
 import fetch from 'node-fetch'
 import RunCommand from '../../command.js'
-// import userDB from '../public/javascripts/data.json' with {type: 'json'}
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import * as crypto from 'crypto'
 import cookieParser from 'cookie-parser'
 import { createDbConnection, getUsers, insertRow, disconnectDb } from '../models/user.js'
-// import duckdb from '@duckdb/node-api';
 
 const TMP_FILE = '/tmp/download.zip'
 const SG_DEPLOYMENT_FILE = '/data/sg_files/deployment.txt'
 const LOG_FILE = '/data/sensor-station.log'
 const ConfigFileURI = '/etc/ctt/station-config.json'
 const secret = crypto.randomBytes(20).toString('hex')
-console.log('secret', secret)
-// let users = userDB
 
 let email, password
 
@@ -38,7 +34,10 @@ disconnectDb(db)
 const verifySession = async (req, res, next) => {
   try {
     const authHeader = req.headers["cookie"]; // get the session cookie from request header
-    const cookie = authHeader.split("=")[1]; // If there is, split the cookie string to get the actual jwt
+    console.log('auth header', authHeader)
+    // const cookie = authHeader.split("=")[2]; // If there is, split the cookie string to get the actual jwt
+    const cookie = authHeader.match(/(?<=name=).+/g)[0]
+    console.log('cookie', cookie)
 
     // Verify using jwt to see if token has been tampered with or if it has expired.
     // that's like checking the integrity of the cookie
@@ -46,9 +45,13 @@ const verifySession = async (req, res, next) => {
       if (err) {
         console.log('err', err)
         // if token has been altered or has expired, return an unauthorized error
-        return res
-          .status(401)
-          .json({ message: "This session has expired. Please login" });
+        // return res
+        //   .status(401)
+        //   .json({ message: "This session has expired. Please login" });
+        return res.render('login-fail', {
+          message: 'pug',
+          headerText: 'Session has expired. Please login again.'
+        })
       }
 
       const { email } = decoded; // get user id from the decoded token
