@@ -149,7 +149,6 @@ class NodeMetaManager {
 
                 // check if index is sequential, and if idx is greater than the iterate (nodes are sending previous received beeps???)
                 if (idx !== iterate + 1 && idx > iterate + 1) {
-                    console.log('node id', node_id, 'collect id', collect_id, 'idx should be', iterate + 1, 'but it is', idx)
 
                     let missing = this.getMinMax(iterate + 1, idx)
                     min = missing.min
