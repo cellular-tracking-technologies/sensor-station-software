@@ -3,7 +3,7 @@
 #load chipsets array
 # source kernel-chipsets.sh
 source /lib/ctt/sensor-station-software/system/scripts/kernel-chipsets.sh
-
+cp /lib/ctt/sensor-station-software/system/scripts/8821cu.conf /etc/modprobe.d/.
 
 chipcount=${#CHIPS[@]}
 
