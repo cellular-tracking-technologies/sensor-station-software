@@ -20,7 +20,7 @@ const run = async () => {
     await InitializeExpander()
   }
   const hardware_info = await id_interface.getHardwareInfo()
-  const { version, id, revision } = hardware_info
+  const { version, id, } = hardware_info
   fs.writeFileSync(Filenames.ID, id.trim())
   fs.writeFileSync(Filenames.VERSION, version.toString())
 }

@@ -10,10 +10,12 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
         div(style="text-align:center;")
           img(src="/ctt_logo_300DPI.png" style="height:100px;")
       div(class="col-sm-9")
-        h1(style="") Email Registration Successful!
-        br
-        br
-        button(onclick="location.href='/login'" class="btn btn-primary btn-lg btn-block") Go to Login Page
+        h1(style="") Login Failed!
+          h2(style="")=headerText
+          br
+          br
+          div(class="row")
+            button(onclick="location.href='/login'" class="btn btn-primary btn-lg btn-block") Go back to Login
         //- h1(style="")
         //-   form(id="login-form" method="POST")
         //-     label Email

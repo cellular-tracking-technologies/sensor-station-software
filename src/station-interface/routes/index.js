@@ -7,28 +7,73 @@ import archiver from 'archiver'
 import bodyParser from 'body-parser'
 import fetch from 'node-fetch'
 import RunCommand from '../../command.js'
-import userDB from '../public/javascripts/data.json' with {type: 'json'}
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
+import * as crypto from 'crypto'
+import cookieParser from 'cookie-parser'
+import { createDbConnection, getUsers, insertRow, disconnectDb } from '../models/user.js'
 
 const TMP_FILE = '/tmp/download.zip'
 const SG_DEPLOYMENT_FILE = '/data/sg_files/deployment.txt'
 const LOG_FILE = '/data/sensor-station.log'
 const ConfigFileURI = '/etc/ctt/station-config.json'
-const secret = 12345
+const secret = crypto.randomBytes(20).toString('hex')
 
-let users = userDB
 let email, password
 
-console.log('users', users.length)
 const router = express.Router()
+express().use(cookieParser())
 
-router.get('/', function (req, res, next) {
+// connect to database
+const db = createDbConnection()
+let users = await getUsers(db)
+// disconnect to database
+disconnectDb(db)
+
+const verifySession = async (req, res, next) => {
+  try {
+    const authHeader = req.headers["cookie"]; // get the session cookie from request header
+    // const cookie = authHeader.split("=")[2]; // If there is, split the cookie string to get the actual jwt
+    const cookie = authHeader.match(/(?<=name=).+/g)[0]
+
+    // Verify using jwt to see if token has been tampered with or if it has expired.
+    // that's like checking the integrity of the cookie
+    jwt.verify(cookie, secret, async (err, decoded) => {
+      if (err) {
+        console.log('err', err)
+        // if token has been altered or has expired, return an unauthorized error
+        // return res
+        //   .status(401)
+        //   .json({ message: "This session has expired. Please login" });
+        return res.render('login-fail', {
+          message: 'pug',
+          headerText: 'Session has expired. Please login again.'
+        })
+      }
+
+      const { email } = decoded; // get user id from the decoded token
+      const user = users.find((data) => email === data.email)
+      req.user = user
+    });
+  } catch (err) {
+    res.redirect('/login')
+  }
+}
+
+router.get('/', async function (req, res, next) {
   // check if user is authenticated
-  // console.log('request', req.session)
-  if (users.length === 0 || email !== null && password !== null) {
+  if (users.length === 0 && email === undefined && password === undefined) {
     res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
-  } else if (users.length > 0 && email === null && password === null) {
-    res.render('login', { title: 'CTT Login', message: 'pug' })
+
+  } else if (users.length > 0 && email === undefined && password === undefined) {
+    res.redirect('/login')
+
+  } else if (users.length > 0 && email !== undefined && password !== undefined) {
+    await verifySession(req, res)
+
+    if (req.user) {
+      res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+    }
 
   } else {
     res.redirect('/login')
@@ -39,7 +84,6 @@ router.get('/login', (req, res) => {
   res.render('login', { title: 'CTT Login', message: 'pug' })
 })
 
-
 router.get('/register', (req, res) => {
   if (users.length === 0) {
     res.render('register', { title: 'CTT Registration', message: 'pug' })
@@ -48,82 +92,102 @@ router.get('/register', (req, res) => {
   } else {
     res.redirect('/login')
   }
-
 })
 
 router.post('/register', async (req, res) => {
-
-  // console.log('request', req, 'response', res)
   try {
-    let foundUser = users.find((data) => req.body.email === data.email)
-    if (!foundUser) {
-      let hashPassword = await bcrypt.hash(req.body.password, 10)
-
-      let newUser = {
-        id: Date.now(),
-        email: req.body.email,
-        password: hashPassword,
-      }
-      users.push(newUser)
-      fs.writeFileSync('src/station-interface/public/javascripts/data.json', JSON.stringify(users))
-      console.log('User list', users)
-
-      res.render('register-success', { title: 'Registration Successful', message: 'pug' })
+    if (!req.body.email || !req.body.password) {
+      res.status('400')
+      res.send('Invalid details!')
     } else {
-      res.send("<h1>Registration failed</h1>")
+      let foundUser = users.find((data) => req.body.email === data.email)
+
+      if (foundUser === undefined) {
+        let hashPassword = await bcrypt.hash(req.body.password, 10)
+
+        // let newUser = {
+        //   id: Date.now(),
+        //   email: req.body.email,
+        //   password: hashPassword,
+        // }
+        const db = createDbConnection()
+        await insertRow(db, req.body.email, hashPassword)
+        users = await getUsers(db)
+        disconnectDb(db)
+
+        res.render('register-success',
+          {
+            title: 'Registration Successful',
+            message: 'pug'
+          })
+      } else if (foundUser) {
+        res.render('register-fail',
+          {
+            headerText: 'Email already exists! Login or choose another email address.',
+            message: 'pug'
+          })
+      } else {
+        res.render('register-fail',
+          {
+            title: 'Registration failed.',
+            headerText: 'An error has occurred. Please try again',
+            message: 'pug'
+          })
+      }
     }
   } catch (err) {
-    res.send('Internal server error', err)
+    // res.send('Internal server error', err)
+    res.sendStatus(400).send('Internal server error')
   }
-
 })
 
 router.post('/login', async (req, res) => {
-  console.log('login users', users)
+  const db = createDbConnection()
+  let users = await getUsers(db)
+  disconnectDb(db)
+
   try {
     let foundUser = users.find((data) => req.body.email === data.email)
-    console.log('found user', foundUser)
     if (foundUser) {
-      // let submittedPass = req.body.password
       let storedPass = foundUser.password
-
       email = foundUser.email
       password = foundUser.password
       const passwordMatch = await bcrypt.compare(req.body.password, storedPass)
-      console.log('password matches')
+
       if (passwordMatch) {
-        let options = {
-          maxAge: 20 * 60 * 1000, // 20 min
-          httpOnly: true,
-          secure: true,
-          sameSite: 'None',
-        }
-
+        const token = jwt.sign({ email: email },
+          secret,
+          { expiresIn: '5m' })
         // save session in cookie?
-        res.cookie('SessionID', secret, options)
-
-        // res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
+        res.cookie('name', token, { maxAge: 300000 });
         res.redirect('/')
       } else {
-        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")
+        res.render('login-fail', {
+          message: 'pug',
+          headerText: 'Password is incorrect, please login again.'
+        })
       }
 
     } else {
       let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
       await bcrypt.compare(req.body.password, fakePass)
-
-      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again<a><div>")
+      res.render('login-fail', {
+        message: 'pug',
+        headerText: 'Email not found.'
+      })
     }
   } catch {
     res.send('Internal server error')
   }
 })
 
+router.get('/login-fail', async (req, res) => {
+  res.render('login-fail', { title: 'Login Failed', message: 'pug' })
+})
+
 router.post('/register-success', async (req, res) => {
-  console.log('register-success users', users)
   try {
     let foundUser = users.find((data) => req.body.email === data.email)
-    console.log('found user', foundUser)
     if (foundUser) {
       let submittedPass = req.body.password
       let storedPass = foundUser.password
@@ -133,22 +197,27 @@ router.post('/register-success', async (req, res) => {
       const passwordMatch = await bcrypt.compare(submittedPass, storedPass)
 
       if (passwordMatch) {
-        // res.redirect('/')
         res.render('main', { title: 'CTT Sensor Station', message: 'pug' })
-        // window.history.replaceState(url = '/')
-        // res.send(`<div align='center'><h2>login successful</h2></div><br><br><br><div align='center'><h3>Hello ${usrname}</h3></div><br><br><div align='center'><a href='/'>main page</a></div>`)
+
       } else {
-        res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again</a></div>")
+        res.redirect('/login-fail')
+
+        // res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again</a></div>")
       }
     } else {
       let fakePass = `$2b$$10$ifgfgfgfgfgfgfggfgfgfggggfgfgfga`
       await bcrypt.compare(req.body.password, fakePass)
 
-      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.html'>login again<a><div>")
+      res.send("<div align='center'><h2>Invalid email or password</h2></div><br><br><div align='center'><a href='./login.pug'>login again<a><div>")
     }
   } catch {
     res.send('Internal server error')
   }
+})
+
+router.get('/logout', async (req, res) => {
+  res.clearCookie('name')
+  res.redirect('/login')
 })
 
 router.get('/blu', function (req, res, next) {

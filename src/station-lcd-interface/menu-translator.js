@@ -30,6 +30,8 @@ import { ProgramRadios } from './tasks/program-radios.js'
 import { ListDevices } from './tasks/list-devices.js'
 import { DeleteConnections } from './tasks/delete-connections-task.js'
 import { DeleteDataTask } from './tasks/system-delete-data-task.js'
+import { NoDeleteDataTask } from './tasks/system-no-delete-data-task.js'
+
 
 /**
  * 
@@ -76,7 +78,7 @@ class MenuTranslator {
         new MenuItem("Ping", new InternetTask(host), []),
         new MenuItem("Hostname", new HostnameTask(), []),
       ]),
-      new MenuItem("System", null, [
+      new MenuItem(lang_string == 'pt' ? `System-${lang_string}` : 'System', null, [
         new MenuItem('Program Radios', new ProgramRadios(host), []),
         new MenuItem('List Devices', new ListDevices(host), []),
         new MenuItem("About", null, [
@@ -89,7 +91,11 @@ class MenuTranslator {
         new MenuItem("Time", new SystemTimeTask(host), []),
         new MenuItem("Restart", new SystemRestartTask(), []),
         new MenuItem("Bash Update", new BashUpdateTask(), []),
-        new MenuItem('Delete Data', new DeleteDataTask(host), []),
+        new MenuItem('Delete Data', null, [
+          new MenuItem('Delete All Data?', null, []),
+          new MenuItem('Yes', new DeleteDataTask(host), []),
+          new MenuItem('No', new NoDeleteDataTask(host), [])
+        ]),
       ]),
       new MenuItem("Server", new ServerConnectRequest(host), []),
       new MenuItem("Power", new SensorVoltageTask(host), []),

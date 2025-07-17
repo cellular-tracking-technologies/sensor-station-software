@@ -1,21 +1,16 @@
 import { exec } from 'child_process'
 import url from 'url'
-import Os from '../../hardware/pi/os.js'
 
 
-class DeleteDataTask {
+class NoDeleteDataTask {
   constructor(base_url) {
     this.url = url.resolve(base_url, 'about')
     this.header = "Delete Data"
     this.start_disk
     this.curr_disk
-    this.disk_usage = Os.disk_usage
   }
 
-  /**
-   * return (<Promise>)
-   */
-  async getDisk() {
+  getDisk() {
     fetch(this.url)
       .then(data => {
         return data.json()
@@ -29,18 +24,20 @@ class DeleteDataTask {
 
         const disk = `${(100 - percent_free_disk).toFixed(2).toString()}% Full`
         console.log('disk', disk)
+
+        return disk
       })
-      .then(result => result)
   }
 
   loading() {
-    return [this.header, "Deleting Data..."]
+    return [this.header, "Not Deleting Data"]
   }
   results() {
     return new Promise((resolve, reject) => {
-      let child = exec('/bin/bash /lib/ctt/sensor-station-software/system/scripts/delete-data.sh', (error, stdout, stderr) => {
+
+      let child = exec('/bin/bash /lib/ctt/sensor-station-software/system/scripts/delete-no-data.sh', (error, stdout, stderr) => {
         if (error) {
-          resolve(null)
+          console.error('delete no data error', error)
         }
       })
 
@@ -60,11 +57,10 @@ class DeleteDataTask {
         const start_disk = `${(100 - start_free).toFixed(2).toString()}% Full`
         const current_disk = `${(100 - current_free).toFixed(2).toString()}% Full`
 
-        resolve(['All data deleted.', `Disk Start ${start_disk}`, `Disk Now ${current_disk}`])
-
+        resolve(['No data deleted.', `Disk Start ${start_disk}`, `Disk Now ${current_disk}`])
       })
     })
   }
 }
 
-export { DeleteDataTask }
+export { NoDeleteDataTask }

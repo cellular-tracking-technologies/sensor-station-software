@@ -14,6 +14,28 @@ class MenuManager {
     this.focus = menu
     this.scroller = new MenuScroller()
     this.refresh_
+    this.language_array = [
+      {
+        language: 'System',
+        phrase: 'Delete Data'
+      },
+      {
+        language: 'Sistema',
+        phrase: 'Eliminar datos'
+      },
+      {
+        language: 'Systeme',
+        phrase: 'Supprimer les donnees'
+      },
+      {
+        language: 'Sistema-PT',
+        phrase: 'Excluir dados'
+      },
+      {
+        language: 'Systeem',
+        phrase: 'Gegevens verwijderen'
+      },
+    ]
   }
   init() {
     this.scroller.init(this.focus.childrenNames())
@@ -71,10 +93,20 @@ class MenuManager {
   }
   back() {
     this.autoRefresh_(false)
-    if (this.focus.parent_id != null) {
+    console.log('this menu', this.menu)
+    console.log('menu back', this.focus)
+
+    if (this.language_array.find(el => el.phrase === this.focus.parent_id)) {
+      const back_element = this.language_array.find(el => el.phrase === this.focus.parent_id)
+      this.focus = this.findMenuItem_(this.menu, back_element.language)
+      this.scroller.init(this.focus.childrenNames())
+    } else if (this.focus.parent_id != null) {
       this.focus = this.findMenuItem_(this.menu, this.focus.parent_id)
       this.scroller.init(this.focus.childrenNames())
     }
+
+    // this.scroller.init(this.focus.childrenNames())
+
     this.update_()
   }
   view_() {

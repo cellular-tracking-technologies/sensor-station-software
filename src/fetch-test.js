@@ -1,5 +1,6 @@
 import fetch from 'node-fetch'
 import moment from 'moment'
+
 class ServerApi {
   constructor() {
     this.endpoint = "https://station.internetofwildlife.com/station/v2/checkin/"
@@ -107,8 +108,8 @@ class ServerApi {
             'uploads': responses[4],
             'software': responses[5],
             'revision': responses[6],
-            'radio': radio_fw,
-            'blu': blu_fw
+            'radio': null,
+            'blu': null
           }
         })
         .then((data) => {
@@ -116,8 +117,10 @@ class ServerApi {
           // clean gps coordinates
           data.gps = this.cleanGps(data)
           data.sensor = this.sensor_data
-          data.stats = this.filterStats(stats)
+          // data.stats = this.filterStats(stats)
           data.blu_stats = blu_stats
+          console.log('checkin data', data)
+
           // initialize server checkin
           fetch(this.endpoint, {
             method: 'POST',
@@ -129,6 +132,7 @@ class ServerApi {
               if (res.ok) {
                 // we have a successful server checkin - clear sensor data
                 this.sensor_data = []
+                console.log('sensor data', this.sensor_data)
                 resolve(true)
               } else {
                 // console.log('bad response', res)
@@ -142,9 +146,6 @@ class ServerApi {
               console.log('unable to check into server')
               console.error(err)
               reject(err)
-
-              // retry health checkin
-              healthCheckin(stats, radio_fw, blu_stats, blu_fw)
             })
         })
         .catch((err) => {
@@ -156,4 +157,6 @@ class ServerApi {
   }
 }
 
-export { ServerApi }
+const server = new ServerApi()
+
+server.healthCheckin()

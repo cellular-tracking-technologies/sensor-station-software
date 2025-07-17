@@ -7,6 +7,9 @@ const Files = {
   Image: '/etc/ctt/station-image',
   Bootcount: '/etc/bootcount',
   ProcFile: '/proc/cpuinfo',
+  Id: '/etc/ctt/station-id',
+  Version: '/etc/ctt/station-version',
+  Revision: '/etc/ctt/station-revision'
 }
 
 /**
@@ -65,13 +68,16 @@ const Module = getModuleDetails()
 const Os = getDistribution()
 
 // parse station version / revision once
-const id_interface = new StationIdInterface()
-const {
-  version: Version,
-  revision: Revision,
-  id: Id,
-} = await id_interface.getHardwareInfo()
-
+const Id = fs.readFileSync(Files.Id).toString()
+const Version = fs.readFileSync(Files.Revision).toString()
+const Revision = fs.readFileSync(Files.Revision).toString()
+// const id_interface = new StationIdInterface()
+// const {
+//   version: Version,
+//   revision: Revision,
+//   id: Id,
+// } = await id_interface.getHardwareInfo()
+// console.log('system station id:', Id)
 // parse station image date
 const Image = new Date(fs.readFileSync(Files.Image).toString())
 

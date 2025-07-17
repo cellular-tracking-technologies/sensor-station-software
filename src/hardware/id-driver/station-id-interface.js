@@ -18,10 +18,13 @@ const IdChips = {
   },
   AT24MAC602: async (revision) => {
     const buffer = await At24Mac602.ReadEUI64()
+    console.log('buffer', buffer)
     // for the At24MAC602 chip - slice the first 2 of 3 manufacturer bytes 
     const sliced_buffer = Buffer.concat([buffer.subarray(2, 3), buffer.subarray(5)])
+    console.log('sliced buffer', sliced_buffer)
     // V3 prefix  - append V3DD where DD is the provided revision
     const prefix = V3_PREFIX.concat(revision.toString().padStart(2, '0'))
+    console.log('prefix', prefix)
     return prefix.concat(sliced_buffer.toString('hex').toUpperCase())
   },
   ATSHA204A: async () => {
