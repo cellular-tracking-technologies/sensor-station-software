@@ -1,5 +1,17 @@
 [
     {
+        "version": "1.6.0",
+        "date": "2025-07-17",
+        "notes": "Add delete data to LCD menu, fix register/login pages, fix station ID i2c bus read.",
+        "features": [
+            "Add delete data option to LCD menu, display storage space before and after deletion."
+        ],
+        "bugs": [
+            "Fix login page cookies; prevents people on different computers from accessing web interface.",
+            "Change the station ID read process so the i2c bus is read once to generate the ID, the ID is saved as a string, and pass up the stack."
+        ]
+    },
+    {
         "version": "1.5.0",
         "date": "2025-02-05",
         "notes": "Add menu options for QAQC, RSSI values for cell modem menu options, and create register/login pages for security.",
