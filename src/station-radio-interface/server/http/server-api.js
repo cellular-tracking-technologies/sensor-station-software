@@ -118,8 +118,6 @@ class ServerApi {
           data.sensor = this.sensor_data
           data.stats = this.filterStats(stats)
           data.blu_stats = blu_stats
-          console.log('checkin data', data)
-          fetch
           // initialize server checkin
           fetch(this.endpoint, {
             method: 'POST',
