@@ -129,7 +129,7 @@ class StationIdInterface {
    * @property {String} id - Station ID
    * @property {Number} version - Station Version
    * @property {Number} revision - Station Hardware Revision
-   * @returns {HardwareInfo} 
+   * @returns {Promise<HardwareInfo>} 
    */
   async getHardwareInfo() {
     const version_info = await this.getVersion()

@@ -1,11 +1,7 @@
 import InitializeExpander from './io-expander/initialize.js'
 import StationIdInterface from './id-driver/station-id-interface.js'
+import StationFiles from '../station-files.js'
 import fs from 'fs'
-
-const Filenames = {
-  ID: '/etc/ctt/station-id',
-  VERSION: '/etc/ctt/station-revision'
-}
 
 /**
  * Script to intialize a sensor station
@@ -20,9 +16,10 @@ const run = async () => {
     await InitializeExpander()
   }
   const hardware_info = await id_interface.getHardwareInfo()
-  const { version, id, } = hardware_info
-  fs.writeFileSync(Filenames.ID, id.trim())
-  fs.writeFileSync(Filenames.VERSION, version.toString())
+  const { version, id, revision } = hardware_info
+  fs.writeFileSync(StationFiles.Id, id.trim())
+  fs.writeFileSync(StationFiles.Version, version.toString())
+  fs.writeFileSync(StationFiles.Revision, revision.toString())
 }
 
 run()
