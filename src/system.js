@@ -1,15 +1,10 @@
 import fs from 'fs'
 import { execSync } from 'child_process'
-import StationIdInterface from './hardware/id-driver/station-id-interface.js'
+import StationFiles from './station-files.js'
 
 // Relavant system files
 const Files = {
-  Image: '/etc/ctt/station-image',
-  Bootcount: '/etc/bootcount',
   ProcFile: '/proc/cpuinfo',
-  Id: '/etc/ctt/station-id',
-  Version: '/etc/ctt/station-version',
-  Revision: '/etc/ctt/station-revision'
 }
 
 /**
@@ -68,9 +63,9 @@ const Module = getModuleDetails()
 const Os = getDistribution()
 
 // parse station version / revision once
-const Id = fs.readFileSync(Files.Id).toString()
-const Version = fs.readFileSync(Files.Revision).toString()
-const Revision = fs.readFileSync(Files.Revision).toString()
+const Id = fs.readFileSync(StationFiles.Id).toString()
+const Version = parseInt(fs.readFileSync(StationFiles.Version).toString())
+const Revision = parseInt(fs.readFileSync(StationFiles.Revision).toString())
 // const id_interface = new StationIdInterface()
 // const {
 //   version: Version,
@@ -79,10 +74,10 @@ const Revision = fs.readFileSync(Files.Revision).toString()
 // } = await id_interface.getHardwareInfo()
 // console.log('system station id:', Id)
 // parse station image date
-const Image = new Date(fs.readFileSync(Files.Image).toString())
+const Image = new Date(fs.readFileSync(StationFiles.Image).toString())
 
 // parse boot count
-const BootCount = parseInt(fs.readFileSync(Files.Bootcount))
+const BootCount = parseInt(fs.readFileSync(StationFiles.Bootcount))
 
 export default Object.freeze({
   Image,
