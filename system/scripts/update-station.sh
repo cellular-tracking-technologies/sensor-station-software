@@ -35,7 +35,7 @@ fi
 sudo sh -c "date -u +'%Y-%m-%d %H:%M:%S' > /etc/ctt/station-software"
 
 # run the initialize script to ensure station files are written from i2c chips
-/usr/local/bin/node /lib/ctt/sensor-station-software/src/hardware/initialize.js
+sudo /usr/local/bin/node /lib/ctt/sensor-station-software/src/hardware/initialize.js
 
 echo '*******************************************'
 echo 'CTT Sensor Station Software Update Complete'
