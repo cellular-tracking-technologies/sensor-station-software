@@ -2,6 +2,8 @@ import InitializeExpander from './io-expander/initialize.js'
 import StationIdInterface from './id-driver/station-id-interface.js'
 import StationFiles from '../station-files.js'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
+import path from 'path'
 
 /**
  * Script to intialize a sensor station
@@ -15,11 +17,19 @@ const run = async () => {
     // I2C device found at the IO Expander address - initialize it
     await InitializeExpander()
   }
+
+  // create station-image file from changelog.json
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = path.dirname(__filename)
+  const contents = fs.readFileSync(path.resolve(__dirname, '../../changelog.json'))
+  const station_image = JSON.parse(contents)[0].date
+
   const hardware_info = await id_interface.getHardwareInfo()
   const { version, id, revision } = hardware_info
   fs.writeFileSync(StationFiles.Id, id.trim())
   fs.writeFileSync(StationFiles.Version, version.toString())
   fs.writeFileSync(StationFiles.Revision, revision.toString())
+  fs.writeFileSync(StationFiles.Image, station_image.toString())
 }
 
 run()
