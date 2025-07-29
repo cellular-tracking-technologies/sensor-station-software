@@ -474,15 +474,24 @@ class BaseStation {
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
    */
   async addPath(path) {
+    console.log('system hardware version', System.Hardware.Version)
     if (System.Hardware.Version >= 3) {
+      console.log('v3 path', path)
       // V3 Radio Paths
-      if (!path.includes('0:1.2.') && path.includes('-port0')) {
+      if (!path.includes('-port0')) {
+        this.startRadios(path)
+
+      } else if (!path.includes('0:1.7.6') && !path.includes('0:1.2.') && path.includes('-port0')) {
+        console.log('starting blu station', path.includes('0:1.7.6'))
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
-      } else if (!path.includes('-port0')) {
-        this.startRadios(path)
+        // } else if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        //   await this.startBluStation(path)
+        //   this.stationLog('starting blu receiver')
       }
     } else {
+      console.log('v2 path', path)
+
       // V2 Radio Paths
       if (path.includes('-port0') && !path.includes('0:1.2.1:1')) {
         await this.startBluStation(path)
@@ -600,6 +609,7 @@ class BaseStation {
    * @returns 
    */
   findRadioPath(path) {
+    // console.log('config radios', this.config.data.radios)
     return this.config.data.radios.find(radio => radio.path == path)
   }
 
@@ -610,6 +620,7 @@ class BaseStation {
 
     this.stationLog('starting radio receivers')
     let radio = this.findRadioPath(path)
+    console.log('path', path)
     let beep_reader = new RadioReceiver({
       baud_rate: 115200,
       port_uri: radio.path,

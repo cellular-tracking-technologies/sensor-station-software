@@ -5,7 +5,7 @@ import V3BluRadioMap from './v3-blu-radio-map.js'
 
 import System from '../../../system.js'
 const { Version } = System.Hardware
-
+console.log('Version', Version)
 const Maps = {
   Blu: V3BluRadioMap,
   Radio: V3RadioMap,
