@@ -18,7 +18,8 @@ then
 	CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.4:1.0'
 	CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.5:1.0'
 	CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.6:1.0'
-else
+elif test $revision -eq 0
+then
 	# V2 radio map
 	echo 'v2 radio map'
 	CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.2:1.0'
