@@ -1,7 +1,7 @@
 #!/bin/bash
 
-typeset -i version=$(cat /etc/ctt/station-board-revision)
-if test $version -ge 3
+typeset -i revision=$(cat /etc/ctt/station-board-revision)
+if test $revision -ge 2
 then
 	# V3 radio map
 	echo 'v3.3 radio map'
@@ -10,7 +10,7 @@ then
 	CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.3:1.0'
 	CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.4:1.0'
 	CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.7:1.0'
-elif test $version -eq 2
+elif test $revision -eq 1
 then
 	echo 'v3 radio map'
 	CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.2:1.0'
@@ -83,4 +83,4 @@ sleep 0.2
 raspi-gpio set $PIN ip
 sleep 1 
 
-avrdude -P $CHANNEL -c avr109 -patmega32u4  -b 57600 -D -v -Uflash:w:$FW_FILE:i
+avrdude -P $CHANNEL -c avr109 -patmega32u4  -b 57600 -D -v -v -v -v -Uflash:w:$FW_FILE:i
