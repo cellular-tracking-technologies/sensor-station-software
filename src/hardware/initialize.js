@@ -17,6 +17,8 @@ const run = async () => {
   }
   const hardware_info = await id_interface.getHardwareInfo()
   const { version, id, revision } = hardware_info
+  console.log('revision', revision)
+  console.log('version', version)
   fs.writeFileSync(StationFiles.Id, id.trim())
   fs.writeFileSync(StationFiles.Version, version.toString())
   fs.writeFileSync(StationFiles.Revision, revision.toString())

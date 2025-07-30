@@ -1,15 +1,23 @@
 #!/bin/bash
 
-typeset -i version=$(cat /etc/ctt/station-revision)
+typeset -i version=$(cat /etc/ctt/station-board-revision)
 if test $version -ge 3
 then
 	# V3 radio map
-	echo 'v3 radio map'
+	echo 'v3.3 radio map'
 	CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.1:1.0'
 	CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.2:1.0'
 	CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.3:1.0'
 	CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.4:1.0'
 	CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.7:1.0'
+elif test $version -eq 2
+then
+	echo 'v3 radio map'
+	CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.2:1.0'
+	CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.3:1.0'
+	CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.4:1.0'
+	CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.5:1.0'
+	CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.6:1.0'
 else
 	# V2 radio map
 	echo 'v2 radio map'
