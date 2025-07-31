@@ -6,7 +6,7 @@ then
 	typeset -i revision=$(cat /etc/ctt/station-board-revision)
 	case $revision in
 		2)
-			# V3 radio map revision 2
+			# V3 radio map revision 3
 			echo "CTT radio map station revision - $revision; version - $version"
 			CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.7:1.0'
 			CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.1:1.0'
@@ -14,7 +14,7 @@ then
 			CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.3:1.0'
 			CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.4:1.0' ;;
 		*)
-			# V3 Radio Map for revision 0, 1 boards - defaulting
+			# V3 Radio Map for revision 1, 2 boards - defaulting
 			echo "CTT radio map station revision - default: $revision; version - $version"
 			CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.2:1.0'
 			CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.3:1.0'
