@@ -6,10 +6,13 @@ const SessionExpiration = '5m'
 const CookieName = 'auth_token'
 
 const UserFile = '/etc/ctt/users.csv'
+if (fs.existsSync(UserFile) !== true) {
+  fs.writeFileSync(UserFile, '')
+}
 
 const GetUsers = () => {
   // load user db from file
-  const content = fs.readFileSync(UserFile).toString()
+  const content = fs.readFileSync(UserFile).toString().trim()
   // map csv to objects
   if (content.search(',') < 1) {
     // empty file - no user records
@@ -21,7 +24,7 @@ const GetUsers = () => {
       email: email.trim(),
       password_hash: password_hash.trim(),
     }
-  })
+  }).filter(record => record.password_hash === undefined)
 }
 
 export default Object.freeze({

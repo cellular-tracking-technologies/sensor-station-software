@@ -29,16 +29,16 @@ app.use('/bootstrap', express.static(path.join(__dirname, '../../node_modules/bo
 app.use('/jquery', express.static(path.join(__dirname, '../../node_modules/jquery')))
 app.use('/moment', express.static(path.join(__dirname, '../../node_modules/moment')))
 
-app.get('/', Routes.Main)
+app.get('/', Middleware.Auth, Routes.Main)
 app.get('/login', Routes.Login.Get)
 app.post('/login', Routes.Login.Post)
 app.get('/logout', Routes.Logout)
 app.get('/register', Routes.Register.Get)
 app.post('/register', Routes.Register.Post)
 
-app.get('/blu', Routes.Blu)
+app.get('/blu', Middleware.Auth, Routes.Blu)
 
-app.get('/update-station', Routes.UpdateStation)
+app.get('/update-station', Middleware.Auth, Routes.UpdateStation)
 app.get('/crash', Routes.Crash)
 app.get('/sg-deployment', Routes.Sensorgnome.Sgdeployment)
 app.post('/save-sg-deployment', Routes.Sensorgnome.SaveSgDeployment)
@@ -59,8 +59,8 @@ app.post('/clear-log', Routes.Data.ClearLog)
 
 app.get('/chrony', Routes.Controls.Chrony)
 app.post('/reboot', Routes.Controls.Reboot)
-app.get('/update', Routes.UpdateStation)
-app.post('/update', Middleware.Raw, Routes.Controls.Update)
+app.get('/update', Middleware.Auth, Routes.UpdateStation)
+app.post('/update', [Middleware.Auth, Middleware.Raw], Routes.Controls.Update)
 
 app.get('/config', Routes.Controls.Config)
 app.post('/radio-restart', Routes.Controls.RadioRestart)
