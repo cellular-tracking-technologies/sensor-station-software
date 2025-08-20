@@ -11,6 +11,10 @@ const GetUsers = () => {
   // load user db from file
   const content = fs.readFileSync(UserFile).toString()
   // map csv to objects
+  if (content.search(',') < 1) {
+    // empty file - no user records
+    return []
+  }
   return content.trim().split('\n').map((line) => {
     const [email, password_hash] = line.split(',')
     return {

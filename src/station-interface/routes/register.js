@@ -5,7 +5,7 @@ export default Object.freeze({
   Get: (req, res) => {
     res.render('register', { title: 'CTT Registration', message: 'pug' })
   },
-  Post: (req, res) => {
+  Post: async (req, res) => {
     const { email, password } = req.body
     if (!email || !password) {
       res.status(400)
@@ -22,7 +22,7 @@ export default Object.freeze({
     }
 
     // create new user
-    const hashed_password = bcrypt.hash(password, 10)
+    const hashed_password = await bcrypt.hash(password, 10)
     UserApi.AddUser({ email, password: hashed_password })
 
     res.render('register-success', {
