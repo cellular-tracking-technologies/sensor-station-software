@@ -1,12 +1,14 @@
 import fs from 'fs'
 import archiver from 'archiver'
 
+import Files from '../utils/files.js'
+
 export default (filelist) => {
   return new Promise((resolve, reject) => {
-    if (fs.existsSync(TMP_FILE)) {
-      fs.unlinkSync(TMP_FILE)
+    if (fs.existsSync(Files.Temp)) {
+      fs.unlinkSync(Files.Temp)
     }
-    let output = fs.createWriteStream(TMP_FILE)
+    let output = fs.createWriteStream(Files.Temp)
     output.on('close', () => {
       resolve(true)
     })

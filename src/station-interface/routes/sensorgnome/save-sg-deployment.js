@@ -1,8 +1,8 @@
 import fs from 'fs'
-import SensorgnomeFiles from './files.js'
+import Files from '../../utils/files.js'
 
 export default (req, res, next) => {
-  fs.writeFile(SensorgnomeFiles.Deployment, req.body.contents, (err) => {
+  fs.writeFile(Files.Sensorgnome.Deployment, req.body.contents, (err) => {
     if (err) {
       next(err)
     } else {

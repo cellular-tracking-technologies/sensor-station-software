@@ -1,3 +1,4 @@
+import { glob } from 'glob'
 import fs from 'fs'
 
 export default async (req, res) => {

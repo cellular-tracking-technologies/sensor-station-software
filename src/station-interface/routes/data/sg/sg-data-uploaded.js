@@ -1,4 +1,7 @@
+import { glob } from 'glob'
 import prepareData from '../../../utils/prepare-data.js'
+
+import Files from '../../../utils/files.js'
 
 export default async (req, res, next) => {
   const filelist = await glob('/data/uploaded/sg/*/*.gz')
@@ -8,7 +11,7 @@ export default async (req, res, next) => {
   }
   prepareData(filelist).then((prepare_result) => {
     const download_name = `sg-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
-    res.download(TMP_FILE, download_name)
+    res.download(Files.Temp, download_name)
   }).catch((err) => {
     res.send('ERROR processing download request ' + err)
   })
