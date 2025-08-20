@@ -1,4 +1,4 @@
-import RunCommand from '../../command.js'
+import RunCommand from '../../../command.js'
 
 const BASE_SG_TAG_DB_NAME = 'SG_tag_database'
 
