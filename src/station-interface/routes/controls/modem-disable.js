@@ -1,6 +1,6 @@
 import RunCommand from '../../../command.js'
 
 export default async (req, res) => {
-  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/enable-modem.sh')
+  await RunCommand('/bin/bash /lib/ctt/sensor-station-software/system/scripts/disable-modem.sh')
   return res.status(200).send()
 }
