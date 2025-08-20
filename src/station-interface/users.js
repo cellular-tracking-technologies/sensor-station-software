@@ -24,7 +24,7 @@ const GetUsers = () => {
       email: email.trim(),
       password_hash: password_hash.trim(),
     }
-  }).filter(record => record.password_hash === undefined)
+  })
 }
 
 export default Object.freeze({
