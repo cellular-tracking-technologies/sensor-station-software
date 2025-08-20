@@ -11,7 +11,7 @@ export default async (req, res, next) => {
     return
   }
   prepareData(filelist).then((prepare_result) => {
-    const download_name = `sg-data-uploaded.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
+    const download_name = `sg-data-rotated.${moment(new Date()).format('YYYY-MM-DD_HHMMSS')}.zip`
     res.download(Files.Temp, download_name)
   }).catch((err) => {
     res.send('ERROR processing download request ' + err)
