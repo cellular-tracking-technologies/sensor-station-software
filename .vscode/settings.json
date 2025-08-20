@@ -14,6 +14,7 @@
     },
     "[json]": {
         "editor.defaultFormatter": "vscode.json-language-features"
-    }, // set as "true" to run 'prettier' last not first
+    },
+    "editor.tabSize": 2, // set as "true" to run 'prettier' last not first
     // "[javascript]": {"editor.defaultFormatter": "esbenp.prettier-vscode"},
 }
