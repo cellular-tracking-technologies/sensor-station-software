@@ -25,7 +25,7 @@ export default (req, res, next) => {
     console.log('vaid user token but not identified in users table')
     res.status(403).send('')
   } catch (err) {
-    console.error('something went log during user verification')
+    console.error('something went wrong during user verification')
     console.error(err)
     return res.render('login-fail', {
       message: 'pug',
