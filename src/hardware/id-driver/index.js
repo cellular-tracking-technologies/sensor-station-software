@@ -12,7 +12,9 @@ export default {
   },
   FromChip: async () => {
     const id_interface = new StationIdInterface()
+    console.log('id interface', id_interface)
     const info = await id_interface.getHardwareInfo()
+    console.log('info', info)
     const { id } = info
     return id
   }

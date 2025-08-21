@@ -1,6 +1,6 @@
 {
   "name": "sensor-station-software",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "monorepo for CTT Sensor Station Software",
   "main": "index.js",
   "type": "module",
@@ -39,7 +39,6 @@
     "pug": "^3.0.3",
     "serialport": "^12.0.0",
     "sleep": "^6.3.0",
-    "sqlite3": "^5.1.7",
     "tail": "^2.2.6",
     "tar": "^7.2.0",
     "translate": "^3.0.0",

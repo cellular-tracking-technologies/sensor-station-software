@@ -75,10 +75,12 @@ class StationIdInterface {
    */
   async getVersion() {
     const io_expander_exists = await this.ioExpanderExists()
+    console.log('io expander', io_expander_exists)
     // check if the IO expander address is populated (V3 stations)
     if (io_expander_exists) {
       // IO expander found - get the hardware revision
       const revision = await this.getHardwareRevision()
+      console.log('get version revision', revision)
       return {
         version: 3,
         revision: revision,
@@ -97,6 +99,7 @@ class StationIdInterface {
    * @returns {String} V3+ Station ID
    */
   async getV3StationId(revision) {
+    console.log('revision', revision)
     let id
     const human_revision = revision + 1
     switch (revision) {
@@ -108,6 +111,10 @@ class StationIdInterface {
         break
       case 1:
         // revision 1 - use AT24MAC602 Serial EEPROM 
+        id = await IdChips.AT24MAC602(human_revision)
+        break
+      case 2:
+        // revision 2 - use AT24MAC602 Serial EEPROM 
         id = await IdChips.AT24MAC602(human_revision)
         break
       default:
@@ -154,3 +161,5 @@ class StationIdInterface {
 }
 
 export default StationIdInterface
+// const stat_id = new StationIdInterface()
+// stat_id.getHardwareInfo()

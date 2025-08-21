@@ -16,20 +16,22 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
         h2(style="")
           div(class="register-form-div")
             form(id="register-form" method="POST")
-              label(class="register-label-email") Email: 
-                input(type="email" id="email" name="email" placeholder="abc@example.com" required)
-                br
-                br
-                br
-              label(class="register-label-password") Password: 
-                input(type="password" name="password" id="password" placeholder="Password" required)
-                br
-                br
-                br
-                button(type="submit" value="register" id="register-form-submit") Register Email
-                br
-                br
-                br
-                br
-              p WARNING!!!
-              p You must remember your email and password you used in this registration. If you do not, you will be locked out of your Sensor Station and will need it reset by staff at CTT.
+              div(class="row")
+                label(class="register-label-email") Email: 
+                  input(type="email" id="email" name="email" placeholder="abc@example.com" required)
+                  br
+                  br
+                  br
+              div(class="row")
+                label(class="register-label-password") Password: 
+                  input(type="password" name="password" id="password" placeholder="Password" required)
+                  br
+                  br
+                  br
+                  button(type="submit" value="register" id="register-form-submit" class="btn btn-primary btn-lg btn-block") Register Email
+                  br
+                  br
+                  br
+                  br
+                p WARNING!!!
+                p You must remember your email and password you used in this registration. If you do not, you will be locked out of your Sensor Station and will need it reset by staff at CTT.

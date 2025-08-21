@@ -3,16 +3,28 @@
 typeset -i version=$(cat /etc/ctt/station-revision)
 if test $version -ge 3
 then
-	# V3 radio map
-	echo 'v3 radio map'
-	CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.2:1.0'
-	CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.3:1.0'
-	CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.4:1.0'
-	CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.5:1.0'
-	CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.6:1.0'
+	typeset -i revision=$(cat /etc/ctt/station-board-revision)
+	case $revision in
+		2)
+			# V3 radio map revision 3
+			echo "CTT radio map station revision - $revision; version - $version"
+			CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.7:1.0'
+			CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.1:1.0'
+			CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.2:1.0'
+			CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.3:1.0'
+			CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.7.4:1.0' ;;
+		*)
+			# V3 Radio Map for revision 1, 2 boards - defaulting
+			echo "CTT radio map station revision - default: $revision; version - $version"
+			CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.2:1.0'
+			CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.3:1.0'
+			CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.4:1.0'
+			CHANNEL4='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.5:1.0'
+			CHANNEL5='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.6:1.0';;
+	esac
 else
 	# V2 radio map
-	echo 'v2 radio map'
+	echo "CTT radio map station version $version"
 	CHANNEL1='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.2.2:1.0'
 	CHANNEL2='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.3.1:1.0'
 	CHANNEL3='/dev/serial/by-path/platform-3f980000.usb-usb-0:1.3.2:1.0'
@@ -26,7 +38,6 @@ PIN2=34
 PIN3=35
 PIN4=36
 PIN5=37
-
 
 case $1 in
 	1)
@@ -75,4 +86,4 @@ sleep 0.2
 raspi-gpio set $PIN ip
 sleep 1 
 
-avrdude -P $CHANNEL -c avr109 -patmega32u4  -b 57600 -D -v -Uflash:w:$FW_FILE:i
+avrdude -P $CHANNEL -c avr109 -patmega32u4  -b 57600 -D -v -v -v -v -Uflash:w:$FW_FILE:i

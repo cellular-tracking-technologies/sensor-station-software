@@ -8,6 +8,7 @@ import fs from 'fs'
  * V3+ stations have an IO expander that needs to be initialized upon boot
  */
 const run = async () => {
+  console.log('CTT initializing sensor station hardware')
   const id_interface = new StationIdInterface()
   // check for the IO expander
   const io_expander_exists = await id_interface.ioExpanderExists()
@@ -17,6 +18,7 @@ const run = async () => {
   }
   const hardware_info = await id_interface.getHardwareInfo()
   const { version, id, revision } = hardware_info
+  console.log(`CTT identified Sensor Station Version: ${version}; Revision: ${revision}`)
   fs.writeFileSync(StationFiles.Id, id.trim())
   fs.writeFileSync(StationFiles.Version, version.toString())
   fs.writeFileSync(StationFiles.Revision, revision.toString())

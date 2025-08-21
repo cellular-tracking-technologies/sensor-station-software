@@ -71,3 +71,6 @@ echo
 echo '***********************'
 echo 'STATION UPDATE COMPLETE'
 echo '***********************'
+
+echo 'REBOOTING STATION'
+sudo reboot
