@@ -144,7 +144,7 @@ class ServerApi {
               reject(err)
 
               // retry health checkin
-              healthCheckin(stats, radio_fw, blu_stats, blu_fw)
+              // healthCheckin(stats, radio_fw, blu_stats, blu_fw)
             })
         })
         .catch((err) => {
