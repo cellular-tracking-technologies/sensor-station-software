@@ -1,5 +1,17 @@
 [
     {
+        "version": "1.7.0",
+        "date": "2025-09-17",
+        "notes": "Add v3.3 radio map. Add additional files to designate station software, image, board revision, and revision.",
+        "features": [
+            "Add v3.3 radio map. Add additional files to designate station software, image, board revision, and revision."
+        ],
+        "bugs": [
+            "Remove user database due to large npm library install.",
+            "Remove healthCheckin retry that caused station-checkin loop."
+        ]
+    },
+    {
         "version": "1.6.0",
         "date": "2025-07-17",
         "notes": "Add delete data to LCD menu, fix register/login pages, fix station ID i2c bus read.",
