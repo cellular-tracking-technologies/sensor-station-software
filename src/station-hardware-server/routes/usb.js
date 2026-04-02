@@ -7,6 +7,24 @@ import command from '../../command.js'
 const router = express.Router()
 
 const usb = new UsbStorage()
+let mountInProgress = false
+let copyInProgress = false
+let copyProgress = { total: 0, baselineFiles: 0 }
+
+function countFiles(dir) {
+  let count = 0
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      if (entry.isFile()) {
+        count++
+      } else if (entry.isDirectory()) {
+        count += countFiles(`${dir}/${entry.name}`)
+      }
+    }
+  } catch (e) { /* directory may not exist yet */ }
+  return count
+}
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -25,6 +43,12 @@ const fail = { status: "fail" }
  * mount USB drive to /mnt/usb
  */
 router.get('/mount', (req, res) => {
+  if (mountInProgress) {
+    console.log('hardware-server USB mount already in progress, ignoring duplicate request')
+    res.json({ status: "busy" })
+    return
+  }
+  mountInProgress = true
   usb.mount()
     .then(() => {
       res.json(success)
@@ -32,6 +56,8 @@ router.get('/mount', (req, res) => {
       console.log('hardware-server USB mount error')
       console.error(err)
       res.json(fail)
+    }).finally(() => {
+      mountInProgress = false
     })
 })
 
@@ -50,14 +76,40 @@ router.get('/unmount', (req, res) => {
 })
 
 /**
- * copy data files from station to USB 
+ * report copy progress as file counts
+ */
+router.get('/data/progress', (req, res) => {
+  if (!copyInProgress) {
+    res.json({ status: "idle", total: 0, copied: 0 })
+    return
+  }
+  const copied = countFiles("/mnt/usb") - copyProgress.baselineFiles
+  res.json({ status: "copying", total: copyProgress.total, copied: Math.max(copied, 0) })
+})
+
+/**
+ * copy data files from station to USB
  */
 router.get('/data', (req, res, next) => {
+  if (copyInProgress) {
+    console.log('hardware-server USB data copy already in progress, ignoring duplicate request')
+    res.json({ status: "busy" })
+    return
+  }
+  copyInProgress = true
+  copyProgress.total = countFiles("/data")
+  copyProgress.baselineFiles = countFiles("/mnt/usb")
   req.setTimeout(1000 * 60 * 10) // set a 10 minute timeout for the usb transfer process to complete
+  const startTime = Date.now()
+  console.log(`hardware-server USB data copy started from /data to USB (${copyProgress.total} files)`)
   usb.copyTo("/data", /.*$/, (err) => {
+    copyInProgress = false
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
     if (err) {
+      console.log(`hardware-server USB data copy failed after ${elapsed}s`, err)
       res.json(fail)
     } else {
+      console.log(`hardware-server USB data copy completed successfully in ${elapsed}s`)
       res.json(success)
     }
   })
