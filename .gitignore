@@ -6,3 +6,5 @@ v2_modem_fix.sh
 eslintrc.json
 src/station-interface/public/javascripts/data.json
 *.db
+ctt-usb-download-patch.zip
+usb-update-package/*

@@ -21,10 +21,18 @@ class MountUsb {
   async unmount() {
     console.log('mount-usb unmounting USB drive', this.dir)
     if (fs.existsSync(this.dir) == false) {
-      // the path does not exist - 
+      // the path does not exist -
       return
     }
-    return Command(`umount ${this.dir}`)
+    try {
+      return await Command(`umount ${this.dir}`)
+    } catch (err) {
+      if (err.message && err.message.includes('target is busy')) {
+        console.log('mount-usb target is busy, attempting lazy unmount', this.dir)
+        return Command(`umount -l ${this.dir}`)
+      }
+      throw err
+    }
   }
 
   async clean() {
