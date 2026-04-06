@@ -8,3 +8,4 @@ src/station-interface/public/javascripts/data.json
 *.db
 ctt-usb-download-patch.zip
 usb-update-package/*
+.claude/*

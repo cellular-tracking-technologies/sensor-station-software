@@ -265,29 +265,45 @@ class BaseStation {
   }
 
   /**
-   * checkin to the server
+   * checkin to the server with internet check and exponential backoff retry
    */
-  checkin() {
+  async checkin(attempt = 1, maxRetries = 3) {
     this.stationLog('server checkin initiated')
-    this.server_api.healthCheckin(
-      this.data_manager.stats.stats,
-      this.getRadioFirmware(),
-      this.data_manager.stats.blu_stats,
-      this.blu_station.getBluFirmware()
-    )
-      .then((response) => {
-        if (response == true) {
-          this.stationLog('server checkin success')
-        } else {
-          this.stationLog('checkin failed')
-          console.log('server checkin false')
 
-        }
-      })
-      .catch((err) => {
-        this.stationLog('server checkin error', err.toString())
-        console.log('server checkin error', err.toString())
-      })
+    // verify internet connectivity before attempting checkin
+    try {
+      const hasInternet = await this.server_api.checkInternet()
+      if (!hasInternet) {
+        this.stationLog('checkin skipped - no internet connectivity')
+        return
+      }
+    } catch (err) {
+      this.stationLog('checkin skipped - unable to verify internet')
+      return
+    }
+
+    try {
+      const response = await this.server_api.healthCheckin(
+        this.data_manager.stats.stats,
+        this.getRadioFirmware(),
+        this.data_manager.stats.blu_stats,
+        this.blu_station.getBluFirmware()
+      )
+      if (response == true) {
+        this.stationLog('server checkin success')
+      } else {
+        this.stationLog('checkin failed')
+        console.log('server checkin false')
+      }
+    } catch (err) {
+      this.stationLog(`server checkin error (attempt ${attempt}/${maxRetries})`, err.toString())
+      console.log('server checkin error', err.toString())
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s
+        this.stationLog(`retrying checkin in ${delay / 1000}s`)
+        setTimeout(() => this.checkin(attempt + 1, maxRetries), delay)
+      }
+    }
   }
 
   /**

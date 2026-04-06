@@ -16,11 +16,23 @@ class ServerApi {
     ]
     this.sensor_data = []
     this.max_sensor_records = 100
+    this.hardware_timeout_ms = 5000
+    this.remote_timeout_ms = 15000
+  }
+
+  async fetchWithTimeout(url, options = {}, timeout_ms) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout_ms)
+    try {
+      return await fetch(url, { ...options, signal: controller.signal })
+    } finally {
+      clearTimeout(timeoutId)
+    }
   }
 
   pollSensors() {
     let uri = `${this.hardware_endpoint}sensor/details`
-    fetch(uri).then(res => res.json())
+    this.fetchWithTimeout(uri, {}, this.hardware_timeout_ms).then(res => res.json())
       .then((data) => {
         let now = moment()
         data.received_at = now.toISOString()
@@ -53,19 +65,16 @@ class ServerApi {
   }
 
 
-  checkInternet() {
-    return fetch(`${this.hardware_endpoint}internet/status`)
-      .then(res => res.json())
-      .then(json => {
-        if (json.success == 3) {
-          return true
-        }
-      })
-      .catch((err) => {
-        console.error('error checking internet status')
-        console.error(err)
-        return false
-      })
+  async checkInternet() {
+    try {
+      const res = await this.fetchWithTimeout(`${this.hardware_endpoint}internet/status`, {}, this.hardware_timeout_ms)
+      const json = await res.json()
+      return json.success == 3
+    } catch (err) {
+      console.error('error checking internet status')
+      console.error(err)
+      return false
+    }
   }
 
   /**
@@ -95,10 +104,18 @@ class ServerApi {
       // generate list of promises to post requests to hardware server
       this.details.forEach((post) => {
         let uri = `${this.hardware_endpoint}${post}`
-        promises.push(fetch(uri).then(res => res.json()))
+        promises.push(this.fetchWithTimeout(uri, {}, this.hardware_timeout_ms).then(res => res.json()))
       })
-      Promise.all(promises)
-        .then((responses) => {
+      // use allSettled so one slow/failed endpoint doesn't block the entire checkin
+      Promise.allSettled(promises)
+        .then((results) => {
+          const responses = results.map((result, i) => {
+            if (result.status === 'fulfilled') {
+              return result.value
+            }
+            console.error(`failed to fetch ${this.details[i]}: ${result.reason}`)
+            return null
+          })
           return {
             'modem': responses[0],
             //'peripherals': responses[2],
@@ -119,32 +136,25 @@ class ServerApi {
           data.stats = this.filterStats(stats)
           data.blu_stats = blu_stats
           // initialize server checkin
-          fetch(this.endpoint, {
+          this.fetchWithTimeout(this.endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-            // timeout: 5000
-          })
+          }, this.remote_timeout_ms)
             .then((res) => {
               if (res.ok) {
                 // we have a successful server checkin - clear sensor data
                 this.sensor_data = []
                 resolve(true)
               } else {
-                // console.log('bad response', res)
-
                 console.error('did not receive a valid checkin response from the server')
                 resolve(false)
               }
             })
             .catch((err) => {
-              console.log('fetch request error data', data)
               console.log('unable to check into server')
               console.error(err)
               reject(err)
-
-              // retry health checkin
-              // healthCheckin(stats, radio_fw, blu_stats, blu_fw)
             })
         })
         .catch((err) => {
