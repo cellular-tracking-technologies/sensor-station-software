@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'
+import fs from 'fs'
 import moment from 'moment'
 class ServerApi {
   constructor() {
@@ -18,6 +19,11 @@ class ServerApi {
     this.max_sensor_records = 100
     this.hardware_timeout_ms = 5000
     this.remote_timeout_ms = 15000
+    this.modem_blacklist_file = '/etc/modprobe.d/blacklist-qmi_wwan.conf'
+  }
+
+  isModemEnabled() {
+    return !fs.existsSync(this.modem_blacklist_file)
   }
 
   async fetchWithTimeout(url, options = {}, timeout_ms) {
@@ -101,8 +107,13 @@ class ServerApi {
 
     return new Promise((resolve, reject) => {
       let promises = []
+      const modemEnabled = this.isModemEnabled()
       // generate list of promises to post requests to hardware server
       this.details.forEach((post) => {
+        if (post === 'modem' && !modemEnabled) {
+          promises.push(Promise.resolve(null))
+          return
+        }
         let uri = `${this.hardware_endpoint}${post}`
         promises.push(this.fetchWithTimeout(uri, {}, this.hardware_timeout_ms).then(res => res.json()))
       })
