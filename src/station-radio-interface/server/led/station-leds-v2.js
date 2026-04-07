@@ -1,5 +1,8 @@
 import { LedDriver } from './led-driver.js'
 import fetch from 'node-fetch'
+import fs from 'fs'
+
+const MODEM_BLACKLIST_FILE = '/etc/modprobe.d/blacklist-qmi_wwan.conf'
 
 class StationLeds {
   constructor() {
@@ -39,6 +42,10 @@ class StationLeds {
   }
 
   async toggleInternet() {
+    if (fs.existsSync(MODEM_BLACKLIST_FILE)) {
+      this.led_driver.toggleDiagB({ state: 'off' })
+      return
+    }
     return fetch('http://localhost:3000/modem/ppp')
       .then(res => res.json())
       .then(json => {

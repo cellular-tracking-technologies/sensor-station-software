@@ -1,5 +1,8 @@
 import fetch from 'node-fetch'
+import fs from 'fs'
 import { SetState } from '../../../hardware/io-expander/expander.js'
+
+const MODEM_BLACKLIST_FILE = '/etc/modprobe.d/blacklist-qmi_wwan.conf'
 
 const LEDS = {
   GPS: 0,
@@ -30,6 +33,9 @@ class StationLeds {
   }
 
   async checkInternet() {
+    if (fs.existsSync(MODEM_BLACKLIST_FILE)) {
+      return false
+    }
     return fetch(this.internet_url)
       .then(res => res.json())
       .then(json => {
