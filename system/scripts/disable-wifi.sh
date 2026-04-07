@@ -25,10 +25,8 @@ handle_chip ()
     chip_check=$(lsmod | grep -a $chipset | wc -l)
     if [ $chip_check -gt 0 ]; then
         disable_chip $chipset
-        return 0
-    else
-        return -1
     fi
+    return 0
 }
 
 chipcount=${#CHIPS[@]}
