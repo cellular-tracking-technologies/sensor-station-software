@@ -269,16 +269,19 @@ class BaseStation {
    */
   async checkin(attempt = 1, maxRetries = 3) {
     this.stationLog('server checkin initiated')
+    console.log('server checkin initiated')
 
     // verify internet connectivity before attempting checkin
     try {
       const hasInternet = await this.server_api.checkInternet()
       if (!hasInternet) {
         this.stationLog('checkin skipped - no internet connectivity')
+        console.log('checkin skipped - no internet connectivity')
         return
       }
     } catch (err) {
       this.stationLog('checkin skipped - unable to verify internet')
+      console.log('checkin skipped - unable to verify internet')
       return
     }
 
@@ -291,16 +294,18 @@ class BaseStation {
       )
       if (response == true) {
         this.stationLog('server checkin success')
+        console.log('server checkin success')
       } else {
         this.stationLog('checkin failed')
         console.log('server checkin false')
       }
     } catch (err) {
       this.stationLog(`server checkin error (attempt ${attempt}/${maxRetries})`, err.toString())
-      console.log('server checkin error', err.toString())
+      console.log(`server checkin error (attempt ${attempt}/${maxRetries})`, err.toString())
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s
         this.stationLog(`retrying checkin in ${delay / 1000}s`)
+        console.log(`retrying checkin in ${delay / 1000}s`)
         setTimeout(() => this.checkin(attempt + 1, maxRetries), delay)
       }
     }
