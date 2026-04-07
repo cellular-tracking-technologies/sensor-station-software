@@ -1,4 +1,11 @@
 import { execSync } from 'child_process'
+import fs from 'fs'
+
+const MODEM_BLACKLIST_FILE = '/etc/modprobe.d/blacklist-qmi_wwan.conf'
+
+const isModemEnabled = () => {
+  return !fs.existsSync(MODEM_BLACKLIST_FILE)
+}
 
 /**
  * 
@@ -96,6 +103,9 @@ const pollModemInfo = (modem_index) => {
  */
 export default Object.freeze({
   info: () => {
+    if (!isModemEnabled()) {
+      return null
+    }
     const index = getModemIndex()
     console.log(index)
     return (index >= 0) ? pollModemInfo(index) : null
