@@ -10,6 +10,8 @@ const ping = async (ip) => {
   return new Promise((resolve) => {
     icmp.send(ip).then((ping_result) => {
       resolve(ping_result.open)
+    }).catch(() => {
+      resolve(false)
     })
   })
 }
