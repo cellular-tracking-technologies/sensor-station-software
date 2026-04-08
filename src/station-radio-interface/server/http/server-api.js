@@ -158,7 +158,11 @@ class ServerApi {
                 this.sensor_data = []
                 resolve(true)
               } else {
-                console.error('did not receive a valid checkin response from the server')
+                res.text().then(body => {
+                  console.error(`checkin response: ${res.status} ${res.statusText} - ${body}`)
+                }).catch(() => {
+                  console.error(`checkin response: ${res.status} ${res.statusText}`)
+                })
                 resolve(false)
               }
             })
