@@ -77,8 +77,6 @@ class ServerApi {
       const json = await res.json()
       return json.success == 3
     } catch (err) {
-      console.error('error checking internet status')
-      console.error(err)
       return false
     }
   }
