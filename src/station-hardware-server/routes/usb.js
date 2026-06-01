@@ -7,9 +7,23 @@ import command from '../../command.js'
 const router = express.Router()
 
 const usb = new UsbStorage()
+const USB_MOUNT_POINT = '/mnt/usb'
+
+// total ceiling on any single copy operation. If ncp hasn't called back by
+// then, the watchdog forces the in-progress flag clear so the station can
+// recover without a service restart.
+const COPY_TOTAL_DEADLINE_MS = 20 * 60 * 1000
+// inactivity watchdog. If `copied` hasn't increased in this many ms, declare
+// the copy stalled and abort. Catches ncp callback races (e.g. when a source
+// file rotates out from under the walk).
+const COPY_STALL_MS = 5 * 60 * 1000
+// how often the stall watchdog samples the file count.
+const COPY_PROGRESS_SAMPLE_MS = 30 * 1000
+
 let mountInProgress = false
 let copyInProgress = false
-let copyProgress = { total: 0, baselineFiles: 0 }
+let copySession = 0
+let copyProgress = { total: 0, baselineFiles: 0, lastCopiedCount: 0, lastIncreaseAt: 0 }
 
 function countFiles(dir) {
   let count = 0
@@ -24,6 +38,15 @@ function countFiles(dir) {
     }
   } catch (e) { /* directory may not exist yet */ }
   return count
+}
+
+// true iff /mnt/usb is a real mountpoint (different filesystem from /mnt).
+function isUsbMounted() {
+  try {
+    return fs.statSync(USB_MOUNT_POINT).dev !== fs.statSync('/mnt').dev
+  } catch (e) {
+    return false
+  }
 }
 
 /* GET home page. */
@@ -89,6 +112,15 @@ router.get('/data/progress', (req, res) => {
 
 /**
  * copy data files from station to USB
+ *
+ * Guarded by three watchdogs:
+ *   1. mountpoint precheck — refuse to start if /mnt/usb isn't actually mounted
+ *   2. stall watchdog       — abort if `copied` doesn't increase for COPY_STALL_MS
+ *   3. total deadline       — abort if the operation exceeds COPY_TOTAL_DEADLINE_MS
+ *
+ * Each copy is tagged with a `mySession` token; late ncp callbacks from a
+ * watchdog-aborted copy are no-ops (they would otherwise stomp on a newer
+ * copy's module-level state).
  */
 router.get('/data', (req, res, next) => {
   if (copyInProgress) {
@@ -96,21 +128,88 @@ router.get('/data', (req, res, next) => {
     res.json({ status: "busy" })
     return
   }
+  if (!isUsbMounted()) {
+    console.log(`hardware-server USB data copy refused — ${USB_MOUNT_POINT} is not mounted`)
+    res.json({ status: "no-mount" })
+    return
+  }
+
   copyInProgress = true
+  const mySession = ++copySession
   copyProgress.total = countFiles("/data")
-  copyProgress.baselineFiles = countFiles("/mnt/usb")
-  req.setTimeout(1000 * 60 * 10) // set a 10 minute timeout for the usb transfer process to complete
+  copyProgress.baselineFiles = countFiles(USB_MOUNT_POINT)
+  copyProgress.lastCopiedCount = 0
+  copyProgress.lastIncreaseAt = Date.now()
+  // leave the watchdogs to fire first; HTTP socket gets a little extra slack.
+  req.setTimeout(COPY_TOTAL_DEADLINE_MS + 60 * 1000)
   const startTime = Date.now()
   console.log(`hardware-server USB data copy started from /data to USB (${copyProgress.total} files)`)
+
+  let responseSent = false
+  const sendOnce = (body) => {
+    if (responseSent) return
+    responseSent = true
+    res.json(body)
+  }
+
+  // Tear down module-level state for *this* session only. A watchdog-aborted
+  // copy whose ncp callback arrives late will see mySession !== copySession
+  // and bail before reaching this branch.
+  const finish = (body) => {
+    if (mySession === copySession) {
+      clearInterval(stallInterval)
+      clearTimeout(totalDeadline)
+      copyInProgress = false
+    }
+    sendOnce(body)
+  }
+
+  // When a watchdog aborts, ncp is still running in the background and will
+  // keep writing to /mnt/usb. Unmounting forces those writes to fail, which
+  // typically convinces ncp to release file handles and call its callback.
+  const abortByUnmount = (reason) => {
+    usb.unmount()
+      .then(() => console.log(`hardware-server unmounted ${USB_MOUNT_POINT} after ${reason}`))
+      .catch((err) => console.log(`hardware-server unmount-after-${reason} failed:`, err.message || err))
+  }
+
+  const stallInterval = setInterval(() => {
+    if (mySession !== copySession) return
+    const copied = Math.max(countFiles(USB_MOUNT_POINT) - copyProgress.baselineFiles, 0)
+    if (copied > copyProgress.lastCopiedCount) {
+      copyProgress.lastCopiedCount = copied
+      copyProgress.lastIncreaseAt = Date.now()
+      return
+    }
+    if (Date.now() - copyProgress.lastIncreaseAt > COPY_STALL_MS) {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+      console.log(`hardware-server USB data copy stalled at ${copied}/${copyProgress.total} after ${elapsed}s — aborting`)
+      finish({ status: "stalled", copied, total: copyProgress.total })
+      abortByUnmount('stall')
+    }
+  }, COPY_PROGRESS_SAMPLE_MS)
+
+  const totalDeadline = setTimeout(() => {
+    if (mySession !== copySession) return
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+    console.log(`hardware-server USB data copy exceeded ${COPY_TOTAL_DEADLINE_MS / 1000}s deadline after ${elapsed}s — aborting`)
+    finish({ status: "timeout" })
+    abortByUnmount('timeout')
+  }, COPY_TOTAL_DEADLINE_MS)
+
   usb.copyTo("/data", /.*$/, (err) => {
-    copyInProgress = false
+    if (mySession !== copySession) {
+      // a watchdog already aborted this session; ignore the late callback
+      console.log('hardware-server USB data copy late callback (watchdog already aborted) — ignoring')
+      return
+    }
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
     if (err) {
       console.log(`hardware-server USB data copy failed after ${elapsed}s`, err)
-      res.json(fail)
+      finish(fail)
     } else {
       console.log(`hardware-server USB data copy completed successfully in ${elapsed}s`)
-      res.json(success)
+      finish(success)
     }
   })
 })
