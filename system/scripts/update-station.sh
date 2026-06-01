@@ -24,6 +24,15 @@ if [ -d $dir ]; then
   # checking if package.json has changed
   changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)"
   check_run package.json "npm install"
+  # If update-station.sh itself was changed by this pull, re-exec the new
+  # version so any newly-added deploy logic (hooks, env vars, etc.) runs in
+  # the SAME OTA run rather than only on the NEXT update. The _OTA_REEXECED
+  # guard prevents an infinite re-exec loop on the second pass.
+  if [ -z "$_OTA_REEXECED" ] && echo "$changed_files" | grep -q "^system/scripts/update-station.sh$"; then
+    echo "update-station.sh changed; re-executing new version to apply new deploy logic"
+    export _OTA_REEXECED=1
+    exec bash "$dir/system/scripts/update-station.sh" "$@"
+  fi
   # Run modular OTA hooks. Each hook is idempotent (no-op when dest matches
   # source) and only reloads its subsystem when something actually changed.
   # Add new hooks here (one per subsystem) rather than expanding existing ones.
