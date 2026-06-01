@@ -478,7 +478,7 @@ class BaseStation {
     if (System.Hardware.Version >= 3) {
       console.log('v3 path', path)
       // V3 Radio Paths
-      if (!path.includes('-port0')) {
+      if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
         this.startRadios(path)
 
       } else if (!path.includes('0:1.7.6') && !path.includes('0:1.2.') && path.includes('-port0')) {
@@ -496,7 +496,7 @@ class BaseStation {
       if (path.includes('-port0') && !path.includes('0:1.2.1:1')) {
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
-      } else if (!path.includes('-port0')) {
+      } else if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
         this.startRadios(path)
       }
     }
@@ -513,7 +513,7 @@ class BaseStation {
         await this.unlinkBluStation(path)
         this.stationLog('removed blu receiver')
 
-      } else if (!path.includes('-port0')) {
+      } else if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
         await this.unlinkDongleRadio(path)
       }
     } else {
@@ -522,7 +522,7 @@ class BaseStation {
         await this.unlinkBluStation(path)
         this.stationLog('removed blu receiver')
 
-      } else if (!path.includes('-port0')) {
+      } else if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
         await this.unlinkDongleRadio(path)
       }
     }

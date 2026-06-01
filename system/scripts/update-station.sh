@@ -22,8 +22,13 @@ if [ -d $dir ]; then
   # change permissions to ctt user after pull to be sure all files have same permissions
   sudo chown -R $user_perm $dir
   # checking if package.json has changed
-  changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)" 
+  changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)"
   check_run package.json "npm install"
+  # Run modular OTA hooks. Each hook is idempotent (no-op when dest matches
+  # source) and only reloads its subsystem when something actually changed.
+  # Add new hooks here (one per subsystem) rather than expanding existing ones.
+  sudo bash $dir/system/scripts/hooks/install-nm-connections.sh
+  sudo bash $dir/system/scripts/hooks/install-udev-rules.sh
 else
   cd $home
   echo "cloning sensor-station-software repo to $dir"

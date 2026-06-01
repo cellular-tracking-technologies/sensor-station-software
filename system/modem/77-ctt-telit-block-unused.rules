@@ -1,0 +1,26 @@
+# CTT: Telit LE910Q1-WWG (vid:pid 1bc7:7020) USB interface minimization.
+#
+# By default the modem advertises 8 USB interfaces:
+#   0 - RNDIS control     (creates mdm0 net interface)
+#   1 - RNDIS data
+#   2 - CDC ACM control   (ttyACM4, MM primary AT port, pppd data port)
+#   3 - CDC ACM data partner for ttyACM4
+#   4 - CDC ACM control   (MM rejects as "unhandled serial type", unused)
+#   5 - CDC ACM data partner for the unused port
+#   6 - CDC ACM control   (ttyACM6, MM secondary AT port for polling during PPP)
+#   7 - CDC ACM data partner for ttyACM6
+#
+# Two problems with all 8 active:
+# 1. RNDIS mdm0 grabs a private 192.168.225.0/24 DHCP lease and installs a
+#    default route that competes with the wired uplink. Worse, since RNDIS and
+#    PPP terminate on the same LTE bearer in the modem, ICMP replies arrive on
+#    both interfaces -> duplicate packets logged by the kernel.
+# 2. Each active USB endpoint adds dwc_otg FIQ scheduling pressure on the Pi
+#    CM3, contributing to FunCube NYET errors on V3 hardware.
+#
+# Solution: deauthorize the unused interfaces. Keep 2+3 (pppd data port pair)
+# and 6+7 (MM AT polling port pair, used in parallel with pppd).
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="00", ATTR{authorized}="0"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="01", ATTR{authorized}="0"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="04", ATTR{authorized}="0"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="05", ATTR{authorized}="0"
