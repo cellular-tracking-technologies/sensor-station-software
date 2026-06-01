@@ -194,6 +194,9 @@ class BluStation {
           break
         case BluReceiverTask.DETECTIONS:
           try {
+            if (!Array.isArray(job.data)) {
+              break
+            }
             job.data.forEach((beep) => {
               const { id, rssi, time, channel: radio_channel, payload: { parsed: { solar, temp, } }, } = beep
 
