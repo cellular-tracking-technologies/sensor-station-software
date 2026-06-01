@@ -12,8 +12,10 @@ router.get('/', function (req, res, next) {
 })
 
 router.get('/ppp', (req, res, next) => {
-  // check if at least 1 ppp connection exists
-  exec('ifconfig | grep wwan | wc -l', (err, stdout, stderr) => {
+  // check if at least 1 cellular data interface is up:
+  //   wwan* — Quectel QMI (legacy LTS modem path)
+  //   ppp*  — Telit PPP (current LTS modem path)
+  exec('ifconfig | grep -E "^(wwan|ppp)" | wc -l', (err, stdout, stderr) => {
     if (err) {
       res.status(500).send(err.toString())
     }
