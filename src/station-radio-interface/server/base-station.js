@@ -9,7 +9,10 @@ import { DataManager } from './data/data-manager.js'
 import { ServerApi } from './http/server-api.js'
 import StationLeds from './led/station-leds.js'
 import fetch from 'node-fetch'
-import { spawn } from 'child_process'
+import { spawn, exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 import heartbeats from 'heartbeats'
 import path from 'path'
 import _ from 'lodash'
@@ -55,6 +58,7 @@ class BaseStation {
     this.dongle_port
     this.blu_radio_filemap
     this.station_id = System.Hardware.Id
+    this.consecutive_checkin_failures = 0
   }
 
   /**
@@ -295,9 +299,11 @@ class BaseStation {
       if (response == true) {
         this.stationLog('server checkin success')
         console.log('server checkin success')
+        this.consecutive_checkin_failures = 0
       } else {
         this.stationLog('checkin failed')
         console.log('server checkin false')
+        this.handleCheckinFailure()
       }
     } catch (err) {
       this.stationLog(`server checkin error (attempt ${attempt}/${maxRetries})`, err.toString())
@@ -307,7 +313,90 @@ class BaseStation {
         this.stationLog(`retrying checkin in ${delay / 1000}s`)
         console.log(`retrying checkin in ${delay / 1000}s`)
         setTimeout(() => this.checkin(attempt + 1, maxRetries), delay)
+      } else {
+        this.handleCheckinFailure()
       }
+    }
+  }
+
+  /**
+   * track a failed checkin cycle and escalate modem recovery based on
+   * how many consecutive checkin cycles have failed.
+   */
+  handleCheckinFailure() {
+    this.consecutive_checkin_failures += 1
+    this.stationLog(`consecutive checkin failures: ${this.consecutive_checkin_failures}`)
+    console.log(`consecutive checkin failures: ${this.consecutive_checkin_failures}`)
+    this.recoverModem(this.consecutive_checkin_failures)
+      .catch((err) => {
+        this.stationLog('modem recovery error', err.toString())
+        console.error('modem recovery error', err)
+      })
+  }
+
+  /**
+   * escalate modem recovery based on how many consecutive checkin cycles
+   * have failed. each level is more disruptive than the last.
+   *   1: cycle the station-modem NetworkManager profile
+   *   2: restart ModemManager
+   *   3: hard-reset the modem RF stack via mmcli
+   *   4+: reboot the station as a last resort
+   * @param {Number} level consecutive failure count
+   */
+  async recoverModem(level) {
+    if (level <= 0) return
+    if (level === 1) {
+      this.stationLog('modem recovery level 1: cycling station-modem connection')
+      console.log('modem recovery level 1: cycling station-modem connection')
+      try {
+        await execAsync('nmcli c down station-modem && nmcli c up station-modem')
+        this.stationLog('modem recovery level 1 succeeded')
+      } catch (err) {
+        this.stationLog('modem recovery level 1 failed', err.toString())
+        console.error('modem recovery level 1 failed', err)
+      }
+      return
+    }
+    if (level === 2) {
+      this.stationLog('modem recovery level 2: restarting ModemManager')
+      console.log('modem recovery level 2: restarting ModemManager')
+      try {
+        await execAsync('sudo systemctl restart ModemManager')
+        this.stationLog('modem recovery level 2 succeeded')
+      } catch (err) {
+        this.stationLog('modem recovery level 2 failed', err.toString())
+        console.error('modem recovery level 2 failed', err)
+      }
+      return
+    }
+    if (level === 3) {
+      this.stationLog('modem recovery level 3: resetting modem RF stack')
+      console.log('modem recovery level 3: resetting modem RF stack')
+      try {
+        const { stdout } = await execAsync('mmcli -J -L')
+        const info = JSON.parse(stdout)
+        const modem_path = (info['modem-list'] || []).shift()
+        if (!modem_path) {
+          this.stationLog('modem recovery level 3 skipped: no modem on bus')
+          return
+        }
+        const modem_index = parseInt(modem_path.split('/').pop())
+        await execAsync(`sudo mmcli -m ${modem_index} --reset`)
+        this.stationLog(`modem recovery level 3 succeeded (modem ${modem_index})`)
+      } catch (err) {
+        this.stationLog('modem recovery level 3 failed', err.toString())
+        console.error('modem recovery level 3 failed', err)
+      }
+      return
+    }
+    // level >= 4: last resort
+    this.stationLog(`modem recovery level 4: rebooting after ${level} consecutive checkin failures`)
+    console.log(`modem recovery level 4: rebooting after ${level} consecutive checkin failures`)
+    try {
+      await execAsync('sudo shutdown -r now')
+    } catch (err) {
+      this.stationLog('modem recovery level 4 failed', err.toString())
+      console.error('modem recovery level 4 failed', err)
     }
   }
 
