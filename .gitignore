@@ -9,3 +9,4 @@ src/station-interface/public/javascripts/data.json
 ctt-usb-download-patch.zip
 usb-update-package/*
 .claude/*
+setup-station-access.sh
