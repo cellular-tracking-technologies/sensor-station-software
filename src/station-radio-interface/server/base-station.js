@@ -320,7 +320,26 @@ class BaseStation {
     }
   }
 
-  rotateDataFiles() {
+  /**
+   * Rotate live data files into the rotated/ directory. Skipped while a USB
+   * download is in progress so the copy doesn't race against file moves —
+   * rotating mid-copy is the trigger for the ncp callback hang that leaves
+   * the hardware-server's copyInProgress flag stuck.
+   */
+  async rotateDataFiles() {
+    try {
+      const res = await fetch('http://localhost:3000/usb/data/progress', { timeout: 5000 })
+      const progress = await res.json()
+      if (progress && progress.status === 'copying') {
+        this.stationLog('rotation skipped - USB data copy in progress')
+        console.log('rotation skipped - USB data copy in progress')
+        return
+      }
+    } catch (err) {
+      // hardware-server unreachable or returned bad JSON. Fail open: a missed
+      // rotation is worse than a (probably non-existent) USB copy collision.
+      console.log('rotation: USB copy status check failed, proceeding:', err.message || err)
+    }
     this.stationLog('rotating data files')
     this.data_manager.rotate()
       .then(() => {
