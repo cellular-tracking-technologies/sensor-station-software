@@ -33,11 +33,6 @@ if [ -d $dir ]; then
     export _OTA_REEXECED=1
     exec bash "$dir/system/scripts/update-station.sh" "$@"
   fi
-  # Run modular OTA hooks. Each hook is idempotent (no-op when dest matches
-  # source) and only reloads its subsystem when something actually changed.
-  # Add new hooks here (one per subsystem) rather than expanding existing ones.
-  sudo bash $dir/system/scripts/hooks/install-nm-connections.sh
-  sudo bash $dir/system/scripts/hooks/install-udev-rules.sh
 else
   cd $home
   echo "cloning sensor-station-software repo to $dir"
@@ -45,6 +40,14 @@ else
   cd $dir
   npm install
 fi
+
+# Run the OTA hook orchestrator. It iterates every install-*.sh under
+# system/scripts/hooks/, so adding a new subsystem deploy (systemd
+# units, chrony config, etc.) is just a matter of dropping a new hook
+# file into that dir — this line stays unchanged. Runs for both the
+# update path (git pull) and the fresh-clone path so a freshly-cloned
+# repo also deploys its configs into /etc/.
+sudo bash $dir/system/scripts/hooks/post-merge.sh
 
 sudo sh -c "date -u +'%Y-%m-%d %H:%M:%S' > /etc/ctt/station-software"
 
