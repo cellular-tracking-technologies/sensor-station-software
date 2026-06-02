@@ -18,6 +18,25 @@ import chokidar from 'chokidar'
 import System from '../../system.js'
 import fs from 'fs'
 
+// USB identifiers of CTT radio receivers. The chokidar watcher on
+// /dev/serial/by-path/ picks up any USB serial device — modem CDC ACM
+// ports, debug adapters, etc. — so we positively identify radios by
+// USB VID (or VID:PID for FTDI variants) and ignore everything else.
+// VID:PID is topology-independent: the filter works on V2, V3.0, V3.3
+// and any future board revision without depending on the post-merge
+// OTA hooks having deployed the /dev/ctt-radio/ udev rules first.
+// The identifiers here mirror system/udev/78-ctt-radios.rules.
+//
+// RADIO_VIDS  — match any device from this vendor (any PID)
+// RADIO_VID_PIDS — match a specific VID:PID pair
+const RADIO_VIDS = new Set([
+  '239a', // Adafruit Industries — Feather MCU variants (32u4, M0, M4)
+])
+const RADIO_VID_PIDS = new Set([
+  '0403:6015', // FTDI FT231X — BluSeries receivers (kept narrow to avoid
+               // matching other FTDI chips used as debug serial adapters)
+])
+
 /**
  * manager class for controlling / reading radios
  * and writing to disk
@@ -470,24 +489,53 @@ class BaseStation {
   }
 
   /**
-   * 
+   * Identify whether a /dev/serial/by-path/ link points at a known
+   * CTT radio receiver (Adafruit Feather MCU or FTDI FT231X BluSeries).
+   * Anything not matching — modem CDC ACM, debug serial adapters,
+   * future USB serial devices we haven't whitelisted — is skipped.
+   *
+   * Walks the symlink to the underlying ttyACMx or ttyUSBx device, then
+   * reads idVendor / idProduct from the device's USB parent in sysfs.
+   * Returns false on any I/O error (safer default: skip when in doubt
+   * rather than risk opening a non-radio port as a radio).
+   *
+   * @param {String} byPathLink full /dev/serial/by-path/* path
+   * @returns {Promise<boolean>}
+   */
+  async isRadio(byPathLink) {
+    try {
+      const target = await fs.promises.readlink(byPathLink)         // e.g. '../../ttyACM4'
+      const devName = path.basename(target)                          // 'ttyACM4'
+      const usbParent = `/sys/class/tty/${devName}/device/..`
+      const vid = (await fs.promises.readFile(`${usbParent}/idVendor`, 'utf8')).trim()
+      const pid = (await fs.promises.readFile(`${usbParent}/idProduct`, 'utf8')).trim()
+      return RADIO_VIDS.has(vid) || RADIO_VID_PIDS.has(`${vid}:${pid}`)
+    } catch (err) {
+      console.log(`isRadio: sysfs lookup failed for ${byPathLink}: ${err.message}`)
+      return false
+    }
+  }
+
+  /**
+   *
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
    */
   async addPath(path) {
+    if (!(await this.isRadio(path))) {
+      console.log('addPath: skipping non-radio device', path)
+      return
+    }
     console.log('system hardware version', System.Hardware.Version)
     if (System.Hardware.Version >= 3) {
       console.log('v3 path', path)
       // V3 Radio Paths
-      if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
+      if (!path.includes('-port0')) {
         this.startRadios(path)
 
-      } else if (!path.includes('0:1.7.6') && !path.includes('0:1.2.') && path.includes('-port0')) {
-        console.log('starting blu station', path.includes('0:1.7.6'))
+      } else if (!path.includes('0:1.2.') && path.includes('-port0')) {
+        console.log('starting blu station')
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
-        // } else if (!path.includes('0:1.2.') && path.includes('-port0')) {
-        //   await this.startBluStation(path)
-        //   this.stationLog('starting blu receiver')
       }
     } else {
       console.log('v2 path', path)
@@ -496,16 +544,21 @@ class BaseStation {
       if (path.includes('-port0') && !path.includes('0:1.2.1:1')) {
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
-      } else if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
+      } else if (!path.includes('-port0')) {
         this.startRadios(path)
       }
     }
   }
 
   /**
- * 
- * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
- */
+   *
+   * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
+   *
+   * Note: cellular-modem unlink events fall through to unlinkDongleRadio,
+   * which is a broadcast-only no-op for paths we never started — we
+   * can't re-check VID:PID here because the sysfs entry is gone by the
+   * time chokidar fires the unlink event.
+   */
   async unlinkPath(path) {
     if (System.Hardware.Version >= 3) {
       // V3 Radio paths
@@ -513,7 +566,7 @@ class BaseStation {
         await this.unlinkBluStation(path)
         this.stationLog('removed blu receiver')
 
-      } else if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
+      } else if (!path.includes('-port0')) {
         await this.unlinkDongleRadio(path)
       }
     } else {
@@ -522,7 +575,7 @@ class BaseStation {
         await this.unlinkBluStation(path)
         this.stationLog('removed blu receiver')
 
-      } else if (!path.includes('-port0') && !path.includes('0:1.7.6')) {
+      } else if (!path.includes('-port0')) {
         await this.unlinkDongleRadio(path)
       }
     }
