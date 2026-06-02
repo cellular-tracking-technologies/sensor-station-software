@@ -3,34 +3,50 @@
 # installed and on its current state:
 #
 #   Quectel EC25 (2c7c:0125) visible in lsusb:
-#     Quectel stays USB-enumerated even when software-disabled (its kernel
-#     module is what gets blacklisted, not its USB device). So if we see
-#     it, it was disabled via the legacy software path — un-blacklist and
-#     modprobe it back.
+#     A deauthorized Quectel still shows up in lsusb (descriptors live in
+#     sysfs regardless of driver binding). It's either healthy or sitting
+#     deauthorized; re-authorize to bind drivers and let ModemManager
+#     re-detect via fresh udev events. If already authorized, this is a
+#     no-op write.
 #
 #   Telit LE910Q1 (1bc7:7020) visible in lsusb:
-#     Already powered on (Telit only shows up after it has booted, since
-#     disable cuts power entirely). No-op.
+#     Already powered on (Telit only enumerates after boot, since disable
+#     cuts VBAT entirely). No-op.
 #
 #   No modem visible:
-#     Assume Telit that was powered off (Quectel without its module would
-#     still be visible — its absence implies the variant is Telit and the
-#     last action was a power-off). Pulse GPIO 23 (ON_OFF#) LOW for ~2s
-#     then release HIGH. Modem takes ~15s to enumerate on USB after.
+#     Assume Telit that was powered off (Quectel always shows in lsusb
+#     even when deauthorized — its absence implies the variant is Telit
+#     and it was last powered off). Pulse GPIO 23 (ON_OFF#) LOW ~2s then
+#     release HIGH. Modem takes ~15s to enumerate on USB; MM picks it up.
 #     Spec ref: hardware/TELIT_LE910Q1_INTEGRATION_REPORT.md
 
 TELIT='1bc7:7020'
 QUECTEL='2c7c:0125'
 
+# Walk /sys/bus/usb/devices to find the parent device matching a VID:PID.
+# Echoes the sysfs path or returns 1 if not found.
+find_usb_parent() {
+  local vid="$1" pid="$2"
+  for p in /sys/bus/usb/devices/*; do
+    [ -f "$p/idVendor" ] || continue
+    if [ "$(cat "$p/idVendor" 2>/dev/null)" = "$vid" ] && \
+       [ "$(cat "$p/idProduct" 2>/dev/null)" = "$pid" ]; then
+      echo "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
 if lsusb -d $QUECTEL >/dev/null 2>&1; then
-  echo 'enabling Quectel EC25 (remove qmi_wwan blacklist, modprobe)'
-  chipset='qmi_wwan'
-  filename="/etc/modprobe.d/blacklist-$chipset.conf"
-  if [ -f $filename ]; then
-    echo "deleting blacklist file $filename"
-    rm $filename
+  vid="${QUECTEL%:*}"; pid="${QUECTEL#*:}"
+  path=$(find_usb_parent "$vid" "$pid")
+  if [ -z "$path" ]; then
+    echo "ERROR: Quectel detected by lsusb but not found in sysfs"
+    exit 1
   fi
-  modprobe $chipset
+  echo "enabling Quectel EC25 (authorize USB device at $path)"
+  echo 1 > "$path/authorized"
 elif lsusb -d $TELIT >/dev/null 2>&1; then
   echo 'Telit LE910Q1 already powered on; no action needed'
 else
