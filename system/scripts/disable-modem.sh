@@ -23,6 +23,14 @@
 TELIT='1bc7:7020'
 QUECTEL='2c7c:0125'
 
+# Persistent intent marker. Presence means "operator wants modem OFF" and
+# is consulted by modem-boot-state.service to restore state across hard
+# reboots. Created here so a power cycle re-applies the disabled state
+# (relevant for Quectel — it auto-boots ON without this hint).
+MARKER='/etc/ctt/modem-disabled'
+mkdir -p "$(dirname "$MARKER")"
+touch "$MARKER"
+
 # Walk /sys/bus/usb/devices to find the parent device matching a VID:PID.
 # Echoes the sysfs path or returns 1 if not found.
 find_usb_parent() {
