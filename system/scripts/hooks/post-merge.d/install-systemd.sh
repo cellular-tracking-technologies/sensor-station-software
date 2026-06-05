@@ -12,10 +12,14 @@
 # in /etc/systemd/system/ that is independent of monorepo path changes.
 #
 # Reload: systemctl daemon-reload (only when something changed)
-# Auto-enable: any unit listed in MUST_BE_ENABLED that isn't currently
-# enabled is enabled via `systemctl enable`. Units the user has
-# explicitly disabled (state "disabled") are left alone so their
-# operational choice isn't overridden by an OTA.
+# Auto-enable: any unit listed in MUST_BE_ENABLED that isn't already
+# enabled and isn't masked is enabled via `systemctl enable`. Note that
+# `systemctl is-enabled` returns "disabled" both for a unit an operator
+# deliberately disabled AND for a unit that was just installed and has
+# never been enabled at all — so treating "disabled" as operator intent
+# creates a first-install chicken-and-egg where the unit never gets
+# turned on. To suppress a unit deliberately, use `systemctl mask <unit>`
+# which produces the unambiguous "masked" state we DO respect here.
 #
 # Must run as root: install -o root, systemctl writes to /etc/systemd/
 
@@ -82,10 +86,14 @@ for unit in "${MUST_BE_ENABLED[@]}"; do
     enabled|enabled-runtime|alias|static)
       # already in good state
       ;;
-    disabled)
-      log_warn "$unit is explicitly disabled; not re-enabling (operator choice respected)"
+    masked|masked-runtime)
+      # operator deliberately masked this unit; honour that choice.
+      log_warn "$unit is masked; not enabling (operator choice respected)"
       ;;
     *)
+      # disabled / not-found / failed / freshly-installed-never-enabled —
+      # all of these mean "needs an enable." See the file header for why
+      # "disabled" is not treated as operator intent.
       log_info "enabling $unit (was: $state)"
       systemctl enable "$unit"
       ;;
