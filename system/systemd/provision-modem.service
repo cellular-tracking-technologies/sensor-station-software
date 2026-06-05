@@ -1,0 +1,24 @@
+[Unit]
+Description=Idempotent cellular-modem NV provisioning (CGDCONT cleanup)
+# Runs AFTER ModemManager is up so provision-modem.sh can send AT
+# commands via mmcli. Runs BEFORE NetworkManager so the modem is in
+# its correct config by the time NM tries to activate station-modem.
+#
+# Paired with modem-boot-state.service (state persistence, runs BEFORE
+# ModemManager). modem-boot-state restores hardware on/off state; this
+# unit fixes the modem's NV (CGDCONT contexts) if it's in the factory
+# multi-CID configuration that fails on AT&T-restrictive carrier policy.
+#
+# Idempotent: provision-modem.sh checks current CGDCONT and exits with
+# no writes if the modem is already in the expected single-CID state.
+After=ModemManager.service modem-boot-state.service
+Before=NetworkManager.service
+Requires=ModemManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/provision-modem.sh
+
+[Install]
+WantedBy=multi-user.target
