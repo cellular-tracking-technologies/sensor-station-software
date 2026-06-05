@@ -29,6 +29,22 @@ QUECTEL='2c7c:0125'
 MARKER='/etc/ctt/modem-disabled'
 rm -f "$MARKER"
 
+# Legacy cleanup: pre-cebf036 disable-modem.sh dropped this kernel-module
+# blacklist file to suppress qmi_wwan. The current disable path uses USB
+# authorize instead, so the file is now harmful — it stops qmi_wwan from
+# binding to the Quectel EC25's QMI interface (4), and without that
+# interface ModemManager never recognises the device as a modem (the AT
+# ttyUSB endpoints alone aren't enough). Heal on every enable so stations
+# migrating off the old mechanism self-repair.
+BLACKLIST='/etc/modprobe.d/blacklist-qmi_wwan.conf'
+if [ -e "$BLACKLIST" ]; then
+  echo "removing legacy $BLACKLIST"
+  rm -f "$BLACKLIST"
+  # Load now so the Quectel's QMI interface binds without a reboot.
+  # Harmless on Telit stations — module just sits loaded with no devices.
+  modprobe qmi_wwan 2>/dev/null || true
+fi
+
 # Walk /sys/bus/usb/devices to find the parent device matching a VID:PID.
 # Echoes the sysfs path or returns 1 if not found.
 find_usb_parent() {
