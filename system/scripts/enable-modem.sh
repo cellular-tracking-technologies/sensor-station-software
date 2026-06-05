@@ -69,5 +69,13 @@ fi
 # Quectel and for already-provisioned Telit; for an unprovisioned Telit,
 # applies the CGDCONT cleanup so the modem can connect on AT&T-restrictive
 # carrier policies without requiring a separate reboot.
+#
+# Use a plain `bash <path>` invocation rather than `[ -x ] && bash` so a
+# missing exec bit on provision-modem.sh doesn't get propagated as our
+# own exit code (would cause modem-boot-state.service to "fail" even
+# though the modem is fully enabled and registered).
 PROVISION=/usr/lib/ctt/sensor-station-software/system/scripts/provision-modem.sh
-[ -x "$PROVISION" ] && bash "$PROVISION"
+if [ -f "$PROVISION" ]; then
+  bash "$PROVISION" || echo "WARN: provision-modem.sh exited $? — continuing"
+fi
+exit 0
