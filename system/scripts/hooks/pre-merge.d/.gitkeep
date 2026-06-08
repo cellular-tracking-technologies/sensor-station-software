@@ -1,0 +1,2 @@
+# Drop pre-merge hook scripts (*.sh) here. See ../pre-merge.sh for orchestrator
+# semantics and ../post-merge.d/ for the established hook layout pattern.

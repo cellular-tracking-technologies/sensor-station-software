@@ -18,6 +18,15 @@ if [ -d $dir ]; then
   cd $dir
   git config --global --add safe.directory $dir
   git stash
+  # Pre-merge orchestrator runs before the pull. Mirror of post-merge.sh
+  # with its own pre-merge.d/ drop-in dir. Currently a placeholder — no
+  # hooks installed yet, the orchestrator just logs that it ran. Note
+  # that the pre-merge.sh executed here is the version ALREADY on disk,
+  # not the one being pulled; new pre-merge hooks activate on the NEXT
+  # update after their introducing release lands. See pre-merge.sh.
+  if [ -x "$dir/system/scripts/hooks/pre-merge.sh" ]; then
+    sudo bash "$dir/system/scripts/hooks/pre-merge.sh"
+  fi
   git pull
   # change permissions to ctt user after pull to be sure all files have same permissions
   sudo chown -R $user_perm $dir
