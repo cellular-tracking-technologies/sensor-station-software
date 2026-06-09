@@ -11,8 +11,15 @@ interface-name=eth*
 
 [ethernet]
 
+# route-metric pins the wired default route BELOW the Telit RNDIS interface
+# (mdm0), which is not NM-managed and gets a non-deterministic ethernet-class
+# metric (~100/102) from NM's modem bundle. With wired fixed at 50, a station
+# with both uplinks always prefers wired and uses cellular only as fallback.
+# Field stations (cellular-only) have no eth* default route, so mdm0 is the
+# sole default and this has no effect there.
 [ipv4]
 method=auto
+route-metric=50
 
 [ipv6]
 addr-gen-mode=stable-privacy
