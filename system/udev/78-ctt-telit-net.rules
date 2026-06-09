@@ -1,0 +1,19 @@
+# CTT: rename the Telit LE910Q1 (1bc7:7020) RNDIS network interface to a
+# stable name "mdm0", off the eth* pool.
+#
+# Why: the rndis_host netdev otherwise lands as ethN and races the USB
+# wired-LAN dongle for eth0/eth1 — non-deterministic across boots (we have
+# observed the Telit taking eth0 and the wired ASIX getting bumped to eth1,
+# which breaks the wired-con catch-all and routing). Renaming it to mdm0:
+#   - keeps `wired-con` ([match] interface-name=eth*) matching only real
+#     Ethernet dongles, so the wired LAN name stays deterministic;
+#   - gives ModemManager / NetworkManager / the /modem/ppp check a single
+#     fixed interface name to key on regardless of enumeration order.
+#
+# Telit-VID-scoped (1bc7:7020) — does not affect Quectel or any other device.
+#
+# VERIFY ON REBOOT: confirm `ip -br link` shows `mdm0` (not ethN) and the
+# wired dongle keeps its eth slot. udev net renames can interact with
+# systemd .link policies; the image ships empty 73-usb-net-by-mac.link /
+# 99-default.link, so this NAME assignment should win — but confirm live.
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0"

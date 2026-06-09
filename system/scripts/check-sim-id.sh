@@ -4,6 +4,22 @@
 sudo systemctl enable ModemManager.service
 sudo systemctl start ModemManager.service
 
+# --- data-path policy: demote the gsm/PPP profile on Telit only ---
+# Telit LE910Q1 (1bc7:7020) uses the RNDIS data path (mdm0, modem-internal
+# NAT) — the gsm 'station-modem' profile must NOT dial PPP on it (causes a
+# competing default route + duplicate ICMP and an ESM_MULTIPLE_PDN retry
+# loop). Quectel EC25 (2c7c:0125) uses that same profile for its QMI bearer
+# (wwan0), so it MUST stay autoconnect=yes. Keyed on USB VID:PID so a Quectel
+# station is never demoted (fleet-safe). Runs here (via station-boot.service,
+# After=network.target) so NetworkManager is up for nmcli.
+if lsusb -d 1bc7:7020 >/dev/null 2>&1; then
+    echo 'Telit LE910Q1 detected — RNDIS data path; demoting station-modem (no PPP dial)'
+    sudo nmcli connection modify station-modem connection.autoconnect no
+else
+    echo 'non-Telit modem — keeping station-modem autoconnect (QMI/PPP)'
+    sudo nmcli connection modify station-modem connection.autoconnect yes
+fi
+
 # finding modem index
 modem_index="$(/usr/bin/mmcli -L | grep -o 'Modem/[0-9]' | grep -o '[0-9]')" 
 # modem_index="$(mmcli -L | grep -o 'Modem/[0-9]' | grep -o '[0-9]')" 

@@ -63,11 +63,3 @@ else
   sleep 2                    # hold ~1-2s to trigger power-on
   raspi-gpio set 23 op dh   # release: ON_OFF# back to idle HIGH
 fi
-
-# Run idempotent modem-NV provisioning after the hardware-enable step.
-# Same script that provision-modem.service runs at boot. No-op for
-# Quectel and for already-provisioned Telit; for an unprovisioned Telit,
-# applies the CGDCONT cleanup so the modem can connect on AT&T-restrictive
-# carrier policies without requiring a separate reboot.
-PROVISION=/usr/lib/ctt/sensor-station-software/system/scripts/provision-modem.sh
-[ -x "$PROVISION" ] && bash "$PROVISION"

@@ -34,7 +34,6 @@ DST_DIR="/etc/systemd/system"
 # / Ansible / operator action.
 MUST_BE_ENABLED=(
   modem-boot-state.service    # state persistence (Meelyn's), runs Before MM
-  provision-modem.service     # idempotent CGDCONT cleanup, runs After MM
 )
 
 CHANGED=0
