@@ -70,8 +70,11 @@ else
   log_info "no systemd unit changes"
 fi
 
-# Enable required units that aren't already enabled. Skip units the
-# user has explicitly disabled (preserves operational intent).
+# Enable required units. These are MUST_BE_ENABLED by definition, so a
+# freshly-deployed unit (which systemd reports as "disabled" until enabled)
+# DOES get enabled — otherwise the provisioning/boot units would never start
+# on a fresh fleet station. An operator who wants one off should remove it
+# from MUST_BE_ENABLED, not rely on a runtime `disable` surviving OTA.
 for unit in "${MUST_BE_ENABLED[@]}"; do
   if [ ! -f "$DST_DIR/$unit" ]; then
     log_warn "$unit listed in MUST_BE_ENABLED but not installed; skipping enable"
@@ -81,9 +84,6 @@ for unit in "${MUST_BE_ENABLED[@]}"; do
   case "$state" in
     enabled|enabled-runtime|alias|static)
       # already in good state
-      ;;
-    disabled)
-      log_warn "$unit is explicitly disabled; not re-enabling (operator choice respected)"
       ;;
     *)
       log_info "enabling $unit (was: $state)"
