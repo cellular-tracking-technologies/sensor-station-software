@@ -25,3 +25,9 @@
 # disturbing MM's AT access in the same change.)
 ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="04", ATTR{authorized}="0"
 ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="05", ATTR{authorized}="0"
+# 06/07 also blocked: on RNDIS the second ACM/AT pair is unused (pppd no
+# longer holds ttyACM4; MM runs on 02/03 alone). Frees 2 USB endpoints to
+# reduce dwc_otg pressure with 4 FunCubes. Net active = 4 ifaces (00/01+02/03),
+# same footprint as the old PPP config.
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="06", ATTR{authorized}="0"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="07", ATTR{authorized}="0"
