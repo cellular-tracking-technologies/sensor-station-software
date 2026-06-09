@@ -13,9 +13,10 @@ router.get('/', function (req, res, next) {
 
 router.get('/ppp', (req, res, next) => {
   // check if at least 1 cellular data interface is up:
-  //   wwan* — Quectel QMI (legacy LTS modem path)
-  //   ppp*  — Telit PPP (current LTS modem path)
-  exec('ifconfig | grep -E "^(wwan|ppp)" | wc -l', (err, stdout, stderr) => {
+  //   wwan* — Quectel QMI
+  //   ppp*  — Telit PPP (legacy data path)
+  //   mdm*  — Telit RNDIS (mdm0 — current data path)
+  exec('ifconfig | grep -E "^(wwan|ppp|mdm)" | wc -l', (err, stdout, stderr) => {
     if (err) {
       res.status(500).send(err.toString())
     }
