@@ -33,7 +33,8 @@ DST_DIR="/etc/systemd/system"
 # only deployed as files — their enable state is left to manufacturing
 # / Ansible / operator action.
 MUST_BE_ENABLED=(
-  modem-boot-state.service    # state persistence (Meelyn's), runs Before MM
+  modem-boot-state.service       # state persistence (Meelyn's), runs Before MM
+  provision-modem-rndis.service  # one-time RNDIS bind + IP-passthrough, IMEI-gated no-op
 )
 
 CHANGED=0

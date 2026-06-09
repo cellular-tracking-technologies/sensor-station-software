@@ -1,0 +1,17 @@
+[Unit]
+Description=One-time Telit RNDIS + IP-passthrough modem provisioning (idempotent, IMEI-gated)
+# Needs ModemManager up to send AT. Deliberately NOT Before=NetworkManager:
+# the common case is a fast IMEI-marker no-op, and the rare provision case
+# reboots the modem once — we don't want that gating the whole boot like the
+# old provision-modem.service did. Invoked via bash so a missing exec bit
+# can't fail the unit (203/EXEC).
+After=ModemManager.service modem-boot-state.service
+Requires=ModemManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/provision-modem-rndis.sh
+
+[Install]
+WantedBy=multi-user.target
