@@ -69,5 +69,15 @@ fi
 # check-sim-id ran with no modem (skipped), so the APN was never set for this
 # SIM. check-sim-id waits for the modem+SIM to enumerate (handles the GPIO/USB
 # bring-up delay) and only sets the APN once it reads a valid ICCID.
+# SKIP_CHECK_SIM is set by modem-boot-state.sh at boot: that unit is ordered
+# Before=ModemManager.service, and check-sim-id.sh does a blocking
+# `systemctl start ModemManager`, so running it from there deadlocks (MM waits
+# for modem-boot-state to finish; modem-boot-state waits for MM to start). At
+# boot, station-boot.service runs check-sim-id for APN selection instead. For a
+# manual / web "enable after boot", SKIP_CHECK_SIM is unset and we run it here.
 CHECK_SIM=/usr/lib/ctt/sensor-station-software/system/scripts/check-sim-id.sh
-[ -f "$CHECK_SIM" ] && bash "$CHECK_SIM"
+if [ -n "$SKIP_CHECK_SIM" ]; then
+  echo 'enable-modem: SKIP_CHECK_SIM set (boot-state restore) — leaving APN to station-boot'
+elif [ -f "$CHECK_SIM" ]; then
+  bash "$CHECK_SIM"
+fi

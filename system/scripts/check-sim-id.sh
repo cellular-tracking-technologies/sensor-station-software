@@ -1,8 +1,12 @@
 #!/usr/bin/bash
 
-# start modem manager
-sudo systemctl enable ModemManager.service
-sudo systemctl start ModemManager.service
+# NOTE: this script does NOT start ModemManager. MM ships enabled in the image
+# and systemd starts it at boot; disable-modem.sh never stops it (it only
+# USB-deauthorizes / powers the modem, MM keeps running and auto-detects the
+# modem on re-enable via udev). A blocking `systemctl start ModemManager` here
+# used to deadlock when this ran from modem-boot-state.service (ordered
+# Before=ModemManager): MM waits for that unit, the unit waited for MM. The
+# mmcli retry loop below is all we need — it waits for the modem to enumerate.
 
 # --- data-path policy: demote the gsm/PPP profile on Telit only ---
 # Telit LE910Q1 (1bc7:7020) uses the RNDIS data path (mdm0, modem-internal
