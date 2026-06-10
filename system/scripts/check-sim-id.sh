@@ -20,29 +20,44 @@ else
     sudo nmcli connection modify station-modem connection.autoconnect yes
 fi
 
-# finding modem index
-modem_index="$(/usr/bin/mmcli -L | grep -o 'Modem/[0-9]' | grep -o '[0-9]')" 
-# modem_index="$(mmcli -L | grep -o 'Modem/[0-9]' | grep -o '[0-9]')" 
+# --- per-SIM APN selection (robust against the modem not being ready) ---
+# If the modem is intentionally disabled, there's no SIM to read — skip.
+if [ -e /etc/ctt/modem-disabled ]; then
+  echo 'check-sim-id: modem disabled — skipping APN selection'
+  exit 0
+fi
 
-echo 'modem index' $modem_index
+# Wait for the modem + SIM to enumerate before reading the ICCID. At boot the
+# modem may still be coming up (a Telit needs a GPIO pulse; a modem enabled
+# after boot needs time), and reading an EMPTY ICCID is how this script used
+# to silently fall through to the wrong 'super' default. Retry until a valid
+# ICCID appears; if none ever does, leave the APN UNCHANGED (never guess).
+iccid=""
+for attempt in $(seq 1 15); do
+  modem_index="$(/usr/bin/mmcli -L 2>/dev/null | grep -oE 'Modem/[0-9]+' | grep -oE '[0-9]+' | head -1)"
+  if [ -n "$modem_index" ]; then
+    sim_index="$(/usr/bin/mmcli -m "$modem_index" 2>/dev/null | grep -oE 'SIM/[0-9]+' | grep -oE '[0-9]+' | head -1)"
+    if [ -n "$sim_index" ]; then
+      iccid="$(/usr/bin/mmcli -m "$modem_index" -i "$sim_index" 2>/dev/null | grep -oE 'iccid: [0-9]+' | grep -oE '[0-9]+')"
+      [ -n "$iccid" ] && break
+    fi
+  fi
+  sleep 2
+done
 
-# finding sim index
-sim_index="$(/usr/bin/mmcli -m $modem_index | grep -o 'SIM/[0-9]' | grep -o '[0-9]')" 
-echo 'sim index' $sim_index
+if [ -z "$iccid" ]; then
+  echo 'check-sim-id: no modem/SIM ready after wait — leaving APN unchanged'
+  exit 0
+fi
 
-# find sim iccid
-iccid="$(/usr/bin/mmcli -m $modem_index -i $sim_index | grep -o 'iccid: [0-9]*' | grep -o '[0-9]*')"
-echo $iccid
+echo "modem index $modem_index / sim index $sim_index / iccid $iccid"
+country_code="${iccid:2:2}"        # ICCID country code; Telenor/Sweden = 46
+echo "country code $country_code"
 
-# find country code (2 digits, telenor is 46)
-country_code=${iccid:2:2}
-echo 'country code' $country_code
-
-# change apn based on country code
-if [ $country_code -eq 46 ]; then
-    echo 'telenor sim'
-    sudo nmcli c modify station-modem apn internet.cxn
+if [ "$country_code" = "46" ]; then
+  echo 'telenor sim'
+  sudo nmcli c modify station-modem apn internet.cxn
 else
-    echo 'twilio sim'
-    sudo nmcli c modify station-modem apn super
+  echo 'twilio sim'
+  sudo nmcli c modify station-modem apn super
 fi

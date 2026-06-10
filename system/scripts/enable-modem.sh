@@ -63,3 +63,11 @@ else
   sleep 2                    # hold ~1-2s to trigger power-on
   raspi-gpio set 23 op dh   # release: ON_OFF# back to idle HIGH
 fi
+
+# Re-run the per-SIM APN selection now that the modem is being enabled. This
+# covers the boot-disabled-then-enabled-later case: at boot station-boot's
+# check-sim-id ran with no modem (skipped), so the APN was never set for this
+# SIM. check-sim-id waits for the modem+SIM to enumerate (handles the GPIO/USB
+# bring-up delay) and only sets the APN once it reads a valid ICCID.
+CHECK_SIM=/usr/lib/ctt/sensor-station-software/system/scripts/check-sim-id.sh
+[ -f "$CHECK_SIM" ] && bash "$CHECK_SIM"
