@@ -1,9 +1,9 @@
 #!/bin/bash
 
-modem=$(lsusb | grep Quectel -c)
-wifi=$(lsusb | grep Ralink -c)
+modem=$(( $(lsusb | grep Quectel -c) + $(lsusb | grep Telit -c) ))
+wifi=$(( $(lsusb | grep Ralink -c) + $(lsusb | grep Realtek -c) ))
 usb_hubs=$(lsusb | grep Microchip -c)
-radios=$(lsusb | grep Adafruit -c)
+radios=$(lsusb | grep "Adafruit Feather" -c)
 usb_devices=$(( $modem + $wifi + $usb_hubs + $radios ))
 usb_ports=$(( $(lsusb | grep Bus -c) - ($usb_devices + 1))) # +1 for linux USB controller
 
