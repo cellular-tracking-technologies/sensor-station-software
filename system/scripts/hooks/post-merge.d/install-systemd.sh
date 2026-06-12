@@ -34,8 +34,10 @@ DST_DIR="/etc/systemd/system"
 # / Ansible / operator action.
 MUST_BE_ENABLED=(
   modem-boot-state.service       # state persistence (Meelyn's), runs Before MM
-  provision-modem-rndis.service  # one-time RNDIS bind + IP-passthrough, IMEI-gated no-op
 )
+# NOTE: Telit RNDIS + IP-passthrough NV provisioning (AT#RNDIS / AT#IPPASSTH)
+# is done at MANUFACTURING, not in the image — the old provision-modem-rndis
+# service was removed. The runtime here assumes an already-provisioned modem.
 
 CHANGED=0
 
