@@ -1,14 +1,19 @@
 
 import express from 'express'
 import { exec } from 'child_process'
-import ModemUtil from '../../hardware/pi/network/modem.js'
+import ModemCache from '../../hardware/pi/network/modem-cache.js'
 import RunCommand from '../../command.js'
 
 const router = express.Router()
 
 /* GET home page. */
-router.get('/', function (req, res, next) {
-  res.json(ModemUtil.info())
+router.get('/', async function (req, res, next) {
+  try {
+    const info = await ModemCache.get()
+    res.json(info)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 router.get('/ppp', (req, res, next) => {
@@ -30,13 +35,13 @@ router.get('/ppp', (req, res, next) => {
   })
 })
 
-router.get('/signal-strength', (req, res) => {
-
-  res.json(ModemUtil.info())
-  // res.json({
-  //   signal: ModemUtil.signal,
-  //   state: ModemUtil.state,
-  // })
+router.get('/signal-strength', async (req, res) => {
+  try {
+    const info = await ModemCache.get()
+    res.json(info)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 router.get('/enable-modem', async (req, res) => {
