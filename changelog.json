@@ -1,5 +1,37 @@
 [
     {
+        "version": "1.8.0",
+        "date": "2026-06-16",
+        "notes": "Telit LE910Q1 cellular support and OTA modernization. Migrates the cellular data path from Quectel EC25 (QMI+PPP) to Telit LE910Q1 (RNDIS, mdm0 interface). Introduces a modular OTA hook system so future deployment changes ship without touching update-station.sh. Modernizes the /modem API so the LCD, web UI, and check-ins share one cached mmcli poller instead of each forking subprocesses.",
+        "features": [
+            "Telit LE910Q1-WWG modem support end to end (enable/disable, udev, NetworkManager profiles); cellular data path switches from PPP to RNDIS using the modem's mdm0 netdev.",
+            "Modular OTA hook system: post-merge.sh orchestrator iterates post-merge.d/ drop-ins (install-systemd, install-udev, install-network). Adding a new subsystem deploy is now a single file drop, not an update-station.sh edit.",
+            "Pre-merge OTA hook orchestrator wired in as a placeholder phase for future pre-pull tasks.",
+            "Adaptive /modem cache in hardware-server: one background mmcli poll loop serves all consumers, polls every 2 s while active, idle after 60 s, exposes real RSRP / RSRQ / SNR via mmcli --signal-setup.",
+            "Connectivity probe for /modem/ppp: actual ping through the modem interface every 10 s while active, replacing the old 'any modem interface exists' check that misled the LED on unprovisioned modems.",
+            "Modem boot-state persistence: operator on/off intent survives hard reboots via a marker file (modem-boot-state.service).",
+            "IMEI-gated boot-time RNDIS NV provisioner for Telit modems; subsequently moved to manufacturing.",
+            "sensorgnome.service and bootcount.service brought under monorepo + OTA control; boottime_compute.sh moves into system/scripts/.",
+            "78-ctt-radios.rules: positive-filter radio identification by USB VID:PID via udev (replaces fragile by-path substring matching).",
+            "tools/modem-snapshot.sh: read-only diagnostic dump capturing mmcli / ip / dmesg state for support escalations.",
+            "Wired uplink default-route metric pinned below cellular so eth0 wins when both interfaces are present.",
+            "list-devices.sh extended to recognize the new Telit modem."
+        ],
+        "bugs": [
+            "Fix boot deadlock where check-sim-id started ModemManager too early, before the SIM was ready.",
+            "Fix LCD modem signal showing ':!' for working RNDIS modems; the old state check required state=='connected' but ModemManager never advances past 'registered' on the RNDIS path. Accepts more states plus requires a numeric signal value.",
+            "Fix /modem/ppp false positives on unprovisioned modems whose mdm0 came up without LTE forwarding (LED stayed on with no real connectivity).",
+            "Fix sensorgnome.service first-boot ENOENT race against /etc/ctt/station-id by adding After=station-boot.service.",
+            "Fix FunCube USB endpoints crowding the bus: 77-ctt-telit-block-unused.rules now also blocks Telit interfaces 06 / 07.",
+            "Fix missing executable bit on modem-boot-state.sh."
+        ],
+        "removed": [
+            "Automatic station reboot at the end of update-station.sh; reboots are now operator-driven.",
+            "provision-modem.service (CGDCONT cleanup, PPP era) — replaced by the RNDIS data path.",
+            "provision-modem-rndis.service and boot-time RNDIS NV provisioning — moved to manufacturing; stations now assume the modem ships pre-provisioned."
+        ]
+    },
+    {
         "version": "1.7.0",
         "date": "2025-09-17",
         "notes": "Add v3.3 radio map. Add additional files to designate station software, image, board revision, and revision.",
