@@ -1,0 +1,18 @@
+[Unit]
+Description=Sensorgnome Startup
+# Wait for station-boot to finish before starting. station-boot creates
+# /etc/ctt/station-id (among other things), and sensorgnome's master/machine.js
+# reads it synchronously at module load — without the After= dependency,
+# sensorgnome races station-boot and crashes with ENOENT, then waits the
+# 60s RestartSec before retrying. With it, sensorgnome starts cleanly first time.
+After=network.target station-boot.service
+
+[Service]
+ExecStart=nohup /etc/ctt/scripts/start-sensorgnome.sh
+Type=simple
+PIDFile=/tmp/sensorgnome-service.id
+RestartSec=60
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target station-boot.service
