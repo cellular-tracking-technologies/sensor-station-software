@@ -54,10 +54,6 @@ of each forking subprocesses.
   operator on/off intent (set via `/modem/enable-modem` and
   `/modem/disable-modem`) survives hard reboots via a marker file in
   `/var/lib/ctt/`. Service runs once at boot before NetworkManager.
-- **IMEI-gated boot-time RNDIS provisioner** for Telit modems —
-  idempotent NV configuration of `AT#RNDIS` + `AT#IPPASSTH`. Later
-  moved out of the image to manufacturing (see _Removed_) but the
-  script remains in the monorepo for fleet-side fallback.
 - **`sensorgnome.service` and `bootcount.service`** brought under
   monorepo + OTA control. Previously these lived only at
   `/etc/ctt/systemd/` on the image and could not be updated via OTA.
@@ -130,24 +126,6 @@ of each forking subprocesses.
 - **Automatic station reboot on update** — `update-station.sh` no
   longer triggers a reboot at the end. Reboots are now operator-driven
   via the LCD menu or explicit command.
-- **`provision-modem.service`** (CGDCONT cleanup, PPP era) — replaced
-  by the RNDIS data path which does not need CGDCONT manipulation.
-- **`provision-modem-rndis.service`** + boot-time RNDIS NV provisioning
-  — moved to manufacturing. Stations now assume the modem ships with
-  RNDIS + IP-passthrough already provisioned at the factory; the boot
-  service is no longer enabled in the image.
-
-### Build / Tooling
-
-- Added `image-build-procedure.md` (in `docs/`) capturing the
-  losetup-mount → modify → shrink → upload flow.
-- One-off `stage-test-image.sh` (in `images/`, not in monorepo) drives
-  the end-to-end image build: copies LTS image → loop-attach → branch
-  reset → applies all post-merge-equivalent deploys → version stamps
-  → unmount + detach. Hard-reset semantics (vs. stash + pull) avoid
-  phantom-edit conflicts on every rebuild.
-
----
 
 ## [1.7.0] — 2025-09-17
 
