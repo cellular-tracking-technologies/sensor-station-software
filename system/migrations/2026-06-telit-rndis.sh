@@ -201,6 +201,14 @@ for s in "$SRC"/network/*.nmconnection; do
   echo "  $(basename "$s")"
 done
 
+# --- 4b. modem default state: OFF (matches prior images) -------------------
+# modem-boot-state.sh reads /etc/ctt/modem-disabled: present => modem OFF,
+# absent => modem ON. Prior images shipped this marker; without it a migrated
+# image boots with the modem ON. Operators enable explicitly post-deploy.
+echo "=== 4b. modem default state: disabled ==="
+touch "$ROOT/etc/ctt/modem-disabled"
+echo "  created /etc/ctt/modem-disabled (modem OFF by default)"
+
 # --- 5. version stamps ------------------------------------------------------
 
 echo "=== 5. version stamps ==="
