@@ -34,9 +34,9 @@ DST_DIR="/etc/systemd/system"
 # / Ansible / operator action.
 MUST_BE_ENABLED=(
   modem-boot-state.service       # state persistence (Meelyn's), runs Before MM
-  ctt-station-id.service         # boot-time hardware identity; writes /run/ctt/board.env
+  ctt-board-detect.service         # boot-time hardware identity; writes /run/ctt/board.env
   ctt-rtc-overlay.service        # match RTC dtoverlay to detected board (early boot)
-  ctt-gps-kick.service           # V2 GPS-HAT kick (no-op on V3), after ctt-station-id
+  ctt-gps-kick.service           # V2 GPS-HAT kick (no-op on V3), after ctt-board-detect
   # ctt-radio-driver@.service is a TEMPLATE — udev activates per-channel instances
   # via ENV{SYSTEMD_WANTS}; it is deployed as a file but must NOT be enabled here.
 )

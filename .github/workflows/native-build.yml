@@ -27,7 +27,7 @@ jobs:
       - name: Confirm armhf ELF
         working-directory: native
         run: |
-          file build-arm/ctt-radio-driver build-arm/ctt-station-id
+          file build-arm/ctt-radio-driver build-arm/ctt-board-detect
           file build-arm/ctt-radio-driver | grep -q 'ARM' || { echo "::error::not an ARM binary"; exit 1; }
 
       - uses: actions/upload-artifact@v4
@@ -35,5 +35,5 @@ jobs:
           name: native-armhf
           path: |
             native/build-arm/ctt-radio-driver
-            native/build-arm/ctt-station-id
+            native/build-arm/ctt-board-detect
           if-no-files-found: error

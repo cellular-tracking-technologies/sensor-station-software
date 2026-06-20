@@ -14,7 +14,7 @@ pinned binary on each station (stations never compile).
 | Tool | Purpose | Deps |
 |---|---|---|
 | `ctt-radio-driver` | bridge one radio serial port ↔ AF_UNIX socket (gpsd-style, NDJSON) | nlohmann/json |
-| `ctt-station-id` | boot-time hardware identity (SX1509B/AT24MAC602/DS3231 + hashlet) → `/etc/ctt/*` + `/run/ctt/board.env` | — |
+| `ctt-board-detect` | boot-time hardware identity (SX1509B/AT24MAC602/DS3231 + hashlet) → `/etc/ctt/*` + `/run/ctt/board.env` | — |
 
 ## Per-binary versioning
 
@@ -32,7 +32,7 @@ output bind-mounts to `build-arm/`. Run from this `native/` directory.
     make arm            # WSL, Git Bash, macOS, Linux
     pwsh ./build.ps1    # Windows / PowerShell (Docker Desktop)
 
-Both produce `build-arm/ctt-radio-driver` and `build-arm/ctt-station-id` (ARM
+Both produce `build-arm/ctt-radio-driver` and `build-arm/ctt-board-detect` (ARM
 binaries — built here, run on the station).
 
 ## How the rest of the monorepo consumes these

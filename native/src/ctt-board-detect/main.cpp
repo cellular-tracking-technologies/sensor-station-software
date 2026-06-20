@@ -1,4 +1,4 @@
-// ctt-station-id — boot-time hardware identity for the CTT Sensor Station.
+// ctt-board-detect — boot-time board detection + hardware identity for the CTT Sensor Station.
 //
 // Detects the board EVERY boot (so a compute-module swap between boards is
 // handled — plug-n-play) and writes, drop-in compatible with the old Node
@@ -44,7 +44,7 @@ constexpr int ADDR_AT24MAC602 = 0x58; // serial EEPROM (EUI64)
 constexpr int ADDR_DS3231_EE = 0x57;  // RTC companion EEPROM
 
 [[noreturn]] void die(const std::string &msg) {
-  std::fprintf(stderr, "ctt-station-id: %s\n", msg.c_str());
+  std::fprintf(stderr, "ctt-board-detect: %s\n", msg.c_str());
   std::exit(1);
 }
 
@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
 
   Identity id = detect();
 
-  std::fprintf(stderr, "ctt-station-id: version=%d revision=%d board=%s id=%s%s\n",
+  std::fprintf(stderr, "ctt-board-detect: version=%d revision=%d board=%s id=%s%s\n",
                id.version, id.revision, id.board.c_str(), id.id.c_str(),
                dry_run ? " (dry-run, nothing written)" : "");
 

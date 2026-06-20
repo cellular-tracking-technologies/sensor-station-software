@@ -1,7 +1,7 @@
 # Host-side build driver for the native C++ tools. Run from native/ in a Linux
 # shell (WSL/Ubuntu) or via build.ps1 on Windows. Docker for the arm build.
 #
-#   make arm      reproducible armhf binaries -> build-arm/  (ctt-radio-driver, ctt-station-id)
+#   make arm      reproducible armhf binaries -> build-arm/  (ctt-radio-driver, ctt-board-detect)
 #   make native   local x86 build for fast compile-checks (NOT deployable)
 #   make shell    interactive shell in the build container
 #   make clean    remove build trees

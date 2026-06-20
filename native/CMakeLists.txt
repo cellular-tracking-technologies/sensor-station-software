@@ -35,5 +35,5 @@ else()
   target_include_directories(ctt-radio-driver PRIVATE third_party)
 endif()
 
-# ctt-station-id — boot-time hardware identity over I2C (no external deps).
-ctt_tool(ctt-station-id SOURCES src/ctt-station-id/main.cpp)
+# ctt-board-detect — boot-time hardware identity over I2C (no external deps).
+ctt_tool(ctt-board-detect SOURCES src/ctt-board-detect/main.cpp)

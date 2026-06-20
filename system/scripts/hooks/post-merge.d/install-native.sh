@@ -51,7 +51,7 @@ post_install() {
         systemctl restart $units || log_warn "restart of $units failed"
       fi
       ;;
-    *) : ;;  # ctt-station-id et al.: oneshot, reapplied next boot
+    *) : ;;  # ctt-board-detect et al.: oneshot, reapplied next boot
   esac
 }
 

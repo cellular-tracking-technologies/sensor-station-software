@@ -2,7 +2,7 @@
 # Kick the GPS on V2 stations with GPS HATs by toggling GPIO 27. V2-only; V3
 # stations have onboard GPS and skip this. Ported from save-station-id.sh.
 #
-# Reads the board version ctt-station-id wrote to /etc/ctt/station-revision.
+# Reads the board version ctt-board-detect wrote to /etc/ctt/station-revision.
 
 set -e
 version="$(cat /etc/ctt/station-revision 2>/dev/null || echo 3)"

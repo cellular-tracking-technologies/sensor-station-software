@@ -6,7 +6,7 @@
 # boot (config already correct) this is a no-op.
 #
 # Ported from sensor-station-software/system/scripts/save-station-id.sh. Reads the
-# board version that ctt-station-id wrote to /etc/ctt/station-revision.
+# board version that ctt-board-detect wrote to /etc/ctt/station-revision.
 
 set -e
 V2_RTC=ds3231

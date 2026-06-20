@@ -1,14 +1,14 @@
 # Ensure the RTC dtoverlay in /boot/config.txt matches the detected board
 # (ds3231 on V2, mcp7941x on V3); fix + reboot once on a compute-module swap.
 #
-# Ordered after ctt-station-id (needs the board version) and before the clock is
+# Ordered after ctt-board-detect (needs the board version) and before the clock is
 # synced from the RTC. Reboots only on a board/overlay mismatch, so on a normal
 # boot it is a fast no-op.
 
 [Unit]
 Description=CTT RTC dtoverlay matches board
-After=ctt-station-id.service
-Requires=ctt-station-id.service
+After=ctt-board-detect.service
+Requires=ctt-board-detect.service
 Before=time-sync.target chrony.service systemd-time-wait-sync.service
 Conflicts=shutdown.target
 

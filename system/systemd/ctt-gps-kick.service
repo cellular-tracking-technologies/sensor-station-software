@@ -1,10 +1,10 @@
 # Kick the GPS on V2 GPS-HAT stations (toggle GPIO 27). No-op on V3.
-# Ordered after ctt-station-id (needs the board version).
+# Ordered after ctt-board-detect (needs the board version).
 
 [Unit]
 Description=CTT GPS kick (V2 GPS HAT)
-After=ctt-station-id.service
-Requires=ctt-station-id.service
+After=ctt-board-detect.service
+Requires=ctt-board-detect.service
 
 [Service]
 Type=oneshot

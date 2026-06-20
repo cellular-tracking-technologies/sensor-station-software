@@ -11,14 +11,14 @@
 # re-identified (plug-n-play).
 
 [Unit]
-Description=CTT station hardware identity
+Description=CTT board detection + hardware identity
 After=local-fs.target
 # Ordering before the hardware/app layer is refined when the boot sequence lands.
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/ctt-station-id
+ExecStart=/usr/local/bin/ctt-board-detect
 # Once board.env exists, re-fire the radio udev rules so any device that
 # enumerated before identity was resolved now matches its CTT_BOARD-gated rule.
 ExecStartPost=-/usr/bin/udevadm trigger --action=add --subsystem-match=tty
