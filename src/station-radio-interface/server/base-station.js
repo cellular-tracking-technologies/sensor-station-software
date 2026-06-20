@@ -18,24 +18,25 @@ import chokidar from 'chokidar'
 import System from '../../system.js'
 import fs from 'fs'
 
-// USB identifiers of CTT radio receivers. The chokidar watcher on
-// /dev/serial/by-path/ picks up any USB serial device — modem CDC ACM
-// ports, debug adapters, etc. — so we positively identify radios by
-// USB VID (or VID:PID for FTDI variants) and ignore everything else.
-// VID:PID is topology-independent: the filter works on V2, V3.0, V3.3
-// and any future board revision without depending on the post-merge
-// OTA hooks having deployed the /dev/ctt-radio/ udev rules first.
-// The identifiers here mirror system/udev/78-ctt-radios.rules.
+// USB identifiers of BluSeries receivers. The chokidar watcher on
+// /dev/serial/by-path/ picks up any USB serial device — modem CDC ACM ports,
+// debug adapters, the 434 MHz Feathers, etc. — so we positively identify the
+// BluSeries FTDI adapters here and ignore everything else.
 //
-// RADIO_VIDS  — match any device from this vendor (any PID)
+// The 434 MHz Feather radios (Adafruit VID 239a) are NO LONGER discovered here:
+// they are served by ctt-radio-driver over /run/ctt/radios/ch<N>.sock and
+// attached by radioSocketWatcher(). Leaving 239a out of the filter is what makes
+// this chokidar path Blu-only — isRadio() returns false for a Feather, so
+// addPath() skips it.
+//
 // RADIO_VID_PIDS — match a specific VID:PID pair
-const RADIO_VIDS = new Set([
-  '239a', // Adafruit Industries — Feather MCU variants (32u4, M0, M4)
-])
 const RADIO_VID_PIDS = new Set([
   '0403:6015', // FTDI FT231X — BluSeries receivers (kept narrow to avoid
                // matching other FTDI chips used as debug serial adapters)
 ])
+
+// Directory where each ctt-radio-driver@ch<N> instance serves its socket.
+const RADIO_SOCKET_DIR = '/run/ctt/radios'
 
 /**
  * manager class for controlling / reading radios
@@ -136,6 +137,7 @@ class BaseStation {
     })
     this.blu_station.startBluWebsocketServer()
     await this.directoryWatcher()
+    await this.radioSocketWatcher()
     this.startTimers()
   }
 
@@ -509,7 +511,8 @@ class BaseStation {
       const usbParent = `/sys/class/tty/${devName}/device/..`
       const vid = (await fs.promises.readFile(`${usbParent}/idVendor`, 'utf8')).trim()
       const pid = (await fs.promises.readFile(`${usbParent}/idProduct`, 'utf8')).trim()
-      return RADIO_VIDS.has(vid) || RADIO_VID_PIDS.has(`${vid}:${pid}`)
+      // BluSeries FTDI only — Feathers (239a) are handled by the socket watcher.
+      return RADIO_VID_PIDS.has(`${vid}:${pid}`)
     } catch (err) {
       console.log(`isRadio: sysfs lookup failed for ${byPathLink}: ${err.message}`)
       return false
@@ -525,27 +528,21 @@ class BaseStation {
       console.log('addPath: skipping non-radio device', path)
       return
     }
-    console.log('system hardware version', System.Hardware.Version)
+    // Blu-only: the 434 MHz Feather radios are attached by radioSocketWatcher()
+    // from /run/ctt/radios/*.sock. This chokidar path handles BluSeries (FTDI)
+    // receivers, which present as -port0 devices.
     if (System.Hardware.Version >= 3) {
-      console.log('v3 path', path)
-      // V3 Radio Paths
-      if (!path.includes('-port0')) {
-        this.startRadios(path)
-
-      } else if (!path.includes('0:1.2.') && path.includes('-port0')) {
+      // V3 Blu paths
+      if (!path.includes('0:1.2.') && path.includes('-port0')) {
         console.log('starting blu station')
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
       }
     } else {
-      console.log('v2 path', path)
-
-      // V2 Radio Paths
+      // V2 Blu paths
       if (path.includes('-port0') && !path.includes('0:1.2.1:1')) {
         await this.startBluStation(path)
         this.stationLog('starting blu receiver')
-      } else if (!path.includes('-port0')) {
-        this.startRadios(path)
       }
     }
   }
@@ -554,29 +551,24 @@ class BaseStation {
    *
    * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter connected to bluseries receiver
    *
-   * Note: cellular-modem unlink events fall through to unlinkDongleRadio,
-   * which is a broadcast-only no-op for paths we never started — we
-   * can't re-check VID:PID here because the sysfs entry is gone by the
-   * time chokidar fires the unlink event.
+   * Note: we can't re-check VID:PID on unlink because the sysfs entry is gone
+   * by the time chokidar fires the event; non-Blu unlinks (modem, Feather)
+   * simply match no branch below and are ignored.
    */
   async unlinkPath(path) {
+    // Blu-only: 434 sockets are torn down by stopRadioSocket() on their
+    // /run/ctt/radios/*.sock unlink event, not here.
     if (System.Hardware.Version >= 3) {
-      // V3 Radio paths
+      // V3 Blu paths
       if (!path.includes('0:1.2.') && path.includes('-port0')) {
         await this.unlinkBluStation(path)
         this.stationLog('removed blu receiver')
-
-      } else if (!path.includes('-port0')) {
-        await this.unlinkDongleRadio(path)
       }
     } else {
-      // V2 Radio Paths
+      // V2 Blu paths
       if (path.includes('-port0') && !path.includes('0:1.2.1:1')) {
         await this.unlinkBluStation(path)
         this.stationLog('removed blu receiver')
-
-      } else if (!path.includes('-port0')) {
-        await this.unlinkDongleRadio(path)
       }
     }
   }
@@ -644,41 +636,88 @@ class BaseStation {
   }
 
   /**
- * 
- * @param {String} path full path from /dev/serial/by-path that corresponds to usb adapter for bluseries receiver
- */
-  async unlinkDongleRadio(path) {
-    let unlink_dongle = {
-      msg_type: "unlink_dongle",
-      path: path,
-      port: this.dongle_port,
+   * Discover ctt-radio-driver sockets by RECONCILIATION rather than filesystem
+   * events: the /run/ctt/radios directory is the source of truth. On each tick
+   * we diff the ch<N>.sock files against the attached receivers — attach the
+   * new, detach the vanished. This is robust where an event-watch is not: unix
+   * socket special files aren't reliably reported by chokidar/inotify wrappers,
+   * and a reconcile self-heals from any missed event and picks up a radio that
+   * first appears AFTER this process started.
+   *
+   * Orthogonally, each RadioReceiver reconnects itself (restart_on_close), which
+   * covers a driver that restarts in place — e.g. a binary update — and briefly
+   * removes+recreates the same socket between reconcile ticks.
+   */
+  async radioSocketWatcher() {
+    await this.reconcileRadioSockets()
+    this.radio_socket_timer = setInterval(() => {
+      this.reconcileRadioSockets().catch((err) => {
+        console.error('radio socket reconcile error', err)
+      })
+    }, 3000)
+  }
+
+  /**
+   * One reconcile pass: attach sockets that appeared, detach receivers whose
+   * socket is gone. Idempotent.
+   */
+  async reconcileRadioSockets() {
+    const present = {}
+    try {
+      const entries = await fs.promises.readdir(RADIO_SOCKET_DIR)
+      entries.forEach((f) => {
+        const m = f.match(/^ch(\d+)\.sock$/)
+        if (m) present[parseInt(m[1], 10)] = path.join(RADIO_SOCKET_DIR, f)
+      })
+    } catch (err) {
+      // dir absent until the first driver starts — treat as no sockets present.
     }
-    this.broadcast(JSON.stringify(unlink_dongle))
+    // attach newly-present sockets
+    Object.keys(present).forEach((channel) => {
+      if (!this.active_radios[channel]) {
+        this.startRadioSocket(present[channel])
+      }
+    })
+    // detach receivers whose socket vanished
+    Object.keys(this.active_radios).forEach((channel) => {
+      if (!(channel in present)) {
+        this.stopRadioSocket(path.join(RADIO_SOCKET_DIR, `ch${channel}.sock`))
+      }
+    })
   }
 
   /**
-   * 
-   * @param {String} path radio path from /dev/serial/by-path/ directory 
-   * @returns 
+   * Parse the channel from a /run/ctt/radios/ch<N>.sock path.
+   * @returns {Number|null}
    */
-  findRadioPath(path) {
-    // console.log('config radios', this.config.data.radios)
-    return this.config.data.radios.find(radio => radio.path == path)
+  channelFromSocket(socket_path) {
+    const m = path.basename(socket_path).match(/^ch(\d+)\.sock$/)
+    return m ? parseInt(m[1], 10) : null
   }
 
   /**
-   * start the radio receiversblu_stations
+   * Attach a RadioReceiver to a driver socket. Channel comes from the socket
+   * name; per-channel preset/mode still comes from config.data.radios.
+   *
+   * @param {String} socket_path full /run/ctt/radios/ch<N>.sock path
    */
-  startRadios(path) {
-
-    this.stationLog('starting radio receivers')
-    let radio = this.findRadioPath(path)
-    console.log('path', path)
-    let beep_reader = new RadioReceiver({
+  startRadioSocket(socket_path) {
+    const channel = this.channelFromSocket(socket_path)
+    if (channel === null) {
+      console.log('ignoring non-channel socket', socket_path)
+      return
+    }
+    if (this.active_radios[channel]) {
+      // already attached (e.g. initial scan races the watcher's add event)
+      return
+    }
+    this.stationLog(`attaching radio socket ch${channel}`)
+    const radio_cfg = (this.config.data.radios || []).find((r) => r.channel == channel)
+    const beep_reader = new RadioReceiver({
+      socket_path: socket_path,
+      channel: channel,
       baud_rate: 115200,
-      port_uri: radio.path,
-      channel: radio.channel,
-      // restart_on_close: false,
+      restart_ms: 3000,   // quick reconnect for an in-place driver restart
     })
     beep_reader.on('beep', (beep) => {
       this.data_manager.handleRadioBeep(beep)
@@ -686,34 +725,46 @@ class BaseStation {
       this.broadcast(JSON.stringify(beep))
     })
     beep_reader.on('radio-fw', (fw_version) => {
-      this.radio_fw[radio.channel] = fw_version
+      this.radio_fw[channel] = fw_version
     })
-    beep_reader.on('open', (info) => {
-      this.stationLog('opened radio on port', radio.channel)
-      // this.active_radios[info.port_uri] = info
-      beep_reader.issueCommands(radio.config)
+    beep_reader.on('open', () => {
+      this.stationLog('opened radio on channel', channel)
+      if (radio_cfg && radio_cfg.config) {
+        beep_reader.issueCommands(radio_cfg.config)
+      }
     })
     beep_reader.on('write', (msg) => {
       this.stationLog(`writing message to radio ${msg.channel}: ${msg.msg}`)
     })
     beep_reader.on('error', (err) => {
       console.error(err)
-      // error on the radio - probably a path error
-      beep_reader.stopPollingFirmware()
-      this.stationLog(`radio error on channel ${radio.channel}  ${err}`)
+      this.stationLog(`radio error on channel ${channel}  ${err}`)
     })
-    beep_reader.on('close', (info) => {
-      this.stationLog(`radio closed ${radio.channel}`)
-      this.dongle_port = radio.channel
-      beep_reader.stopPollingFirmware()
-      beep_reader.destroy()
-      console.log(`radio closed ${radio.channel}`, beep_reader)
-      if (info.port_uri in Object.keys(this.active_radios)) {
-      }
+    beep_reader.on('close', () => {
+      // RadioReceiver reconnects itself (restart_on_close) while the socket
+      // exists; a vanished socket is handled by stopRadioSocket on unlink.
+      this.stationLog(`radio socket closed ch${channel}`)
     })
-    beep_reader.start(1000)
-    this.active_radios[radio.channel] = beep_reader
-  } // end of startRadios()
+    beep_reader.start(0)
+    this.active_radios[channel] = beep_reader
+  }
+
+  /**
+   * Detach the RadioReceiver for a vanished driver socket and stop its
+   * reconnect attempts.
+   *
+   * @param {String} socket_path full /run/ctt/radios/ch<N>.sock path
+   */
+  stopRadioSocket(socket_path) {
+    const channel = this.channelFromSocket(socket_path)
+    if (channel === null) return
+    const beep_reader = this.active_radios[channel]
+    if (beep_reader) {
+      this.stationLog(`detaching radio socket ch${channel}`)
+      beep_reader.destroy()   // sets restart_on_close=false, closes transport
+      delete this.active_radios[channel]
+    }
+  }
 
   /**
  * 

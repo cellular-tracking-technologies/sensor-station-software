@@ -32,17 +32,15 @@ class StationConfig {
    * opts.config
    **/
   threadRadioMapsWithConfig(config) {
-    const { radios, blu_receivers } = config
+    const { blu_receivers } = config
 
-    // thread 434 radio hardware maps inside config
-    radios.forEach(radio => {
-      const found_radio = RadioMaps.Radio.find(map_info => radio.channel == map_info.channel)
-      if (found_radio) {
-        // identified the radio in the radio map
-        radio.path = found_radio.path
-      }
-    })
-    // thread blu radio hardware maps inside config
+    // 434 MHz radios are NO LONGER threaded by path here: ctt-radio-driver
+    // assigns the channel via the socket name (/run/ctt/radios/ch<N>.sock), so
+    // base-station attaches by channel directly. config.data.radios stays
+    // channel-keyed ({ channel, config }) — the per-channel preset/mode source.
+    //
+    // Only BluSeries receivers are still matched to a USB path (they remain on
+    // the chokidar /dev/serial/by-path discovery path).
     if (!blu_receivers) {
       config.blu_receivers = this.default_config.blu_receivers
     }
@@ -82,13 +80,9 @@ class StationConfig {
    * save config to disk
    */
   save() {
-    // strip radio path from config to be threaded dynamically on load
+    // strip dynamically-threaded Blu paths before persisting (re-threaded on
+    // load). 434 radios are channel-keyed and carry no path.
     let cloned_config = JSON.parse(JSON.stringify(this.data))
-    cloned_config.radios.forEach(radio => {
-      if (radio.path) {
-        delete radio.path
-      }
-    })
 
     cloned_config.blu_receivers.forEach(receiver => {
       if (receiver.path) {
