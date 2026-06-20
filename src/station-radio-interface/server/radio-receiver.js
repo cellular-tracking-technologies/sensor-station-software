@@ -177,6 +177,13 @@ class RadioReceiver extends EventEmitter {
       this.emit('raw', line)
       return
     }
+    // DataReceiver returns null (without throwing) for lines it can't classify
+    // — e.g. some command responses. Treat that like the catch above: surface
+    // the raw line rather than dereferencing null (which crashed the process).
+    if (!raw_beep) {
+      this.emit('raw', line)
+      return
+    }
     raw_beep.channel = this.channel
     raw_beep.received_at = now
     if (raw_beep.firmware) {
