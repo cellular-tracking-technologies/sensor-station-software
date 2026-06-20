@@ -1,11 +1,12 @@
 # systemd template unit: one instance per 434 MHz radio receiver.
 #
-# Activated by the board-specific udev rules in radio/udev/, which on hotplug set
+# Activated by the board-gated udev rule (system/udev/78-ctt-radio-driver.rules,
+# generated from system/radios/maps/), which on hotplug sets
 # ENV{SYSTEMD_WANTS}="ctt-radio-driver@ch<N>.service" and SYMLINK the device to
 # /dev/ctt-radio/ch<N>. The instance name %i is therefore "ch<N>".
 #
-# The binary is published by the ctt-radio-driver repo and fetched at the pinned
-# version (radio/driver-version) by install/install-radio-driver.sh.
+# The binary is built by the monorepo native CI and fetched at the pinned version
+# (system/native/ctt-radio-driver.version) by the install-native.sh OTA hook.
 #
 # Lifecycle: udev starts the instance on plug. On unplug the serial port returns
 # HUP and the driver exits cleanly (status 0), so no restart loop is needed.
