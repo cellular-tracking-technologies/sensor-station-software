@@ -6,3 +6,10 @@ v2_modem_fix.sh
 eslintrc.json
 src/station-interface/public/javascripts/data.json
 *.db
+# native C++ build-kit outputs
+native/build/
+native/build-*/
+native/third_party/
+
+# Personal Claude Code settings (per-developer)
+.claude/settings.local.json
