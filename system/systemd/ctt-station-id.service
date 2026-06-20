@@ -1,0 +1,30 @@
+# Boot-time hardware identity. Runs early, before the consumers that key off the
+# board identity (radio udev resolution, RTC overlay, the Node app layer).
+#
+# Reads the board's ID hardware (SX1509B strap pins + AT24MAC602/DS3231 over I2C,
+# or the hashlet/ATSHA204A path on V2) and writes, drop-in compatible with the
+# old initialize.js:
+#   /etc/ctt/station-id, /etc/ctt/station-revision, /etc/ctt/station-board-revision
+# plus, for udev, /run/ctt/board.env  (CTT_BOARD=v2|v3r0|v3r3).
+#
+# Re-runs every boot, so a compute-module moved between station boards is
+# re-identified (plug-n-play).
+
+[Unit]
+Description=CTT station hardware identity
+After=local-fs.target
+# Ordering before the hardware/app layer is refined when the boot sequence lands.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/ctt-station-id
+# Once board.env exists, re-fire the radio udev rules so any device that
+# enumerated before identity was resolved now matches its CTT_BOARD-gated rule.
+ExecStartPost=-/usr/bin/udevadm trigger --action=add --subsystem-match=tty
+# Ensure /run/ctt exists for board.env (shared with the radio driver's runtime dir).
+RuntimeDirectory=ctt
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=multi-user.target

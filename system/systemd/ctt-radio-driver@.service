@@ -1,0 +1,31 @@
+# systemd template unit: one instance per 434 MHz radio receiver.
+#
+# Activated by the board-specific udev rules in radio/udev/, which on hotplug set
+# ENV{SYSTEMD_WANTS}="ctt-radio-driver@ch<N>.service" and SYMLINK the device to
+# /dev/ctt-radio/ch<N>. The instance name %i is therefore "ch<N>".
+#
+# The binary is published by the ctt-radio-driver repo and fetched at the pinned
+# version (radio/driver-version) by install/install-radio-driver.sh.
+#
+# Lifecycle: udev starts the instance on plug. On unplug the serial port returns
+# HUP and the driver exits cleanly (status 0), so no restart loop is needed.
+
+[Unit]
+Description=CTT radio receiver driver (%i)
+After=dev-ctt\x2dradio-%i.device
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ctt-radio-driver \
+  --serial /dev/ctt-radio/%i \
+  --socket /run/ctt/radios/%i.sock \
+  --id %i \
+  --baud 115200
+
+# Creates and keeps /run/ctt/radios across instances.
+RuntimeDirectory=ctt/radios
+RuntimeDirectoryPreserve=yes
+
+# Restart only on a crash; a clean exit on unplug should not relaunch.
+Restart=on-failure
+RestartSec=2

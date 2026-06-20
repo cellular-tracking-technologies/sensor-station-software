@@ -1,0 +1,15 @@
+# Kick the GPS on V2 GPS-HAT stations (toggle GPIO 27). No-op on V3.
+# Ordered after ctt-station-id (needs the board version).
+
+[Unit]
+Description=CTT GPS kick (V2 GPS HAT)
+After=ctt-station-id.service
+Requires=ctt-station-id.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/gps-kick.sh
+
+[Install]
+WantedBy=multi-user.target
