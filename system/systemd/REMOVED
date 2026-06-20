@@ -1,0 +1,11 @@
+# Units this dir used to deploy and must now be absent on every station.
+# One basename per line (blank lines and #-comments ignored). The OTA
+# install-systemd hook (apply_removals + _systemd_remover) disables+stops and
+# removes each on deploy.
+#
+# Add an entry whenever you delete/rename a *.service that was previously
+# shipped, so the removal propagates to already-provisioned stations.
+
+# Renamed to ctt-board-detect.service (the tool now named for what it does:
+# boot-time board detection + hardware identity).
+ctt-station-id.service

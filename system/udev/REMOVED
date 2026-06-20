@@ -1,0 +1,10 @@
+# Files this dir used to deploy and must now be absent on every station.
+# One basename per line (blank lines and #-comments ignored). The OTA
+# install-udev hook (deploy_dir -> apply_removals) removes each on deploy.
+#
+# Add an entry whenever you delete/rename a *.rules file that was previously
+# shipped, so the removal propagates to already-provisioned stations.
+
+# Old VID-based identify-only rule, superseded by the board-gated
+# 78-ctt-radio-driver.rules (which assigns ch<N> + launches the driver).
+78-ctt-radios.rules

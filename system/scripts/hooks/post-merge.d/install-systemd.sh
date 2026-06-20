@@ -70,6 +70,18 @@ for src in "$SRC_DIR"/*.service; do
   install_if_diff "$src" "$DST_DIR/$(basename "$src")"
 done
 
+# Propagate retired units (renamed or removed in source, listed in
+# $SRC_DIR/REMOVED) — disable+stop first so no dangling enablement symlinks are
+# left, then remove the unit file. Without this, a renamed unit (e.g.
+# ctt-station-id.service -> ctt-board-detect.service) would linger and could
+# still be started.
+_systemd_remover() {
+  systemctl disable --now "$2" >/dev/null 2>&1 || true
+  rm -f "$1/$2"
+}
+apply_removals "$SRC_DIR" "$DST_DIR" _systemd_remover
+[ "${REMOVED_COUNT:-0}" -gt 0 ] && CHANGED=1
+
 if [ "$CHANGED" = "1" ]; then
   log_info "reloading systemd"
   systemctl daemon-reload

@@ -40,6 +40,40 @@ require_root() {
   fi
 }
 
+# Default remover used by apply_removals: unlink the file.
+_default_remover() { rm -f "$1/$2"; }
+
+# Propagate intentional file removals/renames to already-provisioned stations.
+# deploy_dir only ever ADDS or UPDATES files, so a file deleted (or renamed) in
+# the repo would otherwise linger forever in /etc on every station that once
+# received it.
+#
+# Declarative fix: a deploy source dir may contain a REMOVED file listing the
+# basenames it used to ship and no longer should (one per line; blank lines and
+# #-comments ignored). On every deploy we ensure each listed file is absent from
+# the destination. This is SAFE — we only ever touch names the project has
+# explicitly retired, never foreign files in the destination — and the retirement
+# is auditable in git diff alongside the deletion that motivated it.
+#
+# Args: $1 src_dir  $2 dst_dir  [$3 remover_fn]   (remover_fn <dst_dir> <basename>)
+# Sets REMOVED_COUNT to the number of files removed.
+apply_removals() {
+  local src_dir="$1" dst_dir="$2" remover="${3:-_default_remover}"
+  local list="$src_dir/REMOVED" f
+  REMOVED_COUNT=0
+  [ -f "$list" ] || return 0
+  while IFS= read -r f; do
+    f="${f%%#*}"                                  # strip trailing #-comment
+    f="$(printf '%s' "$f" | tr -d '[:space:]')"   # trim whitespace
+    [ -n "$f" ] || continue
+    if [ -e "$dst_dir/$f" ] || [ -L "$dst_dir/$f" ]; then
+      "$remover" "$dst_dir" "$f"
+      log_info "removed retired $dst_dir/$f (listed in $src_dir/REMOVED)"
+      REMOVED_COUNT=$((REMOVED_COUNT + 1))
+    fi
+  done < "$list"
+}
+
 # Generic deploy: walk a source dir for files matching $glob, install each
 # to $dst_dir if the destination is missing or content-differs, then run
 # $reload_cmd if anything changed.
@@ -89,6 +123,11 @@ deploy_dir() {
     log_info "installed $dst"
     changed=1
   done
+
+  # Propagate intentional removals/renames (a file deleted from source lingers
+  # otherwise, since the loop above only adds/updates).
+  apply_removals "$src_dir" "$dst_dir"
+  [ "${REMOVED_COUNT:-0}" -gt 0 ] && changed=1
 
   if [ "$changed" = "1" ] && [ -n "$reload_cmd" ]; then
     log_info "reloading via: $reload_cmd"
