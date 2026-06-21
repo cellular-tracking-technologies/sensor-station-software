@@ -17,13 +17,28 @@ find_package(nlohmann_json 3 QUIET)
 # CTT_VERSION. Each tool versions and releases independently — bump a tool's
 # VERSION when its source changes and CI publishes only that tool's release.
 function(ctt_tool name)
-  cmake_parse_arguments(T "" "" "SOURCES" ${ARGN})
+  cmake_parse_arguments(T "" "" "SOURCES;LINK" ${ARGN})
   file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/${name}/VERSION" _ver)
   add_executable(${name} ${T_SOURCES})
   target_include_directories(${name} PRIVATE src/${name})
   target_compile_definitions(${name} PRIVATE CTT_VERSION="${_ver}")
+  if(T_LINK)
+    target_link_libraries(${name} PRIVATE ${T_LINK})
+  endif()
   install(TARGETS ${name} RUNTIME DESTINATION bin)
 endfunction()
+
+# ctthw — shared native hardware library: the I2C bus resource, one driver class
+# per chip, and the board-identity composition. Tools link it instead of
+# re-implementing hardware access; new tools (sensor readers, etc.) reuse it.
+add_library(ctthw STATIC
+  lib/ctthw/i2c/i2c_bus.cpp
+  lib/ctthw/chips/sx1509b.cpp
+  lib/ctthw/chips/at24mac602.cpp
+  lib/ctthw/chips/mcp79412.cpp
+  lib/ctthw/chips/atsha204a.cpp
+  lib/ctthw/board/board_id.cpp)
+target_include_directories(ctthw PUBLIC lib/ctthw)
 
 # ctt-radio-driver — bridges a radio serial port to an AF_UNIX socket. Needs nlohmann/json.
 ctt_tool(ctt-radio-driver
@@ -35,5 +50,6 @@ else()
   target_include_directories(ctt-radio-driver PRIVATE third_party)
 endif()
 
-# ctt-board-detect — boot-time hardware identity over I2C (no external deps).
-ctt_tool(ctt-board-detect SOURCES src/ctt-board-detect/main.cpp)
+# ctt-board-detect — boot-time board detection + hardware identity; thin shell
+# over ctthw (board_id composition + I2C chip drivers).
+ctt_tool(ctt-board-detect SOURCES src/ctt-board-detect/main.cpp LINK ctthw)
