@@ -1,37 +1,39 @@
 import express from 'express'
-import SensorMonitor from '../../hardware/sensors/index.js'
+import fs from 'fs'
+
 const router = express.Router()
 
-let sensor_data = {
-  voltages: {},
-  temperature: {}
+// The analog sensors (ADC rail voltages + board temperature) are now read by the
+// native ctt-sensors daemon, which publishes a snapshot to /run/ctt/sensors.json
+// every few seconds. This route is a thin reader of that file — the hardware-
+// server no longer touches I2C itself. The daemon writes atomically (temp file +
+// rename), so a reader never sees a half-written file.
+const SENSORS_FILE = '/run/ctt/sensors.json'
+
+function readSensors() {
+  try {
+    const data = JSON.parse(fs.readFileSync(SENSORS_FILE, 'utf8'))
+    return {
+      voltages: data.voltages || {},
+      temperature: data.temperature || {},
+    }
+  } catch (err) {
+    // File missing (daemon not up yet) or unreadable — return empties, matching
+    // the old behaviour before the first SensorMonitor reading arrived.
+    return { voltages: {}, temperature: {} }
+  }
 }
 
-try {
-  let Monitor = new SensorMonitor()
-  Monitor.start(5000)
-  Monitor.on('sensor', (data) => {
-    sensor_data.voltages = data.voltages
-    sensor_data.temperature = data.temperature
-  })
-  Monitor.read()
-} catch (err) {
-  console.error(err)
-}
-
-router.get('/voltages', function (req, res, next) {
-  res.json(sensor_data.voltages)
+router.get('/voltages', (req, res) => {
+  res.json(readSensors().voltages)
 })
 
-router.get('/temperature', async (req, res, next) => {
-  await res.json(sensor_data.temperature)
+router.get('/temperature', (req, res) => {
+  res.json(readSensors().temperature)
 })
 
-router.get('/details', (req, res, next) => {
-  res.json({
-    voltages: sensor_data.voltages,
-    temperature: sensor_data.temperature
-  })
+router.get('/details', (req, res) => {
+  res.json(readSensors())
 })
 
 export default router
