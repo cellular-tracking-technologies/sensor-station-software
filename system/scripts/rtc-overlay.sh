@@ -13,7 +13,8 @@ V2_RTC=ds3231
 V3_RTC=mcp7941x
 BOOT_CONFIG="${BOOT_CONFIG:-/boot/config.txt}"
 
-version="$(cat /etc/ctt/station-revision 2>/dev/null || echo 3)"
+[ -r /run/ctt/board.env ] && . /run/ctt/board.env
+version="${CTT_STATION_VERSION:-$(cat /etc/ctt/station-revision 2>/dev/null || echo 3)}"
 if [ "$version" -ge 3 ]; then
   want="$V3_RTC"; other="$V2_RTC"
 else

@@ -31,9 +31,23 @@ namespace {
 volatile std::sig_atomic_t g_stop = 0;
 void onSignal(int) { g_stop = 1; }
 
-// Board version from /etc/ctt/station-revision (ctt-board-detect writes it).
+// Board version: prefer /run/ctt/board.env (ctt-board-detect's authoritative
+// runtime output, CTT_STATION_VERSION); fall back to the persistent
+// /etc/ctt/station-revision, then to V3.
 int readVersion() {
-  FILE *f = std::fopen("/etc/ctt/station-revision", "r");
+  FILE *f = std::fopen("/run/ctt/board.env", "r");
+  if (f) {
+    char line[160];
+    while (std::fgets(line, sizeof(line), f)) {
+      int v;
+      if (std::sscanf(line, "CTT_STATION_VERSION=%d", &v) == 1) {
+        std::fclose(f);
+        return v;
+      }
+    }
+    std::fclose(f);
+  }
+  f = std::fopen("/etc/ctt/station-revision", "r");
   if (!f)
     return 3; // default to V3
   int v = 3;

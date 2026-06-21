@@ -1,6 +1,10 @@
 [Unit]
 Description=start station-hardware-server
-After=network.target
+# After ctt-board-detect so /run/ctt/board.env (the board identity System.Hardware
+# reads) exists before this Node chain starts. The radio/web/lcd units are
+# After=station-hardware-server, so they inherit the ordering.
+After=network.target ctt-board-detect.service
+Wants=ctt-board-detect.service
 
 [Service]
 Type=simple

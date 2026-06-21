@@ -66,10 +66,20 @@ int main(int argc, char **argv) {
 
     ::mkdir("/etc/ctt", 0755);
     ::mkdir("/run/ctt", 0755);
+
+    // /run/ctt/board.env is the authoritative RUNTIME source of board identity:
+    // all fields as env vars, regenerated every boot, sourced by udev + the
+    // services. /etc/ctt/station-* is still written as a persistent, normally-
+    // unread fallback (early-boot / board-detect-failure safety + diagnostics).
+    writeFile("/run/ctt/board.env",
+              "CTT_BOARD=" + id.board + "\n" +
+                  "CTT_STATION_ID=" + id.id + "\n" +
+                  "CTT_STATION_VERSION=" + std::to_string(id.version) + "\n" +
+                  "CTT_STATION_REVISION=" + std::to_string(id.revision) + "\n");
+
     writeFile("/etc/ctt/station-id", id.id);
     writeFile("/etc/ctt/station-revision", std::to_string(id.version));
     writeFile("/etc/ctt/station-board-revision", std::to_string(id.revision));
-    writeFile("/run/ctt/board.env", "CTT_BOARD=" + id.board + "\n");
     return 0;
   } catch (const std::exception &e) {
     std::fprintf(stderr, "ctt-board-detect: %s\n", e.what());
