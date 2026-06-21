@@ -74,4 +74,10 @@ std::vector<uint8_t> I2cBus::readReg(int addr, uint8_t reg, std::size_t n) {
   return buf;
 }
 
+void I2cBus::writeBytes(int addr, const std::vector<uint8_t> &bytes) {
+  setSlave(addr);
+  if (::write(fd_, bytes.data(), bytes.size()) != static_cast<ssize_t>(bytes.size()))
+    fail("i2c raw write");
+}
+
 } // namespace ctthw

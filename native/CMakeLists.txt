@@ -37,7 +37,10 @@ add_library(ctthw STATIC
   lib/ctthw/chips/at24mac602.cpp
   lib/ctthw/chips/mcp79412.cpp
   lib/ctthw/chips/atsha204a.cpp
-  lib/ctthw/board/board_id.cpp)
+  lib/ctthw/chips/max11645.cpp
+  lib/ctthw/chips/tmp411.cpp
+  lib/ctthw/board/board_id.cpp
+  lib/ctthw/board/sensors.cpp)
 target_include_directories(ctthw PUBLIC lib/ctthw)
 
 # ctt-radio-driver — bridges a radio serial port to an AF_UNIX socket. Needs nlohmann/json.
@@ -53,3 +56,6 @@ endif()
 # ctt-board-detect — boot-time board detection + hardware identity; thin shell
 # over ctthw (board_id composition + I2C chip drivers).
 ctt_tool(ctt-board-detect SOURCES src/ctt-board-detect/main.cpp LINK ctthw)
+
+# ctt-sensors — daemon: poll I2C ADC + temp via ctthw, publish /run/ctt/sensors.json.
+ctt_tool(ctt-sensors SOURCES src/ctt-sensors/main.cpp LINK ctthw)

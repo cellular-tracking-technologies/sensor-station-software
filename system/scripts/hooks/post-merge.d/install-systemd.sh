@@ -37,6 +37,7 @@ MUST_BE_ENABLED=(
   ctt-board-detect.service         # boot-time hardware identity; writes /run/ctt/board.env
   ctt-rtc-overlay.service        # match RTC dtoverlay to detected board (early boot)
   ctt-gps-kick.service           # V2 GPS-HAT kick (no-op on V3), after ctt-board-detect
+  ctt-sensors.service            # I2C ADC + temp reader -> /run/ctt/sensors.json
   # ctt-radio-driver@.service is a TEMPLATE — udev activates per-channel instances
   # via ENV{SYSTEMD_WANTS}; it is deployed as a file but must NOT be enabled here.
 )

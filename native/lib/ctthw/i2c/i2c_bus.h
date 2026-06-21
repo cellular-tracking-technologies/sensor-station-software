@@ -34,6 +34,10 @@ public:
   void writeReg(int addr, uint8_t reg, const std::vector<uint8_t> &bytes);
   std::vector<uint8_t> readReg(int addr, uint8_t reg, std::size_t n);
 
+  // Raw write of arbitrary bytes (no register/command prefix). For non-register
+  // chips like the MAX11645 ADC, whose setup/config bytes are written directly.
+  void writeBytes(int addr, const std::vector<uint8_t> &bytes);
+
   // RAII advisory lock over the whole bus for a chip transaction's duration.
   class Lock {
   public:

@@ -1,0 +1,23 @@
+# Reads the station's analog I2C sensors (ADC rail voltages + board temperature)
+# and publishes /run/ctt/sensors.json every few seconds. Replaces the in-process
+# SensorMonitor that ran inside station-hardware-server.
+#
+# Needs the board version (/etc/ctt/station-revision) that ctt-board-detect
+# writes, so it runs after it. The binary is fetched by install-native.sh.
+
+[Unit]
+Description=CTT analog sensor reader (I2C ADC + temperature)
+After=ctt-board-detect.service
+Wants=ctt-board-detect.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ctt-sensors
+Restart=on-failure
+RestartSec=5
+# /run/ctt is shared with board-detect / radio driver; keep it across restarts.
+RuntimeDirectory=ctt
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=multi-user.target
