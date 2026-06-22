@@ -1,0 +1,23 @@
+# Drive the V3 status LEDs (GPS / diag-A / diag-B on the SX1509B expander) from
+# the desired-state file /run/ctt/leds, which the Node app writes. Owns the I2C
+# actuation + blink timing, replacing the in-process SetState() the Node app did
+# on V3. Idles on V2 (those LEDs are GPIO).
+#
+# After ctt-board-detect so the expander is initialized (its LED pins set to
+# outputs) before this drives the data registers. Binary fetched by install-native.sh.
+
+[Unit]
+Description=CTT status LED driver (SX1509B expander)
+After=ctt-board-detect.service
+Wants=ctt-board-detect.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ctt-leds
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=ctt
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=multi-user.target

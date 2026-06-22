@@ -59,3 +59,6 @@ ctt_tool(ctt-board-detect SOURCES src/ctt-board-detect/main.cpp LINK ctthw)
 
 # ctt-sensors — daemon: poll I2C ADC + temp via ctthw, publish /run/ctt/sensors.json.
 ctt_tool(ctt-sensors SOURCES src/ctt-sensors/main.cpp LINK ctthw)
+
+# ctt-leds — daemon: drive the V3 status LEDs on the SX1509B from /run/ctt/leds.
+ctt_tool(ctt-leds SOURCES src/ctt-leds/main.cpp LINK ctthw)

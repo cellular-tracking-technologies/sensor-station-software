@@ -1,11 +1,14 @@
+import fs from 'fs'
 import fetch from 'node-fetch'
-import { SetState } from '../../../hardware/io-expander/expander.js'
 
-const LEDS = {
-  GPS: 0,
-  A: 10,
-  B: 11,
-}
+// V3 status LEDs are now actuated by the native ctt-leds daemon, which drives
+// the SX1509B expander from the desired-state file /run/ctt/leds. This class
+// keeps the decision logic (GPS fix, internet/ppp, alive heartbeat) and just
+// writes that file — no in-process I2C / SetState anymore.
+//
+// File format (one key=value per line; states: on | off | blink[:ms]):
+//   gps=on|off     a=blink     b=on|off
+const LEDS_FILE = '/run/ctt/leds'
 
 class StationLeds {
   constructor() {
@@ -17,28 +20,28 @@ class StationLeds {
     if (!gps_data) {
       return false
     }
-    let now = new Date()
-    let gps_time = new Date(gps_data.time)
-    let delta = now - gps_time
+    let delta = new Date() - new Date(gps_data.time)
     if (delta > this.gps_delay_timeout) {
       return false
     }
-    if (gps_data.mode == 3) {
-      return true
-    }
-    return false
+    return gps_data.mode == 3
   }
 
   async checkInternet() {
     return fetch(this.internet_url)
       .then(res => res.json())
-      .then(json => {
-        if (json.ppp == true) {
-          return true
-        } else {
-          return false
-        }
-      })
+      .then(json => json.ppp == true)
+  }
+
+  // Atomic write (temp + rename) so ctt-leds never reads a half-written file.
+  write(states) {
+    const body = `gps=${states.gps}\na=${states.a}\nb=${states.b}\n`
+    try {
+      fs.writeFileSync(`${LEDS_FILE}.tmp`, body)
+      fs.renameSync(`${LEDS_FILE}.tmp`, LEDS_FILE)
+    } catch (err) {
+      // /run/ctt missing or not writable (e.g. ctt-leds not up yet) — ignore
+    }
   }
 
   async toggleAll(gps) {
@@ -51,20 +54,13 @@ class StationLeds {
       console.error(err)
       internet_status = false
     }
-    let gps_state = gps_status ? 'high' : 'low'
-    let internet_state = internet_status ? 'high' : 'low'
-    let led_state = [{
-      pin: LEDS.GPS,
-      state: gps_state,
-    }, {
-      pin: LEDS.A,
-      state: 'toggle',
-    }, {
-      pin: LEDS.B,
-      state: internet_state
-    }]
-    await SetState(led_state)
-    return
+    // gps: solid on with a 3D fix; a (diag-A): blink = the alive heartbeat the
+    // old code did via per-tick 'toggle'; b (diag-B): on when the PPP link is up.
+    this.write({
+      gps: gps_status ? 'on' : 'off',
+      a: 'blink',
+      b: internet_status ? 'on' : 'off',
+    })
   }
 }
 
