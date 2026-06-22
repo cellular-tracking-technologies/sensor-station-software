@@ -14,7 +14,52 @@ regenerated from these entries.
 
 ## [Unreleased]
 
-_Nothing yet — next changes land here before a version tag._
+_Targeting `2.0.1` — the native hardware/radio layer and a new image path._
+
+**Native hardware/radio layer.** Moves hardware bring-up and direct device I/O
+out of the Node application at boot and into a layer of small compiled C++ tools
+started by systemd/udev. The Node services become consumers of stable file and
+socket contracts under `/run/ctt/`. Drivers ship as versioned, prebuilt armhf
+binaries the station fetches over OTA — stations never compile.
+
+### Added
+
+- **`ctthw` C++ hardware library** — one driver class per chip (I/O expander,
+  ADC, temperature, RTC, board-ID EEPROM, character LCD) over a single
+  `/dev/i2c-1` wrapper with cross-process bus locking, plus board-identity and
+  sensor policy. Shared by all native tools.
+- **Native device tools** —
+  - `ctt-board-detect`: boot-time board detection → `/run/ctt/board.env` (the
+    single runtime identity source) and persistent `/etc/ctt/station-*`.
+  - `ctt-radio-driver@N`: one per 434 MHz receiver, bridging the serial port to
+    `/run/ctt/radios/chN.sock` (NDJSON).
+  - `ctt-sensors`: polls the ADC + temperature → `/run/ctt/sensors.json`.
+  - `ctt-leds`: drives the V3 status LEDs (SX1509B) from `/run/ctt/leds`.
+  - `ctt-lcd`: renders the character LCD (HD44780 via PCF8574) from `/run/ctt/lcd`.
+- **OTA native-binary delivery** — CI publishes a versioned, checksummed armhf
+  binary per tool; the OTA hook fetches and verifies the fleet-pinned version
+  ([system/native/](system/native/)). Per-tool versioning, no lockstep.
+- **`system/migrations/`** — ordered, one-shot migrations applied on OTA, with an
+  initial cellular-path migration.
+
+### Changed
+
+- **`station-radio-interface`** consumes the `ctt-radio-driver` sockets for the
+  434 MHz receivers instead of opening serial ports directly.
+- **`station-hardware-server`** `/sensor` reads `/run/ctt/sensors.json` instead of
+  polling the I2C sensors in-process.
+- **OS configuration consolidated** into [system/](system/) — board-gated radio
+  map, systemd units, and boot scripts relocated into the monorepo to remove
+  drift. OTA hooks propagate file removals/renames via a declarative list.
+
+### Fixed
+
+- **Cellular**: stations no longer auto-dial PPP on the newer modem; migrated
+  images ship with the modem off until enabled.
+- **`station-radio-interface`**: guard a null data-receiver result during line
+  parsing.
+- **Boot**: removed a deadlock path so SIM/APN selection no longer blocks modem
+  startup.
 
 ## [1.8.0] — 2026-06-16
 
