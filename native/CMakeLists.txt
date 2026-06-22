@@ -39,6 +39,7 @@ add_library(ctthw STATIC
   lib/ctthw/chips/atsha204a.cpp
   lib/ctthw/chips/max11645.cpp
   lib/ctthw/chips/tmp411.cpp
+  lib/ctthw/chips/lcd_pcf8574.cpp
   lib/ctthw/board/board_id.cpp
   lib/ctthw/board/sensors.cpp)
 target_include_directories(ctthw PUBLIC lib/ctthw)
@@ -62,3 +63,6 @@ ctt_tool(ctt-sensors SOURCES src/ctt-sensors/main.cpp LINK ctthw)
 
 # ctt-leds — daemon: drive the V3 status LEDs on the SX1509B from /run/ctt/leds.
 ctt_tool(ctt-leds SOURCES src/ctt-leds/main.cpp LINK ctthw)
+
+# ctt-lcd — daemon: render the character LCD (HD44780 via PCF8574) from /run/ctt/lcd.
+ctt_tool(ctt-lcd SOURCES src/ctt-lcd/main.cpp LINK ctthw)

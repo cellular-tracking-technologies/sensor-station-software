@@ -15,6 +15,9 @@ pinned binary on each station (stations never compile).
 |---|---|---|
 | `ctt-radio-driver` | bridge one radio serial port ↔ AF_UNIX socket (gpsd-style, NDJSON) | nlohmann/json |
 | `ctt-board-detect` | boot-time hardware identity (SX1509B/AT24MAC602/DS3231 + hashlet) → `/etc/ctt/*` + `/run/ctt/board.env` | — |
+| `ctt-sensors` | daemon: poll I2C ADC + temperature → `/run/ctt/sensors.json` | — |
+| `ctt-leds` | daemon: drive the V3 status LEDs (SX1509B) from `/run/ctt/leds` | — |
+| `ctt-lcd` | daemon: render the character LCD (HD44780 via PCF8574) from `/run/ctt/lcd` | — |
 
 ## Per-binary versioning
 
