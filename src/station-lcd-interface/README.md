@@ -30,8 +30,10 @@ npm run start-lcd-interface   # node ./src/station-lcd-interface/index.js
 ```
 
 The service expects the hardware HTTP API to be reachable on
-`http://localhost:3000` and the LCD to be present on the I2C bus. With no LCD
-detected, the display driver simply no-ops while the menu logic still runs.
+`http://localhost:3000`. It does not touch the LCD directly — it publishes the
+desired screen to `/run/ctt/lcd`, which the native `ctt-lcd` daemon renders onto
+the panel. If that daemon is not running the menu logic still runs; the frames
+are simply not displayed.
 
 ---
 
@@ -48,8 +50,9 @@ station-lcd-interface/
   button-map.js       maps Up/Down/Select/Back to GPIO pins (V2 vs V3 board)
   station-stats.js    the status screen (custom glyphs + positioned rendering)
   lcd-chars.js        custom HD44780 glyph bitmaps + warning thresholds
-  display-driver.js   high-level LCD wrapper: I2C scan, clear, write rows
-  lcdi2c.js           low-level HD44780-over-PCF8574 driver (I2C, in-process)
+  display-driver.js   high-level LCD wrapper: clear, write rows, position glyphs
+  lcd-framebuffer.js  virtual LCD: composites a framebuffer -> /run/ctt/lcd
+  lcdi2c.js           legacy in-process HD44780/I2C driver (superseded; unused)
   tasks/              one class per menu action (see table below)
 ```
 
@@ -60,9 +63,11 @@ The pieces fall into three groups:
   reacts to button presses.
 - **Tasks** — `tasks/`. Each task is the "view" attached to a leaf menu item.
   It produces the lines to render and, where relevant, performs an action.
-- **Display** — `display-driver.js`, `lcdi2c.js`, `lcd-chars.js`,
-  `station-stats.js`. Turns rows of text (and custom glyphs) into bytes on the
-  LCD.
+- **Display** — `display-driver.js`, `lcd-framebuffer.js`, `lcd-chars.js`,
+  `station-stats.js`. Composites rows of text and custom glyphs into a
+  framebuffer published to `/run/ctt/lcd`; the native `ctt-lcd` daemon renders
+  it onto the panel. (`lcdi2c.js` is the legacy in-process I2C driver, retained
+  but no longer used.)
 
 ---
 
@@ -154,8 +159,9 @@ metric:
 
 The custom glyph bitmaps (5x8 dot matrices for the WiFi, battery, solar, and
 cellular icons, plus the degree symbol) and the alert thresholds live in
-`lcd-chars.js`. They are uploaded to the HD44780's CGRAM via `createChar` before
-each refresh.
+`lcd-chars.js`. They are defined via `createChar` before each refresh; the glyph
+definitions travel in the framebuffer and `ctt-lcd` writes them to the HD44780's
+CGRAM.
 
 The cellular reading is intentionally tolerant: it shows a signal value whenever
 the modem reports one and is in any live state (`connected`, `registered`,
@@ -169,9 +175,9 @@ modem itself.
 
 | Element | Detail |
 |---------|--------|
-| Display | 20x4 HD44780 character LCD on a PCF8574 I2C backpack |
-| I2C address | `0x27` or `0x3f` (auto-detected) |
-| I2C bus | scans bus 0 and bus 1; uses the first backpack found |
+| Display | 20x4 HD44780 character LCD on a PCF8574 I2C backpack, actuated by the native `ctt-lcd` daemon |
+| LCD address | `0x27` or `0x3f` (detected by `ctt-lcd`, not this service) |
+| Display contract | `/run/ctt/lcd` — a fixed framebuffer this service writes and `ctt-lcd` renders |
 | Buttons | four GPIO push-buttons (Up / Down / Select / Back), 50 ms debounce |
 | Data source | hardware HTTP API on `http://127.0.0.1:3000` |
 

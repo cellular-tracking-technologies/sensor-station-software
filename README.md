@@ -92,7 +92,7 @@ about without reading every consumer.
 | `/run/ctt/sensors.json` | `ctt-sensors` (daemon) | hardware-server `/sensor` | JSON snapshot (voltages, temperature) |
 | `/run/ctt/radios/chN.sock` | `ctt-radio-driver@N` | radio-interface | AF_UNIX, NDJSON (one JSON object per line) |
 | `/run/ctt/leds` | radio-interface | `ctt-leds` | `key=value` desired LED state |
-| `/run/ctt/lcd` | lcd-interface | `ctt-lcd` | text lines = desired screen |
+| `/run/ctt/lcd` | lcd-interface | `ctt-lcd` | 144-byte framebuffer (8 CGRAM glyphs + 80 cells) |
 | `/etc/ctt/station-config.json` | web UI / radio-interface | services | JSON (persistent, UI-mutated) |
 | HTTP `127.0.0.1:3000` | hardware-server | radio-interface, lcd-interface, web | REST |
 | WebSocket `:8001` | radio-interface | web dashboard | JSON control + live data |

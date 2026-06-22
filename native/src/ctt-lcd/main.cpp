@@ -1,27 +1,29 @@
-// ctt-lcd — render the station's status screen on the HD44780/PCF8574 character
-// LCD (0x27 or 0x3f) from a desired-text file. The menu/stat/button logic stays
-// in the Node station-lcd-interface, which writes the desired screen to
-// /run/ctt/lcd; this daemon owns the I2C actuation, bringing the LCD under the
-// same ctthw bus-lock discipline as the other native tools — it was the last
-// I2C consumer still opening the bus from Node.
+// ctt-lcd — display server for the HD44780/PCF8574 character LCD (0x27/0x3f).
+// Renders a framebuffer published by the Node station-lcd-interface to
+// /run/ctt/lcd; the menu/stats/button logic stays in Node. Owns the I2C
+// actuation under the shared ctthw bus lock — the LCD was the last I2C consumer
+// still opening the bus from Node.
 //
-// Desired-screen file /run/ctt/lcd: up to <rows> lines of text separated by
-// '\n'. Line N is shown on row N; each line is truncated to <cols>; rows with no
-// line are left blank. Repainted whenever the file's mtime changes.
+// Framebuffer file /run/ctt/lcd: a fixed 144-byte image —
+//   bytes   0..63 : 8 CGRAM glyphs x 8 row-bytes (custom characters 0-7)
+//   bytes 64..143 : 80 character cells, row-major (4 rows x 20 cols).
+//                   Cell value = HD44780 code; 0-7 select a CGRAM glyph.
+// Re-rendered when the file's mtime changes; only changed glyphs and changed
+// rows are pushed to the controller (a glyph redefinition updates every on-
+// screen instance without rewriting cells).
 //
-// The LCD is the same PCF8574 backpack on V2 and V3, so there is no board-version
-// branch here; if no backpack is found the daemon idles.
+// The LCD is the same PCF8574 backpack on V2 and V3, so there is no board-
+// version branch here; if no backpack is found the daemon idles.
 //
 // Flags: --version.
 
 #include <csignal>
-#include <cstddef>
+#include <cstdint>
 #include <cstdio>
-#include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <string>
-#include <vector>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -40,22 +42,30 @@ void onSignal(int) { g_stop = 1; }
 constexpr const char *kStateFile = "/run/ctt/lcd";
 constexpr int kCols = 20;
 constexpr int kRows = 4;
-constexpr int kPollMs = 250;
+constexpr int kGlyphs = 8;
+constexpr int kGlyphBytes = 8;
+constexpr int kCells = kCols * kRows;                       // 80
+constexpr int kFrameBytes = kGlyphs * kGlyphBytes + kCells; // 144
+constexpr int kPollMs = 100;
 
-// Read the desired screen: up to kRows lines from the state file.
-std::vector<std::string> readFrame() {
-  std::vector<std::string> lines;
-  std::ifstream f(kStateFile);
+struct Framebuffer {
+  uint8_t glyph[kGlyphs][kGlyphBytes];
+  uint8_t cell[kRows][kCols];
+};
+
+// Read the 144-byte framebuffer. Returns false if the file is missing or the
+// wrong size — a partial/legacy write is ignored rather than rendered as garbage.
+bool readFrame(Framebuffer &fb) {
+  std::ifstream f(kStateFile, std::ios::binary);
   if (!f)
-    return lines;
-  std::string line;
-  while (lines.size() < static_cast<std::size_t>(kRows) && std::getline(f, line)) {
-    // Tolerate CRLF in case the file was written with carriage returns.
-    if (!line.empty() && line.back() == '\r')
-      line.pop_back();
-    lines.push_back(line);
-  }
-  return lines;
+    return false;
+  uint8_t buf[kFrameBytes];
+  f.read(reinterpret_cast<char *>(buf), kFrameBytes);
+  if (f.gcount() != static_cast<std::streamsize>(kFrameBytes))
+    return false;
+  std::memcpy(fb.glyph, buf, sizeof(fb.glyph));
+  std::memcpy(fb.cell, buf + sizeof(fb.glyph), sizeof(fb.cell));
+  return true;
 }
 
 } // namespace
@@ -92,14 +102,43 @@ int main(int argc, char **argv) {
     ctthw::LcdPcf8574 lcd(bus, addr, kCols, kRows);
     lcd.initialize();
 
-    time_t last_mtime = 0;
-    bool painted = false;
+    // Track what is currently on the controller so we only push diffs.
+    Framebuffer shown;
+    std::memset(&shown, 0, sizeof(shown));
+    bool primed = false; // force a full paint (glyphs + all rows) on first frame
+    // Full nanosecond mtime: comparing only whole seconds (st_mtime) would miss
+    // a second frame written within the same wall-clock second (tmpfs gives
+    // nanosecond resolution, and writers rename a fresh file each time).
+    struct timespec last_mtime = {0, 0};
+
     while (!g_stop) {
       struct stat st;
-      if (::stat(kStateFile, &st) == 0 && (st.st_mtime != last_mtime || !painted)) {
-        last_mtime = st.st_mtime;
-        lcd.renderFrame(readFrame());
-        painted = true;
+      if (::stat(kStateFile, &st) == 0 &&
+          (st.st_mtim.tv_sec != last_mtime.tv_sec ||
+           st.st_mtim.tv_nsec != last_mtime.tv_nsec)) {
+        Framebuffer want;
+        if (readFrame(want)) {
+          last_mtime = st.st_mtim;
+
+          // Re-define only the glyphs that changed (CGRAM is undefined after
+          // power-on, so the first frame defines all of them).
+          for (int g = 0; g < kGlyphs; ++g) {
+            if (!primed ||
+                std::memcmp(want.glyph[g], shown.glyph[g], kGlyphBytes) != 0) {
+              lcd.defineChar(g, want.glyph[g]);
+              std::memcpy(shown.glyph[g], want.glyph[g], kGlyphBytes);
+            }
+          }
+          // Re-write only the rows whose cells changed.
+          for (int r = 0; r < kRows; ++r) {
+            if (!primed || std::memcmp(want.cell[r], shown.cell[r], kCols) != 0) {
+              lcd.setCursor(0, r);
+              lcd.writeCells(want.cell[r], kCols);
+              std::memcpy(shown.cell[r], want.cell[r], kCols);
+            }
+          }
+          primed = true;
+        }
       }
       ::usleep(kPollMs * 1000);
     }

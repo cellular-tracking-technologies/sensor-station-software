@@ -109,7 +109,7 @@ never see the hardware — only these files and sockets.
 | `ctt-radio-driver@N` | Bridge one 434 MHz receiver serial port to a socket (gpsd-style) | Receiver serial line (`/dev/ctt-radio/chN`) + NDJSON commands from socket clients | `/run/ctt/radios/chN.sock` (AF_UNIX, NDJSON — one JSON object per line) |
 | `ctt-sensors` | Daemon: poll the analog sensors and publish a snapshot | I2C ADC (MAX11645) + temperature (TMP411); board version from `board.env`/`station-revision` | `/run/ctt/sensors.json` (voltages + temperature + ISO-8601 timestamp) |
 | `ctt-leds` | Daemon: drive the V3 status LEDs (GPS / diag-A / diag-B); idles on V2 | `/run/ctt/leds` (`key=value`: `gps`/`a`/`b` = `on\|off\|blink\|blink:<ms>`) | SX1509B output registers (the LEDs) |
-| `ctt-lcd` | Daemon: render the front-panel character LCD; idles if no backpack found | `/run/ctt/lcd` (up to 4 lines of desired screen text) | HD44780 LCD over the PCF8574 backpack |
+| `ctt-lcd` | Daemon: render the front-panel character LCD; idles if no backpack found | `/run/ctt/lcd` (fixed 144-byte framebuffer: 8 CGRAM glyphs + 80 character cells) | HD44780 LCD over the PCF8574 backpack |
 
 Notes:
 
@@ -191,7 +191,7 @@ Current state:
 | `ctt-radio-driver` | 0.1.0 | 0.1.0 |
 | `ctt-sensors` | 0.1.0 | 0.1.0 |
 | `ctt-leds` | 0.1.0 | 0.1.0 |
-| `ctt-lcd` | 0.1.0 | 0.1.0 |
+| `ctt-lcd` | 0.2.0 | 0.2.0 |
 
 ---
 

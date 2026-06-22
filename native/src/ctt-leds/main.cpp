@@ -114,14 +114,18 @@ int main(int argc, char **argv) {
     }
 
     Desired desired;
-    time_t last_mtime = 0;
+    // Full nanosecond mtime so two state writes within one wall-clock second
+    // are not collapsed (tmpfs gives nanosecond resolution).
+    struct timespec last_mtime = {0, 0};
     int last_gps = -1, last_a = -1, last_b = -1; // force the first write
     unsigned long long elapsed_ms = 0;
 
     while (!g_stop) {
       struct stat st;
-      if (::stat(kStateFile, &st) == 0 && st.st_mtime != last_mtime) {
-        last_mtime = st.st_mtime;
+      if (::stat(kStateFile, &st) == 0 &&
+          (st.st_mtim.tv_sec != last_mtime.tv_sec ||
+           st.st_mtim.tv_nsec != last_mtime.tv_nsec)) {
+        last_mtime = st.st_mtim;
         desired = readDesired();
       }
 
