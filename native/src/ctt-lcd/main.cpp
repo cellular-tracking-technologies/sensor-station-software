@@ -102,6 +102,22 @@ int main(int argc, char **argv) {
     ctthw::LcdPcf8574 lcd(bus, addr, kCols, kRows);
     lcd.initialize();
 
+    // Boot splash: shown from LCD bring-up until the Node app publishes its
+    // first frame to /run/ctt/lcd. `primed` stays false below, so that first
+    // frame does a full repaint over this.
+    {
+      static const char *splash[kRows] = {" CTT Sensor Station", "",
+                                           "     Loading...", ""};
+      for (int r = 0; r < kRows; ++r) {
+        uint8_t row[kCols];
+        std::memset(row, ' ', sizeof(row));
+        for (int c = 0; c < kCols && splash[r][c]; ++c)
+          row[c] = static_cast<uint8_t>(splash[r][c]);
+        lcd.setCursor(0, r);
+        lcd.writeCells(row, kCols);
+      }
+    }
+
     // Track what is currently on the controller so we only push diffs.
     Framebuffer shown;
     std::memset(&shown, 0, sizeof(shown));
