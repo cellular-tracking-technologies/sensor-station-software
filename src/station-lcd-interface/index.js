@@ -2,6 +2,7 @@
 import MenuItem from "./menu-item.js"
 import MenuManager from "./menu-manager.js"
 import MenuTranslator from './menu-translator.js'
+import display from './display-driver.js'
 
 import { watchButtons } from './button-input.js'
 
@@ -67,5 +68,23 @@ watchButtons({
   select: () => menu.select(),
   back: () => menu.back(),
 })
+
+/*
+    On shutdown (service stop / reboot), repaint the panel so it shows the menu
+    interface is no longer running rather than leaving a stale, live-looking
+    menu behind. The native ctt-lcd daemon keeps rendering frames, so this final
+    frame stays up if only this service stops. On a full reboot ctt-lcd then
+    overwrites it with its own "Shutting down..." splash, which is fine.
+*/
+const shutdown = () => {
+  try {
+    display.writeNow([' CTT Sensor Station', '', '  Interface stopped', ''])
+  } catch (err) {
+    // Best effort — never block exit on the display.
+  }
+  process.exit(0)
+}
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)
 
 

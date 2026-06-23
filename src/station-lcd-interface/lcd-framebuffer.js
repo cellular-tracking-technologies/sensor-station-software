@@ -89,6 +89,17 @@ class LcdFramebuffer {
     }, FLUSH_DELAY_MS)
   }
 
+  // Flush right now, cancelling any pending debounced write. For shutdown paths
+  // where the process exits before the ~50 ms debounce timer would fire.
+  flushNow() {
+    if (this._timer) {
+      clearTimeout(this._timer)
+      this._timer = null
+    }
+    this._flush()
+    return this
+  }
+
   // Serialize to the fixed 144-byte image and write atomically (temp + rename)
   // so the daemon never reads a half-written frame.
   _flush() {

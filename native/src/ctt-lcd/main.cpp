@@ -102,20 +102,27 @@ int main(int argc, char **argv) {
     ctthw::LcdPcf8574 lcd(bus, addr, kCols, kRows);
     lcd.initialize();
 
+    // Paint up to four left-aligned text rows, space-padded to the panel width.
+    // Used for the static boot/shutdown messages; the normal path renders the
+    // Node framebuffer instead.
+    auto paintLines = [&](const char *const lines[kRows]) {
+      for (int r = 0; r < kRows; ++r) {
+        uint8_t row[kCols];
+        std::memset(row, ' ', sizeof(row));
+        for (int c = 0; c < kCols && lines[r] && lines[r][c]; ++c)
+          row[c] = static_cast<uint8_t>(lines[r][c]);
+        lcd.setCursor(0, r);
+        lcd.writeCells(row, kCols);
+      }
+    };
+
     // Boot splash: shown from LCD bring-up until the Node app publishes its
     // first frame to /run/ctt/lcd. `primed` stays false below, so that first
     // frame does a full repaint over this.
     {
-      static const char *splash[kRows] = {" CTT Sensor Station", "",
-                                           "     Loading...", ""};
-      for (int r = 0; r < kRows; ++r) {
-        uint8_t row[kCols];
-        std::memset(row, ' ', sizeof(row));
-        for (int c = 0; c < kCols && splash[r][c]; ++c)
-          row[c] = static_cast<uint8_t>(splash[r][c]);
-        lcd.setCursor(0, r);
-        lcd.writeCells(row, kCols);
-      }
+      static const char *const splash[kRows] = {" CTT Sensor Station", "",
+                                                 "     Loading...", ""};
+      paintLines(splash);
     }
 
     // Track what is currently on the controller so we only push diffs.
@@ -157,6 +164,18 @@ int main(int argc, char **argv) {
         }
       }
       ::usleep(kPollMs * 1000);
+    }
+
+    // Shutdown indicator: on SIGTERM/SIGINT (service stop, reboot, or
+    // poweroff) replace whatever the Node app left on the glass with an
+    // explicit "stopping" message. The HD44780 holds its last image until it
+    // is overwritten or loses power, and a soft reboot does not cut LCD power,
+    // so without this the last live menu sits on screen looking current until
+    // ctt-lcd restarts and repaints the boot splash.
+    {
+      static const char *const bye[kRows] = {" CTT Sensor Station", "",
+                                              "   Shutting down...", ""};
+      paintLines(bye);
     }
     return 0;
   } catch (const std::exception &e) {

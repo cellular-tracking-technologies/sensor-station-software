@@ -75,6 +75,26 @@ class Display {
   }
 
   /**
+   * Renders a static message immediately, cancelling the debounced flush. Used
+   * on shutdown so the panel shows the interface is no longer running instead of
+   * leaving a stale, live-looking menu for the ctt-lcd daemon to keep
+   * displaying. Synchronous so it completes before the process exits.
+   * @param {Array<string>} rows - One string per LCD row (pad with '' for gaps).
+   */
+  writeNow(rows) {
+    if (this.lcd == null) {
+      return
+    }
+    let line = 1
+    this.lcd.clear()
+    rows.forEach(element => {
+      this.writeRow(element, line)
+      line++
+    })
+    this.lcd.flushNow()
+  }
+
+  /**
    * Wrapper around console.log() that can be switched on and off via this.debug_.
    * @param {*} data Information to be printed to the console.
    */
