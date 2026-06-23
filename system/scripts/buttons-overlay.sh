@@ -18,7 +18,8 @@ END='# <<< CTT-BUTTONS'
 # Button -> keycode: Up=KEY_UP(103) Down=KEY_DOWN(108) Select=KEY_ENTER(28) Back=KEY_ESC(1).
 # active_low=0 + gpio_pull=down: the buttons read active-high (a press drives the
 # line high), matching the rising-edge convention the previous GPIO code used.
-# The label= sets the evdev device name so the Node reader can find each button.
+# Each line is a separate gpio-key instance; the kernel names the input device
+# "button@<gpio>" (Phys "gpio-keys/inputN"), which button-input.js matches on.
 v3_block() {
   cat <<'EOF'
 dtoverlay=gpio-key,gpio=17,active_low=0,gpio_pull=down,keycode=103,label=ctt-btn-up
@@ -53,6 +54,10 @@ for line in "${cur[@]}"; do
   out+=("$line")
 done
 out+=("$BEGIN")
+# [all] resets the conditional section: appending at EOF would otherwise inherit
+# a preceding filter (e.g. a trailing [cm4] block) and the overlays would be
+# silently skipped on boards that don't match it.
+out+=("[all]")
 while IFS= read -r b; do out+=("$b"); done <<< "$block"
 out+=("$END")
 

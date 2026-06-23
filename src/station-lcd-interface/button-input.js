@@ -1,14 +1,15 @@
 import fs from 'fs'
 
-// Front-panel buttons are now standard Linux input (evdev) devices created by
-// the kernel gpio-keys driver (see system/scripts/buttons-overlay.sh, which adds
-// the board-gated gpio-key overlays to /boot/config.txt). The kernel owns edge
+// Front-panel buttons are standard Linux input (evdev) devices created by the
+// kernel gpio-keys driver (see system/scripts/buttons-overlay.sh, which adds the
+// board-gated gpio-key overlays to /boot/config.txt). The kernel owns edge
 // detection and debounce; this module just consumes key-press events and maps
 // them to menu actions — no GPIO library, no debounce code.
 //
-// Each button is its own gpio-key instance named (via the overlay `label=`)
-// ctt-btn-up / -down / -select / -back, so we find their event devices by name
-// in /proc/bus/input/devices and read KEY_* presses from each.
+// Each button is its own gpio-key instance: the kernel names the input device
+// "button@<gpio>" with Phys "gpio-keys/inputN" (the overlay `label=` is the key
+// label, not the device name). We find those event devices and read KEY_*
+// presses from each.
 
 // keycode -> menu action. Up=KEY_UP, Down=KEY_DOWN, Select=KEY_ENTER, Back=KEY_ESC.
 const KEYCODE = { 103: 'up', 108: 'down', 28: 'select', 1: 'back' }
@@ -20,9 +21,11 @@ const KEY_PRESS = 1 // value: 1 = press, 0 = release, 2 = autorepeat
 // bytes) + __u16 type + __u16 code + __s32 value = 16 bytes. On a 64-bit kernel
 // this would be 24 bytes — revisit if the fleet moves to arm64.
 const EVENT_SIZE = 16
-const NAME_PREFIX = 'ctt-btn'
 
-// Resolve the /dev/input/eventN paths for our labeled button devices.
+// Resolve the /dev/input/eventN paths for the gpio-keys button devices. They
+// report Phys "gpio-keys/inputN" and names like "button@<gpio>"; either
+// identifies them. Key presses are still gated by the KEYCODE map below, so a
+// stray non-button device matched here would simply never fire an action.
 function findButtonDevices() {
   let txt
   try {
@@ -32,8 +35,9 @@ function findButtonDevices() {
   }
   const paths = []
   for (const block of txt.split('\n\n')) {
+    const phys = (block.match(/^P: Phys=(.*)$/m) || [])[1] || ''
     const name = (block.match(/^N: Name="([^"]*)"/m) || [])[1] || ''
-    if (!name.startsWith(NAME_PREFIX)) {
+    if (!phys.includes('gpio-keys') && !name.startsWith('button@')) {
       continue
     }
     const handlers = (block.match(/^H: Handlers=(.*)$/m) || [])[1] || ''
@@ -57,7 +61,7 @@ export function watchButtons(handlers, { retries = 15, retryMs = 2000 } = {}) {
     if (retries > 0) {
       setTimeout(() => watchButtons(handlers, { retries: retries - 1, retryMs }), retryMs)
     } else {
-      console.error('button-input: no ctt-btn input devices found (gpio-keys overlay applied + booted?)')
+      console.error('button-input: no gpio-keys button devices found (overlay applied + booted?)')
     }
     return
   }
@@ -82,6 +86,6 @@ export function watchButtons(handlers, { retries = 15, retryMs = 2000 } = {}) {
       }
     })
     stream.on('error', err => console.error(`button-input: ${path}: ${err.message}`))
-    console.log(`button-input: watching ${path}`)
+    console.log(`button-input: watching ${path} (gpio-keys)`)
   }
 }
