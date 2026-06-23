@@ -192,7 +192,7 @@ Current state:
 | `ctt-radio-driver` | 0.1.0 | 0.1.0 |
 | `ctt-sensors` | 0.1.0 | 0.1.0 |
 | `ctt-leds` | 0.1.0 | 0.1.0 |
-| `ctt-lcd` | 0.3.0 | 0.3.0 |
+| `ctt-lcd` | 0.4.0 | 0.4.0 |
 | `ctt-radio-flash` | 0.1.0 | 0.1.0 |
 
 ---
