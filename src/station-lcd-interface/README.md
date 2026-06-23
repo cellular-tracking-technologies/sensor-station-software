@@ -41,13 +41,13 @@ are simply not displayed.
 
 ```
 station-lcd-interface/
-  index.js            entry point: builds the menu tree, wires GPIO buttons
+  index.js            entry point: builds the menu tree, wires button input
   menu-manager.js     menu state machine (up / down / select / back), auto-refresh
   menu-item.js        a single menu node (id, optional view/task, children)
   menu-scroller.js    4-line scrolling window over a list of item names
   menu-translator.js  builds the menu tree per language; caches translations
   translated-menus.json   pre-translated menu strings (5 languages)
-  button-map.js       maps Up/Down/Select/Back to GPIO pins (V2 vs V3 board)
+  button-input.js     reads button presses (evdev) from the kernel gpio-keys devices
   station-stats.js    the status screen (custom glyphs + positioned rendering)
   lcd-chars.js        custom HD44780 glyph bitmaps + warning thresholds
   display-driver.js   high-level LCD wrapper: clear, write rows, position glyphs
@@ -178,25 +178,21 @@ modem itself.
 | Display | 20x4 HD44780 character LCD on a PCF8574 I2C backpack, actuated by the native `ctt-lcd` daemon |
 | LCD address | `0x27` or `0x3f` (detected by `ctt-lcd`, not this service) |
 | Display contract | `/run/ctt/lcd` — a fixed framebuffer this service writes and `ctt-lcd` renders |
-| Buttons | four GPIO push-buttons (Up / Down / Select / Back), 50 ms debounce |
+| Buttons | four push-buttons via the kernel `gpio-keys` driver → evdev (Up / Down / Select / Back); kernel handles debounce |
 | Data source | hardware HTTP API on `http://127.0.0.1:3000` |
 
-The button GPIO pins differ between board revisions; `button-map.js` selects the
-V2 or V3 pin set based on the detected hardware version, and `index.js` watches
-each pin (rising edge) via the `onoff` library, calling the matching
-`MenuManager` operation on each press.
+The buttons are standard Linux input (evdev) devices: the kernel `gpio-keys`
+driver — configured by the board-gated overlay in
+[system/scripts/buttons-overlay.sh](../../system/scripts/buttons-overlay.sh)
+(applied via `ctt-buttons-overlay.service`) — owns edge detection and debounce
+and maps each GPIO to a keycode. `button-input.js` reads
+`KEY_UP`/`KEY_DOWN`/`KEY_ENTER`/`KEY_ESC` presses from those devices and calls
+the matching `MenuManager` operation; there is no GPIO library or debounce code
+in this service. The button GPIOs differ by board revision, so the overlay
+selects the V2 or V3 pin set from the detected board version.
 
-`display-driver.js` is the high-level wrapper: on `init()` it runs `i2cdetect`
-on each bus, finds a supported backpack address, and constructs the low-level
-driver. `lcdi2c.js` is a self-contained HD44780-over-PCF8574 driver (derived from
-the `lcdi2c` project) that talks to the LCD synchronously over `i2c-bus`. As the
-code currently stands, **this service drives the LCD in-process over I2C.**
-
-> **Direction of travel:** the repository also ships a native `ctt-lcd` daemon
-> ([system/systemd/ctt-lcd.service](../../system/systemd/ctt-lcd.service)) that
-> renders the same screen from a desired-text file at `/run/ctt/lcd`, bringing
-> LCD actuation under the shared native bus-arbitration layer used by the other
-> on-board devices. The intent is for this Node service to write that file
-> instead of opening I2C directly. That cutover is **not yet in place** in this
-> code — `station-stats.js` and `display-driver.js` still call the in-process
-> driver — so both paths exist in the tree today.
+The LCD is driven the same way — through the OS, not in-process. `display-driver.js`
+composites each screen into a framebuffer (`lcd-framebuffer.js`) and publishes it
+to `/run/ctt/lcd`; the native `ctt-lcd` daemon renders it onto the panel.
+`lcdi2c.js` is the legacy in-process HD44780/I2C driver, retained but no longer
+used.

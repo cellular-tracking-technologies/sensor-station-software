@@ -3,10 +3,7 @@ import MenuItem from "./menu-item.js"
 import MenuManager from "./menu-manager.js"
 import MenuTranslator from './menu-translator.js'
 
-// Tasks
-import GpioMap from '../hardware/pi/gpio-map.js'
-import { Gpio } from 'onoff' // RaspberryPI Gpio functions
-const { Buttons: ButtonMap } = GpioMap
+import { watchButtons } from './button-input.js'
 
 // Require Statements
 
@@ -59,44 +56,16 @@ let menu = new MenuManager(items)
 menu.init()
 
 /*
-    Configure Pi buttons and mount callbacks for when they are pushed.
-    The push callbacks will trigger menu operations corresponding to 
-    the specific buttons pressed. 
-    
-    Note: Debounce is common feature to prevent buttons from being 
-    pressed multiple times in rapid sucession.
+    Front-panel buttons are kernel gpio-keys input devices (see
+    system/scripts/buttons-overlay.sh). watchButtons reads their key-press
+    events and triggers the matching menu operation; the kernel handles edge
+    detection and debounce.
 */
-const button_up = new Gpio(ButtonMap.Up, 'in', 'rising', { debounceTimeout: 50 })
-button_up.watch((err, value) => {
-  if (err) {
-    throw err
-  }
-  menu.up()
-})
-
-const button_down = new Gpio(ButtonMap.Down, 'in', 'rising', { debounceTimeout: 50 })
-button_down.watch((err, value) => {
-  if (err) {
-    throw err
-  }
-  menu.down()
-})
-
-const button_select = new Gpio(ButtonMap.Select, 'in', 'rising', { debounceTimeout: 50 })
-button_select.watch((err, value) => {
-  if (err) {
-    throw err
-  }
-  menu.select()
-})
-
-const button_back = new Gpio(ButtonMap.Back, 'in', 'rising', { debounceTimeout: 50 })
-button_back.watch((err, value) => {
-  if (err) {
-    throw err
-  }
-  menu.back()
-
+watchButtons({
+  up: () => menu.up(),
+  down: () => menu.down(),
+  select: () => menu.select(),
+  back: () => menu.back(),
 })
 
 
