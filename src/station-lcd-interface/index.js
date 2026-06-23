@@ -5,6 +5,7 @@ import MenuTranslator from './menu-translator.js'
 import display from './display-driver.js'
 
 import { watchButtons } from './button-input.js'
+import { watchRadioInterface } from './radio-watch.js'
 
 // Require Statements
 
@@ -86,5 +87,21 @@ const shutdown = () => {
 }
 process.on('SIGTERM', shutdown)
 process.on('SIGINT', shutdown)
+
+/*
+    Surface a front-panel warning if radio acquisition (station-radio-interface)
+    stops for any reason — a crash there otherwise only shows on a status LED,
+    which is easy to miss. The warning re-asserts while the service is down and
+    the menu is redrawn once it recovers.
+*/
+watchRadioInterface({
+  onDown: () => display.writeNow([
+    ' *** RADIO FAULT ***',
+    '',
+    ' Radio interface is',
+    ' not running',
+  ]),
+  onUp: () => menu.update_(),
+})
 
 
