@@ -71,22 +71,14 @@ watchButtons({
 })
 
 /*
-    On shutdown (service stop / reboot), repaint the panel so it shows the menu
-    interface is no longer running rather than leaving a stale, live-looking
-    menu behind. The native ctt-lcd daemon keeps rendering frames, so this final
-    frame stays up if only this service stops. On a full reboot ctt-lcd then
-    overwrites it with its own "Shutting down..." splash, which is fine.
+    No custom SIGTERM/SIGINT handler here: registering one suppresses Node's
+    default terminate-on-signal, and a graceful handler that paints the LCD then
+    calls process.exit() can stall on flushing this (chatty) process's stdout to
+    journald — which made every stop/restart/reboot wait out the stop timeout and
+    then SIGKILL. Letting Node default-terminate makes the service stop instantly,
+    like the other Node units. The reboot "stale menu" case is already handled by
+    the native ctt-lcd daemon, which paints "Shutting down..." on its own SIGTERM.
 */
-const shutdown = () => {
-  try {
-    display.writeNow([' CTT Sensor Station', '', '  Interface stopped', ''])
-  } catch (err) {
-    // Best effort — never block exit on the display.
-  }
-  process.exit(0)
-}
-process.on('SIGTERM', shutdown)
-process.on('SIGINT', shutdown)
 
 /*
     Surface a front-panel warning if radio acquisition (station-radio-interface)
