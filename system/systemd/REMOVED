@@ -9,3 +9,7 @@
 # Renamed to ctt-board-detect.service (the tool now named for what it does:
 # boot-time board detection + hardware identity).
 ctt-station-id.service
+
+# Removed: the V2 GPS-HAT kick. New boards have onboard GPS, so the HAT and its
+# boot-time GPIO pulse are gone; this branch ships only on the new image.
+ctt-gps-kick.service

@@ -1,8 +1,8 @@
 [Unit]
 Description=Station modem/SIM APN selection
-# Runs check-sim-id.sh (modem data-path policy + per-SIM APN). Hardware identity,
-# RTC overlay, and the V2 GPS kick that save-station-id.sh used to do are now
-# owned by ctt-board-detect / ctt-rtc-overlay / ctt-gps-kick (native units).
+# Runs check-sim-id.sh (modem data-path policy + per-SIM APN). Hardware identity
+# and the RTC overlay that save-station-id.sh used to do are now owned by
+# ctt-board-detect / ctt-rtc-overlay (native units).
 # After ModemManager so check-sim-id runs once MM is active and can enumerate the
 # modem. Ordering only (no Requires/Wants): MM is already enabled, and if it ever
 # fails to start, this unit still runs.

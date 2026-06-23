@@ -37,7 +37,6 @@ MUST_BE_ENABLED=(
   ctt-board-detect.service         # boot-time hardware identity; writes /run/ctt/board.env
   ctt-rtc-overlay.service        # match RTC dtoverlay to detected board (early boot)
   ctt-buttons-overlay.service    # match button gpio-key overlays to board (early boot)
-  ctt-gps-kick.service           # V2 GPS-HAT kick (no-op on V3), after ctt-board-detect
   ctt-sensors.service            # I2C ADC + temp reader -> /run/ctt/sensors.json
   ctt-leds.service               # status LED driver (SX1509B) <- /run/ctt/leds
   ctt-lcd.service                # character LCD driver (HD44780/PCF8574) <- /run/ctt/lcd

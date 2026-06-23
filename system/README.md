@@ -51,7 +51,7 @@ All are deployed to `/etc/systemd/system/` by the OTA `install-systemd.sh` hook.
 |------|------|---------|----------------------------------|
 | `ctt-board-detect.service` | oneshot | Reads board ID hardware over I2C; writes `/run/ctt/board.env` + `/etc/ctt/station-*`. Re-runs every boot (plug-n-play compute-module swap). Re-triggers tty udev so radios that enumerated early match. | `local-fs.target` |
 | `ctt-rtc-overlay.service` | oneshot | Ensures `/boot/config.txt` RTC dtoverlay matches the board (ds3231 on V2, mcp7941x on V3); reboots once on mismatch. | `ctt-board-detect`; `Before=time-sync.target chrony` |
-| `ctt-gps-kick.service` | oneshot | Toggles GPIO 27 to kick a V2 GPS HAT; no-op on V3. | `ctt-board-detect` (`Requires=`) |
+| `ctt-buttons-overlay.service` | oneshot | Ensures `/boot/config.txt` button gpio-key overlays match the board (V2/V3 pins); reboots once on change. The kernel then exposes the buttons as evdev input devices. | `ctt-board-detect` (`Requires=`) |
 | `ctt-sensors.service` | simple | Reads I2C ADC rail voltages + board temperature; publishes `/run/ctt/sensors.json`. | `ctt-board-detect` |
 | `ctt-leds.service` | simple | Drives V3 status LEDs (SX1509B expander) from `/run/ctt/leds`. | `ctt-board-detect` |
 | `ctt-lcd.service` | simple | Renders the character LCD (HD44780/PCF8574) from `/run/ctt/lcd`. | `ctt-board-detect` |
@@ -80,7 +80,7 @@ Board identity is produced **first** and consumed by nearly everything after it.
 
 | File | Content | Consumed by |
 |------|---------|-------------|
-| `/run/ctt/board.env` | `CTT_BOARD=v2\|v3r0\|v3r3` (+ `CTT_STATION_VERSION`, revision) | the radio udev rules (`IMPORT{file}`), `boottime_compute.sh`, `gps-kick.sh` |
+| `/run/ctt/board.env` | `CTT_BOARD=v2\|v3r0\|v3r3` (+ `CTT_STATION_VERSION`, revision) | the radio udev rules (`IMPORT{file}`), `boottime_compute.sh`, `buttons-overlay.sh`, `rtc-overlay.sh` |
 | `/etc/ctt/station-id`, `station-revision`, `station-board-revision` | persistent identity (drop-in compatible with the old `initialize.js`) | Node services, boot scripts (fallback when `board.env` is absent) |
 
 Because identity is published before the consumers run, every downstream unit
@@ -206,7 +206,7 @@ only step needed to roll a new native binary to the fleet.
 ## Other scripts
 
 `scripts/` also holds the boot helpers invoked by the units above
-(`boottime_compute.sh`, `gps-kick.sh`, `rtc-overlay.sh`, `check-sim-id.sh`,
+(`boottime_compute.sh`, `rtc-overlay.sh`, `buttons-overlay.sh`, `check-sim-id.sh`,
 `modem-boot-state.sh`), modem on/off and Wi-Fi toggles
 (`enable-modem.sh` / `disable-modem.sh`, `enable-wifi.sh` / `disable-wifi.sh`),
 receiver-firmware flashing (`program-radios.sh`, firmware images in
