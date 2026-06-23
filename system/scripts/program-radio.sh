@@ -1,12 +1,12 @@
 #!/bin/bash
-# Flash one radio MCU. Thin wrapper around the native ctt-radio-flash tool, which
-# does the GPIO-free 1200-baud-touch + avrdude (see native/src/ctt-radio-flash).
-# Exposed as the `program-radio` command (ctt-sensor-build symlink).
+# Flash one radio MCU. Thin wrapper around the native ctt-radio-flash tool
+# (GPIO-free 1200-baud-touch + avrdude). Exposed as the `program-radio` command.
 #
-# Frees the port by stopping the channel's driver; ctt-radio-flash does the
-# touch + flash, and the app's post-flash re-enumeration relaunches the driver
-# via udev (the radio rule matches only the app product id, so the bootloader
-# never grabs the port back). Works for any channel — on-board or USB Feather.
+# Recovery is deterministic: the restore step waits for the flashed MCU to
+# re-enumerate as the app (its /dev/ctt-radio symlink returns) and then starts
+# its driver explicitly, rather than trusting the udev "add" event to relaunch
+# it. Runs on ANY exit (incl. a kill mid-flash: the Caterina bootloader times out
+# back to the app, then the driver is started). `systemctl start` is idempotent.
 #
 # Usage: program-radio <channel> [firmware]
 set -u
@@ -18,11 +18,17 @@ if [ -z "$CH" ]; then
   exit 2
 fi
 
+restore() {
+  for _ in $(seq 1 20); do
+    [ -e "/dev/ctt-radio/ch${CH}" ] && break
+    sleep 1
+  done
+  systemctl start "ctt-radio-driver@ch${CH}.service" 2>/dev/null || true
+}
+trap restore EXIT INT TERM
+
 systemctl stop "ctt-radio-driver@ch${CH}.service" 2>/dev/null || true
 ctt-radio-flash "$CH" "$FW"
 rc=$?
-
-# The flashed MCU re-enumerates as the app; udev relaunches the driver. Nudge it
-# in case the add event was missed.
-udevadm trigger --subsystem-match=tty --action=add 2>/dev/null || true
+# trap restore() waits for the MCU to return and starts its driver.
 exit "$rc"

@@ -1,12 +1,15 @@
 #!/bin/bash
 # Flash all present radio MCUs. Thin orchestrator over the native ctt-radio-flash
-# tool (GPIO-free 1200-baud-touch + avrdude). Universal: covers on-board and USB
-# Feathers alike, since no reset GPIO is involved. Exposed as `program-radios`.
+# tool (GPIO-free 1200-baud-touch + avrdude). Universal: on-board and USB
+# Feathers alike. Exposed as the `program-radios` command.
 #
-# Stops the radio interface and each channel's driver around the flash; the app's
-# post-flash re-enumeration relaunches the drivers via udev (the radio rule
-# matches only the app product id, so the Caterina bootloader can't grab the port
-# back mid-flash). A trap restores the interface + drivers on any exit.
+# Recovery is deterministic: rather than trust the udev "add" event to relaunch a
+# driver after the MCU re-enumerates (that event can be missed), the restore step
+# waits for each flashed radio to come back as the app (its /dev/ctt-radio symlink
+# returns) and then starts its driver explicitly. It runs on ANY exit — including
+# a kill mid-flash, where the Caterina bootloader simply times out back to the app
+# and the driver is then started. `systemctl start` is idempotent, so it is a
+# no-op if udev already relaunched the driver.
 #
 # Usage: program-radios [firmware]
 set -u
@@ -14,15 +17,22 @@ set -u
 FW="${1:-/lib/ctt/sensor-station-software/system/radios/fw/default}"
 log_file="/data/program.log"
 MAX_ATTEMPTS=5
+channels=""
 
 restore() {
-  udevadm trigger --subsystem-match=tty --action=add 2>/dev/null || true
+  for ch in $channels; do
+    # Wait (bounded) for the flashed MCU to re-enumerate as the app.
+    for _ in $(seq 1 20); do
+      [ -e "/dev/ctt-radio/ch${ch}" ] && break
+      sleep 1
+    done
+    systemctl start "ctt-radio-driver@ch${ch}.service" 2>/dev/null || true
+  done
   systemctl start station-radio-interface 2>/dev/null || true
 }
 trap restore EXIT INT TERM
 
 # Discover present radios from their udev symlinks.
-channels=""
 for link in /dev/ctt-radio/ch*; do
   [ -e "$link" ] || continue
   channels="$channels ${link##*/ch}"
@@ -50,5 +60,6 @@ for ch in $channels; do
   fi
 done
 
-# trap restore() relaunches the drivers (via udev) and the radio interface.
-echo "program-radios: done (channels:$channels)"
+# trap restore() waits for each MCU to return, starts its driver, and restarts
+# the radio interface.
+echo "program-radios: flashed channels:$channels — restoring drivers + interface"
