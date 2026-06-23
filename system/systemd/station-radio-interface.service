@@ -5,7 +5,7 @@ After=station-hardware-server.service
 [Service]
 Type=simple
 WorkingDirectory=/lib/ctt/sensor-station-software
-ExecStart=npm run start-radio-interface
+ExecStart=/usr/local/bin/node ./src/station-radio-interface/index.js
 Restart=on-failure
 TimeoutSec=60
 
