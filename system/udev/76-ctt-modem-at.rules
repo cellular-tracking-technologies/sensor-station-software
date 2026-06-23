@@ -10,4 +10,11 @@
 #
 # Telit-VID scoped (1bc7:7020) — Quectel/QMI and every other device is untouched,
 # so non-Telit stations never get the symlink or the service.
-ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTRS{bInterfaceNumber}=="02", SYMLINK+="ctt-modem-at", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ctt-modem-provision.service"
+#
+# Match on the tty's own ID_* properties (set by the usb_id builtin in the
+# earlier 60-serial rules), NOT ATTRS{}: idVendor/idProduct live on the USB
+# device while bInterfaceNumber lives on the interface — different parents, and
+# udev requires all ATTRS{} in one rule to match the SAME parent, so an ATTRS
+# matcher can never match all three. ID_USB_INTERFACE_NUM=="02" selects the AT
+# control port (ModemManager's primary AT port).
+ACTION=="add", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1bc7", ENV{ID_MODEL_ID}=="7020", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="ctt-modem-at", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ctt-modem-provision.service"
