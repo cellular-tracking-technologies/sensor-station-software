@@ -1,24 +1,32 @@
 #pragma once
 
+#include <optional>
+
 #include "chips/max11645.h" // AdcVoltages
 #include "chips/tmp411.h"   // Temperature
 #include "i2c/i2c_bus.h"
 
 namespace ctthw {
 
-// One snapshot of the station's analog sensors (matches the Node SensorMonitor
-// shape: voltages {battery, solar, rtc} + temperature {celsius, fahrenheit}).
+// One best-effort snapshot of the station's analog sensors. Each field is
+// optional and set only if its source chip was read successfully this cycle, so
+// one unavailable device (e.g. the TMP411 not ACKing) leaves just its own fields
+// unset instead of discarding the whole reading. (rtc is not read on V3 — the
+// Node driver hard-coded -1 — so it is not modelled here; the publisher emits
+// the constant.)
 struct SensorReading {
-  double battery = 0;
-  double solar = 0;
-  double rtc = -1; // not read on V3 (the Node driver hard-codes rtc: -1)
-  double celsius = 0;
-  double fahrenheit = 0;
+  std::optional<double> battery;    // MAX11645 AIN1
+  std::optional<double> solar;      // MAX11645 AIN0
+  std::optional<double> celsius;    // TMP411 local
+  std::optional<double> fahrenheit; // TMP411 local
 };
 
 // Read the board's sensors, selecting chips by board version (the policy, in one
-// place — like board_id). V3 = MAX11645 (ADC) + TMP411 (temp). V2 (ADS7924 +
-// TMP102) is not yet ported (datasheet-only) and throws.
+// place — like board_id). V3 = MAX11645 (ADC) + TMP411 (temp). Reads each chip
+// independently and does NOT throw for a per-chip I/O failure — the failed
+// chip's fields are simply left unset, so the caller still gets the others.
+// Throws std::runtime_error only for an unsupported board (V2: ADS7924/TMP102
+// not yet ported).
 SensorReading readSensors(I2cBus &bus, int version);
 
 } // namespace ctthw

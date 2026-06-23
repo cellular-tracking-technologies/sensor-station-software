@@ -66,9 +66,24 @@ std::string nowIso() {
   return buf;
 }
 
+// Serialize one snapshot to the JSON the Node /sensor route expects. Pure (no
+// I/O) so the wire format is unit-testable. The fields are plain doubles — the
+// daemon resolves each to this cycle's reading or the last-known value, so the
+// output is always complete and numeric (rtc is the hard-coded -1, as on V3).
+std::string serializeSensors(double battery, double solar, double celsius,
+                             double fahrenheit, const std::string &iso) {
+  char buf[256];
+  std::snprintf(buf, sizeof(buf),
+                "{\"voltages\":{\"battery\":\"%.2f\",\"solar\":\"%.2f\",\"rtc\":-1},"
+                "\"temperature\":{\"celsius\":%g,\"fahrenheit\":%g},"
+                "\"recorded_at\":\"%s\"}\n",
+                battery, solar, celsius, fahrenheit, iso.c_str());
+  return std::string(buf);
+}
+
 // Atomic publish: write to a temp file then rename over the destination so a
 // reader never sees a half-written file.
-void publish(const ctthw::SensorReading &s) {
+void publish(const std::string &json) {
   ::mkdir("/run/ctt", 0755);
   const char *tmp = "/run/ctt/sensors.json.tmp";
   const char *dst = "/run/ctt/sensors.json";
@@ -77,11 +92,7 @@ void publish(const ctthw::SensorReading &s) {
     std::fprintf(stderr, "ctt-sensors: open %s: %s\n", tmp, std::strerror(errno));
     return;
   }
-  std::fprintf(f,
-               "{\"voltages\":{\"battery\":\"%.2f\",\"solar\":\"%.2f\",\"rtc\":-1},"
-               "\"temperature\":{\"celsius\":%g,\"fahrenheit\":%g},"
-               "\"recorded_at\":\"%s\"}\n",
-               s.battery, s.solar, s.celsius, s.fahrenheit, nowIso().c_str());
+  std::fputs(json.c_str(), f);
   std::fclose(f);
   if (std::rename(tmp, dst) != 0)
     std::fprintf(stderr, "ctt-sensors: rename %s: %s\n", dst, std::strerror(errno));
@@ -107,15 +118,42 @@ int main(int argc, char **argv) {
 
   const int version = readVersion();
 
+  // Last-known-good per field. A chip that fails this cycle keeps its previous
+  // value, so a single unavailable sensor no longer drops the whole snapshot —
+  // the file stays complete and numeric (no wire-format change for the Node
+  // readers / Django checkin).
+  double battery = 0, solar = 0, celsius = 0, fahrenheit = 0;
+
   try {
     ctthw::I2cBus bus; // opened once, reused; flock serializes vs other processes
     do {
       try {
-        ctthw::SensorReading s = ctthw::readSensors(bus, version);
-        publish(s);
-        std::fprintf(stderr, "ctt-sensors: batt=%.2f solar=%.2f temp=%.2fC\n",
-                     s.battery, s.solar, s.celsius);
+        ctthw::SensorReading r = ctthw::readSensors(bus, version);
+        const bool adc_ok = r.battery && r.solar;
+        const bool temp_ok = r.celsius && r.fahrenheit;
+        if (adc_ok) {
+          battery = *r.battery;
+          solar = *r.solar;
+        } else {
+          std::fprintf(stderr, "ctt-sensors: ADC (MAX11645) read failed; "
+                               "keeping last battery/solar\n");
+        }
+        if (temp_ok) {
+          celsius = *r.celsius;
+          fahrenheit = *r.fahrenheit;
+        } else {
+          std::fprintf(stderr, "ctt-sensors: temp (TMP411) read failed; "
+                               "keeping last temperature\n");
+        }
+        // Always publish: the values that read fine are fresh; any failed field
+        // carries its last-known value rather than discarding the snapshot.
+        publish(serializeSensors(battery, solar, celsius, fahrenheit, nowIso()));
+        std::fprintf(stderr, "ctt-sensors: batt=%.2f solar=%.2f temp=%.2fC%s\n",
+                     battery, solar, celsius,
+                     (adc_ok && temp_ok) ? "" : " [partial]");
       } catch (const std::exception &e) {
+        // Unsupported board (V2) or an unexpected error: log and keep the last
+        // published snapshot in place.
         std::fprintf(stderr, "ctt-sensors: read error: %s\n", e.what());
       }
       if (once)
