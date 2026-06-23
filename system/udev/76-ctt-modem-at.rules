@@ -1,0 +1,13 @@
+# CTT: stable symlink for the Telit LE910Q1 (1bc7:7020) AT control port (USB
+# interface 02), and the pre-ModemManager RNDIS provisioner it triggers.
+#
+# ModemManager uses interface 02 as the modem's AT port (signal/registration —
+# and here, the AT#RNDIS NV binding that brings the RNDIS data path up). It
+# floats across /dev/ttyACMx between boots, so we give it a fixed name
+# /dev/ctt-modem-at and start ctt-modem-provision.service when it appears. That
+# oneshot reads AT#RNDIS? and binds the data path only if it is unbound — see
+# system/systemd/ctt-modem-provision.service.
+#
+# Telit-VID scoped (1bc7:7020) — Quectel/QMI and every other device is untouched,
+# so non-Telit stations never get the symlink or the service.
+ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTRS{bInterfaceNumber}=="02", SYMLINK+="ctt-modem-at", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ctt-modem-provision.service"

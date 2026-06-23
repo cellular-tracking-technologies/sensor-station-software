@@ -1,0 +1,21 @@
+# Bind the Telit RNDIS data path before ModemManager grabs the modem.
+#
+# Pulled by udev (system/udev/76-ctt-modem-at.rules) when the Telit AT control
+# port appears, and ordered Before=ModemManager.service so it has the AT port to
+# itself — no ModemManager --debug round-trip, no AT contention. It reads
+# AT#RNDIS? and writes AT#RNDIS=1,0 + reboots the modem ONLY if the data path is
+# unbound; on an already-bound (provisioned) modem it is a fast, read-only no-op.
+# Fails open: any port problem logs and exits 0 so boot proceeds and
+# ModemManager starts normally.
+#
+# Telit-only by construction — the udev rule that starts it is VID-scoped
+# (1bc7:7020), so a Quectel/QMI or modem-less station never pulls this unit.
+# (No [Install]/enable: it is udev-activated, like ctt-radio-driver@.)
+
+[Unit]
+Description=CTT Telit RNDIS provisioning (pre-ModemManager)
+Before=ModemManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ctt-modem-provision

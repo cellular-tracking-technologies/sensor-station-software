@@ -70,3 +70,7 @@ ctt_tool(ctt-lcd SOURCES src/ctt-lcd/main.cpp LINK ctthw)
 # ctt-radio-flash — flash a radio MCU via the 1200-baud-touch Caterina bootloader
 # (GPIO-free); execs avrdude. Pure serial/POSIX, no ctthw.
 ctt_tool(ctt-radio-flash SOURCES src/ctt-radio-flash/main.cpp)
+
+# ctt-modem-provision — bind the Telit RNDIS data path (AT#RNDIS=1,0) on boot if
+# unbound; self-healing, runs Before=ModemManager. Pure serial/POSIX, no ctthw.
+ctt_tool(ctt-modem-provision SOURCES src/ctt-modem-provision/main.cpp)
