@@ -52,7 +52,6 @@ station-lcd-interface/
   lcd-chars.js        custom HD44780 glyph bitmaps + warning thresholds
   display-driver.js   high-level LCD wrapper: clear, write rows, position glyphs
   lcd-framebuffer.js  virtual LCD: composites a framebuffer -> /run/ctt/lcd
-  lcdi2c.js           legacy in-process HD44780/I2C driver (superseded; unused)
   tasks/              one class per menu action (see table below)
 ```
 
@@ -66,8 +65,7 @@ The pieces fall into three groups:
 - **Display** — `display-driver.js`, `lcd-framebuffer.js`, `lcd-chars.js`,
   `station-stats.js`. Composites rows of text and custom glyphs into a
   framebuffer published to `/run/ctt/lcd`; the native `ctt-lcd` daemon renders
-  it onto the panel. (`lcdi2c.js` is the legacy in-process I2C driver, retained
-  but no longer used.)
+  it onto the panel.
 
 ---
 
@@ -194,5 +192,3 @@ selects the V2 or V3 pin set from the detected board version.
 The LCD is driven the same way — through the OS, not in-process. `display-driver.js`
 composites each screen into a framebuffer (`lcd-framebuffer.js`) and publishes it
 to `/run/ctt/lcd`; the native `ctt-lcd` daemon renders it onto the panel.
-`lcdi2c.js` is the legacy in-process HD44780/I2C driver, retained but no longer
-used.

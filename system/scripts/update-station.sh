@@ -60,8 +60,9 @@ sudo bash $dir/system/scripts/hooks/post-merge.sh
 
 sudo sh -c "date -u +'%Y-%m-%d %H:%M:%S' > /etc/ctt/station-software"
 
-# run the initialize script to ensure station files are written from i2c chips
-sudo /usr/local/bin/node /lib/ctt/sensor-station-software/src/hardware/initialize.js
+# Board identity (/etc/ctt/station-* + /run/ctt/board.env) is written at boot by
+# the native ctt-board-detect.service; the old in-process initialize.js step is
+# no longer needed here.
 
 echo '*******************************************'
 echo 'CTT Sensor Station Software Update Complete'
