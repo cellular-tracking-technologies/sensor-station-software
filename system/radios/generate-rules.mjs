@@ -24,12 +24,19 @@ const OUT = join(__dirname, '..', 'udev', '78-ctt-radio-driver.rules')
 const LABELS = { v2: 'V2', v3r0: 'V3 rev 0/1', v3r3: 'V3 rev 2+' }
 const MATCH = 'ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="239a"'
 
+// The radio app firmware enumerates as an Adafruit Feather 32u4 (idProduct 800c).
+// Gate the per-channel rules on that, so the Caterina bootloader (idProduct 000c,
+// which appears during programming) does NOT get a /dev/ctt-radio symlink or
+// relaunch the driver — leaving the port free for ctt-radio-flash / avrdude.
+const APP_PID = '800c'
+
 // The JSON filename (v2 / v3r0 / v3r3) IS the CTT_BOARD value.
 function rule(board, { channel, id_path }) {
   return (
-    `${MATCH}, ENV{CTT_BOARD}=="${board}", ENV{ID_PATH}=="${id_path}", ` +
-    `ENV{CTT_RADIO_CHANNEL}="${channel}", SYMLINK+="ctt-radio/ch${channel}", ` +
-    `TAG+="systemd", ENV{SYSTEMD_WANTS}+="ctt-radio-driver@ch${channel}.service"`
+    `${MATCH}, ATTRS{idProduct}=="${APP_PID}", ENV{CTT_BOARD}=="${board}", ` +
+    `ENV{ID_PATH}=="${id_path}", ENV{CTT_RADIO_CHANNEL}="${channel}", ` +
+    `SYMLINK+="ctt-radio/ch${channel}", TAG+="systemd", ` +
+    `ENV{SYSTEMD_WANTS}+="ctt-radio-driver@ch${channel}.service"`
   )
 }
 

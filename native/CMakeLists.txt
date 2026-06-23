@@ -66,3 +66,7 @@ ctt_tool(ctt-leds SOURCES src/ctt-leds/main.cpp LINK ctthw)
 
 # ctt-lcd — daemon: render the character LCD (HD44780 via PCF8574) from /run/ctt/lcd.
 ctt_tool(ctt-lcd SOURCES src/ctt-lcd/main.cpp LINK ctthw)
+
+# ctt-radio-flash — flash a radio MCU via the 1200-baud-touch Caterina bootloader
+# (GPIO-free); execs avrdude. Pure serial/POSIX, no ctthw.
+ctt_tool(ctt-radio-flash SOURCES src/ctt-radio-flash/main.cpp)

@@ -104,10 +104,13 @@ matters.
 
 - **Radio identification** (`78-ctt-radio-driver.rules`, generated — see below).
   Radios are matched by a positive filter on the Adafruit Feather USB vendor id
-  (`239a`) plus the device's stable `ID_PATH` (physical USB position) and the
-  detected `CTT_BOARD`. A match symlinks the device to `/dev/ctt-radio/ch<N>`,
-  tags it for systemd, and sets `ENV{SYSTEMD_WANTS}=ctt-radio-driver@ch<N>.service`
-  — that is the mechanism by which a receiver plug-in starts its driver instance.
+  (`239a`) and **application product id (`800c`)**, plus the device's stable
+  `ID_PATH` (physical USB position) and the detected `CTT_BOARD`. A match symlinks
+  the device to `/dev/ctt-radio/ch<N>`, tags it for systemd, and sets
+  `ENV{SYSTEMD_WANTS}=ctt-radio-driver@ch<N>.service` — that is the mechanism by
+  which a receiver plug-in starts its driver instance. Gating on the app product
+  id means the Caterina **bootloader** (`000c`, which appears during programming)
+  is ignored, so it never grabs a channel from `ctt-radio-flash`/`avrdude`.
 - **Modem interface handling.** Per-vendor rules ignore or trim modem USB
   interfaces so the modem manager binds only the interfaces it should:
   `23-quectel-modem.rules` keeps the modem manager off non-modem tty interfaces;
