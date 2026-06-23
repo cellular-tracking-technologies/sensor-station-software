@@ -13,3 +13,9 @@ ctt-station-id.service
 # Removed: the V2 GPS-HAT kick. New boards have onboard GPS, so the HAT and its
 # boot-time GPIO pulse are gone; this branch ships only on the new image.
 ctt-gps-kick.service
+
+# Removed: an unused oneshot placeholder (ExecStart=/bin/true) intended to group
+# the ctt-* services so `systemctl stop ctt` would stop them all via PartOf —
+# but nothing was ever wired to it, so it controlled nothing. Dropped until that
+# grouping is actually implemented.
+ctt.service
