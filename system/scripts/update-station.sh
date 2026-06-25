@@ -41,11 +41,29 @@ if [ -d $dir ]; then
   if [ -x "$dir/system/scripts/hooks/pre-merge.sh" ]; then
     sudo bash "$dir/system/scripts/hooks/pre-merge.sh"
   fi
-  git pull
+  # The pull must be authoritative: this script has no `set -e`, so a silent pull
+  # failure (transient network / DNS / GitHub blip) would otherwise let the rest
+  # of the update run against the OLD code and still print "UPDATE COMPLETE" — a
+  # remote station would look updated but not be. Retry transient failures,
+  # use --ff-only (no accidental merge commits / no hang on divergence), and
+  # ABORT loudly + non-zero if it ultimately fails (the EXIT trap restores the
+  # LCD menu). git stash above leaves the tree clean so --ff-only can proceed.
+  before="$(git rev-parse HEAD)"
+  pulled=0
+  for attempt in 1 2 3; do
+    if git pull --ff-only; then pulled=1; break; fi
+    echo "update-station: git pull failed (attempt $attempt/3); retrying in 5s..."
+    sleep 5
+  done
+  if [ "$pulled" != 1 ]; then
+    echo "update-station: ERROR — git pull failed after retries; staying on ${before:0:12}, NOT marking update complete"
+    exit 1
+  fi
   # change permissions to ctt user after pull to be sure all files have same permissions
   sudo chown -R $user_perm $dir
-  # checking if package.json has changed
-  changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)"
+  # checking if package.json has changed (use the captured pre-pull HEAD, not
+  # ORIG_HEAD which a no-op --ff-only pull leaves pointing at a previous merge)
+  changed_files="$(git diff-tree -r --name-only --no-commit-id "$before" HEAD)"
   check_run package.json "npm install"
   # If update-station.sh itself was changed by this pull, re-exec the new
   # version so any newly-added deploy logic (hooks, env vars, etc.) runs in
