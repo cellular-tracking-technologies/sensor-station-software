@@ -61,6 +61,14 @@ if [ -d $dir ]; then
   fi
   # change permissions to ctt user after pull to be sure all files have same permissions
   sudo chown -R $user_perm $dir
+  # Durability barrier: force the freshly-pulled git objects + checked-out files
+  # to disk NOW. ext4 (data=ordered) journals metadata on its ~5s commit but the
+  # file DATA waits in the page cache until writeback; a hard power-cut in that
+  # window lets journal recovery TRUNCATE the just-written files to zero bytes.
+  # We have seen exactly this: an OTA immediately followed by a hard power-off
+  # blanked the whole checkout (and git objects + stash), bricking the node app
+  # on next boot. sync flushes the page cache so the new code survives a cut.
+  sync
   # checking if package.json has changed (use the captured pre-pull HEAD, not
   # ORIG_HEAD which a no-op --ff-only pull leaves pointing at a previous merge)
   changed_files="$(git diff-tree -r --name-only --no-commit-id "$before" HEAD)"
@@ -92,6 +100,12 @@ sudo bash $dir/system/scripts/hooks/post-merge.sh
 
 sudo sh -c "date -u +'%Y-%m-%d %H:%M:%S' > /etc/ctt/station-software"
 
+# Durability barrier (see the sync after the pull): flush the hooks' /etc installs
+# (udev rules, systemd units), any native binaries install-native fetched, and the
+# version stamp to disk before we restart services, so a power-cut right after the
+# update can't zero them on the next boot.
+sync
+
 # Board identity (/etc/ctt/station-* + /run/ctt/board.env) is written at boot by
 # the native ctt-board-detect.service; the old in-process initialize.js step is
 # no longer needed here.
@@ -121,8 +135,11 @@ git stash
 git pull
 sudo chown -R $user_perm $dir
 git config --global --add safe.directory $dir
-changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)" 
+changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)"
 check_run package.json "npm install"
+# Durability barrier (see the sync after the sensor-station-software pull): flush
+# the freshly-pulled sensorgnome code before restarting it.
+sync
 sudo systemctl restart sensorgnome
 
 echo
