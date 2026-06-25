@@ -106,7 +106,7 @@ never see the hardware — only these files and sockets.
 | Tool | Purpose | Reads | Writes |
 |------|---------|-------|--------|
 | `ctt-board-detect` | Boot-time board identity (runs every boot for compute-module plug-n-play) | I2C identity chips (SX1509B straps, AT24MAC602/MCP79412 EUI-64, or ATSHA204A via hashlet) | `/etc/ctt/station-id`, `/etc/ctt/station-revision`, `/etc/ctt/station-board-revision`, and `/run/ctt/board.env` (`CTT_BOARD=v2\|v3r0\|v3r3`) |
-| `ctt-radio-driver@N` | Bridge one 434 MHz receiver serial port to a socket (gpsd-style) | Receiver serial line (`/dev/ctt-radio/chN`) + NDJSON commands from socket clients | `/run/ctt/radios/chN.sock` (AF_UNIX, NDJSON — one JSON object per line) |
+| `ctt-radio-driver@N` | Bridge one receiver serial port to a socket (gpsd-style). The same binary backs both the 434 MHz radios and, instantiated as `ctt-blu-driver@N`, the BluSeries receivers. | Receiver serial line (`/dev/ctt-radio/chN` or `/dev/ctt-blu/chN`) + NDJSON commands from socket clients | `/run/ctt/radios/chN.sock` or `/run/ctt/blu/chN.sock` (AF_UNIX, NDJSON — one JSON object per line) |
 | `ctt-sensors` | Daemon: poll the analog sensors and publish a snapshot | I2C ADC (MAX11645) + temperature (TMP411); board version from `board.env`/`station-revision` | `/run/ctt/sensors.json` (voltages + temperature + ISO-8601 timestamp) |
 | `ctt-leds` | Daemon: drive the V3 status LEDs (GPS / diag-A / diag-B); idles on V2 | `/run/ctt/leds` (`key=value`: `gps`/`a`/`b` = `on\|off\|blink\|blink:<ms>`) | SX1509B output registers (the LEDs) |
 | `ctt-lcd` | Daemon: render the front-panel character LCD; idles if no backpack found. Shows a boot splash until the Node app publishes its first frame. | `/run/ctt/lcd` (fixed 144-byte framebuffer: 8 CGRAM glyphs + 80 character cells) | HD44780 LCD over the PCF8574 backpack |
@@ -122,6 +122,13 @@ Notes:
   symlinks each receiver to `/dev/ctt-radio/chN` and starts the matching
   instance on hotplug. On unplug the serial port returns HUP and the driver
   exits cleanly, so there is no restart loop.
+- The same binary is also deployed as the `ctt-blu-driver@N` template for
+  BluSeries (FTDI) receivers — a separate board-gated udev rule symlinks
+  `/dev/ctt-blu/chN` and serves `/run/ctt/blu/chN.sock`. The BluSeries protocol is
+  newline-delimited JSON, so the driver runs in its default **line** framing and
+  stays a transparent serial↔socket bridge; the protocol logic lives in
+  `station-radio-interface`. No DTR handling is needed — the receiver is
+  USB-powered regardless of DTR (verified on hardware).
 - `ctt-board-detect` runs before the consumers that key off identity, then
   re-fires the radio udev rules so any device that enumerated before identity
   was resolved matches its `CTT_BOARD`-gated rule.
@@ -205,8 +212,8 @@ Current state:
   runs these binaries.
 - `../system/scripts/hooks/` install the pinned binaries from the per-tool
   GitHub releases on OTA.
-- `station-radio-interface` consumes the radio driver's
-  `/run/ctt/radios/*.sock`; `station-hardware-server` reads
+- `station-radio-interface` consumes the radio driver's `/run/ctt/radios/*.sock`
+  and the BluSeries `/run/ctt/blu/*.sock`; `station-hardware-server` reads
   `/run/ctt/sensors.json`; `station-lcd-interface` writes `/run/ctt/lcd`. See
   the repo root [README.md](../README.md) for the full file/socket contract
   table.

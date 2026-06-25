@@ -9,8 +9,8 @@ the image-migration scripts.
 
 Nothing here runs the application logic itself. Instead this layer **deploys**
 the binaries and services, **orders** them at boot, and **wires** the hardware
-contracts (`/run/ctt/*`, `/dev/ctt-radio/*`) that the application layer depends
-on. See the [repo root README](../README.md) for the whole-system overview and
+contracts (`/run/ctt/*`, `/dev/ctt-radio/*`, `/dev/ctt-blu/*`) that the
+application layer depends on. See the [repo root README](../README.md) for the whole-system overview and
 the runtime contracts table.
 
 ---
@@ -22,13 +22,13 @@ system/
 ├── systemd/        systemd unit files (native ctt-* daemons, Node services, boot oneshots)
 │   ├── REMOVED     declarative list of retired units to delete from already-provisioned stations
 │   └── *.service
-├── udev/           device rules: radio identification, modem interface handling
+├── udev/           device rules: radio + BluSeries identification, modem interface handling
 │   ├── REMOVED     declarative list of retired rules to delete on deploy
 │   └── *.rules
-├── radios/         board-gated 434 MHz radio map + udev-rule generator
+├── radios/         board-gated radio + BluSeries port map + udev-rule generator
 │   ├── maps/       per-board {channel, USB id_path} maps (v2.json, v3r0.json, v3r3.json)
 │   ├── fw/         receiver firmware images flashed by program-radios.sh
-│   └── generate-rules.mjs   regenerates udev/78-ctt-radio-driver.rules from maps/
+│   └── generate-rules.mjs   regenerates udev/78-ctt-radio-driver.rules + 78-ctt-blu-driver.rules from maps/
 ├── native/         version pins for the fetched native binaries (<tool>.version)
 ├── scripts/        boot scripts, OTA updater, hooks, modem/SIM/GPS/RTC helpers, cron
 │   └── hooks/      modular OTA hook orchestrator (pre-merge + post-merge drop-ins)
@@ -56,20 +56,20 @@ All are deployed to `/etc/systemd/system/` by the OTA `install-systemd.sh` hook.
 | `ctt-leds.service` | simple | Drives V3 status LEDs (SX1509B expander) from `/run/ctt/leds`. | `ctt-board-detect` |
 | `ctt-lcd.service` | simple | Renders the character LCD (HD44780/PCF8574) from `/run/ctt/lcd`. | `ctt-board-detect` |
 | `ctt-radio-driver@.service` | template | One instance per 434 MHz receiver. Serves `/run/ctt/radios/ch<N>.sock`. Activated per-channel by udev, **not** enabled directly. | `dev-ctt-radio-%i.device` |
+| `ctt-blu-driver@.service` | template | One instance per BluSeries (FTDI) receiver. Same `ctt-radio-driver` binary in its default line framing; serves `/run/ctt/blu/ch<N>.sock`. Activated per-channel by udev, **not** enabled directly. | `dev-ctt-blu-%i.device` |
 | `station-hardware-server.service` | simple | Hardware HTTP API (port 3000). Head of the Node service chain. | `ctt-board-detect` |
-| `station-radio-interface.service` | simple | Radio acquisition + CSV data pipeline + WS control. | `station-hardware-server` |
+| `station-radio-interface.service` | simple | Radio + BluSeries acquisition + CSV data pipeline + WS control. | `station-hardware-server` |
 | `station-web-interface.service` | simple | Local web dashboard (port 80). | `station-hardware-server` |
 | `station-lcd-interface.service` | simple | Front-panel LCD menu + buttons; writes `/run/ctt/lcd`. | `station-hardware-server` |
 | `modem-boot-state.service` | oneshot | Restores last operator modem on/off state before the modem manager scans. | `local-fs.target`, `systemd-udev-settle`; `Before=` modem manager |
 | `station-boot.service` | oneshot | Runs `check-sim-id.sh`: modem data-path policy + per-SIM APN selection. | `network.target`, modem manager |
 | `sensorgnome.service` | simple | Starts the companion Motus/SDR tag-detection process. | `network.target`, `station-boot` |
 | `bootcount.service` | simple | Runs `boottime_compute.sh`: links the board's sensorgnome USB-hub udev rules. | `station-boot` |
-| `ctt.service` | oneshot | Empty grouping target (`ExecStart=/bin/true`) for the CTT service set. | — |
 
 The `install-systemd.sh` hook keeps an internal `MUST_BE_ENABLED` list and
-auto-enables the boot/identity/sensor/LED units on deploy. The radio-driver
-template is deployed as a file but is intentionally never enabled — udev starts
-its instances on demand.
+auto-enables the boot/identity/sensor/LED units on deploy. The `ctt-radio-driver@`
+and `ctt-blu-driver@` templates are deployed as files but are intentionally never
+enabled — udev starts their instances on demand.
 
 ---
 
@@ -85,8 +85,8 @@ Board identity is produced **first** and consumed by nearly everything after it.
 
 Because identity is published before the consumers run, every downstream unit
 declares `After=ctt-board-detect.service`. The runtime daemons then publish their
-own contracts under `/run/ctt/` (`sensors.json`, `radios/ch<N>.sock`, `leds`,
-`lcd`); `/run/ctt` is created and preserved across restarts via `RuntimeDirectory`.
+own contracts under `/run/ctt/` (`sensors.json`, `radios/ch<N>.sock`,
+`blu/ch<N>.sock`, `leds`, `lcd`); `/run/ctt` is created and preserved across restarts via `RuntimeDirectory`.
 The full producer/consumer contract table lives in the [repo root README](../README.md).
 
 A subtlety: USB radios can enumerate before `board.env` exists, so their udev
@@ -111,6 +111,14 @@ matters.
   which a receiver plug-in starts its driver instance. Gating on the app product
   id means the Caterina **bootloader** (`000c`, which appears during programming)
   is ignored, so it never grabs a channel from `ctt-radio-flash`/`avrdude`.
+- **BluSeries identification** (`78-ctt-blu-driver.rules`, generated from the same
+  maps — see below). BluSeries receivers present as an FTDI FT231X (`0403:6015`).
+  They plug into the external USB ports the radio map numbers 6+, and are matched
+  by that vendor/product id, the device's `ID_PATH`, and `CTT_BOARD`; a match
+  symlinks `/dev/ctt-blu/ch<N>` and sets `ENV{SYSTEMD_WANTS}=ctt-blu-driver@ch<N>.service`.
+  Blu channels are renumbered to start at 1 for readability (blu `ch<N>` = the
+  radio map's port `N+5`), so a receiver in the port the radio map calls ch8
+  enumerates as blu ch3.
 - **Modem interface handling.** Per-vendor rules ignore or trim modem USB
   interfaces so the modem manager binds only the interfaces it should:
   `23-quectel-modem.rules` keeps the modem manager off non-modem tty interfaces;
@@ -134,6 +142,16 @@ Field stations update in place. `scripts/update-station.sh` is the entry point:
    run rather than only on the next update.
 4. Run the **post-merge hook orchestrator**, restart the Node services, and
    update sensorgnome.
+
+**Crash durability.** The updater `sync`s after the pull, after the hooks, and
+after the sensorgnome pull, forcing the freshly-written files to durable storage.
+ext4 (`data=ordered`) journals metadata on its ~5 s commit but leaves file *data*
+in the page cache until writeback, so a hard power-off in that window would
+otherwise let journal recovery truncate the just-written files (checkout + git
+objects) to zero bytes — observed once when a station was power-cut immediately
+after an OTA. The post-pull `sync` runs *before* the self-re-exec, so the new
+updater is itself durable before it re-execs. (This does not protect a cut
+*mid-pull*; that would need staged-write + atomic-swap.)
 
 The deploy work is **modular**, not hardcoded into the updater:
 
@@ -193,7 +211,7 @@ tool's pinned version is a bare semver in `native/<tool>.version`:
 | [`native/ctt-sensors.version`](native/) | `/usr/local/bin/ctt-sensors` | `ctt-sensors.service` |
 | [`native/ctt-leds.version`](native/) | `/usr/local/bin/ctt-leds` | `ctt-leds.service` |
 | [`native/ctt-lcd.version`](native/) | `/usr/local/bin/ctt-lcd` | `ctt-lcd.service` |
-| [`native/ctt-radio-driver.version`](native/) | `/usr/local/bin/ctt-radio-driver` | `ctt-radio-driver@.service` |
+| [`native/ctt-radio-driver.version`](native/) | `/usr/local/bin/ctt-radio-driver` | `ctt-radio-driver@.service`, `ctt-blu-driver@.service` |
 
 For pin `X.Y.Z` of `<tool>`, `install-native.sh` downloads the matching prebuilt
 asset from the monorepo's GitHub releases, verifies a published `.sha256` sidecar

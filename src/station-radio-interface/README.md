@@ -8,15 +8,15 @@ keeps the station's persistent configuration, drives the front-panel status
 LEDs, tracks GPS position/time, and posts periodic check-ins to a cloud backend.
 
 Unlike a direct-to-hardware service, this process is a **consumer** of the
-station's native layer: it reaches the 434 MHz receivers through unix-domain
-sockets published by `ctt-radio-driver`, reads/writes small files under
-`/run/ctt/`, and talks to the hardware HTTP API rather than touching shared
+station's native layer: it reaches the 434 MHz and BluSeries receivers through
+unix-domain sockets published by `ctt-radio-driver`, reads/writes small files
+under `/run/ctt/`, and talks to the hardware HTTP API rather than touching shared
 buses itself.
 
 Subsystems it owns:
 
 - **Radio acquisition** — 434 MHz receivers (via `/run/ctt/radios/chN.sock`)
-  plus BluSeries receivers (via USB serial).
+  plus BluSeries receivers (via `/run/ctt/blu/chN.sock`).
 - **Data pipeline** — a set of per-type CSV loggers writing rotating, gzip-
   archived files to local storage.
 - **Control channel** — a WebSocket control/telemetry server on port `8001`.
@@ -50,7 +50,7 @@ behaviour is driven entirely by that config file and by what is present under
 ```
 server/
 ├── base-station.js            orchestrator: wires every subsystem together
-├── blu-base-station.js        BluSeries receiver manager (USB serial)
+├── blu-base-station.js        BluSeries receiver manager (via ctt-blu-driver sockets)
 ├── radio-receiver.js          one 434 MHz receiver: decode + emit beep/raw/fw
 ├── radio-transports.js        byte plumbing: SocketTransport / SerialTransport
 ├── station-config.js          load/save /etc/ctt/station-config.json
@@ -76,10 +76,10 @@ Data flow from antenna to cloud:
 
 ```
    434 MHz receiver                      BluSeries receiver
-        │ (owned by ctt-radio-driver)         │ (USB serial)
+        │ (owned by ctt-radio-driver)         │ (owned by ctt-blu-driver)
         ▼                                      ▼
-  /run/ctt/radios/chN.sock              /dev/serial/by-path/…
-        │ NDJSON lines                         │ serial lines
+  /run/ctt/radios/chN.sock              /run/ctt/blu/chN.sock
+        │ NDJSON lines                         │ NDJSON lines
         ▼                                      ▼
   SocketTransport ──┐                  blu-base-station.js
   SerialTransport ──┤                          │
@@ -108,8 +108,10 @@ in `BaseStation.startTimers()`.
 
 ## Radio acquisition
 
-The station receives from two families of radios, handled by two different
-discovery mechanisms.
+The station receives from two families of radios. Both are now served by native
+`ctt-radio-driver` instances over unix-domain sockets and discovered by the same
+reconciliation mechanism — the 434 MHz radios under `/run/ctt/radios`, the
+BluSeries receivers under `/run/ctt/blu`.
 
 ### 434 MHz receivers (socket reconciliation)
 
@@ -142,15 +144,22 @@ decoder used for direct serial, and translates outbound wire commands
 receiver issues its per-channel preset/config from `config.data.radios` and
 begins polling firmware (every 10 minutes).
 
-### BluSeries receivers (USB serial)
+### BluSeries receivers (socket reconciliation)
 
-BluSeries receivers attach over USB serial and are discovered with a `chokidar`
-watcher on `/dev/serial/by-path/` (`directoryWatcher()`). `isRadio()` walks the
-symlink to the underlying tty and reads `idVendor`/`idProduct` from sysfs,
-positively matching only the FTDI FT231X adapter (`0403:6015`); everything else
-(modem CDC ACM, debug adapters, the Feathers themselves) is skipped. Matched
-ports are handed to `blu-base-station.js`, which manages the per-radio poll
-loop and on/off state.
+BluSeries receivers are FTDI-based and were historically opened directly over USB
+serial. They are now served by the same native driver: a board-gated udev rule
+starts a `ctt-blu-driver@ch<N>` instance per receiver (matched by the FTDI FT231X
+id `0403:6015` at a mapped external USB port), which publishes
+`/run/ctt/blu/ch<N>.sock` in **line** framing. `BaseStation` discovers these with
+the same reconciliation loop as the radios (`bluSocketWatcher()` /
+`reconcileBluSockets()`): every 3 seconds it lists `/run/ctt/blu`, attaching new
+`ch<N>.sock` (`startBluSocket`) and detaching vanished ones (`stopBluSocket`).
+
+Each socket is handed to `blu-base-station.js`, which maps the channel to its
+`config.data.blu_receivers` entry and runs the per-radio poll loop and on/off
+state. The BluSeries protocol layer is unchanged — it still speaks the same
+newline-delimited JSON, now over the driver socket instead of a tty (the driver
+passes each line through verbatim, so no DTR/power handling is needed here).
 
 ### Direct serial fallback
 
@@ -238,9 +247,11 @@ Key sections (see `default-config.js` for the full default):
 | `upload` | per-destination upload toggles |
 | `blu_receivers` | per-receiver BluSeries radio list with `poll_interval` |
 
-On save, dynamically-threaded BluSeries USB paths and per-radio runtime counters
-are stripped before writing; 434 MHz radios are channel-keyed and carry no path.
-Channel-to-path mapping for a given board revision comes from `radio-maps/`.
+On save, per-radio runtime counters are stripped before writing; both the 434 MHz
+radios and the BluSeries receivers are channel-keyed (the driver socket `ch<N>`
+identifies the channel) and carry no device path. The board-revision channel↔USB-
+port map that the udev rules use to assign those channels lives in
+[`system/radios/maps/`](../../system/radios/).
 
 ---
 
@@ -252,9 +263,9 @@ talks to.
 | Interface | Direction | Producer / Consumer | Format |
 |-----------|-----------|---------------------|--------|
 | `/run/ctt/radios/ch<N>.sock` | read | produced by `ctt-radio-driver`; consumed here | AF_UNIX, NDJSON line stream + `cmd` frames |
+| `/run/ctt/blu/ch<N>.sock` | read | produced by `ctt-blu-driver`; consumed here | AF_UNIX, NDJSON line stream + `cmd` frames |
 | `/run/ctt/leds` | write | written here; consumed by the `ctt-leds` daemon | `key=value` per line (`gps`/`a`/`b` = `on`\|`off`\|`blink`), written atomically (temp + rename) |
 | `/etc/ctt/station-config.json` | read/write | shared with the web dashboard | JSON (persistent) |
-| `/dev/serial/by-path/*` | read | OS udev; filtered by VID:PID | symlinks to tty devices (BluSeries discovery) |
 | `/data/` (+ `/data/rotated/`) | write | local storage | rotating + gzip CSV |
 | Hardware HTTP API (`localhost:3000`) | client | `station-hardware-server` | REST — sensor details, modem/PPP, GPS, `about`, upload state, versions |
 | `gpsd` (`localhost:2947`) | client | system `gpsd` | gpsd protocol (TPV/SKY) |

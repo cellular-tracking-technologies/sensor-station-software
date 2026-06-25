@@ -44,6 +44,7 @@ without disturbing hardware state.
    │  ctt-board-detect   → /run/ctt/board.env        (board identity, each boot)        │
    │  ctt-sensors        → /run/ctt/sensors.json      (ADC voltages + temperature)      │
    │  ctt-radio-driver@N → /run/ctt/radios/chN.sock   (one per 434 MHz receiver)         │
+   │  ctt-blu-driver@N   → /run/ctt/blu/chN.sock      (one per BluSeries receiver)        │
    │  ctt-leds           ← /run/ctt/leds              (status LED actuation)             │
    │  ctt-lcd            ← /run/ctt/lcd               (character-LCD actuation)          │
    └───────────────▲───────────────────────────────────────────────▲───────────────────┘
@@ -91,6 +92,7 @@ about without reading every consumer.
 | `/run/ctt/board.env` | `ctt-board-detect` (boot) | services + boot scripts + udev | `KEY=value` (board id, version, revision) |
 | `/run/ctt/sensors.json` | `ctt-sensors` (daemon) | hardware-server `/sensor` | JSON snapshot (voltages, temperature) |
 | `/run/ctt/radios/chN.sock` | `ctt-radio-driver@N` | radio-interface | AF_UNIX, NDJSON (one JSON object per line) |
+| `/run/ctt/blu/chN.sock` | `ctt-blu-driver@N` | radio-interface | AF_UNIX, NDJSON (one JSON object per line) |
 | `/run/ctt/leds` | radio-interface | `ctt-leds` | `key=value` desired LED state |
 | `/run/ctt/lcd` | lcd-interface | `ctt-lcd` | 144-byte framebuffer (8 CGRAM glyphs + 80 cells) |
 | `/etc/ctt/station-config.json` | web UI / radio-interface | services | JSON (persistent, UI-mutated) |
@@ -145,6 +147,7 @@ on-board devices the software interacts with:
 | Subsystem | Device | Interface |
 |-----------|--------|-----------|
 | 434 MHz receivers | Adafruit Feather (ATmega32U4) | USB serial |
+| BluSeries receivers | FTDI FT231X USB-UART (`0403:6015`) | USB serial |
 | Analog sensors (V3) | MAX11645 ADC, TMP411 temperature | I2C |
 | Analog sensors (V2) | ADS7924 ADC, TMP102 temperature | I2C |
 | Status LEDs / straps (V3) | SX1509B I/O expander | I2C |
