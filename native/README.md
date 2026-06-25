@@ -190,7 +190,7 @@ Current state:
 | Tool | Source `VERSION` | Fleet pin (`system/native/`) |
 |------|------------------|------------------------------|
 | `ctt-board-detect` | 0.1.2 | 0.1.1 |
-| `ctt-radio-driver` | 0.1.0 | 0.1.0 |
+| `ctt-radio-driver` | 0.2.0 | 0.2.0 |
 | `ctt-sensors` | 0.2.0 | 0.2.0 |
 | `ctt-leds` | 0.1.0 | 0.1.0 |
 | `ctt-lcd` | 0.4.0 | 0.4.0 |
