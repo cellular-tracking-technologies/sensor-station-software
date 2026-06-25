@@ -56,7 +56,6 @@ server/
 ├── station-config.js          load/save /etc/ctt/station-config.json
 ├── default-config.js          built-in defaults when no config file exists
 ├── gps-client.js              gpsd client (TPV/SKY), mean-fix tracking
-├── radio-maps/                board-revision radio channel <-> path maps (V2/V3)
 ├── http/
 │   ├── web-socket-server.js   control + live-data WebSocket server (:8001)
 │   └── server-api.js          hardware-API polling + cloud health check-in

@@ -1,6 +1,5 @@
 import fs from 'fs'
 import default_config from './default-config.js'
-import RadioMaps from './radio-maps/index.js'
 
 class StationConfig {
   /**
@@ -31,26 +30,15 @@ class StationConfig {
   /**
    * opts.config
    **/
-  threadRadioMapsWithConfig(config) {
-    const { blu_receivers } = config
-
-    // 434 MHz radios are NO LONGER threaded by path here: ctt-radio-driver
-    // assigns the channel via the socket name (/run/ctt/radios/ch<N>.sock), so
-    // base-station attaches by channel directly. config.data.radios stays
-    // channel-keyed ({ channel, config }) — the per-channel preset/mode source.
-    //
-    // Only BluSeries receivers are still matched to a USB path (they remain on
-    // the chokidar /dev/serial/by-path discovery path).
-    if (!blu_receivers) {
+  // Neither radio family is path-mapped any more: ctt-radio-driver and
+  // ctt-blu-driver assign the channel via the socket name
+  // (/run/ctt/{radios,blu}/ch<N>.sock), so base-station attaches by channel
+  // directly and config.data.{radios,blu_receivers} stay channel-keyed. This
+  // just fills in the default BluSeries receiver list when the config omits it.
+  ensureBluReceivers(config) {
+    if (!config.blu_receivers) {
       config.blu_receivers = this.default_config.blu_receivers
     }
-    config.blu_receivers.forEach(radio => {
-      const found_radio = RadioMaps.Blu.find(map_info => radio.channel == map_info.channel)
-      if (found_radio) {
-        // identified the radio in the radio map
-        radio.path = found_radio.path
-      }
-    })
     return config
   }
 
@@ -72,7 +60,7 @@ class StationConfig {
       }
     }
 
-    this.data = this.threadRadioMapsWithConfig(config)
+    this.data = this.ensureBluReceivers(config)
     return this.data
   }
 
@@ -80,18 +68,15 @@ class StationConfig {
    * save config to disk
    */
   save() {
-    // strip dynamically-threaded Blu paths before persisting (re-threaded on
-    // load). 434 radios are channel-keyed and carry no path.
+    // Don't persist transient per-radio runtime handles if any leaked onto the
+    // config. Receivers are channel-keyed and carry no device path.
     let cloned_config = JSON.parse(JSON.stringify(this.data))
 
-    cloned_config.blu_receivers.forEach(receiver => {
-      if (receiver.path) {
-        delete receiver.path
-        receiver.blu_radios.forEach((radio) => {
-          delete radio.beeps
-          delete radio.dropped
-        })
-      }
+    cloned_config.blu_receivers?.forEach(receiver => {
+      receiver.blu_radios?.forEach((radio) => {
+        delete radio.beeps
+        delete radio.dropped
+      })
     })
     let contents = JSON.stringify(cloned_config, null, 2)
     fs.writeFileSync(this.config_filepath, contents)

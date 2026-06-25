@@ -346,7 +346,6 @@ class BluStation {
     setTimeout(() => {
       receiver.destroyed_port = receiver.port
       delete receiver.socket
-      delete receiver.path
       delete receiver.blu_radios
       delete receiver.port
     }, 5000)
@@ -379,31 +378,9 @@ class BluStation {
       delete this.data_manager
       delete this.broadcast
       delete this.sensor_socket_server
-      delete this.path
     } catch (e) {
       console.error('problem with destroying blustation')
     }
-  }
-
-  /**
-   * 
-   * @param {String} port 
-   * @returns {Number} index number
-   */
-  findBluPort(port) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.port === Number(port))
-    return index
-  }
-
-  /**
-   * 
-   * @param {String} path 
-   * @returns {Number} index number
-   */
-  findBluIndex(path) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
-    // console.log('findBluPath index', index)
-    return index
   }
 
   /**
