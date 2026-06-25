@@ -7,8 +7,10 @@
 #include "serial_port.h"
 
 #include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <map>
@@ -61,6 +63,14 @@ std::string nowIso() {
   char buf[32];
   std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tm);
   return buf;
+}
+
+// Monotonic milliseconds — for the systemd watchdog ping cadence (wall-clock
+// jumps from NTP must not affect it).
+long nowMonoMs() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ts.tv_sec * 1000L + ts.tv_nsec / 1000000L;
 }
 
 void logMsg(const char *level, const std::string &msg) {
@@ -128,9 +138,24 @@ public:
     logMsg("info", std::string("ctt-radio-driver ") + CTT_VERSION +
                        " up: serial=" + opt_.serial + " socket=" + opt_.socket);
 
+    // systemd watchdog: if WatchdogSec= is set on the unit, ping WATCHDOG=1 at
+    // half the configured period so a HUNG driver (e.g. a blocking write that
+    // never returns) is detected and killed+restarted — Restart= alone never
+    // catches a hang. No-op when not run under a watchdog (WATCHDOG_USEC unset),
+    // in which case epoll blocks indefinitely as before.
+    setupNotify();
+    long wd_ping_ms = -1;
+    if (const char *usec = std::getenv("WATCHDOG_USEC")) {
+      const long u = std::atol(usec);
+      if (u > 0)
+        wd_ping_ms = (u / 1000) / 2;
+    }
+    long last_ping = nowMonoMs();
+
     epoll_event events[64];
     while (!stop_) {
-      const int n = epoll_wait(epoll_, events, 64, -1);
+      const int timeout = (wd_ping_ms > 0) ? static_cast<int>(wd_ping_ms) : -1;
+      const int n = epoll_wait(epoll_, events, 64, timeout);
       if (n < 0) {
         if (errno == EINTR)
           continue;
@@ -141,10 +166,15 @@ public:
         const int fd = events[i].data.fd;
         const uint32_t ev = events[i].events;
         if (fd == sig_fd_) {
+          clean_stop_ = true; // intended stop (SIGTERM/SIGINT) => exit 0
           stop_ = true;
         } else if (fd == serial_.fd()) {
           if (ev & (EPOLLERR | EPOLLHUP)) {
-            logMsg("warn", "serial error/hup; exiting for systemd restart");
+            // Serial loss is a failure to recover from, not a clean exit: leave
+            // clean_stop_ false so we exit non-zero and Restart=on-failure
+            // relaunches. (A tty glitch that HUPs without a fresh enumeration
+            // would otherwise leave the channel silently down.)
+            logMsg("warn", "serial error/hup; exiting non-zero for restart");
             stop_ = true;
           } else if (ev & EPOLLIN) {
             onSerialReadable();
@@ -155,11 +185,20 @@ public:
           onClientEvent(fd, ev);
         }
       }
+      // Pet the watchdog after servicing events and on every timeout tick.
+      if (wd_ping_ms > 0) {
+        const long now = nowMonoMs();
+        if (now - last_ping >= wd_ping_ms) {
+          sdNotify("WATCHDOG=1");
+          last_ping = now;
+        }
+      }
     }
 
     broadcastBye("shutdown");
-    logMsg("info", "driver down");
-    return 0;
+    logMsg("info", clean_stop_ ? "driver down (clean stop)"
+                               : "driver down (serial failure; will restart)");
+    return clean_stop_ ? 0 : 1;
   }
 
 private:
@@ -286,7 +325,11 @@ private:
       if (line.empty())
         continue;
       json msg = {{"t", "data"}, {"line", line}, {"seq", ++seq_}, {"ts", nowIso()}};
-      broadcast(msg.dump());
+      // error_handler::replace: a serial line with non-UTF-8/binary bytes would
+      // otherwise make dump() THROW (uncaught -> the whole driver crashes). A
+      // remote acquisition daemon must never die on garbage device input — emit
+      // the line with the bad bytes replaced (U+FFFD) instead.
+      broadcast(msg.dump(-1, ' ', false, json::error_handler_t::replace));
     }
     // Guard against an unbounded accumulator if a device never emits '\n'.
     if (serial_in_.size() > (1u << 16))
@@ -433,6 +476,37 @@ private:
     logMsg("info", std::string("client disconnected: ") + reason);
   }
 
+  // systemd notify (raw, no libsystemd dep): open the $NOTIFY_SOCKET datagram
+  // socket so sdNotify() can pet the watchdog. NOTIFY_SOCKET is either a
+  // filesystem path or an abstract socket (leading '@' -> a NUL first byte).
+  void setupNotify() {
+    const char *path = std::getenv("NOTIFY_SOCKET");
+    if (!path || !*path)
+      return;
+    const size_t plen = std::strlen(path);
+    if (plen >= sizeof(notify_addr_.sun_path))
+      return;
+    notify_fd_ = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+    if (notify_fd_ < 0)
+      return;
+    std::memset(&notify_addr_, 0, sizeof(notify_addr_));
+    notify_addr_.sun_family = AF_UNIX;
+    if (path[0] == '@') { // abstract namespace
+      std::memcpy(notify_addr_.sun_path + 1, path + 1, plen - 1);
+      notify_addr_len_ = offsetof(struct sockaddr_un, sun_path) + plen;
+    } else {
+      std::memcpy(notify_addr_.sun_path, path, plen);
+      notify_addr_len_ = offsetof(struct sockaddr_un, sun_path) + plen + 1;
+    }
+  }
+
+  void sdNotify(const char *state) {
+    if (notify_fd_ < 0)
+      return;
+    ::sendto(notify_fd_, state, std::strlen(state), MSG_NOSIGNAL,
+             reinterpret_cast<sockaddr *>(&notify_addr_), notify_addr_len_);
+  }
+
   void cleanup() {
     for (auto &kv : clients_)
       ::close(kv.first);
@@ -443,6 +517,8 @@ private:
       ::close(sig_fd_);
     if (listen_fd_ >= 0)
       ::close(listen_fd_);
+    if (notify_fd_ >= 0)
+      ::close(notify_fd_);
     if (bound_)
       ::unlink(opt_.socket.c_str());
   }
@@ -454,6 +530,10 @@ private:
   int sig_fd_ = -1;
   bool bound_ = false;
   bool stop_ = false;
+  bool clean_stop_ = false; // true => intended stop (signal) => exit 0
+  int notify_fd_ = -1;
+  struct sockaddr_un notify_addr_ {};
+  socklen_t notify_addr_len_ = 0;
   uint64_t seq_ = 0;
   std::string serial_in_;
   std::map<int, Client> clients_;
