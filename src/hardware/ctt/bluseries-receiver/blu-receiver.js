@@ -16,7 +16,7 @@ class BluReceiver extends EventEmitter {
   constructor(opts) {
     super()
     this.#data = {
-      io: new BluReceiverIo({ path: opts.path }),
+      io: new BluReceiverIo({ path: opts.path, socket: opts.socket }),
       queue: [],
       processing: false,
       connected: false
@@ -27,9 +27,10 @@ class BluReceiver extends EventEmitter {
       this.run_schedule()
     })
     this.#data.io.on('close', () => {
-
       this.#data.connected = false
-      // process.exit(0) // shuts down program if usb adapter is removed
+      // Re-emit so the station can detach/re-attach this receiver (e.g. when the
+      // ctt-blu-driver socket closes on a driver restart).
+      this.emit('close')
     })
 
     console.log('blu receiver opts', opts)

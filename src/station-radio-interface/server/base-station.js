@@ -38,6 +38,11 @@ const RADIO_VID_PIDS = new Set([
 // Directory where each ctt-radio-driver@ch<N> instance serves its socket.
 const RADIO_SOCKET_DIR = '/run/ctt/radios'
 
+// Directory where each ctt-blu-driver@ch<N> instance serves its socket. Same
+// gpsd-style transport as the radios; the BluSeries protocol layer (BluStation)
+// consumes the socket in place of a direct serial port.
+const BLU_SOCKET_DIR = '/run/ctt/blu'
+
 /**
  * manager class for controlling / reading radios
  * and writing to disk
@@ -52,6 +57,7 @@ class BaseStation {
     this.blu_station
     this.blu_receivers = []
     this.active_radios = {}
+    this.active_blu = {}
     this.station_leds = new StationLeds()
     this.gps_client = new GpsClient({
       max_gps_records: 50
@@ -136,7 +142,9 @@ class BaseStation {
       config: this.config,
     })
     this.blu_station.startBluWebsocketServer()
-    await this.directoryWatcher()
+    // BluSeries receivers are discovered via ctt-blu-driver sockets (mirrors the
+    // radios), not the legacy chokidar /dev/serial/by-path watcher.
+    await this.bluSocketWatcher()
     await this.radioSocketWatcher()
     this.startTimers()
   }
@@ -764,6 +772,118 @@ class BaseStation {
       beep_reader.destroy()   // sets restart_on_close=false, closes transport
       delete this.active_radios[channel]
     }
+  }
+
+  /**
+   * Discover ctt-blu-driver sockets the same way as the radios: reconcile the
+   * /run/ctt/blu directory against the attached BluSeries receivers on a timer.
+   * Robust to missed events and to a driver that first appears after startup.
+   */
+  async bluSocketWatcher() {
+    await this.reconcileBluSockets()
+    this.blu_socket_timer = setInterval(() => {
+      this.reconcileBluSockets().catch((err) => {
+        console.error('blu socket reconcile error', err)
+      })
+    }, 3000)
+  }
+
+  /**
+   * One reconcile pass: attach Blu sockets that appeared, detach receivers whose
+   * socket vanished. Idempotent.
+   */
+  async reconcileBluSockets() {
+    const present = {}
+    try {
+      const entries = await fs.promises.readdir(BLU_SOCKET_DIR)
+      entries.forEach((f) => {
+        const m = f.match(/^ch(\d+)\.sock$/)
+        if (m) present[parseInt(m[1], 10)] = path.join(BLU_SOCKET_DIR, f)
+      })
+    } catch (err) {
+      // dir absent until the first blu driver starts — treat as no sockets.
+    }
+    Object.keys(present).forEach((channel) => {
+      if (!this.active_blu[channel]) this.startBluSocket(present[channel])
+    })
+    Object.keys(this.active_blu).forEach((channel) => {
+      if (!(channel in present)) {
+        this.stopBluSocket(path.join(BLU_SOCKET_DIR, `ch${channel}.sock`))
+      }
+    })
+  }
+
+  /**
+   * Parse the channel from a /run/ctt/blu/ch<N>.sock path.
+   * @returns {Number|null}
+   */
+  channelFromBluSocket(socket_path) {
+    const m = path.basename(socket_path).match(/^ch(\d+)\.sock$/)
+    return m ? parseInt(m[1], 10) : null
+  }
+
+  /**
+   * Attach a BluSeries receiver to a driver socket. The channel comes from the
+   * socket name; BluStation pulls the per-receiver radio config (blu_radios) from
+   * config.data.blu_receivers keyed by that channel.
+   *
+   * @param {String} socket_path full /run/ctt/blu/ch<N>.sock path
+   */
+  async startBluSocket(socket_path) {
+    const channel = this.channelFromBluSocket(socket_path)
+    if (channel === null) {
+      console.log('ignoring non-channel blu socket', socket_path)
+      return
+    }
+    if (this.active_blu[channel]) return
+    this.stationLog(`attaching blu socket ch${channel}`)
+    // Mark active before the (async) attach so a concurrent reconcile tick does
+    // not double-attach.
+    this.active_blu[channel] = true
+    let receiver
+    try {
+      receiver = await this.blu_station.startBluRadios(socket_path, channel)
+    } catch (e) {
+      console.error(`blu socket attach error ch${channel}`, e)
+      delete this.active_blu[channel]
+      this.blu_station.removeReceiver(channel).catch(() => {})
+      return
+    }
+    if (!receiver) {
+      // no config for this channel — release the slot
+      delete this.active_blu[channel]
+      return
+    }
+    // Persist each radio's on-state in config (mirrors the legacy attach path).
+    receiver.blu_radios.forEach((radio) => {
+      this.toggleBluState({
+        receiver_channel: channel,
+        blu_radio_channel: radio.radio,
+        poll_interval: radio.poll_interval,
+        radio_state: BluLeds.state.on,
+      })
+    })
+    // On transport close (e.g. an in-place driver restart that recreates the
+    // socket faster than a reconcile tick) drop tracking so the next reconcile
+    // attaches a fresh receiver.
+    receiver.on('close', () => {
+      this.stationLog(`blu socket closed ch${channel}`)
+      delete this.active_blu[channel]
+      this.blu_station.removeReceiver(channel).catch((e) => console.error('blu remove error', e))
+    })
+  }
+
+  /**
+   * Detach the BluSeries receiver for a vanished driver socket.
+   * @param {String} socket_path full /run/ctt/blu/ch<N>.sock path
+   */
+  stopBluSocket(socket_path) {
+    const channel = this.channelFromBluSocket(socket_path)
+    if (channel === null) return
+    if (!this.active_blu[channel]) return
+    this.stationLog(`detaching blu socket ch${channel}`)
+    delete this.active_blu[channel]
+    this.blu_station.removeReceiver(channel).catch((e) => console.error('blu remove error', e))
   }
 
   /**

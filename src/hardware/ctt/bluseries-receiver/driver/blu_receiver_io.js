@@ -31,10 +31,12 @@ class BluReceiverIo extends EventEmitter {
     this.#data = {
       detections: [],
       dfu: new DfuManager(),
-      usb: new SerialClient({
-        path: opts.path,
-        baud: 230400,
-      }),
+      // Transport: a ctt-radio-driver line-mode socket when given, else a direct
+      // serial port. Over the socket the driver owns the tty (and DTR), so
+      // power_on()/power_off() below become no-ops — see SerialClient.
+      usb: new SerialClient(opts.socket
+        ? { socket: opts.socket }
+        : { path: opts.path, baud: 230400 }),
       timeout: null
     }
 
