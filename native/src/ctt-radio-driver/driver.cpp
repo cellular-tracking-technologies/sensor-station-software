@@ -1,8 +1,19 @@
-// ctt-radio-driver — bridges one radio receiver serial port to an AF_UNIX
-// socket (gpsd-style). v1 is a thin byte-pipe: serial lines are wrapped in an
-// NDJSON envelope and broadcast to connected clients; NDJSON commands from
-// clients are unwrapped and written to the serial port. Protocol parsing moves
-// into the driver in a later step.
+// ctt-radio-driver — bridges one receiver serial port to an AF_UNIX socket
+// (gpsd-style). Two framing modes (--framing), one binary serves both device
+// classes:
+//
+//   line (default — 434 MHz radios): the serial stream is split on '\n' and each
+//     line is wrapped in an NDJSON envelope to clients; NDJSON {op:...} commands
+//     from clients are unwrapped and written to the serial port. LOSSY under
+//     backpressure (a real-time beep stream prefers fresh data over complete).
+//
+//   raw (Blu receivers): a transparent, bidirectional BYTE pipe — serial bytes
+//     go to the client verbatim and client bytes go to the serial verbatim (no
+//     line splitting, no JSON envelope, no hello/bye). The binary, polled,
+//     request/response Blu protocol stays entirely in the JS client, which just
+//     does socket I/O instead of opening the tty. RELIABLE (non-lossy): on
+//     client backpressure the driver PAUSES serial reads rather than dropping
+//     bytes — request/response and firmware DFU cannot tolerate loss.
 
 #include "serial_port.h"
 
@@ -54,6 +65,7 @@ struct Options {
   std::string id = "radio";
   std::string dev_class = "ctt-radio";
   int baud = 115200;
+  bool raw = false; // --framing raw: transparent byte pipe (Blu); default line
 };
 
 std::string nowIso() {
@@ -105,6 +117,18 @@ bool parseArgs(int argc, char **argv, Options &opt) {
       if (!next(b))
         return false;
       opt.baud = std::atoi(b.c_str());
+    } else if (a == "--framing") {
+      std::string f;
+      if (!next(f))
+        return false;
+      if (f == "raw")
+        opt.raw = true;
+      else if (f == "line")
+        opt.raw = false;
+      else {
+        logMsg("error", "unknown --framing (want line|raw): " + f);
+        return false;
+      }
     } else {
       logMsg("error", "unknown argument: " + a);
       return false;
@@ -283,8 +307,10 @@ private:
       c.fd = cfd;
       clients_.emplace(cfd, std::move(c));
       epollAdd(cfd, EPOLLIN);
-      sendHello(cfd);
+      if (!opt_.raw)
+        sendHello(cfd); // raw is a byte pipe — no JSON hello into the stream
       logMsg("info", "client connected");
+      maybeResumeSerial(); // a fresh (empty) client lets serial resume if paused
     }
   }
 
@@ -299,10 +325,16 @@ private:
     for (;;) {
       const ssize_t n = serial_.readAvailable(buf, sizeof(buf));
       if (n > 0) {
-        serial_in_.append(buf, static_cast<size_t>(n));
-        drainSerialLines();
+        if (opt_.raw) {
+          broadcastRaw(buf, static_cast<size_t>(n)); // verbatim, no framing
+        } else {
+          serial_in_.append(buf, static_cast<size_t>(n));
+          drainSerialLines();
+        }
         if (static_cast<size_t>(n) < sizeof(buf))
-          break; // drained the socket buffer for now
+          break;            // drained the kernel buffer for now
+        if (serial_paused_) // raw backpressure: stop reading until client drains
+          break;
       } else if (n == 0) {
         break; // EAGAIN
       } else {
@@ -355,7 +387,14 @@ private:
     for (;;) {
       const ssize_t n = ::read(c.fd, buf, sizeof(buf));
       if (n > 0) {
-        c.in.append(buf, static_cast<size_t>(n));
+        if (opt_.raw) {
+          // Transparent: client bytes go straight to the serial port verbatim.
+          if (!serial_.writeAll(buf, static_cast<size_t>(n)))
+            logMsg("warn", std::string("raw: serial write failed: ") +
+                               std::strerror(errno));
+        } else {
+          c.in.append(buf, static_cast<size_t>(n));
+        }
         if (static_cast<size_t>(n) < sizeof(buf))
           break;
       } else if (n == 0) {
@@ -370,6 +409,8 @@ private:
         return;
       }
     }
+    if (opt_.raw)
+      return; // no line framing / command parsing in raw mode
     size_t pos;
     while ((pos = c.in.find('\n')) != std::string::npos) {
       std::string line = c.in.substr(0, pos);
@@ -417,7 +458,57 @@ private:
       enqueue(kv.first, payload);
   }
 
+  // Raw mode: enqueue verbatim bytes to every client (no framing). Reliable —
+  // never drops; instead pauses serial reads when a client backs up.
+  void broadcastRaw(const char *data, size_t len) {
+    for (auto &kv : clients_)
+      enqueueRaw(kv.first, data, len);
+  }
+
+  void enqueueRaw(int fd, const char *data, size_t len) {
+    auto it = clients_.find(fd);
+    if (it == clients_.end())
+      return;
+    Client &c = it->second;
+    c.out.append(data, len); // reliable: never drop request/response or DFU bytes
+    if (!serial_paused_ && c.out.size() > kClientOutCap)
+      pauseSerial(); // backpressure the device rather than drop
+    flushClient(c);
+  }
+
+  // Pause/resume serial reads for raw backpressure. epoll still reports
+  // EPOLLHUP/EPOLLERR even with an empty event mask, so serial loss is still
+  // detected while paused.
+  void pauseSerial() {
+    if (serial_paused_)
+      return;
+    epollMod(serial_.fd(), 0);
+    serial_paused_ = true;
+    logMsg("warn", "raw: client backpressure — pausing serial reads");
+  }
+  void resumeSerial() {
+    if (!serial_paused_)
+      return;
+    epollMod(serial_.fd(), EPOLLIN);
+    serial_paused_ = false;
+    logMsg("info", "raw: client drained — resuming serial reads");
+  }
+
+  // Resume serial reads if paused and no client is still backed up (or none
+  // remain). Called when a client drains, disconnects, or connects, so the
+  // driver can't wedge with serial paused after the backed-up client is gone.
+  void maybeResumeSerial() {
+    if (!serial_paused_)
+      return;
+    for (auto &kv : clients_)
+      if (kv.second.out.size() >= kClientOutCap / 2)
+        return;
+    resumeSerial();
+  }
+
   void broadcastBye(const char *reason) {
+    if (opt_.raw)
+      return; // raw is a byte pipe — no JSON bye into the stream
     json msg = {{"t", "bye"}, {"reason", reason}};
     broadcast(msg.dump());
     for (auto &kv : clients_)
@@ -464,6 +555,7 @@ private:
         events |= EPOLLOUT;
       epollMod(c.fd, events);
     }
+    maybeResumeSerial(); // raw: unpause serial once backpressure clears
   }
 
   void dropClient(int fd, const char *reason) {
@@ -474,6 +566,7 @@ private:
     ::close(fd);
     clients_.erase(it);
     logMsg("info", std::string("client disconnected: ") + reason);
+    maybeResumeSerial(); // a backed-up client leaving must not leave serial paused
   }
 
   // systemd notify (raw, no libsystemd dep): open the $NOTIFY_SOCKET datagram
@@ -530,7 +623,8 @@ private:
   int sig_fd_ = -1;
   bool bound_ = false;
   bool stop_ = false;
-  bool clean_stop_ = false; // true => intended stop (signal) => exit 0
+  bool clean_stop_ = false;    // true => intended stop (signal) => exit 0
+  bool serial_paused_ = false; // raw mode: serial reads paused for backpressure
   int notify_fd_ = -1;
   struct sockaddr_un notify_addr_ {};
   socklen_t notify_addr_len_ = 0;
@@ -552,7 +646,7 @@ int main(int argc, char **argv) {
   if (!parseArgs(argc, argv, opt)) {
     std::fprintf(stderr,
                  "usage: ctt-radio-driver --serial PATH --socket PATH "
-                 "[--baud N] [--id STR] [--class STR]\n");
+                 "[--baud N] [--id STR] [--class STR] [--framing line|raw]\n");
     return 2;
   }
   Driver driver(std::move(opt));
