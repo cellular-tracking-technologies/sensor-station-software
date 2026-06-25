@@ -43,8 +43,10 @@ post_install() {
   local tool="$1"
   case "$tool" in
     ctt-radio-driver)
+      # The same binary backs both the 434 radio instances (ctt-radio-driver@*)
+      # and the BluSeries instances (ctt-blu-driver@*), so restart both families.
       local units
-      units="$(systemctl list-units --state=running 'ctt-radio-driver@*' \
+      units="$(systemctl list-units --state=running 'ctt-radio-driver@*' 'ctt-blu-driver@*' \
                  --no-legend 2>/dev/null | awk '{print $1}')"
       if [ -n "$units" ]; then
         log_info "restarting $units"
