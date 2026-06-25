@@ -10,6 +10,20 @@ check_run() {
 }
 
 dir="$home/sensor-station-software"
+
+# Front-panel LCD: show an "Updating" splash for the whole update, then restore
+# the menu when we exit. station-lcd-interface is stopped so it won't repaint the
+# menu over the splash; the native ctt-lcd daemon keeps rendering the framebuffer
+# we write. The EXIT trap restores the menu on ANY exit (success, error, or a
+# Ctrl-C), so the panel never gets stuck on "Updating". lcd-message.sh ships in
+# this repo, so the splash is a harmless no-op on the first update that adds it.
+lcd_msg="$dir/system/scripts/lcd-message.sh"
+if [ -x "$lcd_msg" ]; then
+  trap 'sudo systemctl restart station-lcd-interface >/dev/null 2>&1 || true' EXIT
+  sudo systemctl stop station-lcd-interface >/dev/null 2>&1 || true
+  sudo bash "$lcd_msg" " CTT Sensor Station" "" "   Updating..." "" || true
+fi
+
 # change permissions to ctt user to be safe
 sudo chown -R $user_perm $dir
 # check if the software directory exists
@@ -69,7 +83,9 @@ echo 'CTT Sensor Station Software Update Complete'
 echo '*******************************************'
 
 sudo systemctl restart station-hardware-server
-sudo systemctl restart station-lcd-interface
+# station-lcd-interface is intentionally NOT restarted here — it stays stopped so
+# the "Updating" splash remains on the panel through the rest of the update; the
+# EXIT trap restarts it (restoring the menu) once everything below is done.
 sudo systemctl restart station-radio-interface
 sudo systemctl restart station-web-interface
 
@@ -94,7 +110,15 @@ sudo systemctl restart sensorgnome
 echo
 echo 'Checking for OTA updates'
 bash-update-station
-echo 
+echo
+
+# Update finished — restore the front-panel menu (picks up any new code) and
+# clear the trap now that we've restored explicitly. The trap remains the safety
+# net for any earlier failure path above.
+sudo systemctl restart station-lcd-interface
+trap - EXIT
+
+echo
 echo '***********************'
 echo 'STATION UPDATE COMPLETE'
 echo '***********************'
