@@ -1,8 +1,9 @@
 import fs from 'fs'
 
 // Front-panel buttons are standard Linux input (evdev) devices created by the
-// kernel gpio-keys driver (see system/scripts/buttons-overlay.sh, which adds the
-// board-gated gpio-key overlays to /boot/config.txt). The kernel owns edge
+// kernel gpio-keys driver (the board's gpio-key overlays are part of the
+// canonical /boot/config.txt applied by ctt-device-config — see
+// system/device-tree/). The kernel owns edge
 // detection and debounce; this module just consumes key-press events and maps
 // them to menu actions — no GPIO library, no debounce code.
 //

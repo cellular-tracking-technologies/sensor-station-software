@@ -180,10 +180,9 @@ modem itself.
 | Data source | hardware HTTP API on `http://127.0.0.1:3000` |
 
 The buttons are standard Linux input (evdev) devices: the kernel `gpio-keys`
-driver — configured by the board-gated overlay in
-[system/scripts/buttons-overlay.sh](../../system/scripts/buttons-overlay.sh)
-(applied via `ctt-buttons-overlay.service`) — owns edge detection and debounce
-and maps each GPIO to a keycode. `button-input.js` reads
+driver — configured by the board's canonical `config.txt` in
+[system/device-tree/](../../system/device-tree/) (applied by `ctt-device-config`)
+— owns edge detection and debounce and maps each GPIO to a keycode. `button-input.js` reads
 `KEY_UP`/`KEY_DOWN`/`KEY_ENTER`/`KEY_ESC` presses from those devices and calls
 the matching `MenuManager` operation; there is no GPIO library or debounce code
 in this service. The button GPIOs differ by board revision, so the overlay

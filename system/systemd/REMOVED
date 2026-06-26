@@ -27,3 +27,12 @@ ctt.service
 # until then V2 status LEDs use the in-process path. Purge the orphaned unit so
 # it stops re-adding its block + looping on already-updated stations.
 ctt-leds-overlay.service
+
+# Replaced by ctt-device-config.service. These per-subsystem overlays each
+# dynamically rewrote /boot/config.txt at boot (append a managed block / sed the
+# RTC line) and rebooted on a diff — two append-at-end managers fought and
+# rebooted each other (the V2 loop). ctt-device-config copies one complete static
+# config.txt per revision instead. Purge the old units so nothing else edits
+# config.txt on already-provisioned stations.
+ctt-rtc-overlay.service
+ctt-buttons-overlay.service

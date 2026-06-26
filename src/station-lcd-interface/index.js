@@ -58,8 +58,9 @@ let menu = new MenuManager(items)
 menu.init()
 
 /*
-    Front-panel buttons are kernel gpio-keys input devices (see
-    system/scripts/buttons-overlay.sh). watchButtons reads their key-press
+    Front-panel buttons are kernel gpio-keys input devices (their overlays are
+    part of the canonical config.txt applied by ctt-device-config; see
+    system/device-tree/). watchButtons reads their key-press
     events and triggers the matching menu operation; the kernel handles edge
     detection and debounce.
 */

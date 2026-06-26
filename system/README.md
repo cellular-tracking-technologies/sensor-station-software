@@ -29,6 +29,7 @@ system/
 │   ├── maps/       per-board {channel, USB id_path} maps (v2.json, v3r0.json, v3r3.json)
 │   ├── fw/         receiver firmware images flashed by program-radios.sh
 │   └── generate-rules.mjs   regenerates udev/78-ctt-radio-driver.rules + 78-ctt-blu-driver.rules from maps/
+├── device-tree/    canonical full /boot/config.txt per revision (config-<board>.txt), applied by ctt-device-config
 ├── native/         version pins for the fetched native binaries (<tool>.version)
 ├── scripts/        boot scripts, OTA updater, hooks, modem/SIM/GPS/RTC helpers, cron
 │   └── hooks/      modular OTA hook orchestrator (pre-merge + post-merge drop-ins)
@@ -50,8 +51,7 @@ All are deployed to `/etc/systemd/system/` by the OTA `install-systemd.sh` hook.
 | Unit | Type | Purpose | Ordering (`After=` / activation) |
 |------|------|---------|----------------------------------|
 | `ctt-board-detect.service` | oneshot | Reads board ID hardware over I2C; writes `/run/ctt/board.env` + `/etc/ctt/station-*`. Re-runs every boot (plug-n-play compute-module swap). Re-triggers tty udev so radios that enumerated early match. | `local-fs.target` |
-| `ctt-rtc-overlay.service` | oneshot | Ensures `/boot/config.txt` RTC dtoverlay matches the board (ds3231 on V2, mcp7941x on V3); reboots once on mismatch. | `ctt-board-detect`; `Before=time-sync.target chrony` |
-| `ctt-buttons-overlay.service` | oneshot | Ensures `/boot/config.txt` button gpio-key overlays match the board (V2/V3 pins); reboots once on change. The kernel then exposes the buttons as evdev input devices. | `ctt-board-detect` (`Requires=`) |
+| `ctt-device-config.service` | oneshot | **Single owner of `/boot/config.txt`.** Copies the canonical per-revision config (`device-tree/config-<board>.txt` — full state: RTC + buttons + LED/control GPIOs) if it differs, then reboots **at most once** (hash-keyed loop breaker). Replaces the old separate rtc/buttons/leds overlays, which each rewrote config.txt and could reboot each other in a loop. | `ctt-board-detect` (`Requires=`); `Before=time-sync.target chrony` |
 | `ctt-sensors.service` | simple | Reads I2C ADC rail voltages + board temperature; publishes `/run/ctt/sensors.json`. | `ctt-board-detect` |
 | `ctt-leds.service` | simple | Drives V3 status LEDs (SX1509B expander) from `/run/ctt/leds`. | `ctt-board-detect` |
 | `ctt-lcd.service` | simple | Renders the character LCD (HD44780/PCF8574) from `/run/ctt/lcd`. | `ctt-board-detect` |
@@ -80,7 +80,7 @@ Board identity is produced **first** and consumed by nearly everything after it.
 
 | File | Content | Consumed by |
 |------|---------|-------------|
-| `/run/ctt/board.env` | `CTT_BOARD=v2\|v3r0\|v3r3` (+ `CTT_STATION_VERSION`, revision) | the radio udev rules (`IMPORT{file}`), `boottime_compute.sh`, `buttons-overlay.sh`, `rtc-overlay.sh` |
+| `/run/ctt/board.env` | `CTT_BOARD=v2\|v3r0\|v3r3` (+ `CTT_STATION_VERSION`, revision) | the radio udev rules (`IMPORT{file}`), `boottime_compute.sh`, `device-config.sh` |
 | `/etc/ctt/station-id`, `station-revision`, `station-board-revision` | persistent identity (drop-in compatible with the old `initialize.js`) | Node services, boot scripts (fallback when `board.env` is absent) |
 
 Because identity is published before the consumers run, every downstream unit
@@ -227,7 +227,7 @@ only step needed to roll a new native binary to the fleet.
 ## Other scripts
 
 `scripts/` also holds the boot helpers invoked by the units above
-(`boottime_compute.sh`, `rtc-overlay.sh`, `buttons-overlay.sh`, `check-sim-id.sh`,
+(`boottime_compute.sh`, `device-config.sh`, `check-sim-id.sh`,
 `modem-boot-state.sh`), modem on/off and Wi-Fi toggles
 (`enable-modem.sh` / `disable-modem.sh`, `enable-wifi.sh` / `disable-wifi.sh`),
 receiver-firmware flashing (`program-radios.sh`, firmware images in
