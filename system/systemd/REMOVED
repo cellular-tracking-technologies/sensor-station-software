@@ -36,3 +36,9 @@ ctt-leds-overlay.service
 # config.txt on already-provisioned stations.
 ctt-rtc-overlay.service
 ctt-buttons-overlay.service
+
+# Removed: the auto-run Telit RNDIS provisioner. RNDIS NV binding (AT#RNDIS=1,0)
+# is done at MANUFACTURING; the runtime assumes an already-provisioned modem, so
+# nothing should provision (and reboot the modem) at boot. The ctt-modem-provision
+# binary remains as a manual CLI; only the udev-activated service is retired.
+ctt-modem-provision.service
