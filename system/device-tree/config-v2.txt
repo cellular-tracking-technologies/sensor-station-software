@@ -54,6 +54,9 @@ dtoverlay=i2c-rtc,ds3231
 gpio=24=op,dh
 # start the GPS
 gpio=6=op,dl
+# ADS7924 ADC reset — held de-asserted (high) so the ADC responds; ctt-sensors
+# reads battery/solar over I2C. BCM 19, matching the retired onoff ResetPin.
+gpio=19=op,dh
 
 # Front-panel buttons (kernel gpio-keys -> evdev). V2 status LEDs are plain GPIO;
 # their pins are unverified, so no gpio-led overlay is shipped yet.

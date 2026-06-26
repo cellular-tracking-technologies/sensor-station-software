@@ -43,8 +43,8 @@ V2 variants (where the driver differs):
 
 | Function | V2 part | Notes |
 |----------|---------|-------|
-| ADC | ADS7924 | Not yet ported in `ctthw` (datasheet-only) |
-| Temperature | TMP102 | Not yet ported in `ctthw` |
+| ADC | ADS7924 | `0x48`, battery + solar rails (reset on BCM 19, de-asserted via config.txt) |
+| Temperature | TMP102 | `0x49`, board temperature |
 | RTC | DS3231 | Timekeeping handled by the kernel RTC driver |
 | Board id | ATSHA204A | Serial read via the `hashlet` tool (no direct bus access yet) |
 | Status LEDs | GPIO-driven | No I/O expander; LED/strap path differs from V3 |
@@ -69,8 +69,9 @@ layers:
   device for the duration of a logical chip transaction; nested locks within one
   process are depth-counted and safe.
 - **`chips/`** — one driver class per chip (`Sx1509b`, `Max11645`, `Tmp411`,
-  `At24mac602`, `Mcp79412`, `Atsha204a`, `LcdPcf8574`). Each is a faithful port
-  of the field-proven Node driver it replaces, so values and timing match.
+  `Ads7924`, `Tmp102`, `At24mac602`, `Mcp79412`, `Atsha204a`, `LcdPcf8574`). Each
+  is a faithful port of the field-proven Node driver it replaces, so values and
+  timing match (`Ads7924`/`Tmp102` are the V2 ADC/temp).
 - **`board/`** — board **policy** in one place. `board_id` composes the chip
   drivers to resolve identity (V3 if the SX1509B ACKs, then EUI-64 from
   AT24MAC602 or MCP79412 by revision; V2 falls back to the ATSHA204A serial).
@@ -84,8 +85,10 @@ lib/ctthw/
 │   └── i2c_bus.cpp
 ├── chips/                 # one driver class per chip
 │   ├── sx1509b.{h,cpp}    # 0x70  I/O expander (LEDs + revision straps)
-│   ├── max11645.{h,cpp}   # 0x36  ADC (battery + solar)
-│   ├── tmp411.{h,cpp}     # 0x4e  temperature
+│   ├── max11645.{h,cpp}   # 0x36  ADC (battery + solar)   [V3]
+│   ├── tmp411.{h,cpp}     # 0x4e  temperature              [V3]
+│   ├── ads7924.{h,cpp}    # 0x48  ADC (battery + solar)   [V2]
+│   ├── tmp102.{h,cpp}     # 0x49  temperature              [V2]
 │   ├── at24mac602.{h,cpp} # 0x58  EUI-64 board id (V3 rev 1+)
 │   ├── mcp79412.{h,cpp}   # 0x57  EUI-64 board id (V3 rev 0)
 │   ├── atsha204a.{h,cpp}  # board id serial (V2, via hashlet)
@@ -107,7 +110,7 @@ never see the hardware — only these files and sockets.
 |------|---------|-------|--------|
 | `ctt-board-detect` | Boot-time board identity (runs every boot for compute-module plug-n-play) | I2C identity chips (SX1509B straps, AT24MAC602/MCP79412 EUI-64, or ATSHA204A via hashlet) | `/etc/ctt/station-id`, `/etc/ctt/station-revision`, `/etc/ctt/station-board-revision`, and `/run/ctt/board.env` (`CTT_BOARD=v2\|v3r0\|v3r3`) |
 | `ctt-radio-driver@N` | Bridge one receiver serial port to a socket (gpsd-style). The same binary backs both the 434 MHz radios and, instantiated as `ctt-blu-driver@N`, the BluSeries receivers. | Receiver serial line (`/dev/ctt-radio/chN` or `/dev/ctt-blu/chN`) + NDJSON commands from socket clients | `/run/ctt/radios/chN.sock` or `/run/ctt/blu/chN.sock` (AF_UNIX, NDJSON — one JSON object per line) |
-| `ctt-sensors` | Daemon: poll the analog sensors and publish a snapshot | I2C ADC (MAX11645) + temperature (TMP411); board version from `board.env`/`station-revision` | `/run/ctt/sensors.json` (voltages + temperature + ISO-8601 timestamp) |
+| `ctt-sensors` | Daemon: poll the analog sensors and publish a snapshot | I2C ADC + temperature, by board: V3 = MAX11645 + TMP411, V2 = ADS7924 + TMP102; board version from `board.env`/`station-revision` | `/run/ctt/sensors.json` (voltages + temperature + ISO-8601 timestamp) |
 | `ctt-leds` | Daemon: drive the V3 status LEDs (GPS / diag-A / diag-B); idles on V2 | `/run/ctt/leds` (`key=value`: `gps`/`a`/`b` = `on\|off\|blink\|blink:<ms>`) | SX1509B output registers (the LEDs) |
 | `ctt-lcd` | Daemon: render the front-panel character LCD; idles if no backpack found. Shows a boot splash until the Node app publishes its first frame. | `/run/ctt/lcd` (fixed 144-byte framebuffer: 8 CGRAM glyphs + 80 character cells) | HD44780 LCD over the PCF8574 backpack |
 | `ctt-radio-flash` | One-shot: flash a radio MCU (ATmega32U4 Feather) via the GPIO-free 1200-baud-touch Caterina bootloader, then exec `avrdude`. Works for any channel — on-board or USB. | the radio's serial port (the touch) + a firmware file | the MCU flash (through `avrdude`) |
@@ -198,7 +201,7 @@ Current state:
 |------|------------------|------------------------------|
 | `ctt-board-detect` | 0.1.2 | 0.1.1 |
 | `ctt-radio-driver` | 0.2.0 | 0.2.0 |
-| `ctt-sensors` | 0.2.0 | 0.2.0 |
+| `ctt-sensors` | 0.3.0 | 0.2.0 |
 | `ctt-leds` | 0.1.0 | 0.1.0 |
 | `ctt-lcd` | 0.4.0 | 0.4.0 |
 | `ctt-radio-flash` | 0.1.0 | 0.1.0 |

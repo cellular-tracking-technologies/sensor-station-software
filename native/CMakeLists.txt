@@ -39,6 +39,8 @@ add_library(ctthw STATIC
   lib/ctthw/chips/atsha204a.cpp
   lib/ctthw/chips/max11645.cpp
   lib/ctthw/chips/tmp411.cpp
+  lib/ctthw/chips/ads7924.cpp
+  lib/ctthw/chips/tmp102.cpp
   lib/ctthw/chips/lcd_pcf8574.cpp
   lib/ctthw/board/board_id.cpp
   lib/ctthw/board/sensors.cpp)

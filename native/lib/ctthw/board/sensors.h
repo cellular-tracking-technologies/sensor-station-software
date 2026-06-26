@@ -22,11 +22,10 @@ struct SensorReading {
 };
 
 // Read the board's sensors, selecting chips by board version (the policy, in one
-// place — like board_id). V3 = MAX11645 (ADC) + TMP411 (temp). Reads each chip
-// independently and does NOT throw for a per-chip I/O failure — the failed
-// chip's fields are simply left unset, so the caller still gets the others.
-// Throws std::runtime_error only for an unsupported board (V2: ADS7924/TMP102
-// not yet ported).
+// place — like board_id). V3 = MAX11645 (ADC) + TMP411 (temp); V2 = ADS7924
+// (ADC) + TMP102 (temp). Reads each chip independently and does NOT throw for a
+// per-chip I/O failure — the failed chip's fields are simply left unset, so the
+// caller still gets the others.
 SensorReading readSensors(I2cBus &bus, int version);
 
 } // namespace ctthw
