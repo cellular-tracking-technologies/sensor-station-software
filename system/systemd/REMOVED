@@ -19,3 +19,11 @@ ctt-gps-kick.service
 # but nothing was ever wired to it, so it controlled nothing. Dropped until that
 # grouping is actually implemented.
 ctt.service
+
+# Removed: the standalone LED gpio-led overlay service. It managed its own
+# config.txt block independently of ctt-buttons-overlay; two append-at-end
+# managers fought over block order and rebooted each other (V2 reboot loop). The
+# LED migration is being redone as a single unified board device-tree config;
+# until then V2 status LEDs use the in-process path. Purge the orphaned unit so
+# it stops re-adding its block + looping on already-updated stations.
+ctt-leds-overlay.service
