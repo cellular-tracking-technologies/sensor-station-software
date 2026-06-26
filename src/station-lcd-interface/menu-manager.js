@@ -14,28 +14,11 @@ class MenuManager {
     this.focus = menu
     this.scroller = new MenuScroller()
     this.refresh_
-    this.language_array = [
-      {
-        language: 'System',
-        phrase: 'Delete Data'
-      },
-      {
-        language: 'Sistema',
-        phrase: 'Eliminar datos'
-      },
-      {
-        language: 'Systeme',
-        phrase: 'Supprimer les donnees'
-      },
-      {
-        language: 'Sistema-PT',
-        phrase: 'Excluir dados'
-      },
-      {
-        language: 'Systeem',
-        phrase: 'Gegevens verwijderen'
-      },
-    ]
+    // Navigation breadcrumb: push the current focus when descending into a
+    // submenu or a view, pop it on back(). Object-based, so back() never depends
+    // on resolving a parent_id by name — which broke (and bricked the whole UI
+    // via an unhandled TypeError) when a translated parent_id matched no tree id.
+    this.stack = []
   }
   init() {
     this.scroller.init(this.focus.childrenNames())
@@ -78,14 +61,14 @@ class MenuManager {
     // Launch a custom view by way of submenu transition.
     let row = this.focus.getChild(this.scroller.getSelectedRow())
     if (row.view != null) {
+      this.stack.push(this.focus)
       this.focus = row
-      console.log('this focus', this.focus)
-
       this.view_()
       return
     }
     // User Enters a sub menu
     if (row.childCount() > 0) {
+      this.stack.push(this.focus)
       this.scroller.init(row.childrenNames())
       this.focus = row
     }
@@ -93,20 +76,12 @@ class MenuManager {
   }
   back() {
     this.autoRefresh_(false)
-    console.log('this menu', this.menu)
-    console.log('menu back', this.focus)
-
-    if (this.language_array.find(el => el.phrase === this.focus.parent_id)) {
-      const back_element = this.language_array.find(el => el.phrase === this.focus.parent_id)
-      this.focus = this.findMenuItem_(this.menu, back_element.language)
-      this.scroller.init(this.focus.childrenNames())
-    } else if (this.focus.parent_id != null) {
-      this.focus = this.findMenuItem_(this.menu, this.focus.parent_id)
+    // Pop to the menu we descended from. At the root the stack is empty, so
+    // back() re-renders in place rather than stranding focus on a null lookup.
+    if (this.stack.length > 0) {
+      this.focus = this.stack.pop()
       this.scroller.init(this.focus.childrenNames())
     }
-
-    // this.scroller.init(this.focus.childrenNames())
-
     this.update_()
   }
   view_() {
@@ -147,23 +122,6 @@ class MenuManager {
         }
       }
     }
-  }
-  findMenuItem_(menu, id) {
-    // console.log('find menu item', menu, id)
-    if (menu.id == id) {
-      return menu
-    } else if (menu.childCount() > 0) {
-      let result = null
-      for (let i = 0; i < menu.childCount(); i++) {
-        result = this.findMenuItem_(menu.children[i], id)
-        // console.log('find menu item result', result)
-        if (result != null) {
-          break
-        }
-      }
-      return result
-    }
-    return null
   }
 }
 
