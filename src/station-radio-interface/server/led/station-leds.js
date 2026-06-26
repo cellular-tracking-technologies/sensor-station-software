@@ -1,8 +1,70 @@
-import { StationLeds as StationLedsV2 } from './station-leds-v2.js'
-import { StationLeds as StationLedsV3 } from './station-leds-v3.js'
+import fs from 'fs'
+import fetch from 'node-fetch'
 
-import System from '../../../system.js'
+// Status-LED decision logic for every board. The actuation lives in the native
+// ctt-leds daemon, which reads this desired-state file and drives the right
+// hardware for the board — the V3 SX1509B expander (I2C) or the V2 gpio-led GPIO
+// pins (/sys/class/leds, via the gpio-led overlay). So this class only DECIDES
+// the state (GPS fix, internet/ppp, alive heartbeat) and writes the file; there
+// is no in-process I2C/GPIO and no per-board branch here anymore.
+//
+// File format (one key=value per line; states: on | off | blink[:ms]):
+//   gps=on|off     a=blink     b=on|off
+const LEDS_FILE = '/run/ctt/leds'
 
-const { Version } = System.Hardware
+class StationLeds {
+  constructor() {
+    this.internet_url = 'http://localhost:3000/modem/ppp'
+    this.gps_delay_timeout = 60 * 1000 // if gps time > 60 seconds, turn off light
+  }
 
-export default (Version >= 3) ? StationLedsV3 : StationLedsV2
+  checkGps(gps_data) {
+    if (!gps_data) {
+      return false
+    }
+    let delta = new Date() - new Date(gps_data.time)
+    if (delta > this.gps_delay_timeout) {
+      return false
+    }
+    return gps_data.mode == 3
+  }
+
+  async checkInternet() {
+    return fetch(this.internet_url)
+      .then(res => res.json())
+      .then(json => json.ppp == true)
+  }
+
+  // Atomic write (temp + rename) so ctt-leds never reads a half-written file.
+  write(states) {
+    const body = `gps=${states.gps}\na=${states.a}\nb=${states.b}\n`
+    try {
+      fs.writeFileSync(`${LEDS_FILE}.tmp`, body)
+      fs.renameSync(`${LEDS_FILE}.tmp`, LEDS_FILE)
+    } catch (err) {
+      // /run/ctt missing or not writable (e.g. ctt-leds not up yet) — ignore
+    }
+  }
+
+  async toggleAll(gps) {
+    let gps_status = this.checkGps(gps)
+    let internet_status
+    try {
+      internet_status = await this.checkInternet()
+    } catch (err) {
+      console.log('unable to poll hardware server', this.internet_url)
+      console.error(err)
+      internet_status = false
+    }
+    // gps: solid on with a 3D fix; a (diag-A): blink = the alive heartbeat the
+    // old code did via per-tick 'toggle'; b (diag-B): on when the PPP link is up.
+    this.write({
+      gps: gps_status ? 'on' : 'off',
+      a: 'blink',
+      b: internet_status ? 'on' : 'off',
+    })
+  }
+}
+
+export default StationLeds
+export { StationLeds }

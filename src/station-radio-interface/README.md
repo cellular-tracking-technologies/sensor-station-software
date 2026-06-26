@@ -60,9 +60,7 @@ server/
 │   ├── web-socket-server.js   control + live-data WebSocket server (:8001)
 │   └── server-api.js          hardware-API polling + cloud health check-in
 ├── led/
-│   ├── station-leds.js        selects V2 or V3 strategy by board version
-│   ├── station-leds-v3.js     writes /run/ctt/leds (for the ctt-leds daemon)
-│   └── station-leds-v2.js     legacy LED strategy
+│   └── station-leds.js        decides LED state, writes /run/ctt/leds (all boards)
 └── data/
     ├── data-manager.js        routes parsed records to the right logger
     ├── logger.js              generic buffered CSV logger (cache -> disk)
@@ -271,8 +269,9 @@ talks to.
 | WebSocket `:8001` | server | local web dashboard | JSON control + live data |
 | Cloud check-in | client (POST) | cloud backend | JSON health/stats payload, periodic |
 
-The status-LED logic (`server/led/station-leds-v3.js`) makes its decision from
-GPS fix age/mode and the modem PPP state (polled from the hardware API) and
-encodes the desired LED state into `/run/ctt/leds`; the native `ctt-leds`
-daemon performs the actual I/O. On V2 boards a legacy strategy is selected
-instead (`station-leds-v2.js`), chosen by board version in `station-leds.js`.
+The status-LED logic (`server/led/station-leds.js`) makes its decision from GPS
+fix age/mode and the modem PPP state (polled from the hardware API) and encodes
+the desired LED state into `/run/ctt/leds`; the native `ctt-leds` daemon performs
+the actual I/O. This is board-agnostic now — `ctt-leds` picks the backend (V3
+SX1509B over I2C, or V2 `gpio-led` GPIO nodes), so there is no per-board strategy
+in Node anymore.

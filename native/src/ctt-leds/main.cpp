@@ -1,17 +1,21 @@
-// ctt-leds — drive the V3 status LEDs (GPS / diag-A / diag-B, on the SX1509B
-// expander pins 0 / 10 / 11) from a desired-state file. The decision logic (GPS
-// fix, internet/ppp, alive heartbeat) stays in the Node app, which writes the
-// file; this daemon owns the I2C actuation, including blink timing — so it
-// replaces the in-process SetState() the Node app did on V3.
+// ctt-leds — drive the status LEDs (GPS / diag-A / diag-B) from a desired-state
+// file. The decision logic (GPS fix, internet/ppp, alive heartbeat) stays in the
+// Node app, which writes the file; this daemon owns the actuation + blink timing
+// — replacing the in-process SetState() the Node app used to do.
+//
+// Two hardware backends, chosen at startup by what the board presents:
+//   V3 — SX1509B I2C expander (GPS = bank A bit 0; A = bank B bit 2 / pin 10;
+//        B = bank B bit 3 / pin 11). Read-modify-write keeps other pins intact.
+//   V2 — plain GPIO LEDs exposed by the kernel gpio-led overlay at
+//        /sys/class/leds/ctt-led-{gps,a,b} (see system/scripts/leds-overlay.sh);
+//        we write brightness 0/1. There is no I2C LED expander on V2.
+// If neither is present the daemon idles.
 //
 // Desired-state file /run/ctt/leds (key=value, one per line):
 //   gps=on|off|blink|blink:<ms>
 //   a=...
 //   b=...
-// Polarity matches the Node SetState path: a set data bit lights the LED.
-//
-// V2 boards drive these LEDs over GPIO (no expander) — not handled here yet; on
-// a V2 board this daemon idles.
+// A set data bit / brightness 1 lights the LED on both backends.
 //
 // Flags: --version.
 
@@ -90,6 +94,25 @@ bool ledOn(const std::string &state, unsigned long long elapsed_ms) {
   return false;
 }
 
+// V2 backend: gpio-led brightness nodes, created by the gpio-led overlay
+// (system/scripts/leds-overlay.sh). Present only on a V2 board.
+constexpr const char *kSysfsGps = "/sys/class/leds/ctt-led-gps/brightness";
+constexpr const char *kSysfsA = "/sys/class/leds/ctt-led-a/brightness";
+constexpr const char *kSysfsB = "/sys/class/leds/ctt-led-b/brightness";
+
+bool sysfsLedsPresent() {
+  return ::access(kSysfsGps, W_OK) == 0 && ::access(kSysfsA, W_OK) == 0 &&
+         ::access(kSysfsB, W_OK) == 0;
+}
+
+void writeSysfsLed(const char *path, bool on) {
+  FILE *f = std::fopen(path, "w");
+  if (!f)
+    return;
+  std::fputc(on ? '1' : '0', f);
+  std::fclose(f);
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -105,13 +128,18 @@ int main(int argc, char **argv) {
   try {
     ctthw::I2cBus bus;
     ctthw::Sx1509b expander(bus);
+    const bool use_expander = expander.present();
+    const bool use_sysfs = !use_expander && sysfsLedsPresent();
 
-    if (!expander.present()) {
-      std::fprintf(stderr, "ctt-leds: no SX1509B (V2 board?) — LEDs are GPIO there; idling\n");
+    if (!use_expander && !use_sysfs) {
+      std::fprintf(stderr,
+                   "ctt-leds: no SX1509B and no gpio-led nodes — idling\n");
       while (!g_stop)
         ::sleep(1);
       return 0;
     }
+    std::fprintf(stderr, "ctt-leds: backend = %s\n",
+                 use_expander ? "SX1509B (V3)" : "gpio-led sysfs (V2)");
 
     Desired desired;
     // Full nanosecond mtime so two state writes within one wall-clock second
@@ -134,23 +162,29 @@ int main(int argc, char **argv) {
       int b_on = ledOn(desired.b, elapsed_ms) ? 1 : 0;
 
       if (gps_on != last_gps || a_on != last_a || b_on != last_b) {
-        // read-modify-write so other output pins are undisturbed
-        ctthw::BankData cur = expander.readData();
-        ctthw::BankData next = cur;
-        if (gps_on)
-          next.a |= (1u << 0);
-        else
-          next.a &= ~(1u << 0);
-        if (a_on)
-          next.b |= (1u << 2);
-        else
-          next.b &= ~(1u << 2);
-        if (b_on)
-          next.b |= (1u << 3);
-        else
-          next.b &= ~(1u << 3);
-        if (next.a != cur.a || next.b != cur.b)
-          expander.writeData(next);
+        if (use_expander) {
+          // read-modify-write so other output pins are undisturbed
+          ctthw::BankData cur = expander.readData();
+          ctthw::BankData next = cur;
+          if (gps_on)
+            next.a |= (1u << 0);
+          else
+            next.a &= ~(1u << 0);
+          if (a_on)
+            next.b |= (1u << 2);
+          else
+            next.b &= ~(1u << 2);
+          if (b_on)
+            next.b |= (1u << 3);
+          else
+            next.b &= ~(1u << 3);
+          if (next.a != cur.a || next.b != cur.b)
+            expander.writeData(next);
+        } else {
+          writeSysfsLed(kSysfsGps, gps_on);
+          writeSysfsLed(kSysfsA, a_on);
+          writeSysfsLed(kSysfsB, b_on);
+        }
         last_gps = gps_on;
         last_a = a_on;
         last_b = b_on;
