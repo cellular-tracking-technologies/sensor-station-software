@@ -52,9 +52,8 @@ All are deployed to `/etc/systemd/system/` by the OTA `install-systemd.sh` hook.
 | `ctt-board-detect.service` | oneshot | Reads board ID hardware over I2C; writes `/run/ctt/board.env` + `/etc/ctt/station-*`. Re-runs every boot (plug-n-play compute-module swap). Re-triggers tty udev so radios that enumerated early match. | `local-fs.target` |
 | `ctt-rtc-overlay.service` | oneshot | Ensures `/boot/config.txt` RTC dtoverlay matches the board (ds3231 on V2, mcp7941x on V3); reboots once on mismatch. | `ctt-board-detect`; `Before=time-sync.target chrony` |
 | `ctt-buttons-overlay.service` | oneshot | Ensures `/boot/config.txt` button gpio-key overlays match the board (V2/V3 pins); reboots once on change. The kernel then exposes the buttons as evdev input devices. | `ctt-board-detect` (`Requires=`) |
-| `ctt-leds-overlay.service` | oneshot | Ensures `/boot/config.txt` LED gpio-led overlays match the board; reboots once on change. V2 status LEDs become kernel `gpio-led` nodes at `/sys/class/leds/ctt-led-*` (V3 LEDs are on the SX1509B — no overlay). | `ctt-board-detect` (`Requires=`); `Before=ctt-leds` |
 | `ctt-sensors.service` | simple | Reads I2C ADC rail voltages + board temperature; publishes `/run/ctt/sensors.json`. | `ctt-board-detect` |
-| `ctt-leds.service` | simple | Drives the status LEDs from `/run/ctt/leds` — V3 over the SX1509B expander, V2 over kernel `gpio-led` nodes. | `ctt-board-detect` |
+| `ctt-leds.service` | simple | Drives V3 status LEDs (SX1509B expander) from `/run/ctt/leds`. | `ctt-board-detect` |
 | `ctt-lcd.service` | simple | Renders the character LCD (HD44780/PCF8574) from `/run/ctt/lcd`. | `ctt-board-detect` |
 | `ctt-radio-driver@.service` | template | One instance per 434 MHz receiver. Serves `/run/ctt/radios/ch<N>.sock`. Activated per-channel by udev, **not** enabled directly. | `dev-ctt-radio-%i.device` |
 | `ctt-blu-driver@.service` | template | One instance per BluSeries (FTDI) receiver. Same `ctt-radio-driver` binary in its default line framing; serves `/run/ctt/blu/ch<N>.sock`. Activated per-channel by udev, **not** enabled directly. | `dev-ctt-blu-%i.device` |
@@ -228,8 +227,8 @@ only step needed to roll a new native binary to the fleet.
 ## Other scripts
 
 `scripts/` also holds the boot helpers invoked by the units above
-(`boottime_compute.sh`, `rtc-overlay.sh`, `buttons-overlay.sh`, `leds-overlay.sh`,
-`check-sim-id.sh`, `modem-boot-state.sh`), modem on/off and Wi-Fi toggles
+(`boottime_compute.sh`, `rtc-overlay.sh`, `buttons-overlay.sh`, `check-sim-id.sh`,
+`modem-boot-state.sh`), modem on/off and Wi-Fi toggles
 (`enable-modem.sh` / `disable-modem.sh`, `enable-wifi.sh` / `disable-wifi.sh`),
 receiver-firmware flashing (`program-radios.sh`, firmware images in
 `radios/fw/`), device inventory (`list-devices.sh`), data/credential cleanup

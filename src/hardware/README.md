@@ -26,17 +26,17 @@ hardware/
 │   ├── station_id.js    station identity helpers
 │   ├── network/         NetworkManager / modem / wifi wrappers, connectivity probe, modem cache
 │   └── index.js
+├── led-driver/
+│   └── v2-driver.js     V2 status LEDs over GPIO (used by the `/led` route)
 └── usb.js               USB peripheral / topology helpers (used by the peripherals route)
 ```
 
 ## Notes
 
-- **Status LEDs** (V2 and V3) are driven by the native `ctt-leds` daemon, not
-  from here — V3 over the SX1509B expander, V2 over kernel `gpio-led` nodes; the
-  Node side only writes the desired state to `/run/ctt/leds`.
+- **V3 status LEDs** are driven by the native `ctt-leds` daemon, not from here;
+  `led-driver/v2-driver.js` remains for V2 boards' GPIO LEDs.
 - **Retired from this folder** (now native): the raw I2C wrapper, the SX1509B
   I/O expander, the board-ID chip readers, the ADC + temperature sensor drivers,
-  the V2 GPIO LED driver, and the boot-time `initialize.js`. Board identity
-  (`/etc/ctt/station-*` + `/run/ctt/board.env`) and sensor readings
-  (`/run/ctt/sensors.json`) are now produced by `ctt-board-detect` and
-  `ctt-sensors`.
+  and the boot-time `initialize.js`. Board identity (`/etc/ctt/station-*` +
+  `/run/ctt/board.env`) and sensor readings (`/run/ctt/sensors.json`) are now
+  produced by `ctt-board-detect` and `ctt-sensors`.

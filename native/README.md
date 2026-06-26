@@ -108,17 +108,16 @@ never see the hardware — only these files and sockets.
 | `ctt-board-detect` | Boot-time board identity (runs every boot for compute-module plug-n-play) | I2C identity chips (SX1509B straps, AT24MAC602/MCP79412 EUI-64, or ATSHA204A via hashlet) | `/etc/ctt/station-id`, `/etc/ctt/station-revision`, `/etc/ctt/station-board-revision`, and `/run/ctt/board.env` (`CTT_BOARD=v2\|v3r0\|v3r3`) |
 | `ctt-radio-driver@N` | Bridge one receiver serial port to a socket (gpsd-style). The same binary backs both the 434 MHz radios and, instantiated as `ctt-blu-driver@N`, the BluSeries receivers. | Receiver serial line (`/dev/ctt-radio/chN` or `/dev/ctt-blu/chN`) + NDJSON commands from socket clients | `/run/ctt/radios/chN.sock` or `/run/ctt/blu/chN.sock` (AF_UNIX, NDJSON — one JSON object per line) |
 | `ctt-sensors` | Daemon: poll the analog sensors and publish a snapshot | I2C ADC (MAX11645) + temperature (TMP411); board version from `board.env`/`station-revision` | `/run/ctt/sensors.json` (voltages + temperature + ISO-8601 timestamp) |
-| `ctt-leds` | Daemon: drive the status LEDs (GPS / diag-A / diag-B). Picks a backend at startup: V3 = SX1509B expander; V2 = kernel `gpio-led` nodes at `/sys/class/leds/ctt-led-*` (from the gpio-led overlay). Idles if neither is present. | `/run/ctt/leds` (`key=value`: `gps`/`a`/`b` = `on\|off\|blink\|blink:<ms>`) | SX1509B output registers (V3) or `/sys/class/leds/ctt-led-*/brightness` (V2) |
+| `ctt-leds` | Daemon: drive the V3 status LEDs (GPS / diag-A / diag-B); idles on V2 | `/run/ctt/leds` (`key=value`: `gps`/`a`/`b` = `on\|off\|blink\|blink:<ms>`) | SX1509B output registers (the LEDs) |
 | `ctt-lcd` | Daemon: render the front-panel character LCD; idles if no backpack found. Shows a boot splash until the Node app publishes its first frame. | `/run/ctt/lcd` (fixed 144-byte framebuffer: 8 CGRAM glyphs + 80 character cells) | HD44780 LCD over the PCF8574 backpack |
 | `ctt-radio-flash` | One-shot: flash a radio MCU (ATmega32U4 Feather) via the GPIO-free 1200-baud-touch Caterina bootloader, then exec `avrdude`. Works for any channel — on-board or USB. | the radio's serial port (the touch) + a firmware file | the MCU flash (through `avrdude`) |
 | `ctt-modem-provision` | One-shot, pre-ModemManager: ensure the Telit LE910Q1 RNDIS data path is bound (self-healing). Reads `AT#RNDIS?`; if unbound, writes `AT#RNDIS=1,0` + reboots the modem. Read-only on the happy path; fails open. | the modem AT control port (`/dev/ctt-modem-at`) | the modem RNDIS NV binding (only if unbound) |
 
 Notes:
 
-- All decision logic stays in Node. `ctt-leds` and `ctt-lcd` own only the
-  hardware actuation (including LED blink timing) — over I2C, or for the V2 LEDs
-  over kernel `gpio-led` nodes; Node writes the *desired* state and the daemon
-  makes the hardware match it.
+- All decision logic stays in Node. `ctt-leds` and `ctt-lcd` own only the I2C
+  actuation (including LED blink timing); Node writes the *desired* state and the
+  daemon makes the hardware match it.
 - `ctt-radio-driver@N` is a systemd **template** unit: a board-gated udev rule
   symlinks each receiver to `/dev/ctt-radio/chN` and starts the matching
   instance on hotplug. On unplug the serial port returns HUP and the driver
@@ -200,7 +199,7 @@ Current state:
 | `ctt-board-detect` | 0.1.2 | 0.1.1 |
 | `ctt-radio-driver` | 0.2.0 | 0.2.0 |
 | `ctt-sensors` | 0.2.0 | 0.2.0 |
-| `ctt-leds` | 0.2.0 | 0.1.0 |
+| `ctt-leds` | 0.1.0 | 0.1.0 |
 | `ctt-lcd` | 0.4.0 | 0.4.0 |
 | `ctt-radio-flash` | 0.1.0 | 0.1.0 |
 | `ctt-modem-provision` | 0.1.0 | 0.1.0 |

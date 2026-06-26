@@ -151,7 +151,6 @@ on-board devices the software interacts with:
 | Analog sensors (V3) | MAX11645 ADC, TMP411 temperature | I2C |
 | Analog sensors (V2) | ADS7924 ADC, TMP102 temperature | I2C |
 | Status LEDs / straps (V3) | SX1509B I/O expander | I2C |
-| Status LEDs (V2) | GPIO pins via kernel `gpio-led` overlay | GPIO |
 | Board identity | I2C EEPROM with factory-unique serial | I2C |
 | Real-time clock | MCP79412 (V3) / DS3231 (V2) | I2C |
 | Front-panel display | HD44780 character LCD via PCF8574 backpack | I2C |
