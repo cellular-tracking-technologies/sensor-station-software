@@ -18,13 +18,23 @@
 export default async (req, res) => {
   try {
     const [info, ppp] = await Promise.all([
-      fetch('http://localhost:3000/modem/signal-strength').then(r => r.json()),
+      fetch('http://localhost:3000/modem/signal-strength').then(r => r.json()).catch(() => null),
       fetch('http://localhost:3000/modem/ppp')
         .then(r => r.json())
         .catch(() => ({ ppp: false })), // probe unavailable -> treat as not connected
     ])
 
     const reachable = ppp && ppp.ppp === true
+
+    // `info` is null when the hardware server has no fresh modem poll (modem
+    // mid-bringup, busy, or absent). Don't dereference it — the old proxy passed
+    // null straight through and render_modem shows its no-signal icon. Mirror
+    // that, but still report connected if the reachability probe says so.
+    if (!info) {
+      res.json(reachable ? { state: 'connected', reachable } : null)
+      return
+    }
+
     res.json({
       ...info,
       modem_state: info.state, // raw mmcli state, preserved for diagnostics
