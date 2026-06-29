@@ -1,0 +1,26 @@
+# ctt-device-config — apply the canonical, per-revision /boot/config.txt (see
+# system/scripts/device-config.sh). One complete config.txt per revision is the
+# single source of truth; this copies the matching one and reboots AT MOST ONCE
+# (with a loop breaker), replacing the separate rtc/buttons/leds overlay scripts
+# that each rewrote config.txt and could reboot each other. On a board with no
+# canonical config yet it is a no-op (the legacy overlays still run and defer to
+# this once the file exists). A normal boot, where config.txt already matches, is
+# a fast no-op.
+#
+# Ordered after ctt-board-detect (needs the detected board) and before
+# time-sync/chrony (the RTC overlay must be correct before time is synced).
+
+[Unit]
+Description=CTT canonical board config.txt (RTC + buttons + LEDs)
+After=ctt-board-detect.service
+Requires=ctt-board-detect.service
+Before=time-sync.target chrony.service
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/device-config.sh
+
+[Install]
+WantedBy=sysinit.target

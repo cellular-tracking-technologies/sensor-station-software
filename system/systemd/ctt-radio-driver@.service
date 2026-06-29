@@ -1,0 +1,44 @@
+# systemd template unit: one instance per 434 MHz radio receiver.
+#
+# Activated by the board-gated udev rule (system/udev/78-ctt-radio-driver.rules,
+# generated from system/radios/maps/), which on hotplug sets
+# ENV{SYSTEMD_WANTS}="ctt-radio-driver@ch<N>.service" and SYMLINK the device to
+# /dev/ctt-radio/ch<N>. The instance name %i is therefore "ch<N>".
+#
+# The binary is built by the monorepo native CI and fetched at the pinned version
+# (system/native/ctt-radio-driver.version) by the install-native.sh OTA hook.
+#
+# Reliability (remote, unattended station — a radio that stops and does not come
+# back = extended data loss):
+#  * The driver exits NON-ZERO on any serial error/HUP (only an intended
+#    SIGTERM/SIGINT stop exits 0), so Restart=on-failure relaunches a glitched
+#    channel rather than leaving it silently down.
+#  * StartLimitIntervalSec=0 disables systemd's give-up-after-N-restarts, so a
+#    persistently-failing channel keeps retrying forever (with RestartSec
+#    backoff) instead of landing in `failed` and going dark.
+#  * WatchdogSec catches a HUNG driver (which Restart= cannot): the driver pings
+#    WATCHDOG=1 from its loop; if it stops, systemd kills + restarts it.
+#    NOTE: requires the watchdog-aware binary (ctt-radio-driver >= 0.2.0). Keep
+#    the fleet pin at >= 0.2.0 wherever this unit is deployed.
+
+[Unit]
+Description=CTT radio receiver driver (%i)
+After=dev-ctt\x2dradio-%i.device
+# Never give up restarting an acquisition channel on a remote station.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ctt-radio-driver \
+  --serial /dev/ctt-radio/%i \
+  --socket /run/ctt/radios/%i.sock \
+  --id %i \
+  --baud 115200
+
+# Creates and keeps /run/ctt/radios across instances.
+RuntimeDirectory=ctt/radios
+RuntimeDirectoryPreserve=yes
+
+Restart=on-failure
+RestartSec=2
+WatchdogSec=30

@@ -1,0 +1,21 @@
+# Render the station status screen on the HD44780/PCF8574 character LCD
+# (0x27/0x3f) from /run/ctt/lcd, which the Node station-lcd-interface writes.
+# Owns the I2C actuation, replacing the in-process i2c-bus LCD driver — the last
+# bus consumer that opened I2C from Node. Same backpack on V2 and V3; idles if no
+# LCD is found. Binary fetched by install-native.sh.
+
+[Unit]
+Description=CTT character LCD driver (HD44780 via PCF8574)
+After=ctt-board-detect.service
+Wants=ctt-board-detect.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ctt-lcd
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=ctt
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=multi-user.target

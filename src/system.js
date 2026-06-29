@@ -62,10 +62,34 @@ const Module = getModuleDetails()
 // fetch the distribution information 
 const Os = getDistribution()
 
-// parse station version / revision once
-const Id = fs.readFileSync(StationFiles.Id).toString()
-const Version = parseInt(fs.readFileSync(StationFiles.Version).toString())
-const Revision = parseInt(fs.readFileSync(StationFiles.Revision).toString())
+// Board identity comes from /run/ctt/board.env — ctt-board-detect's authoritative
+// runtime output, regenerated every boot (the services are ordered After it).
+// Fall back to the persistent /etc/ctt/station-* files (written-but-normally-
+// unread) if board.env is somehow missing.
+const BoardEnvFile = '/run/ctt/board.env'
+
+const parseBoardEnv = () => {
+  const env = {}
+  try {
+    fs.readFileSync(BoardEnvFile, 'utf8').split('\n').forEach((line) => {
+      const m = line.match(/^([A-Z_]+)=(.*)$/)
+      if (m) env[m[1]] = m[2]
+    })
+  } catch (err) {
+    // board.env absent — fall through to the /etc fallback below
+  }
+  return env
+}
+
+const fileFallback = (path) => {
+  try { return fs.readFileSync(path).toString().trim() } catch (err) { return undefined }
+}
+
+// parse station id / version / revision once (board.env, else /etc)
+const BoardEnv = parseBoardEnv()
+const Id = BoardEnv.CTT_STATION_ID ?? fileFallback(StationFiles.Id)
+const Version = parseInt(BoardEnv.CTT_STATION_VERSION ?? fileFallback(StationFiles.Version))
+const Revision = parseInt(BoardEnv.CTT_STATION_REVISION ?? fileFallback(StationFiles.Revision))
 // const id_interface = new StationIdInterface()
 // const {
 //   version: Version,

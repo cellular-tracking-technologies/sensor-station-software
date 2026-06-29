@@ -1,0 +1,51 @@
+# systemd template unit: one instance per BluSeries (FTDI) receiver.
+#
+# Activated by the board-gated udev rule (system/udev/78-ctt-blu-driver.rules,
+# generated from system/radios/maps/), which on hotplug of an FTDI 0403:6015 at a
+# mapped Blu port sets ENV{SYSTEMD_WANTS}="ctt-blu-driver@ch<N>.service" and
+# SYMLINKs the device to /dev/ctt-blu/ch<N>. The instance name %i is "ch<N>".
+#
+# Same binary as the 434 radios (ctt-radio-driver) — the BluSeries protocol is
+# newline-delimited JSON, so the driver runs in its default LINE framing: it wraps
+# each receiver line in an NDJSON envelope and passes host commands through with
+# op:raw. The Blu protocol logic lives in station-radio-interface; the driver is a
+# transparent serial<->socket bridge. (No DTR handling: the receiver is powered
+# from USB regardless of DTR — verified on hardware — so a plain open suffices,
+# exactly like a radio.)
+#
+# The binary is built by the monorepo native CI and fetched at the pinned version
+# (system/native/ctt-radio-driver.version) by the install-native.sh OTA hook.
+#
+# Reliability (remote, unattended station — a receiver that stops and does not come
+# back = extended data loss):
+#  * The driver exits NON-ZERO on any serial error/HUP (only an intended
+#    SIGTERM/SIGINT stop exits 0), so Restart=on-failure relaunches a glitched
+#    receiver rather than leaving it silently down.
+#  * StartLimitIntervalSec=0 disables systemd's give-up-after-N-restarts, so a
+#    persistently-failing receiver keeps retrying forever (with RestartSec backoff).
+#  * WatchdogSec catches a HUNG driver: it pings WATCHDOG=1 from its loop; if that
+#    stops, systemd kills + restarts it.
+#    NOTE: requires the watchdog-aware binary (ctt-radio-driver >= 0.2.0). Keep
+#    the fleet pin at >= 0.2.0 wherever this unit is deployed.
+
+[Unit]
+Description=CTT BluSeries receiver driver (%i)
+After=dev-ctt\x2dblu-%i.device
+# Never give up restarting an acquisition channel on a remote station.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ctt-radio-driver \
+  --serial /dev/ctt-blu/%i \
+  --socket /run/ctt/blu/%i.sock \
+  --id %i \
+  --baud 230400
+
+# Creates and keeps /run/ctt/blu across instances.
+RuntimeDirectory=ctt/blu
+RuntimeDirectoryPreserve=yes
+
+Restart=on-failure
+RestartSec=2
+WatchdogSec=30

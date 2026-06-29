@@ -1,0 +1,9 @@
+[Unit]
+Description=SG Boot
+After=station-boot.service
+
+[Service]
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/boottime_compute.sh
+
+[Install]
+WantedBy=multi-user.target

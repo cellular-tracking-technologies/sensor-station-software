@@ -148,20 +148,30 @@ class BluStation {
   }
 
   /**
-   * 
-   * @param {String} path Radio path from chokidar, already substringed 17 spaces 
+   * Attach a BluSeries receiver served by ctt-blu-driver over an AF_UNIX socket.
+   * The channel comes from the socket name (ch<N>); per-receiver radio config
+   * (the blu_radios poll list) comes from config.data.blu_receivers keyed by the
+   * same channel. Returns the BluReceiverManager so the caller can track it.
+   *
+   * @param {String} socket_path full /run/ctt/blu/ch<N>.sock path
+   * @param {Number} channel receiver channel (1-based)
+   * @returns {Promise<Object|null>} the BluReceiverManager, or null if unconfigured
    */
-  async startBluRadios(path) {
-    const blu_path = this.blu_paths.find(receiver => receiver.path === path)
+  async startBluRadios(socket_path, channel) {
+    const blu_path = this.blu_paths.find(receiver => receiver.channel === channel)
+    if (!blu_path) {
+      this.stationLog(`no blu_receivers config for channel ${channel}; ignoring ${socket_path}`)
+      return null
+    }
     this.blu_receivers.push(
       new BluReceiverManager({
-        path: path,
-        port: blu_path.channel,
+        socket: socket_path,
+        port: channel,
         blu_radios: blu_path.blu_radios,
       })
     )
 
-    const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
+    const blu_receiver = this.blu_receivers.find(receiver => receiver.port === channel)
 
     // Blu Event Emitter
     blu_receiver.on('complete', async (job) => {
@@ -300,49 +310,62 @@ class BluStation {
         console.error('radios could not start properly', e)
       })
 
-    blu_receiver.on('close', async () => {
-      await this.stopBluRadios(receiver.path)
-      await this.destroy_receiver(blu_receiver)
-    })
+    // The caller (base-station bluSocketWatcher) owns close/detach + re-attach.
+    return blu_receiver
   }
 
   /**
-   * @param {String} path Full path, not subsetted
+   * Turn the receiver's radios off (best-effort) before teardown.
+   * @param {Object} blu_receiver BluReceiverManager
    */
-  async stopBluRadios(path) {
-    if (path !== undefined) {
-      const blu_receiver = this.blu_receivers.find(receiver => receiver.path === path)
-      const exit_promises = blu_receiver.blu_radios
-        .map(async (radio) => {
-          await blu_receiver.setBluConfig(radio.radio, { scan: 0, rx_blink: 0 })
-          radio.beeps = await blu_receiver.stopDetections(radio)
-          radio.dropped = await blu_receiver.stopStats(radio)
-        })
+  async stopBluRadios(blu_receiver) {
+    if (!blu_receiver || !blu_receiver.blu_radios) {
+      console.log('no blu receiver to clear')
+      return
+    }
+    const exit_promises = blu_receiver.blu_radios
+      .map(async (radio) => {
+        await blu_receiver.setBluConfig(radio.radio, { scan: 0, rx_blink: 0 })
+        radio.beeps = await blu_receiver.stopDetections(radio)
+        radio.dropped = await blu_receiver.stopStats(radio)
+      })
 
-      try {
-        const radios_exit = await Promise.all(exit_promises)
-      } catch (e) {
-        console.error('radios exit error', e)
-        radios_exit()
-      }
-    } else {
-      console.log('no path to clear')
+    try {
+      await Promise.all(exit_promises)
+    } catch (e) {
+      console.error('radios exit error', e)
     }
   }
 
   /**
-   * 
+   *
    * @param {Object} receiver BluReceiver with timeout events
    */
   async destroy_receiver(receiver) {
-    await this.stopBluRadios(receiver.path)
+    await this.stopBluRadios(receiver)
     setTimeout(() => {
-
-      delete receiver.path
       receiver.destroyed_port = receiver.port
+      delete receiver.socket
       delete receiver.blu_radios
       delete receiver.port
     }, 5000)
+  }
+
+  /**
+   * Detach the receiver on a channel (driver socket gone, or transport closed)
+   * and drop it from the active list so a later reconcile attaches a fresh one
+   * when the socket reappears.
+   * @param {Number} channel receiver channel (1-based)
+   */
+  async removeReceiver(channel) {
+    const receiver = this.blu_receivers.find(r => r.port === channel)
+    if (!receiver) return
+    this.blu_receivers = this.blu_receivers.filter(r => r.port !== channel)
+    try {
+      await this.destroy_receiver(receiver)
+    } catch (e) {
+      console.error(`error destroying blu receiver ch${channel}`, e)
+    }
   }
 
 
@@ -355,31 +378,9 @@ class BluStation {
       delete this.data_manager
       delete this.broadcast
       delete this.sensor_socket_server
-      delete this.path
     } catch (e) {
       console.error('problem with destroying blustation')
     }
-  }
-
-  /**
-   * 
-   * @param {String} port 
-   * @returns {Number} index number
-   */
-  findBluPort(port) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.port === Number(port))
-    return index
-  }
-
-  /**
-   * 
-   * @param {String} path 
-   * @returns {Number} index number
-   */
-  findBluIndex(path) {
-    let index = this.blu_receivers.findIndex(receiver => receiver.path === path.substring(17))
-    // console.log('findBluPath index', index)
-    return index
   }
 
   /**

@@ -1,0 +1,73 @@
+# For more options and information see
+# http://rptl.io/configtxt
+# Some settings may impact device functionality. See link above for details
+
+# Uncomment some or all of these to enable the optional hardware interfaces
+# Enalbe i2c bus 1 and 0
+dtparam=i2c_arm=on
+dtparam=i2c1=on
+dtparam=i2c0=on
+#dtparam=i2s=on
+#dtparam=spi=on
+
+# Enable audio (loads snd_bcm2835)
+dtparam=audio=on
+
+# Additional overlays and parameters are documented
+# /boot/firmware/overlays/README
+
+# Automatically load overlays for detected cameras
+# camera_auto_detect=1
+
+# Automatically load overlays for detected DSI displays
+# display_auto_detect=1
+# Automatically load initramfs files, if found
+auto_initramfs=1
+
+# Enable DRM VC4 V3D driver
+# dtoverlay=vc4-kms-v3d
+# max_framebuffers=2
+
+# Don't have the firmware create an initial video= setting in cmdline.txt.
+# Use the kernel's default instead.
+disable_fw_kms_setup=1
+
+# Disable compensation for displays with overscan
+disable_overscan=1
+
+# Run as fast as firmware / board allows
+arm_boost=1
+
+# disable bluetooth to use uart
+dtoverlay=disable-bt
+
+# enable uart tx / rx for iridigum
+dtoverlay=uart1,txd1_pin=32,rxd1_pin=33
+
+# Enable PPS for the GPS
+dtoverlay=pps-gpio,gpio=13
+
+# System RTC
+dtoverlay=i2c-rtc,mcp7941x
+
+# reset usb
+gpio=24=op,dh
+# start the GPS
+gpio=6=op,dl
+# IO Expander (SX1509B enable)
+gpio=39=op,dh
+
+# Front-panel buttons (kernel gpio-keys -> evdev). Status LEDs are on the SX1509B
+# (driven by ctt-leds over I2C), so there is no gpio-led overlay on V3.
+dtoverlay=gpio-key,gpio=17,active_low=0,gpio_pull=down,keycode=103,label=ctt-btn-up
+dtoverlay=gpio-key,gpio=22,active_low=0,gpio_pull=down,keycode=108,label=ctt-btn-down
+dtoverlay=gpio-key,gpio=27,active_low=0,gpio_pull=down,keycode=28,label=ctt-btn-select
+dtoverlay=gpio-key,gpio=8,active_low=0,gpio_pull=down,keycode=1,label=ctt-btn-back
+
+[cm4]
+# Enable host mode on the 2711 built-in XHCI USB controller.
+# This line should be removed if the legacy DWC2 controller is required
+# (e.g. for USB device mode) or if USB support is not required.
+otg_mode=1
+
+[all]

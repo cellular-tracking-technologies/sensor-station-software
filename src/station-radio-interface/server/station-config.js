@@ -1,6 +1,5 @@
 import fs from 'fs'
 import default_config from './default-config.js'
-import RadioMaps from './radio-maps/index.js'
 
 class StationConfig {
   /**
@@ -31,28 +30,15 @@ class StationConfig {
   /**
    * opts.config
    **/
-  threadRadioMapsWithConfig(config) {
-    const { radios, blu_receivers } = config
-
-    // thread 434 radio hardware maps inside config
-    radios.forEach(radio => {
-      const found_radio = RadioMaps.Radio.find(map_info => radio.channel == map_info.channel)
-      if (found_radio) {
-        // identified the radio in the radio map
-        radio.path = found_radio.path
-      }
-    })
-    // thread blu radio hardware maps inside config
-    if (!blu_receivers) {
+  // Neither radio family is path-mapped any more: ctt-radio-driver and
+  // ctt-blu-driver assign the channel via the socket name
+  // (/run/ctt/{radios,blu}/ch<N>.sock), so base-station attaches by channel
+  // directly and config.data.{radios,blu_receivers} stay channel-keyed. This
+  // just fills in the default BluSeries receiver list when the config omits it.
+  ensureBluReceivers(config) {
+    if (!config.blu_receivers) {
       config.blu_receivers = this.default_config.blu_receivers
     }
-    config.blu_receivers.forEach(radio => {
-      const found_radio = RadioMaps.Blu.find(map_info => radio.channel == map_info.channel)
-      if (found_radio) {
-        // identified the radio in the radio map
-        radio.path = found_radio.path
-      }
-    })
     return config
   }
 
@@ -74,7 +60,7 @@ class StationConfig {
       }
     }
 
-    this.data = this.threadRadioMapsWithConfig(config)
+    this.data = this.ensureBluReceivers(config)
     return this.data
   }
 
@@ -82,22 +68,15 @@ class StationConfig {
    * save config to disk
    */
   save() {
-    // strip radio path from config to be threaded dynamically on load
+    // Don't persist transient per-radio runtime handles if any leaked onto the
+    // config. Receivers are channel-keyed and carry no device path.
     let cloned_config = JSON.parse(JSON.stringify(this.data))
-    cloned_config.radios.forEach(radio => {
-      if (radio.path) {
-        delete radio.path
-      }
-    })
 
-    cloned_config.blu_receivers.forEach(receiver => {
-      if (receiver.path) {
-        delete receiver.path
-        receiver.blu_radios.forEach((radio) => {
-          delete radio.beeps
-          delete radio.dropped
-        })
-      }
+    cloned_config.blu_receivers?.forEach(receiver => {
+      receiver.blu_radios?.forEach((radio) => {
+        delete radio.beeps
+        delete radio.dropped
+      })
     })
     let contents = JSON.stringify(cloned_config, null, 2)
     fs.writeFileSync(this.config_filepath, contents)

@@ -1,10 +1,17 @@
 [Unit]
-Description=Station ID
-After=network.target
+Description=Station modem/SIM APN selection
+# Runs check-sim-id.sh (modem data-path policy + per-SIM APN). Hardware identity
+# and the RTC overlay that save-station-id.sh used to do are now owned by
+# ctt-board-detect / ctt-device-config.
+# After ModemManager so check-sim-id runs once MM is active and can enumerate the
+# modem. Ordering only (no Requires/Wants): MM is already enabled, and if it ever
+# fails to start, this unit still runs.
+# Chain: modem-boot-state (Before=MM) -> ModemManager -> station-boot.
+After=network.target ModemManager.service
 
 [Service]
 Type=oneshot
-ExecStart=/lib/ctt/sensor-station-software/system/scripts/save-station-id.sh
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/check-sim-id.sh
 RemainAfterExit=true
 
 [Install]

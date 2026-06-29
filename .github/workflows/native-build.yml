@@ -1,0 +1,39 @@
+# Compile-check the native/ C++ tools on every change. Builds the deployable
+# armhf binaries via the same pinned bullseye Docker toolchain as `make arm`,
+# so CI exercises the exact path stations' binaries are produced by. No release
+# here — see native-release.yml for tag-gated publishing.
+name: native-build
+
+on:
+  push:
+    paths:
+      - 'native/**'
+      - '.github/workflows/native-build.yml'
+  pull_request:
+    paths:
+      - 'native/**'
+      - '.github/workflows/native-build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cross-compile armhf tools
+        working-directory: native
+        run: make arm
+
+      - name: Confirm armhf ELF
+        working-directory: native
+        run: |
+          file build-arm/ctt-radio-driver build-arm/ctt-board-detect
+          file build-arm/ctt-radio-driver | grep -q 'ARM' || { echo "::error::not an ARM binary"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-armhf
+          path: |
+            native/build-arm/ctt-radio-driver
+            native/build-arm/ctt-board-detect
+          if-no-files-found: error

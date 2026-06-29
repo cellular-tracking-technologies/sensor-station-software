@@ -7,8 +7,10 @@ class BluReceiverManager extends BluReceiver {
   constructor(opts) {
     super({
       path: opts.path,
+      socket: opts.socket,
     })
     this.path = opts.path
+    this.socket = opts.socket
     this.port = opts.port
     this.blu_radios = opts.blu_radios
     this.firmware_dir = 'src/hardware/ctt/bluseries-receiver/driver/bin/'

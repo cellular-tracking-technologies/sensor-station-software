@@ -1,110 +1,36 @@
-import LCD from './lcdi2c.js'
-import { exec } from 'child_process'
+import LcdFramebuffer from './lcd-framebuffer.js'
 
+// The character LCD is now actuated by the native ctt-lcd daemon, which renders
+// a framebuffer this module publishes to /run/ctt/lcd. Display composites screens
+// into an LcdFramebuffer (the same drawing API the old in-process I2C driver
+// exposed) instead of opening the I2C bus. The menu/stats logic is unchanged —
+// it still draws via `display` and `display.lcd`.
 class Display {
-  /**
-   * @param {Object} settings
-   *  
-   */
   constructor(settings) {
-    /** @private @const {number} columns Max characters that can be display on a single line. */
+    /** @private @const {number} Max characters per line. */
     this.columns_ = settings.columns
 
-    /** @private @const {number} rows Max lines on the lcd. */
+    /** @private @const {number} Max lines on the lcd. */
     this.rows_ = settings.rows
 
-    /** @private @const {Array<number>} i2cAddresses Supported i2c-to-parallel converters for lcds. */
-    this.i2cAddresses_ = settings.i2cAddresses
-
-    /** @private @const {boolean} debug Data sent to lcd will also be routed to console.*/
+    /** @private @const {boolean} Mirror lcd output to the console. */
     this.debug_ = settings.debug
 
-    /** @private {Object} Physical driver for lcd screen. */
-    this.lcd = null
+    /** @private {LcdFramebuffer} Virtual LCD published to /run/ctt/lcd. */
+    this.lcd = new LcdFramebuffer({ cols: this.columns_, rows: this.rows_ })
   }
+
   /**
-   * Retrieves all i2c addresses for a specified i2c port  
-   * @param {number} i2c_port - Port number of the i2c bus to-be-searched.
-   * @return {Promise<Object>} Resolve - Object with port and list of addresses.
-   */
-  scanI2cPort_(i2c_port) {
-    return new Promise((resolve, reject) => {
-      let output = ""
-      let child = exec(`i2cdetect -y ${i2c_port}`, (error, stdout, stderr) => {
-        if (error) {
-          reject(error)
-        }
-      })
-
-      child.stdout.on('data', (response) => {
-        output += response
-      })
-
-      child.on('close', (code) => {
-
-        let i2c = {
-          addresses: [],
-          port: i2c_port
-        }
-
-        output.split("\n")
-          .filter(line => line.indexOf(":") > -1)
-          .forEach(line => {
-            let data = line.match(/ [A-Fa-f0-9]{2}/g)
-            if (data != null) {
-              i2c.addresses.push(...data.map(record => record.trim()))
-            }
-          })
-
-        resolve(i2c)
-      })
-    })
-  }
-  /**
-   * Attempts to initialize lcd by searching from a list of i2c addresses on a port.
-   * @param {number} port i2c bus number 
-   * @param {Array<number>} addresses List of i2c addresses present on 'bus'.
-   * @return {boolean} True if the lcd was discovered. 
-   */
-  initLcd_(port, addresses) {
-
-    let allowed = addresses.map((element) => {
-      return parseInt(element, 16)
-    }).filter(address => this.i2cAddresses_.includes(address))
-
-    if (allowed.length == 0) {
-      return false
-    }
-
-    this.lcd = new LCD(port, allowed[0], this.columns_, this.rows_) // https://github.com/craigmw/lcdi2c
-
-    return true
-  }
-  /**
-   * Initializes lcd by scanning i2c ports for supported device.
-   * @return {Promise<string>} Returns 'ok' on resolve or error string for reject.
+   * Hardware detection now lives in the native ctt-lcd daemon, so there is no
+   * I2C scan here. Kept async for API compatibility with callers that await it.
+   * @return {Promise<string>} Resolves 'ok'.
    */
   init() {
-    return new Promise((resolve, reject) => {
-      const i2cScans = [
-        this.scanI2cPort_(0), // i2c-0
-        this.scanI2cPort_(1)  // i2c-1
-      ]
-      Promise.all(i2cScans).then((results) => {
-        results.forEach((i2c) => {
-          if (this.initLcd_(i2c.port, i2c.addresses) == true) {
-            resolve("ok")
-            return
-          }
-        })
-        reject("Display Not Found")
-      }).catch((err) => {
-        reject(err.toString())
-      })
-    })
+    return Promise.resolve('ok')
   }
+
   /**
-   * Clears all data from the lcd screen.     
+   * Clears all data from the lcd screen.
    */
   clear() {
     if (this.lcd == null) {
@@ -113,6 +39,7 @@ class Display {
     this.lcd.on()
     this.lcd.clear()
   }
+
   /**
    * Maps a list of strings to each row then writes to the lcd screen.
    * @param {Array<string>} rows - Data to be written to lcd.
@@ -121,21 +48,21 @@ class Display {
     if (this.lcd == null) {
       return
     }
-
     let line = 1
-    display.clear()
-    this.log_("")
+    this.clear()
+    this.log_('')
     rows.forEach(element => {
-      display.writeRow(element, line)
+      this.writeRow(element, line)
       this.log_(element)
       line++
     })
-    this.log_("")
+    this.log_('')
   }
+
   /**
    * Writes a string to a specific row of the lcd.
    * @param {string} data - Data to be written to lcd.
-   * @param {number} row - Row of lcd to be written.     
+   * @param {number} row - Row of lcd to be written.
    */
   writeRow(data, row) {
     if (this.lcd == null) {
@@ -146,6 +73,27 @@ class Display {
     }
     this.lcd.println(data, row)
   }
+
+  /**
+   * Renders a static message immediately, cancelling the debounced flush. Used
+   * on shutdown so the panel shows the interface is no longer running instead of
+   * leaving a stale, live-looking menu for the ctt-lcd daemon to keep
+   * displaying. Synchronous so it completes before the process exits.
+   * @param {Array<string>} rows - One string per LCD row (pad with '' for gaps).
+   */
+  writeNow(rows) {
+    if (this.lcd == null) {
+      return
+    }
+    let line = 1
+    this.lcd.clear()
+    rows.forEach(element => {
+      this.writeRow(element, line)
+      line++
+    })
+    this.lcd.flushNow()
+  }
+
   /**
    * Wrapper around console.log() that can be switched on and off via this.debug_.
    * @param {*} data Information to be printed to the console.
@@ -160,7 +108,6 @@ class Display {
 let display = new Display({
   columns: 20,
   rows: 4,
-  i2cAddresses: [0x3f, 0x27],
   debug: false
 })
 

@@ -1,0 +1,44 @@
+# Units this dir used to deploy and must now be absent on every station.
+# One basename per line (blank lines and #-comments ignored). The OTA
+# install-systemd hook (apply_removals + _systemd_remover) disables+stops and
+# removes each on deploy.
+#
+# Add an entry whenever you delete/rename a *.service that was previously
+# shipped, so the removal propagates to already-provisioned stations.
+
+# Renamed to ctt-board-detect.service (the tool now named for what it does:
+# boot-time board detection + hardware identity).
+ctt-station-id.service
+
+# Removed: the V2 GPS-HAT kick. New boards have onboard GPS, so the HAT and its
+# boot-time GPIO pulse are gone; this branch ships only on the new image.
+ctt-gps-kick.service
+
+# Removed: an unused oneshot placeholder (ExecStart=/bin/true) intended to group
+# the ctt-* services so `systemctl stop ctt` would stop them all via PartOf —
+# but nothing was ever wired to it, so it controlled nothing. Dropped until that
+# grouping is actually implemented.
+ctt.service
+
+# Removed: the standalone LED gpio-led overlay service. It managed its own
+# config.txt block independently of ctt-buttons-overlay; two append-at-end
+# managers fought over block order and rebooted each other (V2 reboot loop). The
+# LED migration is being redone as a single unified board device-tree config;
+# until then V2 status LEDs use the in-process path. Purge the orphaned unit so
+# it stops re-adding its block + looping on already-updated stations.
+ctt-leds-overlay.service
+
+# Replaced by ctt-device-config.service. These per-subsystem overlays each
+# dynamically rewrote /boot/config.txt at boot (append a managed block / sed the
+# RTC line) and rebooted on a diff — two append-at-end managers fought and
+# rebooted each other (the V2 loop). ctt-device-config copies one complete static
+# config.txt per revision instead. Purge the old units so nothing else edits
+# config.txt on already-provisioned stations.
+ctt-rtc-overlay.service
+ctt-buttons-overlay.service
+
+# Removed: the auto-run Telit RNDIS provisioner. RNDIS NV binding (AT#RNDIS=1,0)
+# is done at MANUFACTURING; the runtime assumes an already-provisioned modem, so
+# nothing should provision (and reboot the modem) at boot. The ctt-modem-provision
+# binary remains as a manual CLI; only the udev-activated service is retired.
+ctt-modem-provision.service

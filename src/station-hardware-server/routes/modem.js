@@ -1,39 +1,46 @@
 
 import express from 'express'
 import { exec } from 'child_process'
-import ModemUtil from '../../hardware/pi/network/modem.js'
+import ModemCache from '../../hardware/pi/network/modem-cache.js'
+import ConnectivityProbe from '../../hardware/pi/network/connectivity-probe.js'
 import RunCommand from '../../command.js'
 
 const router = express.Router()
 
 /* GET home page. */
-router.get('/', function (req, res, next) {
-  res.json(ModemUtil.info())
+router.get('/', async function (req, res, next) {
+  try {
+    const info = await ModemCache.get()
+    res.json(info)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-router.get('/ppp', (req, res, next) => {
-  // check if at least 1 ppp connection exists
-  exec('ifconfig | grep wwan | wc -l', (err, stdout, stderr) => {
-    if (err) {
-      res.status(500).send(err.toString())
-    }
-    let status = false
-    if (parseInt(stdout) > 0) {
-      status = true
-    }
-    res.json({
-      ppp: status
-    })
-  })
+router.get('/ppp', async (req, res, next) => {
+  // Real connectivity probe via ConnectivityProbe — an actual ping to
+  // 1.1.1.1 bound to the modem interface, run in the background every 10s.
+  // Returns { ppp: boolean, interface, ageMs } where ppp is true only if
+  // a probe succeeded within the freshness window.
+  //
+  // This replaces the old "ifconfig | grep modem-iface" check, which gave
+  // false positives whenever an unprovisioned modem brought up mdm0
+  // without the modem-side NAT actually forwarding traffic.
+  try {
+    const status = await ConnectivityProbe.get()
+    res.json(status)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-router.get('/signal-strength', (req, res) => {
-
-  res.json(ModemUtil.info())
-  // res.json({
-  //   signal: ModemUtil.signal,
-  //   state: ModemUtil.state,
-  // })
+router.get('/signal-strength', async (req, res) => {
+  try {
+    const info = await ModemCache.get()
+    res.json(info)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 router.get('/enable-modem', async (req, res) => {

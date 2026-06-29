@@ -5,7 +5,7 @@ import Network from '../hardware/pi/network/index.js'
 import display from './display-driver.js'
 import { wifi, battery, cell, temp, solar, thresholds } from './lcd-chars.js'
 /**
- * 
+ *
  */
 class StationStats {
   /**
@@ -14,6 +14,7 @@ class StationStats {
   constructor(base_url, refresh = 10000) {
     this.volt_url = url.resolve(base_url, 'sensor/voltages')
     this.temp_url = url.resolve(base_url, 'sensor/temperature')
+    this.modem_url = url.resolve(base_url, 'modem')
     this.autoRefresh = refresh
   }
   loading() {
@@ -22,27 +23,31 @@ class StationStats {
   }
   async results() {
     try {
-      const [voltages, temperature,] = await Promise.all([
-        fetch(this.volt_url),
-        fetch(this.temp_url),
-      ]).then(([voltages, temperature,]) => {
-        return [
-          voltages.json(),
-          temperature.json(),
-        ]
-      })
-      // await this.getSolarVoltage(await voltages)
-      await this.getBattVoltage(await voltages)
-      await this.getTempValues(await temperature)
+      const [voltages, temperature, modem] = await Promise.all([
+        fetch(this.volt_url).then(r => r.json()),
+        fetch(this.temp_url).then(r => r.json()),
+        fetch(this.modem_url).then(r => r.json()).catch(() => null),
+      ])
 
+      await this.getBattVoltage(voltages)
+      await this.getTempValues(temperature)
+
+      // Wifi is still read in-process (no equivalent /wifi endpoint yet).
+      // Modem now flows through hardware-server's /modem cache so the LCD
+      // doesn't fork its own mmcli subprocesses on each refresh.
       const network = Network.Wifi.GetCurrentNetwork()
-      const modem = Network.Modem.info()
 
       const wifi_signal = network && network.connected == true ? network.signal : undefined
-      const modem_signal = modem && modem.state == 'connected' ? modem.signal : undefined
-
-      const modem_rssi = modem_signal ? modem.rssi : undefined
-
+      // Show modem signal whenever the modem is alive and reporting a value.
+      // Don't gate on state=='connected' — ModemManager only reports 'connected'
+      // when MM owns the bearer. With the Telit RNDIS path the bearer is set
+      // up at the modem (AT#RNDIS / AT#IPPASSTH), so MM sees 'registered' and
+      // never advances to 'connected' even though data is flowing fine.
+      const live_states = ['connected', 'registered', 'enabled', 'searching']
+      const modem_signal = (modem && live_states.includes(modem.state) && typeof modem.signal === 'number')
+        ? modem.signal
+        : undefined
+      const modem_rssi = (modem_signal !== undefined) ? modem.rssi : undefined
 
       await this.createWifiChar(wifi_signal)
       await this.createCellChar(modem_signal, modem_rssi)

@@ -1,30 +1,40 @@
-import { SerialPort, ReadlineParser } from 'serialport'
 import moment from 'moment'
 import EventEmitter from 'events'
 
 import DataReceiver from '../../hardware/ctt/atmega32u4_receiver.js'
+import { SerialTransport, SocketTransport } from './radio-transports.js'
 
 /* event emitter for a radio:   events
   beep  - parsed JSON document from radio
-  raw   - radio output not JSON parsable 
+  raw   - radio output not JSON parsable
   open  - radio port opened
   close - radio closed / radio error
+
+  Transport-agnostic: a RadioReceiver reaches its radio either by direct serial
+  (opts.port_uri) or via a ctt-radio-driver unix socket (opts.socket_path). The
+  decode (atmega32u4_receiver on each line), event emission, command writing and
+  firmware polling are identical either way — only the byte plumbing differs
+  (see radio-transports.js).
 */
 class RadioReceiver extends EventEmitter {
   /**
-   * 
-   * @param {*} opts 
+   *
+   * @param {*} opts
+   * @param {String} [opts.port_uri]    serial device path (serial transport)
+   * @param {String} [opts.socket_path] /run/ctt/radios/ch<N>.sock (socket transport)
+   * @param {Number} [opts.baud_rate]
+   * @param {Number|String} opts.channel
    */
   constructor(opts) {
     super()
     this.port_uri = opts.port_uri
+    this.socket_path = opts.socket_path
     this.baud_rate = opts.baud_rate
     this.channel = opts.channel
-    this.restart_ms = opts.restart_ms | 15000
-    this.restart_on_close = opts.restart_on_close | true
-    // this.restart_on_close = opts.restart_on_close
-    this.serialport
-    this.parser
+    this.restart_ms = opts.restart_ms || 15000
+    // default true; destroy() flips this to false to stop reconnecting
+    this.restart_on_close = opts.restart_on_close ?? true
+    this.transport = null
     // poll firmware every 10 minutes
     this.firmware_poll_period = 600
     this.polling_interval = null
@@ -45,10 +55,10 @@ class RadioReceiver extends EventEmitter {
 
   destroy() {
     this.cancel()
-    delete this.port_uri
-    delete this.parser
+    this.restart_on_close = false
     this.stopPollingFirmware()
-    delete this
+    try { this.transport?.close() } catch (e) { /* already gone */ }
+    this.transport = null
   }
 
   pollFirmware() {
@@ -66,7 +76,7 @@ class RadioReceiver extends EventEmitter {
   }
 
   /**
-   * 
+   *
    * @param {msg} msg to transmit:  prefix with tx:
    */
   tx(msg) {
@@ -81,7 +91,7 @@ class RadioReceiver extends EventEmitter {
   }
 
   /**
-   * 
+   *
    * @param {list} cmds - array of commands to issue
    */
   issueCommands(cmds) {
@@ -93,23 +103,22 @@ class RadioReceiver extends EventEmitter {
   }
 
   /**
-   * 
-   * @param {*} data - write given data to the radio
+   *
+   * @param {*} data - write given data (receiver wire format) to the radio
    */
   write(data) {
     if (data) { // data was coming in null...
       console.log(`${moment(new Date()).utc().format('YYYY-MM-DD HH:mm:ss')} writing to radio ${this.channel}:  ${data.trim()}`)
-      // emit 'write' message  with data to write / channel
+      // emit 'write' message with data to write / channel
       this.emit('write', {
-        // msg: data.trim(),
         msg: data,
         channel: this.channel
       })
-      this.serialport.write(data.trim() + '\r\n', function (err) {
-        if (err) {
-          this.emit('error', `error writing to radio ${this.data()} ${err.toString()}`)
-        }
-      })
+      try {
+        this.transport.writeWire(data)
+      } catch (err) {
+        this.emit('error', `error writing to radio ${JSON.stringify(this.data())} ${err.toString()}`)
+      }
     }
   }
 
@@ -119,6 +128,7 @@ class RadioReceiver extends EventEmitter {
   data() {
     return {
       port_uri: this.port_uri,
+      socket_path: this.socket_path,
       baud_rate: this.baud_rate,
       channel: this.channel,
     }
@@ -126,75 +136,93 @@ class RadioReceiver extends EventEmitter {
 
   /**
    * start the radio
-   * 
+   *
    * @param {*} delay start the radio after delay milliseconds
    */
   start(delay = 0) {
     let self = this
-    setTimeout(() => {
-      self.buildSerialInterface()
+    this.timeoutId = setTimeout(() => {
+      self.buildInterface()
     }, delay)
   }
 
   /**
- * cancel the radio
- */
+   * cancel the radio
+   */
   cancel() {
     clearTimeout(this.timeoutId)
   }
 
   /**
-   * establish radio interface connection
-   * emit basic events
+   * pick the transport from the constructor opts: socket_path -> driver socket,
+   * otherwise port_uri -> direct serial.
    */
-  buildSerialInterface() {
-    let port = new SerialPort({
-      path: this.port_uri,
-      baudRate: this.baud_rate
-    })
-    port.on('open', () => {
-      this.emit('open', this.data())
-    })
-    port.on('close', () => {
-      this.emit('close', this.data())
+  makeTransport() {
+    if (this.socket_path) {
+      return new SocketTransport({ socket_path: this.socket_path })
+    }
+    return new SerialTransport({ port_uri: this.port_uri, baud_rate: this.baud_rate })
+  }
 
+  /**
+   * one complete line of radio output -> decode -> emit beep/raw/response/radio-fw
+   */
+  handleLine(line) {
+    let raw_beep
+    const now = moment(new Date()).utc()
+    try {
+      raw_beep = DataReceiver(line)
+    } catch (err) {
+      // not a JSON document - emit the raw input
+      this.emit('raw', line)
+      return
+    }
+    // DataReceiver returns null (without throwing) for lines it can't classify
+    // — e.g. some command responses. Treat that like the catch above: surface
+    // the raw line rather than dereferencing null (which crashed the process).
+    if (!raw_beep) {
+      this.emit('raw', line)
+      return
+    }
+    raw_beep.channel = this.channel
+    raw_beep.received_at = now
+    if (raw_beep.firmware) {
+      this.emit('radio-fw', raw_beep.firmware)
+      this.fw_version = raw_beep.firmware
+      return
+    }
+    if (raw_beep.key) {
+      // radio command response
+      this.emit('response', raw_beep)
+    } else {
+      this.emit('beep', raw_beep)
+    }
+  }
+
+  /**
+   * establish the radio interface over the selected transport and emit the
+   * same basic events regardless of transport.
+   */
+  buildInterface() {
+    const transport = this.makeTransport()
+    transport.on('open', () => {
+      this.emit('open', this.data())
+      this.startPollingFirmware()
+    })
+    transport.on('line', (line) => this.handleLine(line))
+    transport.on('error', (err) => {
+      this.emit('error', `${err.toString()} ${JSON.stringify(this.data())}`)
+    })
+    transport.on('close', () => {
+      this.stopPollingFirmware()
+      this.emit('close', this.data())
       if (this.restart_on_close == true) {
         // restart the radio interface after given delay
         this.start(this.restart_ms)
       }
     })
-    port.on('error', (err) => {
-      this.emit('error', `${err.toString() + this.data().toString()}`)
-    })
-    this.serialport = port
-    let parser = new ReadlineParser()
-    parser.on('data', (line) => {
-      let raw_beep
-      let now = moment(new Date()).utc()
-      try {
-        raw_beep = DataReceiver(line)
-        raw_beep.channel = this.channel
-        raw_beep.received_at = now
-        if (raw_beep.firmware) {
-          this.emit('radio-fw', raw_beep.firmware)
-          this.fw_version = raw_beep.firmware
-          return
-        }
-
-        if (raw_beep.key) {
-          // radio command response
-          this.emit('response', raw_beep)
-        } else {
-          this.emit('beep', raw_beep)
-        }
-      } catch (err) {
-        // not a JSON document - emit the raw input
-        this.emit('raw', line)
-        return
-      }
-    })
-    this.parser = port.pipe(parser)
-    this.startPollingFirmware()
+    this.transport = transport
+    transport.open()
   }
 }
 
