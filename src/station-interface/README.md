@@ -88,7 +88,7 @@ The full route table is declared in `app.js`. Routes fall into a few groups.
 | `POST /reboot` | `routes/controls/reboot.js` | Reboot the station (`shutdown -r now`) |
 | `POST /radio-restart`, `POST /program-radios` | `routes/controls/` | Restart / reprogram the 434 MHz receivers |
 | `POST /modem/enable`, `POST /modem/disable` | `routes/controls/` | Toggle the cellular modem |
-| `GET /modem-signal-strength` | `routes/controls/` | Proxy modem signal strength from the hardware API |
+| `GET /modem-signal-strength` | `routes/controls/` | Proxy modem signal strength from the hardware API; `state` is set to `connected`/`disconnected` from the `/modem/ppp` reachability probe (same signal as the diag-B LED), not mmcli's `state` which false-positives on RNDIS (raw mmcli state kept as `modem_state`) |
 | `POST /wifi/enable`, `POST /wifi/disable` | `routes/controls/` | Toggle Wi-Fi |
 | `GET /software` | `routes/controls/software.js` | Proxy installed node/software version |
 | `GET /internet-gateway`, `GET /internet-wifi-strength` | `routes/controls/` | Proxy connectivity info |
@@ -144,7 +144,7 @@ example:
 | Dashboard route | Proxied call |
 |-----------------|--------------|
 | `GET /software` | `http://localhost:3000/node/version` |
-| `GET /modem-signal-strength` | `http://localhost:3000/modem/signal-strength` |
+| `GET /modem-signal-strength` | `http://localhost:3000/modem/signal-strength` + `http://localhost:3000/modem/ppp` |
 | `GET /internet-gateway` | `http://localhost:3000/internet/gateway` |
 | `GET /internet-wifi-strength` | `http://localhost:3000/internet/wifi-networks` |
 | `GET /reboot-schedule` | `http://localhost:3000/control/reboot-schedule` |
