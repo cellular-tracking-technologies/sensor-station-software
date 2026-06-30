@@ -67,27 +67,39 @@ router.get('/data', (req, res, next) => {
  * load WiFi credentials from USB mount point
  * overwrite wpa_supplicant file
  */
-router.get('/wifi', function (req, res, next) {
+router.get('/wifi', async function (req, res, next) {
   const path = "/mnt/usb/wifi/credentials.json"
   let response = fail
 
   if (fs.existsSync(path)) {
     try {
       // load JSON file with credentials
-      var data = JSON.parse(fs.readFileSync(path, 'utf8'))
+      const data = JSON.parse(fs.readFileSync(path, 'utf8'))
+
+      // Bring the connection up and WAIT for it. `nmcli dev wifi connect` creates
+      // the connection profile (named after the SSID) and activates it; awaiting
+      // means we only touch that profile after it exists, and a failure (SSID out
+      // of range, bad password, driver issue) rejects into the catch below.
+      //
+      // These two commands were previously fired without `await`, so the ipv4
+      // tweak raced ahead of the profile creation and rejected with "unknown
+      // connection"; that unhandled rejection crashed the hardware server, which
+      // in turn aborted the in-flight connect. Serializing them fixes both.
       if (data.hasOwnProperty("psk")) {
-        command(`sudo nmcli dev wifi connect "${data.ssid}" password "${data.psk}"`)
-        command(`sudo nmcli c mod "${data.ssid}" ipv4.method auto`)
+        await command(`sudo nmcli dev wifi connect "${data.ssid}" password "${data.psk}"`)
       } else {
-        command(`sudo nmcli dev wifi connect "${data.ssid}"`)
-        command(`sudo nmcli c mod "${data.ssid}" ipv4.method auto`)
+        await command(`sudo nmcli dev wifi connect "${data.ssid}"`)
       }
-      // command('sudo rm /etc/wpa_supplicant/.wpa_supplicant.conf.swp') // remove bad lock file
+      // Profile now exists — ensure it uses DHCP (the nmcli default for a new
+      // wifi connection; set explicitly to be safe).
+      await command(`sudo nmcli c mod "${data.ssid}" ipv4.method auto`)
 
       response = success
     } catch (err) {
+      // Report the real outcome instead of crashing or falsely returning success.
       console.log('something went wrong adding wifi network')
       console.log(err)
+      response = fail
     }
   } else {
     console.log('hardware-server WiFi crendentials path does not exist', path)
