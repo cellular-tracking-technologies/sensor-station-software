@@ -1,9 +1,14 @@
 #!/bin/bash
-# CTT OTA hook: deploy NetworkManager connection profiles.
+# CTT OTA hook: deploy NetworkManager connection profiles + config drop-ins.
 #
-# Source: $REPO/system/network/*.nmconnection (default REPO=/usr/lib/ctt/sensor-station-software)
-# Dest:   /etc/NetworkManager/system-connections/  (root:root mode 0600 — NM requires it)
-# Reload: nmcli connection reload (only when something changed)
+# Profiles:
+#   Source: $REPO/system/network/*.nmconnection (default REPO=/usr/lib/ctt/sensor-station-software)
+#   Dest:   /etc/NetworkManager/system-connections/  (root:root mode 0600 — NM requires it)
+#   Reload: nmcli connection reload (only when something changed)
+# Config drop-ins:
+#   Source: $REPO/system/network/conf.d/*.conf
+#   Dest:   /etc/NetworkManager/conf.d/  (root:root mode 0644 — global config, not secrets)
+#   Reload: nmcli general reload conf (only when something changed)
 #
 # Idempotent — runtime-owned keys (stripped before diff so we don't
 # fight the runtime owner):
@@ -25,3 +30,15 @@ deploy_dir \
   600 \
   '^(timestamp|apn|autoconnect)=' \
   'nmcli connection reload'
+
+# NetworkManager config drop-ins (conf.d): global defaults, not connection
+# profiles, so mode 0644 (world-readable config) and reloaded via the config
+# reload rather than the connection reload. Ships wifi-powersave-off.conf so
+# WiFi adapters stay reachable instead of sleeping into ARP-silence.
+deploy_dir \
+  "${REPO:-/usr/lib/ctt/sensor-station-software}/system/network/conf.d" \
+  /etc/NetworkManager/conf.d \
+  '*.conf' \
+  644 \
+  '' \
+  'nmcli general reload conf'
