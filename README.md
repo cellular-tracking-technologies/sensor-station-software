@@ -10,7 +10,7 @@ This monorepo holds the on-device application layer: a set of Node.js services,
 a layer of small compiled C++ hardware tools, and the OS configuration (systemd
 units, udev rules, boot and update scripts) that ties them together.
 
-`v1.8.0` · Node.js (ES modules) + C++17 · Raspberry Pi OS (32-bit armhf)
+`v2.0.0` · Node.js (ES modules) + C++17 · Raspberry Pi OS (32-bit armhf)
 
 ---
 
@@ -156,6 +156,7 @@ on-board devices the software interacts with:
 | Front-panel display | HD44780 character LCD via PCF8574 backpack | I2C |
 | GPS | u-blox / Quectel GNSS module | UART + PPS |
 | Cellular | LTE modem (Telit / Quectel) | USB |
+| WiFi (optional uplink) | RTL8811CU USB adapter | USB |
 
 Chip-level detail and the full I2C map are documented in
 [native/README.md](native/README.md).

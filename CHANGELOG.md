@@ -14,13 +14,14 @@ regenerated from these entries.
 
 ## [Unreleased]
 
-_Targeting `2.0.1` — the native hardware/radio layer and a new image path._
+_Targeting `2.0.0` — the native hardware/radio layer and a new image path._
 
 **Native hardware/radio layer.** Moves hardware bring-up and direct device I/O
 out of the Node application at boot and into a layer of small compiled C++ tools
 started by systemd/udev. The Node services become consumers of stable file and
 socket contracts under `/run/ctt/`. Drivers ship as versioned, prebuilt armhf
-binaries the station fetches over OTA — stations never compile.
+binaries the station fetches over OTA — stations never compile. This is a major,
+breaking change to the on-device architecture, hence the `2.0.0` bump.
 
 ### Added
 
@@ -33,29 +34,73 @@ binaries the station fetches over OTA — stations never compile.
     single runtime identity source) and persistent `/etc/ctt/station-*`.
   - `ctt-radio-driver@N`: one per 434 MHz receiver, bridging the serial port to
     `/run/ctt/radios/chN.sock` (NDJSON).
-  - `ctt-sensors`: polls the ADC + temperature → `/run/ctt/sensors.json`.
+  - `ctt-blu-driver@N`: one per BluSeries (2.4 GHz) receiver, served by the same
+    driver binary over `/run/ctt/blu/chN.sock`.
+  - `ctt-sensors`: polls the ADC + temperature → `/run/ctt/sensors.json`. Covers
+    both the V3 (MAX11645 + TMP411) and V2 (ADS7924 + TMP102) sensor sets.
   - `ctt-leds`: drives the V3 status LEDs (SX1509B) from `/run/ctt/leds`.
   - `ctt-lcd`: renders the character LCD (HD44780 via PCF8574) from `/run/ctt/lcd`.
+  - `ctt-radio-flash`: GPIO-free radio firmware flashing (1200-baud-touch +
+    avrdude), universal across on-board and USB receivers; orchestrated by
+    `program-radios.sh` with per-channel driver recovery.
+- **Front-panel LCD status** — boot splash while the app starts, a shutdown
+  indicator, an "Updating…" splash held for the duration of an OTA, and a
+  radio-fault banner shown when the radio service is down.
+- **Kernel `gpio-keys` buttons** — the front-panel buttons move to the kernel
+  `gpio-keys`/evdev input path via a board-gated device-tree overlay; the LCD
+  menu reads key events instead of polling GPIO in-process.
+- **`ctt-device-config`** — applies one canonical, per-board-revision
+  `/boot/config.txt` (copy + reboot-once with a hash-keyed loop breaker),
+  replacing the dynamic boot-overlay services.
 - **OTA native-binary delivery** — CI publishes a versioned, checksummed armhf
   binary per tool; the OTA hook fetches and verifies the fleet-pinned version
   ([system/native/](system/native/)). Per-tool versioning, no lockstep.
-- **`system/migrations/`** — ordered, one-shot migrations applied on OTA, with an
-  initial cellular-path migration.
+- **`system/migrations/`** — live, in-place field-station upgrades (discard drift
+  → cross the checkout to the new LTS branch → `update-station` → reboot), for the
+  rare case where a fielded station can't be reflashed. Safe by default (requires
+  `--force`); reflashing the prepared image remains the recommended upgrade.
 
 ### Changed
 
-- **`station-radio-interface`** consumes the `ctt-radio-driver` sockets for the
-  434 MHz receivers instead of opening serial ports directly.
+- **`station-radio-interface`** consumes the `ctt-radio-driver` and
+  `ctt-blu-driver` sockets for the 434 MHz and BluSeries receivers instead of
+  opening serial ports directly; receiver discovery moves from filesystem
+  watching to udev → systemd → socket.
 - **`station-hardware-server`** `/sensor` reads `/run/ctt/sensors.json` instead of
   polling the I2C sensors in-process.
+- **Node services launch directly via `node`** (not `npm run`), so they terminate
+  cleanly on `SIGTERM` instead of waiting out the systemd stop timeout — faster,
+  reliable restarts and reboots.
 - **OS configuration consolidated** into [system/](system/) — board-gated radio
   map, systemd units, and boot scripts relocated into the monorepo to remove
   drift. OTA hooks propagate file removals/renames via a declarative list.
+- **`ctt-sensors` logging quieted** — the per-poll reading line is gone; the
+  journal now carries a periodic heartbeat (every 5 min) plus immediate lines on
+  a health transition or read error, with `<N>` severity prefixes for
+  `journalctl -p` filtering (~60× less steady-state log volume). Readings still
+  publish to `/run/ctt/sensors.json` every cycle; `--verbose` restores per-poll
+  logging.
 
 ### Fixed
 
+- **OTA durability** — `update-station` now `sync`s after the pull and after the
+  deploy hooks, so a hard power-off seconds after an update can no longer zero the
+  freshly written files (ext4 ordered-mode writeback). The pull is hardened
+  (`--ff-only`, retry, and abort-on-failure) so a transient failure can't leave a
+  station on stale code while reporting success.
 - **Cellular**: stations no longer auto-dial PPP on the newer modem; migrated
   images ship with the modem off until enabled.
+- **WiFi reachability**: disable NetworkManager WiFi power-save (a global
+  `conf.d` drop-in). Without it the USB WiFi adapter slept when idle and stopped
+  answering ARP, so a WiFi-connected station was unreachable until a dongle or a
+  reboot woke it.
+- **WiFi-from-USB (`/usb/wifi`)**: await the `nmcli` connect before the follow-up
+  config command, and handle failures, so a failed join now returns an error
+  instead of an unhandled promise rejection that crashed `station-hardware-server`
+  (and aborted the in-flight connect).
+- **LCD**: native re-initialization recovers a warm controller from any state
+  (no more garbled output on a service restart); fixed a menu back-navigation
+  crash.
 - **`station-radio-interface`**: guard a null data-receiver result during line
   parsing.
 - **Boot**: removed a deadlock path so SIM/APN selection no longer blocks modem
