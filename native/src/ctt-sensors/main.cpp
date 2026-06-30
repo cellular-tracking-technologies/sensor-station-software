@@ -8,7 +8,8 @@
 //   {"voltages":{"battery":"X.XX","solar":"Y.YY","rtc":-1},
 //    "temperature":{"celsius":C,"fahrenheit":F},"recorded_at":"ISO8601"}
 //
-// Flags: --version, --once (read once, write, print, exit). Default: poll loop.
+// Flags: --version, --once (read once, write, print, exit), --verbose/-v (log
+// every poll). Default: poll loop, logging only a periodic heartbeat + changes.
 
 #include <cerrno>
 #include <csignal>
@@ -102,7 +103,10 @@ void publish(const std::string &json) {
 
 int main(int argc, char **argv) {
   const int interval_s = 5;
+  const int heartbeat_s = 300;              // emit a readings "heartbeat" this often
+  const int hb_polls = heartbeat_s / interval_s;
   bool once = false;
+  bool verbose = false;                     // --verbose: log every poll (bench debug)
   for (int i = 1; i < argc; ++i) {
     std::string a = argv[i];
     if (a == "--version") {
@@ -111,6 +115,8 @@ int main(int argc, char **argv) {
     }
     if (a == "--once")
       once = true;
+    if (a == "--verbose" || a == "-v")
+      verbose = true;
   }
 
   std::signal(SIGINT, onSignal);
@@ -124,9 +130,19 @@ int main(int argc, char **argv) {
   // readers / Django checkin).
   double battery = 0, solar = 0, celsius = 0, fahrenheit = 0;
 
+  // Logging is intentionally quiet: every poll's readings already go to
+  // /run/ctt/sensors.json (the source of truth), so the journal only needs a
+  // periodic heartbeat plus anything that changed. A healthy station stays
+  // silent between heartbeats. Lines carry a <N> prefix that systemd-journald
+  // maps to a priority (<6> info, <4> warning, <3> err).
+  int polls_until_hb = 0;   // 0 => heartbeat this cycle (so startup logs once)
+  bool prev_healthy = true; // were all sensors OK last cycle?
+  bool prev_failed = false; // did the read throw last cycle?
+
   try {
     ctthw::I2cBus bus; // opened once, reused; flock serializes vs other processes
     do {
+      const bool hb_due = (polls_until_hb <= 0);
       try {
         ctthw::SensorReading r = ctthw::readSensors(bus, version);
         const bool adc_ok = r.battery && r.solar;
@@ -134,30 +150,42 @@ int main(int argc, char **argv) {
         if (adc_ok) {
           battery = *r.battery;
           solar = *r.solar;
-        } else {
-          std::fprintf(stderr, "ctt-sensors: ADC (MAX11645) read failed; "
-                               "keeping last battery/solar\n");
         }
         if (temp_ok) {
           celsius = *r.celsius;
           fahrenheit = *r.fahrenheit;
-        } else {
-          std::fprintf(stderr, "ctt-sensors: temp (TMP411) read failed; "
-                               "keeping last temperature\n");
         }
         // Always publish: the values that read fine are fresh; any failed field
         // carries its last-known value rather than discarding the snapshot.
         publish(serializeSensors(battery, solar, celsius, fahrenheit, nowIso()));
-        std::fprintf(stderr, "ctt-sensors: batt=%.2f solar=%.2f temp=%.2fC%s\n",
-                     battery, solar, celsius,
-                     (adc_ok && temp_ok) ? "" : " [partial]");
+
+        // Log on the heartbeat, on a health transition, on recovery from a prior
+        // read error, or in verbose mode — never on a routine healthy poll.
+        const bool healthy = adc_ok && temp_ok;
+        if (verbose || hb_due || healthy != prev_healthy || prev_failed) {
+          if (!adc_ok)
+            std::fprintf(stderr, "<4>ctt-sensors: ADC (MAX11645) read failed; "
+                                 "keeping last battery/solar\n");
+          if (!temp_ok)
+            std::fprintf(stderr, "<4>ctt-sensors: temp (TMP411) read failed; "
+                                 "keeping last temperature\n");
+          std::fprintf(stderr, "<6>ctt-sensors: batt=%.2f solar=%.2f temp=%.2fC%s\n",
+                       battery, solar, celsius, healthy ? "" : " [partial]");
+        }
+        prev_healthy = healthy;
+        prev_failed = false;
       } catch (const std::exception &e) {
-        // Unsupported board (V2) or an unexpected error: log and keep the last
-        // published snapshot in place.
-        std::fprintf(stderr, "ctt-sensors: read error: %s\n", e.what());
+        // Unsupported board (V2) or an unexpected error: keep the last published
+        // snapshot. Log on the first failure and at the heartbeat cadence, not
+        // every poll.
+        if (verbose || hb_due || !prev_failed)
+          std::fprintf(stderr, "<3>ctt-sensors: read error: %s\n", e.what());
+        prev_failed = true;
+        prev_healthy = false; // so a subsequent recovery is logged
       }
       if (once)
         break;
+      polls_until_hb = hb_due ? hb_polls : polls_until_hb - 1;
       for (int i = 0; i < interval_s && !g_stop; ++i)
         ::sleep(1);
     } while (!g_stop);
