@@ -12,9 +12,11 @@ regenerated from these entries.
 
 ---
 
-## [Unreleased]
+## [2.0.0] — unreleased
 
-_Targeting `2.0.0` — the native hardware/radio layer and a new image path._
+_The first 2.x: the native hardware/radio layer and a new LTS image path. The
+release date and git tag are assigned at ship; entries may still accumulate
+during final testing._
 
 **Native hardware/radio layer.** Moves hardware bring-up and direct device I/O
 out of the Node application at boot and into a layer of small compiled C++ tools
