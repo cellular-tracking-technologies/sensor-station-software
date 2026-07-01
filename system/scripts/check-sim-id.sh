@@ -6,13 +6,14 @@
 # moved to modem-datapath.sh. Splitting APN from policy (and moving both off the
 # enable path) is what un-tangled this from enable-modem.sh.
 #
-# Runs after ModemManager is up: from station-boot.service (After=ModemManager)
-# and from enable-modem.sh on a runtime enable. It does NOT start MM — MM ships
-# enabled and systemd starts it at boot; the mmcli retry loop below waits for the
-# modem + SIM to enumerate.
+# Runs at boot from station-boot.service (After=ModemManager) — the single place
+# APN is set. (A runtime enable does not run this inline; enable-modem.sh reboots,
+# so this runs on the next boot.) It does NOT start MM — MM ships enabled and
+# systemd starts it at boot; the mmcli retry loop below waits for the modem + SIM
+# to enumerate.
 
-# A disabled (deauthorized) modem can't report an ICCID — skip. enable-modem.sh
-# re-runs this once the modem is authorized again, so nothing is lost.
+# A disabled (deauthorized) modem can't report an ICCID — skip. The next enable
+# reboots the station, so this runs once the modem is back and authorized.
 if [ -e /etc/ctt/modem-disabled ]; then
   echo 'check-sim-id: modem disabled — skipping APN selection'
   exit 0
