@@ -62,6 +62,19 @@ else
   raspi-gpio set 23 op dl   # press: ON_OFF# asserted LOW
   sleep 2                    # hold ~1-2s to trigger power-on
   raspi-gpio set 23 op dh   # release: ON_OFF# back to idle HIGH
+
+  # Wait for the just-powered Telit to re-enumerate on USB before falling
+  # through to check-sim-id below. check-sim-id keys its data-path policy on
+  # `lsusb -d 1bc7:7020`; if the modem isn't visible yet it takes the non-Telit
+  # branch and sets station-modem autoconnect=yes. NetworkManager then auto-dials
+  # PPP on the Telit when it appears (~10-15s later), which collides with the
+  # modem's RNDIS PDP context (ESM_MULTIPLE_PDN) and kills mdm0 connectivity
+  # until a reboot. Give it up to ~25s to appear (matches the ~15s typical).
+  echo 'waiting for Telit to re-enumerate on USB before APN/data-path policy...'
+  for i in $(seq 1 25); do
+    lsusb -d $TELIT >/dev/null 2>&1 && { echo "Telit enumerated after ~${i}s"; break; }
+    sleep 1
+  done
 fi
 
 # Re-run the per-SIM APN selection now that the modem is being enabled. This

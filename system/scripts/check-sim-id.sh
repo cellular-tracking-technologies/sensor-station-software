@@ -8,6 +8,14 @@
 # Before=ModemManager): MM waits for that unit, the unit waited for MM. The
 # mmcli retry loop below is all we need — it waits for the modem to enumerate.
 
+# If the modem is intentionally disabled, there's no modem to configure — skip
+# both the data-path policy and APN selection. enable-modem.sh re-runs this
+# script once the modem is powered back on, so nothing is lost.
+if [ -e /etc/ctt/modem-disabled ]; then
+  echo 'check-sim-id: modem disabled — skipping data-path policy + APN selection'
+  exit 0
+fi
+
 # --- data-path policy: demote the gsm/PPP profile on Telit only ---
 # Telit LE910Q1 (1bc7:7020) uses the RNDIS data path (mdm0, modem-internal
 # NAT) — the gsm 'station-modem' profile must NOT dial PPP on it (causes a
@@ -16,19 +24,27 @@
 # (wwan0), so it MUST stay autoconnect=yes. Keyed on USB VID:PID so a Quectel
 # station is never demoted (fleet-safe). Runs here (via station-boot.service,
 # After=network.target) so NetworkManager is up for nmcli.
+#
+# Wait for a known modem to enumerate FIRST. A just-powered Telit takes ~10-15s
+# to appear on USB; deciding before it does made us wrongly take the else branch
+# and set autoconnect=yes, so NetworkManager auto-dialed PPP on the Telit and
+# broke the RNDIS path (ESM_MULTIPLE_PDN) until a reboot. If no known modem ever
+# appears, leave autoconnect UNCHANGED — never guess (the old else=yes default
+# was the trap).
+for attempt in $(seq 1 25); do
+  lsusb -d 1bc7:7020 >/dev/null 2>&1 && break   # Telit
+  lsusb -d 2c7c:0125 >/dev/null 2>&1 && break   # Quectel
+  sleep 1
+done
+
 if lsusb -d 1bc7:7020 >/dev/null 2>&1; then
     echo 'Telit LE910Q1 detected — RNDIS data path; demoting station-modem (no PPP dial)'
     sudo nmcli connection modify station-modem connection.autoconnect no
-else
-    echo 'non-Telit modem — keeping station-modem autoconnect (QMI/PPP)'
+elif lsusb -d 2c7c:0125 >/dev/null 2>&1; then
+    echo 'Quectel EC25 detected — QMI/PPP data path; keeping station-modem autoconnect'
     sudo nmcli connection modify station-modem connection.autoconnect yes
-fi
-
-# --- per-SIM APN selection (robust against the modem not being ready) ---
-# If the modem is intentionally disabled, there's no SIM to read — skip.
-if [ -e /etc/ctt/modem-disabled ]; then
-  echo 'check-sim-id: modem disabled — skipping APN selection'
-  exit 0
+else
+    echo 'no known modem visible after wait — leaving station-modem autoconnect unchanged'
 fi
 
 # Wait for the modem + SIM to enumerate before reading the ICCID. At boot the
