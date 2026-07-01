@@ -1,9 +1,9 @@
 [Unit]
 Description=Restore cellular modem on/off state at boot
-# Run after /etc is mounted (we read /etc/ctt/modem-disabled) and after
-# udev has populated /sys/bus/usb so lsusb works inside enable-/disable-
-# modem.sh. Run BEFORE ModemManager so its first scan sees the intended
-# state without us having to deauthorize after MM has already cached it.
+# Run after /etc is mounted (we read /etc/ctt/modem-disabled) and after udev has
+# populated /sys/bus/usb so lsusb + the authorize sysfs node exist. Run BEFORE
+# ModemManager so its first scan sees the intended authorization state without us
+# having to deauthorize after MM has already cached it.
 After=local-fs.target systemd-udev-settle.service
 Before=ModemManager.service
 DefaultDependencies=yes
@@ -11,14 +11,11 @@ DefaultDependencies=yes
 [Service]
 Type=oneshot
 RemainAfterExit=true
-# Wait long enough for an auto-enumerating modem to appear in lsusb so
-# enable-/disable-modem.sh pick the correct branch. The Quectel EC25 is
-# "auto-on with VCC" and typically enumerates within 3-5s of power; the
-# 5s settle covers slow USB initialization without delaying boot
-# noticeably. (Telit cold boots take ~15s to enumerate AFTER GPIO 23 is
-# pulsed, so we don't try to wait for Telit pre-pulse — enable-modem.sh
-# handles the "no modem visible" case correctly.)
-ExecStartPre=/bin/sleep 5
+# modem-boot-state.sh reconciles the /etc/ctt/modem-disabled marker to the USB
+# authorization (authorize = on, deauthorize = off) via modem-power.sh. Both the
+# Telit LE910Q1 and Quectel EC25 self-enumerate on VBAT, so there is no GPIO/pulse
+# step and no fixed settle here — the script waits (bounded) for the modem to
+# appear on USB before applying the intent.
 ExecStart=/lib/ctt/sensor-station-software/system/scripts/modem-boot-state.sh
 
 [Install]
