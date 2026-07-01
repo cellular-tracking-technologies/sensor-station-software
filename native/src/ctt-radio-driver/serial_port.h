@@ -26,6 +26,13 @@ public:
   // blocking write is acceptable and keeps the command path simple).
   bool writeAll(const char *buf, size_t len);
 
+  // Explicitly drive the DTR modem-control line. assert=true holds DTR active
+  // (the tty default on open); assert=false de-asserts it. Opening a tty asserts
+  // DTR by default, which on a BluSeries receiver holds newer hardware in reset —
+  // de-asserting frees it. Returns false on ioctl error (errno set). Safe to call
+  // after open(); a no-op-safe call for devices that ignore DTR.
+  bool setDtr(bool assert);
+
   int fd() const { return fd_; }
   bool isOpen() const { return fd_ >= 0; }
   void close();

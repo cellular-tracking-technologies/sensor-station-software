@@ -9,9 +9,17 @@
 # newline-delimited JSON, so the driver runs in its default LINE framing: it wraps
 # each receiver line in an NDJSON envelope and passes host commands through with
 # op:raw. The Blu protocol logic lives in station-radio-interface; the driver is a
-# transparent serial<->socket bridge. (No DTR handling: the receiver is powered
-# from USB regardless of DTR — verified on hardware — so a plain open suffices,
-# exactly like a radio.)
+# transparent serial<->socket bridge.
+#
+# --dtr clear: opening a tty asserts DTR by default. On newer BluSeries hardware
+# DTR is wired to reset, so a plain open holds the receiver in reset and it never
+# responds (confirmed on hardware: with DTR asserted the unit's LEDs light but
+# every VERSION/STATS request times out; de-asserted it replies immediately). The
+# receiver is still powered from USB regardless of DTR — clearing only releases
+# reset. Requires the DTR-aware binary (ctt-radio-driver >= 0.3.0); keep the fleet
+# pin at >= 0.3.0 wherever this unit is deployed. NOTE: this applies to every Blu
+# instance (ch1, ch2, ...). If an older receiver ever regresses under --dtr clear,
+# scope it out with a per-instance drop-in that resets ExecStart without the flag.
 #
 # The binary is built by the monorepo native CI and fetched at the pinned version
 # (system/native/ctt-radio-driver.version) by the install-native.sh OTA hook.
@@ -25,8 +33,8 @@
 #    persistently-failing receiver keeps retrying forever (with RestartSec backoff).
 #  * WatchdogSec catches a HUNG driver: it pings WATCHDOG=1 from its loop; if that
 #    stops, systemd kills + restarts it.
-#    NOTE: requires the watchdog-aware binary (ctt-radio-driver >= 0.2.0). Keep
-#    the fleet pin at >= 0.2.0 wherever this unit is deployed.
+#    NOTE: --dtr (above) requires ctt-radio-driver >= 0.3.0; the watchdog needs
+#    >= 0.2.0. Keep the fleet pin at >= 0.3.0 wherever this unit is deployed.
 
 [Unit]
 Description=CTT BluSeries receiver driver (%i)
@@ -40,7 +48,8 @@ ExecStart=/usr/local/bin/ctt-radio-driver \
   --serial /dev/ctt-blu/%i \
   --socket /run/ctt/blu/%i.sock \
   --id %i \
-  --baud 230400
+  --baud 230400 \
+  --dtr clear
 
 # Creates and keeps /run/ctt/blu across instances.
 RuntimeDirectory=ctt/blu

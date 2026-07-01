@@ -130,8 +130,11 @@ Notes:
   `/dev/ctt-blu/chN` and serves `/run/ctt/blu/chN.sock`. The BluSeries protocol is
   newline-delimited JSON, so the driver runs in its default **line** framing and
   stays a transparent serial↔socket bridge; the protocol logic lives in
-  `station-radio-interface`. No DTR handling is needed — the receiver is
-  USB-powered regardless of DTR (verified on hardware).
+  `station-radio-interface`. The blu unit passes `--dtr clear`: opening a tty
+  asserts DTR by default, and on newer BluSeries hardware DTR is wired to reset,
+  so a plain open holds the receiver in reset (LEDs light but it never answers —
+  confirmed on hardware). Power is from USB regardless of DTR, so clearing only
+  releases reset. `--dtr` needs ctt-radio-driver >= 0.3.0.
 - `ctt-board-detect` runs before the consumers that key off identity, then
   re-fires the radio udev rules so any device that enumerated before identity
   was resolved matches its `CTT_BOARD`-gated rule.
@@ -200,7 +203,7 @@ Current state:
 | Tool | Source `VERSION` | Fleet pin (`system/native/`) |
 |------|------------------|------------------------------|
 | `ctt-board-detect` | 0.1.2 | 0.1.1 |
-| `ctt-radio-driver` | 0.2.0 | 0.2.0 |
+| `ctt-radio-driver` | 0.3.0 | 0.3.0 |
 | `ctt-sensors` | 0.3.0 | 0.2.0 |
 | `ctt-leds` | 0.1.0 | 0.1.0 |
 | `ctt-lcd` | 0.4.0 | 0.4.0 |

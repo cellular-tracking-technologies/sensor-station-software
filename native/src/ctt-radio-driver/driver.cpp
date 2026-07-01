@@ -59,13 +59,20 @@ struct Client {
 
 constexpr size_t kClientOutCap = 1u << 20; // 1 MiB per-client outbound cap
 
+// --dtr: how to drive the DTR line after opening. Keep (default) leaves it at the
+// tty default (asserted) — byte-for-byte the prior behavior for the 434 radios.
+// Clear de-asserts DTR, which a BluSeries receiver needs to run (asserted DTR
+// holds newer hardware in reset). Assert is explicit-hold, for completeness.
+enum class DtrMode { Keep, Assert, Clear };
+
 struct Options {
   std::string serial;
   std::string socket;
   std::string id = "radio";
   std::string dev_class = "ctt-radio";
   int baud = 115200;
-  bool raw = false; // --framing raw: transparent byte pipe (Blu); default line
+  bool raw = false;              // --framing raw: transparent byte pipe (Blu); default line
+  DtrMode dtr = DtrMode::Keep;   // --dtr keep|assert|clear (default: don't touch)
 };
 
 std::string nowIso() {
@@ -127,6 +134,20 @@ bool parseArgs(int argc, char **argv, Options &opt) {
         opt.raw = false;
       else {
         logMsg("error", "unknown --framing (want line|raw): " + f);
+        return false;
+      }
+    } else if (a == "--dtr") {
+      std::string d;
+      if (!next(d))
+        return false;
+      if (d == "keep")
+        opt.dtr = DtrMode::Keep;
+      else if (d == "assert")
+        opt.dtr = DtrMode::Assert;
+      else if (d == "clear")
+        opt.dtr = DtrMode::Clear;
+      else {
+        logMsg("error", "unknown --dtr (want keep|assert|clear): " + d);
         return false;
       }
     } else {
@@ -230,6 +251,18 @@ private:
     if (!serial_.open(opt_.serial, opt_.baud)) {
       logMsg("error", "open serial " + opt_.serial + ": " + std::strerror(errno));
       return false;
+    }
+    // Drive DTR if requested. open() asserts DTR by default; clearing it frees a
+    // BluSeries receiver that the assert would otherwise hold in reset. A DTR
+    // ioctl failure is non-fatal (device may not expose modem lines) — log and go.
+    if (opt_.dtr != DtrMode::Keep) {
+      const bool assert = (opt_.dtr == DtrMode::Assert);
+      if (serial_.setDtr(assert))
+        logMsg("info", std::string("DTR ") + (assert ? "asserted" : "cleared"));
+      else
+        logMsg("warn", std::string("could not set DTR ") +
+                           (assert ? "asserted" : "cleared") + ": " +
+                           std::strerror(errno));
     }
     return true;
   }
@@ -646,7 +679,8 @@ int main(int argc, char **argv) {
   if (!parseArgs(argc, argv, opt)) {
     std::fprintf(stderr,
                  "usage: ctt-radio-driver --serial PATH --socket PATH "
-                 "[--baud N] [--id STR] [--class STR] [--framing line|raw]\n");
+                 "[--baud N] [--id STR] [--class STR] [--framing line|raw] "
+                 "[--dtr keep|assert|clear]\n");
     return 2;
   }
   Driver driver(std::move(opt));

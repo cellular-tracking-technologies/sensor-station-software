@@ -147,7 +147,7 @@ on-board devices the software interacts with:
 | Subsystem | Device | Interface |
 |-----------|--------|-----------|
 | 434 MHz receivers | Adafruit Feather (ATmega32U4) | USB serial |
-| BluSeries receivers | FTDI FT231X USB-UART (`0403:6015`) | USB serial |
+| BluSeries receivers | FTDI FT231X USB-UART (`0403:6015`) | USB serial (DTR must be de-asserted — see below) |
 | Analog sensors (V3) | MAX11645 ADC, TMP411 temperature | I2C |
 | Analog sensors (V2) | ADS7924 ADC, TMP102 temperature | I2C |
 | Status LEDs / straps (V3) | SX1509B I/O expander | I2C |
@@ -160,6 +160,15 @@ on-board devices the software interacts with:
 
 Chip-level detail and the full I2C map are documented in
 [native/README.md](native/README.md).
+
+**BluSeries DTR:** on newer BluSeries hardware the FT231X's DTR line is wired to
+the receiver's reset. Opening a tty asserts DTR by default, which holds such a
+receiver in reset — its LEDs light but it never answers VERSION/STATS. The blu
+driver therefore de-asserts DTR after opening (`ctt-radio-driver --dtr clear`, set
+in [ctt-blu-driver@.service](system/systemd/ctt-blu-driver@.service)); power is
+from USB regardless of DTR, so clearing only releases reset. This needs
+`ctt-radio-driver >= 0.3.0` — keep [the fleet pin](system/native/ctt-radio-driver.version)
+at `>= 0.3.0` wherever the blu unit is deployed.
 
 ---
 
