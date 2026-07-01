@@ -901,10 +901,14 @@ const handle_add_port = function (data) {
 }
 
 const handle_blu_unlink = function (data) {
-  let unlink_port = data.port
-  document.querySelector(`#blu-receiver-${unlink_port}`).style.display = 'none'
-  let unlink_index = blu_ports.findIndex(port => port === unlink_port)
-  blu_ports.splice(unlink_index, 1)
+  // Coerce to string: add_port stores ports in blu_ports as strings, so the
+  // lookup below must compare as strings (a raw-number compare never matched,
+  // and splice(-1) then dropped the wrong entry).
+  let unlink_port = data.port.toString()
+  let el = document.querySelector(`#blu-receiver-${unlink_port}`)
+  if (el) { el.style.display = 'none' }
+  let unlink_index = blu_ports.findIndex(port => port.toString() === unlink_port)
+  if (unlink_index !== -1) { blu_ports.splice(unlink_index, 1) }
 }
 
 const handle_dongle_unlink = function (data) {
