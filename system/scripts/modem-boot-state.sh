@@ -1,32 +1,35 @@
 #!/bin/bash
-# Restore the cellular modem to the operator's last-set state at boot.
+# Reconcile the cellular modem's on/off state to the operator's intent at boot.
 #
-# Semantics:
-#   /etc/ctt/modem-disabled present  → operator wants modem OFF → disable-modem.sh
-#   /etc/ctt/modem-disabled absent   → default = modem ON       → enable-modem.sh
+#   /etc/ctt/modem-disabled present → deauthorize (modem OFF)
+#   absent                          → authorize   (modem ON, default)
 #
-# This pairs with enable-modem.sh / disable-modem.sh, which maintain the
-# marker on every state change. It exists because a hard reboot (power
-# switch) cuts VBAT to the Telit LE910Q1, and Telit boots OFF until it
-# receives an ON_OFF# pulse — see system/systemd/modem-boot-state.service
-# and hardware/TELIT_LE910Q1_INTEGRATION_REPORT.md for context.
+# `authorized` is runtime state that resets to 1 when the modem re-enumerates on a
+# reboot (both Telit and Quectel self-enumerate on VBAT), so we re-apply the
+# intent here. Ordered Before=ModemManager so MM's first scan sees the intended
+# authorization. This step is pure USB sysfs (modem-power.sh) — no nmcli/mmcli —
+# so it is safe before NetworkManager/ModemManager are up. The data-path
+# autoconnect policy and per-SIM APN are owned by station-boot (After=MM):
+# modem-datapath.sh + check-sim-id.sh.
+set -u
 
-MARKER='/etc/ctt/modem-disabled'
 SCRIPT_DIR='/lib/ctt/sensor-station-software/system/scripts'
+MARKER='/etc/ctt/modem-disabled'
+
+# Wait for the self-enumerating modem to appear on USB before applying the intent,
+# so a disabled station reliably deauthorizes it before ModemManager (ordered
+# after us) scans. Breaks as soon as a known modem appears; bounded so a station
+# with no modem doesn't stall boot.
+for i in $(seq 1 25); do
+  lsusb -d 1bc7:7020 >/dev/null 2>&1 && break   # Telit
+  lsusb -d 2c7c:0125 >/dev/null 2>&1 && break   # Quectel
+  sleep 1
+done
 
 if [ -e "$MARKER" ]; then
-  echo "modem-boot-state: marker present at $MARKER — restoring disabled state"
-  exec "$SCRIPT_DIR/disable-modem.sh"
+  echo "modem-boot-state: marker present — modem OFF (deauthorize)"
+  exec bash "$SCRIPT_DIR/modem-power.sh" off
 else
-  echo "modem-boot-state: no marker — restoring enabled state (default)"
-  # SKIP_CHECK_SIM: do NOT let enable-modem.sh run check-sim-id.sh here.
-  # This unit is ordered Before=ModemManager.service, and check-sim-id does a
-  # blocking `systemctl start ModemManager` — running it from inside a
-  # Before=MM unit deadlocks (MM waits for us to finish; we wait for MM to
-  # start). APN selection at boot is station-boot.service's job
-  # (After=network.target, no Before=MM), which runs check-sim-id safely. The
-  # tail-call only matters for a manual / web "enable after boot", where
-  # SKIP_CHECK_SIM is unset and check-sim-id runs.
-  export SKIP_CHECK_SIM=1
-  exec "$SCRIPT_DIR/enable-modem.sh"
+  echo "modem-boot-state: no marker — modem ON (authorize, default)"
+  exec bash "$SCRIPT_DIR/modem-power.sh" on
 fi
