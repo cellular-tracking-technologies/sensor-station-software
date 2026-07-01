@@ -40,7 +40,7 @@ class StationStats {
       // Wifi is still read in-process (no equivalent /wifi endpoint yet).
       // Modem now flows through hardware-server's /modem cache so the LCD
       // doesn't fork its own mmcli subprocesses on each refresh.
-      const network = Network.Wifi.GetCurrentNetwork()
+      const network = await Network.Wifi.GetCurrentNetwork()
 
       const wifi_signal = network && network.connected == true ? network.signal : undefined
       // Show modem signal whenever the modem is alive and reporting a value.

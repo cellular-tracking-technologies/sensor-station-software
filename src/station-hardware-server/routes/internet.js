@@ -74,8 +74,8 @@ router.get('/pending-upload', async (req, res, next) => {
   }
 })
 
-router.get('/wifi-networks', (req, res, next) => {
-  const wifi = Wifi.GetCurrentNetwork()
+router.get('/wifi-networks', async (req, res, next) => {
+  const wifi = await Wifi.GetCurrentNetwork()
   if (wifi) {
     res.json(wifi)
   } else {

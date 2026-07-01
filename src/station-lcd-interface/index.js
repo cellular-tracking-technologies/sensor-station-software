@@ -11,7 +11,7 @@ import { watchRadioInterface } from './radio-watch.js'
 
 // App Config
 
-const host = 'http://localhost:3000'
+const host = 'http://127.0.0.1:3000'
 
 /*
     Build the menu: Each item MUST be given:
