@@ -186,6 +186,10 @@ class BluStation {
 
       switch (task) {
         case BluReceiverTask.VERSION:
+          // An errored/timed-out VERSION poll arrives with data:null; reading
+          // data.version below would throw — and this case has no try/catch, so
+          // it would be an uncaught rejection. Skip when there's no payload.
+          if (!data) { break }
 
           this.blu_fw = {
             msg_type: 'blu-firmware',
@@ -254,6 +258,11 @@ class BluStation {
         case BluReceiverTask.CONFIG:
           break
         case BluReceiverTask.STATS:
+          // A STATS poll that errored/timed out arrives with data:null (the
+          // receiver sets data:null on error). Guard before reading det_dropped
+          // so a faulty receiver doesn't throw (caught below, but only after
+          // logging a spurious "blu station stats error" on every poll).
+          if (!job.data) { break }
           try {
 
             let port_key = blu_receiver.port.toString()
@@ -361,6 +370,11 @@ class BluStation {
     const receiver = this.blu_receivers.find(r => r.port === channel)
     if (!receiver) return
     this.blu_receivers = this.blu_receivers.filter(r => r.port !== channel)
+    // Tell the web UI to hide this port's table. Mirrors the add_port broadcast
+    // in startBluRadios and keys off the same value (the receiver channel), so
+    // when the receiver is re-attached on the same port add_port re-fires and
+    // the table reappears.
+    this.broadcast(JSON.stringify({ msg_type: 'unlink_port', port: channel }))
     try {
       await this.destroy_receiver(receiver)
     } catch (e) {
