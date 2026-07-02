@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 SerialPort::~SerialPort() { close(); }
@@ -83,6 +84,16 @@ ssize_t SerialPort::readAvailable(char *buf, size_t len) {
     }
     return -1;
   }
+}
+
+bool SerialPort::setDtr(bool assert) {
+  if (fd_ < 0) {
+    errno = EBADF;
+    return false;
+  }
+  int flag = TIOCM_DTR;
+  // TIOCMBIS sets (asserts) the given modem line; TIOCMBIC clears (de-asserts) it.
+  return ioctl(fd_, assert ? TIOCMBIS : TIOCMBIC, &flag) == 0;
 }
 
 bool SerialPort::writeAll(const char *buf, size_t len) {
