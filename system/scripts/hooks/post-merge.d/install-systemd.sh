@@ -40,7 +40,6 @@ MUST_BE_ENABLED=(
   ctt-leds.service               # status LED driver (SX1509B) <- /run/ctt/leds
   ctt-lcd.service                # character LCD driver (HD44780/PCF8574) <- /run/ctt/lcd
   ctt-modem-wake.service         # wake a shut-down Telit at boot (ON_OFF# pulse) so a hard reset self-recovers; runs Before modem-boot-state
-  ctt-modem-rndis.service        # Telit RNDIS host bring-up: DHCP mdm0 + metric-700 default route (no-op on Quectel/none)
   # ctt-radio-driver@.service and ctt-blu-driver@.service are TEMPLATES — udev
   # activates per-channel instances via ENV{SYSTEMD_WANTS}; they are deployed as
   # files but must NOT be enabled here.
@@ -48,8 +47,10 @@ MUST_BE_ENABLED=(
 # NOTE: Telit RNDIS + IP-passthrough NV provisioning (AT#RNDIS / AT#IPPASSTH) is
 # done at MANUFACTURING, not in the image — the old provision-modem-rndis service
 # was removed, and the runtime assumes the modem-side binding is already in NV.
-# The HOST side of that path (a DHCP lease + route on mdm0) was the missing piece
-# and is now supplied at runtime by ctt-modem-rndis.service (above).
+# The HOST side (mdm0's DHCP lease + route) is handled by the telit-net udev rule
+# (78-ctt-telit-net renames the RNDIS iface to mdm0) plus NetworkManager's auto-DHCP
+# on it — no dedicated service. ctt-modem-wake only powers the modem ON after a hard
+# reset; it does not touch the data path.
 
 CHANGED=0
 
