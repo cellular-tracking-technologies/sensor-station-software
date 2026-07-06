@@ -1,0 +1,24 @@
+[Unit]
+Description=Telit RNDIS (mdm0) host data-path bring-up
+# The modem-side AT#RNDIS binding is NV (provisioned at manufacturing), so the
+# Telit comes up NAT-forwarding the cellular context onto mdm0 (self-NAT, DHCP
+# server at 192.168.225.1). This unit supplies the missing HOST side: a DHCP lease
+# on mdm0 + a low-priority default route (metric 700) so a wired uplink stays
+# primary and cellular is the failover. Without it the RNDIS path stays dark even
+# though the gsm/PPP profile is kept from autodialing (modem-datapath.sh).
+#
+# After ModemManager so mdm0 has enumerated, and after station-boot so
+# modem-datapath has set the Telit's autoconnect=no (no PPP) first. Ordering only
+# (no Requires): the script waits for mdm0 and Restart=on-failure retries, so a
+# slow or absent modem is never permanently fatal. The script no-ops on a Quectel
+# (QMI/wwan0 via NetworkManager) or when the operator marker disables the modem.
+After=network.target ModemManager.service station-boot.service
+
+[Service]
+Type=simple
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/modem-rndis-up.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

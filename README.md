@@ -170,6 +170,18 @@ from USB regardless of DTR, so clearing only releases reset. This needs
 `ctt-radio-driver >= 0.3.0` — keep [the fleet pin](system/native/ctt-radio-driver.version)
 at `>= 0.3.0` wherever the blu unit is deployed.
 
+**Cellular data path (Telit RNDIS).** The Telit LE910Q1 self-NATs the cellular
+context onto its RNDIS net port `mdm0` (modem-internal DHCP server at
+`192.168.225.1`); the gsm/PPP profile is deliberately kept from autodialing to
+avoid an `ESM_MULTIPLE_PDN` collision with that context
+([modem-datapath.sh](system/scripts/modem-datapath.sh)). The modem-side `AT#RNDIS`
+binding is NV (provisioned at manufacturing), so the host side is all that's needed
+at runtime: [ctt-modem-rndis.service](system/systemd/ctt-modem-rndis.service) runs
+[modem-rndis-up.sh](system/scripts/modem-rndis-up.sh), which leases `mdm0` (busybox
+`udhcpc`) and installs a low-priority (metric 700) default route so a wired uplink
+stays primary and cellular is the failover. It no-ops on a Quectel (QMI/`wwan0` via
+NetworkManager) or when the operator disable marker is set.
+
 ---
 
 ## License

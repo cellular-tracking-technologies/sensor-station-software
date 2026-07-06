@@ -39,13 +39,16 @@ MUST_BE_ENABLED=(
   ctt-sensors.service            # I2C ADC + temp reader -> /run/ctt/sensors.json
   ctt-leds.service               # status LED driver (SX1509B) <- /run/ctt/leds
   ctt-lcd.service                # character LCD driver (HD44780/PCF8574) <- /run/ctt/lcd
+  ctt-modem-rndis.service        # Telit RNDIS host bring-up: DHCP mdm0 + metric-700 default route (no-op on Quectel/none)
   # ctt-radio-driver@.service and ctt-blu-driver@.service are TEMPLATES — udev
   # activates per-channel instances via ENV{SYSTEMD_WANTS}; they are deployed as
   # files but must NOT be enabled here.
 )
-# NOTE: Telit RNDIS + IP-passthrough NV provisioning (AT#RNDIS / AT#IPPASSTH)
-# is done at MANUFACTURING, not in the image — the old provision-modem-rndis
-# service was removed. The runtime here assumes an already-provisioned modem.
+# NOTE: Telit RNDIS + IP-passthrough NV provisioning (AT#RNDIS / AT#IPPASSTH) is
+# done at MANUFACTURING, not in the image — the old provision-modem-rndis service
+# was removed, and the runtime assumes the modem-side binding is already in NV.
+# The HOST side of that path (a DHCP lease + route on mdm0) was the missing piece
+# and is now supplied at runtime by ctt-modem-rndis.service (above).
 
 CHANGED=0
 
