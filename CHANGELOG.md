@@ -12,6 +12,29 @@ regenerated from these entries.
 
 ---
 
+## [2.0.1] — unreleased
+
+Bug-fix release cut for a fresh test image on top of 2.0.0: two fixes that
+restore the station's internal control plane and the over-the-air update path
+on the Node 20 image.
+
+### Fixed
+
+- **Internal HTTP over `localhost` resolved to IPv6 (`::1`)** — the Node services
+  reach `station-hardware-server` at `http://localhost:3000`, which binds
+  IPv4-only (`127.0.0.1`). On Node 20 `localhost` resolves to `::1` first and
+  `node-fetch` connects to that single address with no fallback, so every internal
+  call — check-in payload assembly, the `/modem/ppp` connectivity LED probe, and
+  the LCD stats screen — failed with `ECONNREFUSED ::1:3000`. Each service now
+  forces IPv4-first DNS ordering so `localhost` → `127.0.0.1`, matching the
+  server's bind. External name resolution is unchanged (IPv6 retained as fallback).
+- **`update-station` failed when launched from the web dashboard** — the "update"
+  button spawns the script from a root service with no `$HOME`, so
+  `git config --global` failed (`fatal: $HOME not set`) and every git call then
+  tripped the dubious-ownership guard, aborting the pull. The script now sets
+  `$HOME` when unset and injects `safe.directory` via the environment, so the OTA
+  runs identically from the dashboard, cron, and SSH.
+
 ## [2.0.0] — unreleased
 
 _The first 2.x: the native hardware/radio layer and a new LTS image path. The
