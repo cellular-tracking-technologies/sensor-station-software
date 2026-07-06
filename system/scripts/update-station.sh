@@ -1,4 +1,22 @@
 #!/bin/bash
+# Make git usable no matter who invokes us. update-station runs from three
+# contexts: an interactive `ctt` SSH shell, cron (bash-update-station), and the
+# station-radio-interface service — which runs as ROOT with no $HOME (the web
+# dashboard's "update" button spawns us there). Two problems follow in that
+# rootless-$HOME context:
+#   1. `git config --global` fails ("fatal: $HOME not set"), so the safe.directory
+#      exception below is never recorded.
+#   2. We chown the checkout to ctt:ctt while git runs as root, so git's
+#      dubious-ownership guard rejects every operation ("detected dubious
+#      ownership ... /usr/lib/ctt/sensor-station-software").
+# Fix both up front: ensure $HOME exists, and inject safe.directory via the
+# environment (inherited by the hooks + the sensorgnome pull) so it does not
+# depend on a writable global config.
+export HOME="${HOME:-/root}"
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0='safe.directory'
+export GIT_CONFIG_VALUE_0='*'
+
 home='/usr/lib/ctt'
 user_perm='ctt:ctt'
 sudo mkdir -p $home
