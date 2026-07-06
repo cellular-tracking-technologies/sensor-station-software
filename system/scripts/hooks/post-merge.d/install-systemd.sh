@@ -39,6 +39,7 @@ MUST_BE_ENABLED=(
   ctt-sensors.service            # I2C ADC + temp reader -> /run/ctt/sensors.json
   ctt-leds.service               # status LED driver (SX1509B) <- /run/ctt/leds
   ctt-lcd.service                # character LCD driver (HD44780/PCF8574) <- /run/ctt/lcd
+  ctt-modem-wake.service         # wake a shut-down Telit at boot (ON_OFF# pulse) so a hard reset self-recovers; runs Before modem-boot-state
   ctt-modem-rndis.service        # Telit RNDIS host bring-up: DHCP mdm0 + metric-700 default route (no-op on Quectel/none)
   # ctt-radio-driver@.service and ctt-blu-driver@.service are TEMPLATES — udev
   # activates per-channel instances via ENV{SYSTEMD_WANTS}; they are deployed as

@@ -1,0 +1,18 @@
+[Unit]
+Description=Wake a shut-down Telit modem (ON_OFF# pulse) at boot
+# A Telit LE910Q1 in ON_OFF# shutdown (after a hard reset / VBAT loss) does not
+# self-enumerate; modem-wake.sh pulses ON_OFF# so it comes back BEFORE
+# modem-boot-state authorizes it and ModemManager scans. Ordered before both.
+# No-op when a modem is already on the bus or when intent is OFF. Pure lsusb +
+# GPIO, so it is safe this early (before NetworkManager/ModemManager).
+After=local-fs.target systemd-udev-settle.service
+Before=modem-boot-state.service ModemManager.service
+DefaultDependencies=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/modem-wake.sh
+
+[Install]
+WantedBy=multi-user.target
