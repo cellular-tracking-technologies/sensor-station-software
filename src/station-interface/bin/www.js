@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import '../../station-utils/prefer-ipv4.js'
 import app from '../app.js'
 import http from 'http'
 
