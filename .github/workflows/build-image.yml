@@ -54,18 +54,20 @@ jobs:
 
       - name: Fetch base image
         run: |
-          # Absolute path — arm-runner takes a file:// URL below and decompresses
-          # the .xz itself (no local xz -d needed).
-          aws s3 cp "$S3_PREFIX/${{ inputs.base_image }}" "$GITHUB_WORKSPACE/base.img.xz"
+          # Download OUTSIDE the workspace. arm-runner copies $GITHUB_WORKSPACE into
+          # the image at /<basename>, so a base.img.xz left in the workspace gets
+          # baked into the built image (~875MB of self-nested bloat). RUNNER_TEMP is
+          # not copied.
+          aws s3 cp "$S3_PREFIX/${{ inputs.base_image }}" "$RUNNER_TEMP/base.img.xz"
 
       - name: Update software inside the image
         uses: pguyot/arm-runner-action@v2
         id: build
         with:
-          # A local base image must be a file:// URL with an absolute path
-          # (download_image.sh only matches aliases / http(s):// / file://).
-          base_image: file://${{ github.workspace }}/base.img.xz
-          image_additional_mb: 1500     # headroom for npm install / fetched binaries
+          # Local base image as a file:// URL with an absolute path, in RUNNER_TEMP
+          # (not the copied workspace). arm-runner decompresses the .xz itself.
+          base_image: file://${{ runner.temp }}/base.img.xz
+          image_additional_mb: 600      # headroom for npm install / fetched binaries
           optimize_image: true          # shrink (PiShrink-equivalent) on the way out
           commands: |
             # In the chroot, HOME is inherited as the runner's /home/runner (absent
