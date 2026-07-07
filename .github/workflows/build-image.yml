@@ -83,6 +83,8 @@ jobs:
           xz -T0 -v "$NAME"             # -> $NAME.xz (multi-threaded)
           sha256sum "$NAME.xz" > "$NAME.xz.sha256"   # integrity sidecar (mirrors native-release.yml)
           cat "$NAME.xz.sha256"
-          aws s3 cp "$NAME.xz" "$S3_PREFIX/$NAME.xz"
-          aws s3 cp "$NAME.xz.sha256" "$S3_PREFIX/$NAME.xz.sha256"
+          # public-read so CloudFront (media.celltracktech.com) serves them for
+          # open download — matches upload-image.sh's put-object-acl step.
+          aws s3 cp --acl public-read "$NAME.xz" "$S3_PREFIX/$NAME.xz"
+          aws s3 cp --acl public-read "$NAME.xz.sha256" "$S3_PREFIX/$NAME.xz.sha256"
           echo "Published $S3_PREFIX/$NAME.xz (+ .sha256)"
