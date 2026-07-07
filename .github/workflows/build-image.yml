@@ -68,6 +68,12 @@ jobs:
           image_additional_mb: 1500     # headroom for npm install / fetched binaries
           optimize_image: true          # shrink (PiShrink-equivalent) on the way out
           commands: |
+            # In the chroot, HOME is inherited as the runner's /home/runner (absent
+            # in the image), so update-station.sh can't write its safe.directory
+            # global config and git refuses the ctt-owned checkout as root ("dubious
+            # ownership"). Point HOME at the image's /root and pre-trust all repos.
+            export HOME=/root
+            git config --global --add safe.directory '*'
             bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh
 
       - name: Compress + publish date-stamped image
