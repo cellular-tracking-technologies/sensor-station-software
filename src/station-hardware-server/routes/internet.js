@@ -77,11 +77,18 @@ router.get('/pending-upload', async (req, res, next) => {
 router.get('/wifi-networks', async (req, res, next) => {
   const wifi = await Wifi.GetCurrentNetwork()
   if (wifi) {
-    res.json(wifi)
+    let ip = null
+    try {
+      ip = await Wifi.GetCurrentIp()
+    } catch (err) {
+      console.error('error getting wifi ip', err)
+    }
+    res.json({ ...wifi, ip })
   } else {
     res.json({
       signal: undefined,
       state: false,
+      ip: null,
     })
   }
 

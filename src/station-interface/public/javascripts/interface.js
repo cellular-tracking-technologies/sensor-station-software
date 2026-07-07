@@ -112,12 +112,17 @@ const initialize_controls = function () {
     }
   })
 
+  // The dropdown IS the scan control: opening it kicks off a WiFi scan and
+  // repopulates itself with the results. No separate "Scan" button.
   const wifiSsidList = document.querySelector('#wifi-ssid-list')
-  document.querySelector('#wifi-scan').addEventListener('click', async (e) => {
-    const btn = e.currentTarget
-    const prev = btn.textContent
-    btn.disabled = true
-    btn.textContent = 'Scanning…'
+  let wifiScanning = false
+  const setSsidPlaceholder = (text) => {
+    wifiSsidList.innerHTML = `<option value="">${text}</option>`
+  }
+  const scanWifiNetworks = async () => {
+    if (wifiScanning) return
+    wifiScanning = true
+    setSsidPlaceholder('Scanning…')
     try {
       const response = await fetch('/wifi/networks')
       if (!response.ok) throw new Error('scan failed')
@@ -126,21 +131,24 @@ const initialize_controls = function () {
       const ssids = (Array.isArray(nets) ? nets : [])
         .filter(n => n && n.ssid && !seen.has(n.ssid) && seen.add(n.ssid))
         .sort((a, b) => (b.signal || 0) - (a.signal || 0))
-      wifiSsidList.innerHTML = '<option value="">— pick a scanned network, or type below —</option>'
+      setSsidPlaceholder('— pick a scanned network, or type below —')
       for (const n of ssids) {
         const opt = document.createElement('option')
         opt.value = n.ssid
         opt.textContent = `${n.ssid} (${Number.isFinite(n.signal) ? n.signal + '%' : '?'})`
         wifiSsidList.appendChild(opt)
       }
-      if (!ssids.length) alert('No WiFi networks found (make sure WiFi is enabled)')
+      if (!ssids.length) setSsidPlaceholder('No networks found — reopen to rescan (enable WiFi?)')
     } catch (err) {
-      alert('WiFi scan failed (make sure WiFi is enabled)')
+      setSsidPlaceholder('Scan failed — reopen to retry (enable WiFi?)')
     } finally {
-      btn.disabled = false
-      btn.textContent = prev
+      wifiScanning = false
     }
-  })
+  }
+  // mousedown fires as the dropdown opens (before options render); focus covers
+  // keyboard access. The wifiScanning guard collapses the two into one scan.
+  wifiSsidList.addEventListener('mousedown', () => { scanWifiNetworks() })
+  wifiSsidList.addEventListener('focus', () => { scanWifiNetworks() })
   wifiSsidList.addEventListener('change', (e) => {
     if (e.target.value) document.querySelector('#wifi-ssid').value = e.target.value
   })
@@ -1283,6 +1291,19 @@ const render_wifi = function () {
     .then(function (json) {
       let percent = json.signal
       let state = json.connected
+      const ipEl = document.querySelector('#wifi-ip-address')
+      if (ipEl) {
+        ipEl.textContent = (state == true && json.ip) ? json.ip : '—'
+      }
+      // Prefill the SSID input with the currently-connected network. Only do it
+      // once, and never while the user is editing or has already typed/picked a
+      // value, so we don't clobber a connect-to-a-different-network attempt.
+      const ssidInput = document.querySelector('#wifi-ssid')
+      if (ssidInput && !window.__wifiSsidPrefilled && state == true && json.ssid
+          && document.activeElement !== ssidInput && ssidInput.value === '') {
+        ssidInput.value = json.ssid
+        window.__wifiSsidPrefilled = true
+      }
       if (state == true) {
 
 

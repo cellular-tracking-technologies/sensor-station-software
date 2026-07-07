@@ -28,6 +28,35 @@ const GetNetworkList = async () => {
   })
 }
 
+/**
+ * IPv4 address of whichever wifi device is currently connected, or null.
+ * Async execFile only — same event-loop-safety rationale as GetNetworkList.
+ * @returns {Promise<String|null>}
+ */
+const GetCurrentIp = async () => {
+  // Find the connected wifi device (usually wlan0, but don't hardcode it).
+  const { stdout: devs } = await pExecFile(
+    'nmcli',
+    ['-t', '-f', 'DEVICE,TYPE,STATE', 'device'],
+    { encoding: 'utf8', timeout: 8000 }
+  )
+  const row = devs.trim().split('\n')
+    .map(line => line.split(':'))
+    .find(([, type, state]) => type === 'wifi' && state === 'connected')
+  if (!row) return null
+  const device = row[0]
+  const { stdout } = await pExecFile(
+    'nmcli',
+    ['-t', '-f', 'IP4.ADDRESS', 'device', 'show', device],
+    { encoding: 'utf8', timeout: 8000 }
+  )
+  // Lines look like: IP4.ADDRESS[1]:192.168.1.5/24
+  const line = stdout.trim().split('\n').find(Boolean)
+  if (!line) return null
+  const value = line.split(':').slice(1).join(':').trim() // 192.168.1.5/24
+  return value ? value.split('/')[0] : null
+}
+
 export default Object.freeze({
   /**
    *
@@ -36,6 +65,10 @@ export default Object.freeze({
   GetCurrentNetwork: async () => {
     return (await GetNetworkList()).find(network => network.connected)
   },
+  /**
+   * @returns {Promise<String|null>} IPv4 address of the connected wifi device
+   */
+  GetCurrentIp,
   /**
    *
    * @returns {Promise<Array>} array of networks visible to twifi

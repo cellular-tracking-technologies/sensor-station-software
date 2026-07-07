@@ -180,6 +180,10 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
           tr
             th(colspan=2) WiFi
           tr
+            td WiFi IP Address
+            td
+              span(id="wifi-ip-address") —
+          tr
             td
               button(class="btn btn-sm btn-primary btn-block", id="enable-wifi") Enable Wifi
             td
@@ -187,9 +191,8 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
           tr
             td(colspan=2)
               p(style="margin-bottom:6px") Connect to a WiFi network (click Enable Wifi first):
-              button(class="btn btn-sm btn-secondary btn-block", id="wifi-scan", style="margin-bottom:6px") Scan for networks
               select(id="wifi-ssid-list", class="form-control form-control-sm", style="margin-bottom:6px")
-                option(value="") — pick a scanned network, or type below —
+                option(value="") — click to scan, or type below —
               input(type="text", id="wifi-ssid", class="form-control form-control-sm", placeholder="SSID (network name)", autocomplete="off", style="margin-bottom:6px")
               input(type="password", id="wifi-psk", class="form-control form-control-sm", placeholder="Password (leave blank for an open network)", autocomplete="new-password", style="margin-bottom:6px")
               button(class="btn btn-sm btn-primary btn-block", id="wifi-connect") Connect
