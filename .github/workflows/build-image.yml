@@ -52,16 +52,19 @@ jobs:
           role-to-assume: ${{ secrets.AWS_IMAGE_BUILD_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Fetch + decompress base image
+      - name: Fetch base image
         run: |
-          aws s3 cp "$S3_PREFIX/${{ inputs.base_image }}" base.img.xz
-          xz -dv base.img.xz            # -> base.img
+          # Absolute path — arm-runner takes a file:// URL below and decompresses
+          # the .xz itself (no local xz -d needed).
+          aws s3 cp "$S3_PREFIX/${{ inputs.base_image }}" "$GITHUB_WORKSPACE/base.img.xz"
 
       - name: Update software inside the image
         uses: pguyot/arm-runner-action@v2
         id: build
         with:
-          base_image: ./base.img
+          # A local base image must be a file:// URL with an absolute path
+          # (download_image.sh only matches aliases / http(s):// / file://).
+          base_image: file://${{ github.workspace }}/base.img.xz
           image_additional_mb: 1500     # headroom for npm install / fetched binaries
           optimize_image: true          # shrink (PiShrink-equivalent) on the way out
           commands: |
