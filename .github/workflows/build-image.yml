@@ -1,0 +1,79 @@
+# Build a distributable sensor-station SD-card image in CI — incrementally.
+#
+# Mirrors the manual process (loop-mount the last image, update the software in
+# the mount, shrink, upload to S3), but pguyot/arm-runner-action does the
+# loop-mount + qemu-arm binfmt so update-station.sh runs INSIDE the image's ARM
+# rootfs exactly as it does on a field station.
+#
+# What runs in the image (via update-station.sh):
+#   - git pull sensor-station-software + sensorgnome  (public HTTPS, no creds)
+#   - post-merge.sh hooks -> install-native fetches the pinned armhf binaries,
+#     install-systemd / install-udev deploy units + rules
+#   - npm install if package.json changed (runs under qemu — slow but correct)
+# Its `systemctl restart` calls are harmless no-ops here (no systemd in the
+# chroot) and don't abort the run (update-station.sh has no `set -e`); the image
+# starts services fresh on first boot regardless.
+#
+# The base image is assumed ALREADY sanitized (prepare-image.sh was run when the
+# base was generated) and ALREADY checked out on the release branch — this job
+# only layers code + binary updates onto it, so there is no re-sanitize step.
+name: build-image
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_image:
+        description: "Base image object key to update (under the images/ prefix)"
+        required: true
+        default: "sensor-station.2026-07-06.img.xz"
+
+permissions:
+  contents: read
+  id-token: write          # OIDC -> AWS; no long-lived keys in the repo
+
+env:
+  S3_PREFIX: s3://media.celltracktech.com/sensor-station/images
+  AWS_REGION: us-east-1    # adjust to the bucket's region
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # A <6GB image expands (apt/npm headroom) then shrinks — a ~15-20GB peak.
+      # Reclaim the runner's preinstalled toolchains to clear well past that.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IMAGE_BUILD_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fetch + decompress base image
+        run: |
+          aws s3 cp "$S3_PREFIX/${{ inputs.base_image }}" base.img.xz
+          xz -dv base.img.xz            # -> base.img
+
+      - name: Update software inside the image
+        uses: pguyot/arm-runner-action@v2
+        id: build
+        with:
+          base_image: ./base.img
+          image_additional_mb: 1500     # headroom for npm install / fetched binaries
+          optimize_image: true          # shrink (PiShrink-equivalent) on the way out
+          commands: |
+            bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh
+
+      - name: Compress + publish date-stamped image
+        run: |
+          NAME="sensor-station.$(date +%Y-%m-%d).img"
+          mv "${{ steps.build.outputs.image }}" "$NAME"
+          xz -T0 -v "$NAME"             # -> $NAME.xz (multi-threaded)
+          sha256sum "$NAME.xz" > "$NAME.xz.sha256"   # integrity sidecar (mirrors native-release.yml)
+          cat "$NAME.xz.sha256"
+          aws s3 cp "$NAME.xz" "$S3_PREFIX/$NAME.xz"
+          aws s3 cp "$NAME.xz.sha256" "$S3_PREFIX/$NAME.xz.sha256"
+          echo "Published $S3_PREFIX/$NAME.xz (+ .sha256)"
