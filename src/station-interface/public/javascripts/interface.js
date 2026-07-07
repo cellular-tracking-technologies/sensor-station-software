@@ -116,11 +116,17 @@ const initialize_controls = function () {
   // repopulates itself with the results. No separate "Scan" button.
   const wifiSsidList = document.querySelector('#wifi-ssid-list')
   let wifiScanning = false
+  let wifiLastScan = 0
+  const WIFI_SCAN_TTL = 15000 // keep results this long before re-scanning on open
   const setSsidPlaceholder = (text) => {
     wifiSsidList.innerHTML = `<option value="">${text}</option>`
   }
   const scanWifiNetworks = async () => {
     if (wifiScanning) return
+    // Don't wipe a fresh list on every open — that would clobber the option
+    // the user is about to click. Only rescan when the list is empty or stale.
+    const fresh = (Date.now() - wifiLastScan) < WIFI_SCAN_TTL && wifiSsidList.options.length > 1
+    if (fresh) return
     wifiScanning = true
     setSsidPlaceholder('Scanning…')
     try {
@@ -139,6 +145,7 @@ const initialize_controls = function () {
         wifiSsidList.appendChild(opt)
       }
       if (!ssids.length) setSsidPlaceholder('No networks found — reopen to rescan (enable WiFi?)')
+      else wifiLastScan = Date.now()
     } catch (err) {
       setSsidPlaceholder('Scan failed — reopen to retry (enable WiFi?)')
     } finally {
@@ -146,12 +153,21 @@ const initialize_controls = function () {
     }
   }
   // mousedown fires as the dropdown opens (before options render); focus covers
-  // keyboard access. The wifiScanning guard collapses the two into one scan.
+  // keyboard access. The first open scans; re-opening within the TTL keeps the
+  // list intact so a click can select a network (fills the SSID input below).
   wifiSsidList.addEventListener('mousedown', () => { scanWifiNetworks() })
   wifiSsidList.addEventListener('focus', () => { scanWifiNetworks() })
   wifiSsidList.addEventListener('change', (e) => {
     if (e.target.value) document.querySelector('#wifi-ssid').value = e.target.value
   })
+
+  // Show/hide the WiFi password by toggling the input type.
+  const wifiPskShow = document.querySelector('#wifi-psk-show')
+  if (wifiPskShow) {
+    wifiPskShow.addEventListener('change', (e) => {
+      document.querySelector('#wifi-psk').type = e.target.checked ? 'text' : 'password'
+    })
+  }
 
   document.querySelector('#wifi-connect').addEventListener('click', async (e) => {
     const ssid = document.querySelector('#wifi-ssid').value.trim()
