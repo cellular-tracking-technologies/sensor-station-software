@@ -51,7 +51,7 @@ class MenuTranslator {
 
   async createItems(language, lang_string) {
 
-    const host = 'http://localhost:3000'
+    const host = 'http://127.0.0.1:3000'
 
     this.items = new MenuItem(language, null, [
       new MenuItem('Station Stats', new StationStats(host), []),

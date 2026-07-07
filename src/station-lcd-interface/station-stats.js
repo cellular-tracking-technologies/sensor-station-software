@@ -23,10 +23,15 @@ class StationStats {
   }
   async results() {
     try {
+      // Bound every fetch with a timeout. Without one, a hung hardware-server
+      // request (e.g. /modem while mmcli is momentarily busy) never settles, so
+      // results() never resolves — the menu-manager refresh chain then never
+      // re-arms and the screen is left blank permanently (loading() clears it
+      // first). A 3s abort turns a hang into a rejection we handle and recover from.
       const [voltages, temperature, modem] = await Promise.all([
-        fetch(this.volt_url).then(r => r.json()),
-        fetch(this.temp_url).then(r => r.json()),
-        fetch(this.modem_url).then(r => r.json()).catch(() => null),
+        fetch(this.volt_url, { signal: AbortSignal.timeout(3000) }).then(r => r.json()),
+        fetch(this.temp_url, { signal: AbortSignal.timeout(3000) }).then(r => r.json()),
+        fetch(this.modem_url, { signal: AbortSignal.timeout(3000) }).then(r => r.json()).catch(() => null),
       ])
 
       await this.getBattVoltage(voltages)
@@ -35,7 +40,7 @@ class StationStats {
       // Wifi is still read in-process (no equivalent /wifi endpoint yet).
       // Modem now flows through hardware-server's /modem cache so the LCD
       // doesn't fork its own mmcli subprocesses on each refresh.
-      const network = Network.Wifi.GetCurrentNetwork()
+      const network = await Network.Wifi.GetCurrentNetwork()
 
       const wifi_signal = network && network.connected == true ? network.signal : undefined
       // Show modem signal whenever the modem is alive and reporting a value.

@@ -1,12 +1,22 @@
-import { execSync } from 'child_process'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
+
+const pExecFile = promisify(execFile)
 
 /**
- * 
- * @returns {Array}
+ * `nmcli device wifi list` can trigger a blocking rescan (seconds). Run it via
+ * async execFile — never execSync — so a slow/hung scan can't freeze the event
+ * loop of whatever imports this (the LCD interface's render loop, the hardware
+ * server's request handling). A hard timeout caps a stuck nmcli.
+ * @returns {Promise<Array>}
  */
-const GetNetworkList = () => {
-  const network_info = execSync('nmcli -t -f IN-USE,SSID,SIGNAL,RATE,FREQ device wifi list').toString().trim()
-  return network_info.split('\n').map((info) => {
+const GetNetworkList = async () => {
+  const { stdout } = await pExecFile(
+    'nmcli',
+    ['-t', '-f', 'IN-USE,SSID,SIGNAL,RATE,FREQ', 'device', 'wifi', 'list'],
+    { encoding: 'utf8', timeout: 8000 }
+  )
+  return stdout.trim().split('\n').map((info) => {
     const [in_use, ssid, signal, rate, freq] = info.split(':')
     return {
       connected: (in_use === '*') ? true : false,
@@ -20,17 +30,17 @@ const GetNetworkList = () => {
 
 export default Object.freeze({
   /**
-   * 
-   * @returns {Object} return 
+   *
+   * @returns {Promise<Object>} return
    */
-  GetCurrentNetwork: () => {
-    return GetNetworkList().find(network => network.connected)
+  GetCurrentNetwork: async () => {
+    return (await GetNetworkList()).find(network => network.connected)
   },
   /**
-   * 
-   * @returns {Array} array of networks visible to twifi
+   *
+   * @returns {Promise<Array>} array of networks visible to twifi
    */
-  GetNetworks: () => {
+  GetNetworks: async () => {
     return GetNetworkList()
   }
 })

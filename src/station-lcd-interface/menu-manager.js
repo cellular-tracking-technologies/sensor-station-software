@@ -51,8 +51,6 @@ class MenuManager {
     */
     if (this.focus.childCount() == 0) {
       if (this.focus.view != null) {
-        console.log('this view', this.view_())
-
         this.view_()
         return
       }
@@ -84,8 +82,14 @@ class MenuManager {
     }
     this.update_()
   }
-  view_() {
-    display.write(this.focus.view.loading())
+  view_(refresh = false) {
+    // On first entry show the view's loading placeholder (Station Stats returns
+    // [] to clear the menu underneath). On an auto-refresh, do NOT blank — keep
+    // the current frame until results() re-renders, so a slow or failed refresh
+    // can never leave the screen blank.
+    if (!refresh) {
+      display.write(this.focus.view.loading())
+    }
 
     this.focus.view.results().then((rows) => {
       if (rows != null) {
@@ -93,7 +97,10 @@ class MenuManager {
       }
       this.autoRefresh_(true)
     }).catch((err) => {
-      display.write(["Error", err, "", ""])
+      display.write(["Error", String(err), "", ""])
+      // Re-arm on failure too, so a bad cycle can never permanently stop the
+      // refresh loop (which previously stranded the view on a blank screen).
+      this.autoRefresh_(true)
     })
   }
   update_() {
@@ -117,7 +124,7 @@ class MenuManager {
       if (typeof this.focus.view.autoRefresh !== 'undefined') {
         if (this.focus.view.autoRefresh > 0) {
           this.refresh_ = setTimeout(() => {
-            this.view_()
+            this.view_(true)
           }, this.focus.view.autoRefresh)
         }
       }
