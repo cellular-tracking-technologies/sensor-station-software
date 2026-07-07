@@ -112,6 +112,72 @@ const initialize_controls = function () {
     }
   })
 
+  const wifiSsidList = document.querySelector('#wifi-ssid-list')
+  document.querySelector('#wifi-scan').addEventListener('click', async (e) => {
+    const btn = e.currentTarget
+    const prev = btn.textContent
+    btn.disabled = true
+    btn.textContent = 'Scanning…'
+    try {
+      const response = await fetch('/wifi/networks')
+      if (!response.ok) throw new Error('scan failed')
+      const nets = await response.json()
+      const seen = new Set()
+      const ssids = (Array.isArray(nets) ? nets : [])
+        .filter(n => n && n.ssid && !seen.has(n.ssid) && seen.add(n.ssid))
+        .sort((a, b) => (b.signal || 0) - (a.signal || 0))
+      wifiSsidList.innerHTML = '<option value="">— pick a scanned network, or type below —</option>'
+      for (const n of ssids) {
+        const opt = document.createElement('option')
+        opt.value = n.ssid
+        opt.textContent = `${n.ssid} (${Number.isFinite(n.signal) ? n.signal + '%' : '?'})`
+        wifiSsidList.appendChild(opt)
+      }
+      if (!ssids.length) alert('No WiFi networks found (make sure WiFi is enabled)')
+    } catch (err) {
+      alert('WiFi scan failed (make sure WiFi is enabled)')
+    } finally {
+      btn.disabled = false
+      btn.textContent = prev
+    }
+  })
+  wifiSsidList.addEventListener('change', (e) => {
+    if (e.target.value) document.querySelector('#wifi-ssid').value = e.target.value
+  })
+
+  document.querySelector('#wifi-connect').addEventListener('click', async (e) => {
+    const ssid = document.querySelector('#wifi-ssid').value.trim()
+    const psk = document.querySelector('#wifi-psk').value
+    if (!ssid) {
+      alert('Enter a WiFi SSID (network name)')
+      return
+    }
+    if (!window.confirm(`Connect to "${ssid}"? If you are reaching the Web Interface over the station's current network, connecting may change how it is reachable.`)) {
+      return
+    }
+    const btn = e.currentTarget
+    btn.disabled = true
+    try {
+      const response = await fetch('/wifi/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssid, psk }),
+      })
+      if (response.ok) {
+        alert(`Connected to "${ssid}"`)
+        document.querySelector('#wifi-psk').value = ''
+      } else {
+        let msg = 'Something went wrong connecting to WiFi (is WiFi enabled and the password correct?)'
+        try { const j = await response.json(); if (j && j.detail) msg += `\n\n${j.detail}` } catch (_) {}
+        alert(msg)
+      }
+    } catch (err) {
+      alert('Something went wrong connecting to WiFi')
+    } finally {
+      btn.disabled = false
+    }
+  })
+
   document.querySelector('#max-row-count').value = MAX_ROW_COUNT
   document.querySelector('#update-max-row-count').addEventListener('click', function (e) {
     MAX_ROW_COUNT = document.querySelector('#max-row-count').value

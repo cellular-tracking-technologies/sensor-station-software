@@ -87,6 +87,16 @@ router.get('/wifi-networks', async (req, res, next) => {
 
 })
 
+// Full list of visible WiFi networks, for the dashboard's "scan" dropdown.
+router.get('/wifi-scan', async (req, res) => {
+  try {
+    res.json(await Wifi.GetNetworks())
+  } catch (err) {
+    console.error('wifi scan failed', err)
+    res.status(500).json({ error: 'scan failed' })
+  }
+})
+
 router.get('/delete-connections', async (req, res, next) => {
   const results = await RunCommand('/bin/bash system/scripts/delete-credentials.sh')
   // return res.status(200).send()

@@ -184,6 +184,15 @@ html(xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en")
               button(class="btn btn-sm btn-primary btn-block", id="enable-wifi") Enable Wifi
             td
               button(class="btn btn-sm btn-primary btn-block", id="disable-wifi") Disable Wifi
+          tr
+            td(colspan=2)
+              p(style="margin-bottom:6px") Connect to a WiFi network (click Enable Wifi first):
+              button(class="btn btn-sm btn-secondary btn-block", id="wifi-scan", style="margin-bottom:6px") Scan for networks
+              select(id="wifi-ssid-list", class="form-control form-control-sm", style="margin-bottom:6px")
+                option(value="") — pick a scanned network, or type below —
+              input(type="text", id="wifi-ssid", class="form-control form-control-sm", placeholder="SSID (network name)", autocomplete="off", style="margin-bottom:6px")
+              input(type="password", id="wifi-psk", class="form-control form-control-sm", placeholder="Password (leave blank for an open network)", autocomplete="new-password", style="margin-bottom:6px")
+              button(class="btn btn-sm btn-primary btn-block", id="wifi-connect") Connect
         h2 Radio Software Control
         p You can restart the radio software with this control, which will require a page refresh after it is complete.
         table(class="table table-bordered table-sm table-dark")
