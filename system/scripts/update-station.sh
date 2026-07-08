@@ -133,11 +133,15 @@ echo 'CTT Sensor Station Software Update Complete'
 echo '*******************************************'
 
 sudo systemctl restart station-hardware-server
-# station-lcd-interface is intentionally NOT restarted here — it stays stopped so
-# the "Updating" splash remains on the panel through the rest of the update; the
-# EXIT trap restarts it (restoring the menu) once everything below is done.
-sudo systemctl restart station-radio-interface
 sudo systemctl restart station-web-interface
+# station-lcd-interface is intentionally NOT restarted here — it stays stopped so
+# the "Updating" splash remains on the panel through the rest of the update; it is
+# restored near the end (or by the EXIT trap on any earlier failure path).
+# station-radio-interface is intentionally NOT restarted here either: when the
+# update is launched from the web dashboard this script runs as a CHILD of that
+# service, so restarting it now tears down our cgroup and SIGKILLs us mid-update
+# (frozen "Updating" splash, skipped sensorgnome + image-OTA). It is restarted
+# LAST, once all real work is done — see the end of this script.
 
 echo '********************'
 echo 'Updating Sensorgnome'
@@ -175,3 +179,12 @@ echo
 echo '***********************'
 echo 'STATION UPDATE COMPLETE'
 echo '***********************'
+
+# LAST action, deliberately after everything above. When the update is launched
+# from the web dashboard, station-radio-interface is the service hosting this
+# script, so restarting it tears down the service cgroup and SIGKILLs us. Doing it
+# here means all real work (code pull, hooks, sensorgnome, image OTA, LCD restore)
+# is already done, so losing the process now is harmless; systemd still carries out
+# the enqueued restart after the requesting process dies. (Run from SSH/cron we are
+# not a child of the service, so this is just an ordinary restart.)
+sudo systemctl restart station-radio-interface
