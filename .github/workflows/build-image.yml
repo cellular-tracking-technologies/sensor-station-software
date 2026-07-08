@@ -26,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       base_image:
-        description: "Base image key to layer onto (images/ prefix). Blank / tag-push -> sensor-station.latest.img.xz"
+        description: "Base image key under images/lts_26_07/. Blank / tag-push -> sensor-station.latest.img.xz"
         required: false
         default: "sensor-station.latest.img.xz"
 
@@ -36,11 +36,15 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write          # create the GitHub pre-release on tag builds
   id-token: write          # OIDC -> AWS; no long-lived keys in the repo
 
 env:
-  S3_PREFIX: s3://media.celltracktech.com/sensor-station/images
+  # lts_26_07 platform generation, isolated under images/lts_26_07/ so it never
+  # touches the current public LTS at images/ root (that stays as-is until we
+  # deliberately cut over). Base is read from, and outputs written to, here.
+  S3_PREFIX: s3://media.celltracktech.com/sensor-station/images/lts_26_07
+  PUBLIC_PREFIX: https://media.celltracktech.com/sensor-station/images/lts_26_07
   AWS_REGION: us-east-1    # adjust to the bucket's region
 
 jobs:
@@ -65,7 +69,7 @@ jobs:
           # Download OUTSIDE the workspace. arm-runner copies $GITHUB_WORKSPACE into
           # the image at /<basename>, so a base.img.xz left in the workspace gets
           # baked into the built image (~875MB of self-nested bloat). RUNNER_TEMP is
-          # not copied.
+          # not copied. Base resolves under images/lts_26_07/ (see S3_PREFIX).
           aws s3 cp "$S3_PREFIX/${{ inputs.base_image || 'sensor-station.latest.img.xz' }}" "$RUNNER_TEMP/base.img.xz"
 
       - name: Update software inside the image
@@ -86,36 +90,50 @@ jobs:
             git config --global --add safe.directory '*'
             bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh
 
-      - name: Compress + publish date-stamped image
+      - name: Compress + publish versioned image
         run: |
-          NAME="sensor-station.$(date +%Y-%m-%d).img"
-          mv "${{ steps.build.outputs.image }}" "$NAME"
-          xz -T0 -v "$NAME"             # -> $NAME.xz (multi-threaded)
-          sha256sum "$NAME.xz" > "$NAME.xz.sha256"   # integrity sidecar (mirrors native-release.yml)
-          cat "$NAME.xz.sha256"
-          # public-read so CloudFront (media.celltracktech.com) serves them for
-          # open download — matches upload-image.sh's put-object-acl step.
-          aws s3 cp --acl public-read "$NAME.xz" "$S3_PREFIX/$NAME.xz"
-          aws s3 cp --acl public-read "$NAME.xz.sha256" "$S3_PREFIX/$NAME.xz.sha256"
-          echo "Published $S3_PREFIX/$NAME.xz (+ .sha256)"
-          echo "IMG_NAME=$NAME" >> "$GITHUB_ENV"   # hand the exact filename to the next step
-
-      - name: Publish immutable versioned image (for GitHub Release / linking)
-        run: |
-          # A version-named copy that is NEVER overwritten — the immutable artifact a
-          # GitHub Release / stable link can reference (the date-stamped key gets
-          # overwritten by same-day rebuilds). Version comes from package.json on the
-          # built ref, fetched raw so we do NOT check the repo into the workspace
-          # (arm-runner would otherwise bake it into the image). Byte-identical to the
-          # date-stamped image just published; we reuse its sha256 and only rename.
+          # Single, consistent naming scheme: sensor-station-v<version>.img.xz, version
+          # from package.json on the built ref (fetched raw so we don't check the repo
+          # into the workspace — arm-runner would bake it into the image). Release (tag)
+          # builds are IMMUTABLE (never overwrite a version); manual/dev builds get a
+          # -dev.<sha> suffix so they can't collide with or masquerade as a release.
           VERSION="$(curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/package.json" | jq -r .version)"
           case "$VERSION" in ''|null) echo "could not read version from package.json"; exit 1;; esac
-          VKEY="sensor-station-v${VERSION}.img.xz"
-          if aws s3 ls "$S3_PREFIX/$VKEY" >/dev/null 2>&1; then
-            echo "::warning::$VKEY already exists — the v$VERSION release image is immutable; not overwriting. Bump the version for a new release."
-            exit 0
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            [ "v$VERSION" = "${{ github.ref_name }}" ] || { echo "::error::tag ${{ github.ref_name }} != package.json v$VERSION — bump/tag mismatch"; exit 1; }
+            KEY="sensor-station-v${VERSION}.img.xz"
+            if aws s3 ls "$S3_PREFIX/$KEY" >/dev/null 2>&1; then
+              echo "::error::$KEY already exists — release images are immutable. Bump the version for a new release."
+              exit 1
+            fi
+          else
+            KEY="sensor-station-v${VERSION}-dev.$(echo "${{ github.sha }}" | cut -c1-7).img.xz"
           fi
-          aws s3 cp --acl public-read "${IMG_NAME}.xz" "$S3_PREFIX/$VKEY"
-          printf '%s  %s\n' "$(cut -d' ' -f1 "${IMG_NAME}.xz.sha256")" "$VKEY" > "$VKEY.sha256"
-          aws s3 cp --acl public-read "$VKEY.sha256" "$S3_PREFIX/$VKEY.sha256"
-          echo "Published immutable $S3_PREFIX/$VKEY (+ .sha256)"
+          IMG="${KEY%.xz}"                        # sensor-station-v<version>[...].img
+          mv "${{ steps.build.outputs.image }}" "$IMG"
+          xz -T0 -v "$IMG"                        # -> $IMG.xz == $KEY
+          sha256sum "$KEY" > "$KEY.sha256"
+          cat "$KEY.sha256"
+          # public-read so CloudFront (media.celltracktech.com) serves it for download.
+          aws s3 cp --acl public-read "$KEY"        "$S3_PREFIX/$KEY"
+          aws s3 cp --acl public-read "$KEY.sha256" "$S3_PREFIX/$KEY.sha256"
+          echo "Published $S3_PREFIX/$KEY (+ .sha256)"
+          echo "IMG_KEY=$KEY" >> "$GITHUB_ENV"
+          echo "IMG_SHA=$(cut -d' ' -f1 "$KEY.sha256")" >> "$GITHUB_ENV"
+
+      - name: Create GitHub pre-release (tag builds only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Tag-triggered build -> a GitHub *pre-release* pointing at the immutable image
+          # under images/lts_26_07/. Pre-release = built by CI, NOT yet field-validated
+          # or promoted to the LTS latest link. Idempotent (edits if re-run).
+          URL="${PUBLIC_PREFIX}/${IMG_KEY}"
+          NOTES="$(printf 'CI-built image for %s (lts_26_07).\n\nImage:  %s\nSHA256: %s\n\nPre-release: built by CI, not yet field-validated or promoted to the LTS latest link.' "${{ github.ref_name }}" "$URL" "$IMG_SHA")"
+          if gh release view "${{ github.ref_name }}" -R "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release edit   "${{ github.ref_name }}" -R "${{ github.repository }}" --prerelease --notes "$NOTES"
+          else
+            gh release create "${{ github.ref_name }}" -R "${{ github.repository }}" --prerelease --title "Sensor Station ${{ github.ref_name }}" --notes "$NOTES"
+          fi
+          echo "pre-release ${{ github.ref_name }} ready -> $URL"
