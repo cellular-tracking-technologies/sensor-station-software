@@ -15,8 +15,8 @@
 # Idempotent: the sysfs write is a no-op if the device is already in that state,
 # so this is a level (declarative) operation, not an edge/toggle. `authorized` is
 # runtime state (resets to 1 on re-enumeration / reboot); the persistent operator
-# intent lives in /run/ctt/modem-disabled (tmpfs; cleared each boot so a disable
-# is non-persistent), which modem-boot-state.sh reconciles.
+# intent lives in /etc/ctt/modem-disabled (persistent on-disk; a disable survives
+# reboots/hard resets), which modem-boot-state.sh reconciles.
 set -u
 
 TELIT_VID='1bc7'   # match any product id: 7020 (RNDIS) or 7021 (ECM)

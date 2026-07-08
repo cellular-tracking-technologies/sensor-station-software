@@ -1,14 +1,12 @@
 #!/bin/bash
 # Reconcile the cellular modem's on/off state to the operator's intent at boot.
 #
-#   /run/ctt/modem-disabled present → deauthorize (modem OFF)
+#   /etc/ctt/modem-disabled present → deauthorize (modem OFF)
 #   absent                          → authorize   (modem ON, default)
 #
-# The marker lives in tmpfs (/run), so it is cleared on every boot: a disable is
-# non-persistent by design — the modem returns to ON after any reboot or hard
-# reset (fail-safe). Enable (no marker) is the persistent state. Since /run is
-# empty at boot, this normally authorizes; disable only takes effect within the
-# current power session (disable-modem.sh deauthorizes live).
+# The marker is persistent on-disk, so a disable STICKS across reboots and hard
+# resets: this re-applies OFF on every boot until an explicit enable removes the
+# marker. Enable (no marker) authorizes ON.
 #
 # `authorized` is runtime state that resets to 1 when the modem re-enumerates on a
 # reboot (both Telit and Quectel self-enumerate on VBAT), so we re-apply the
@@ -20,7 +18,7 @@
 set -u
 
 SCRIPT_DIR='/lib/ctt/sensor-station-software/system/scripts'
-MARKER='/run/ctt/modem-disabled'
+MARKER='/etc/ctt/modem-disabled'
 
 # Wait for the self-enumerating modem to appear on USB before applying the intent,
 # so a disabled station reliably deauthorizes it before ModemManager (ordered
