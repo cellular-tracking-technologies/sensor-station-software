@@ -90,3 +90,24 @@ jobs:
           aws s3 cp --acl public-read "$NAME.xz" "$S3_PREFIX/$NAME.xz"
           aws s3 cp --acl public-read "$NAME.xz.sha256" "$S3_PREFIX/$NAME.xz.sha256"
           echo "Published $S3_PREFIX/$NAME.xz (+ .sha256)"
+          echo "IMG_NAME=$NAME" >> "$GITHUB_ENV"   # hand the exact filename to the next step
+
+      - name: Publish immutable versioned image (for GitHub Release / linking)
+        run: |
+          # A version-named copy that is NEVER overwritten — the immutable artifact a
+          # GitHub Release / stable link can reference (the date-stamped key gets
+          # overwritten by same-day rebuilds). Version comes from package.json on the
+          # built ref, fetched raw so we do NOT check the repo into the workspace
+          # (arm-runner would otherwise bake it into the image). Byte-identical to the
+          # date-stamped image just published; we reuse its sha256 and only rename.
+          VERSION="$(curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/package.json" | jq -r .version)"
+          case "$VERSION" in ''|null) echo "could not read version from package.json"; exit 1;; esac
+          VKEY="sensor-station-v${VERSION}.img.xz"
+          if aws s3 ls "$S3_PREFIX/$VKEY" >/dev/null 2>&1; then
+            echo "::warning::$VKEY already exists — the v$VERSION release image is immutable; not overwriting. Bump the version for a new release."
+            exit 0
+          fi
+          aws s3 cp --acl public-read "${IMG_NAME}.xz" "$S3_PREFIX/$VKEY"
+          printf '%s  %s\n' "$(cut -d' ' -f1 "${IMG_NAME}.xz.sha256")" "$VKEY" > "$VKEY.sha256"
+          aws s3 cp --acl public-read "$VKEY.sha256" "$S3_PREFIX/$VKEY.sha256"
+          echo "Published immutable $S3_PREFIX/$VKEY (+ .sha256)"
