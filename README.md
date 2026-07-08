@@ -124,9 +124,12 @@ binaries rather than compiling on-device.
 
 ## Build & deployment model
 
-- **Image build** — a base Raspberry Pi OS image is produced from infrastructure-
-  as-code (Ansible) and is the source of truth for building from scratch on a new
-  OS generation.
+- **Image build** — two paths. A base Raspberry Pi OS image is produced from
+  infrastructure-as-code (Ansible) — the source of truth for building the *platform*
+  from scratch on a new OS generation. On top of that, a CI workflow
+  ([`build-image.yml`](.github/workflows/build-image.yml)) *incrementally* builds
+  distributable images: it lays the current software onto the last image and
+  publishes a date-stamped `.img.xz`. See [.github/workflows/README.md](.github/workflows/README.md).
 - **OTA updates** — stations update in place by pulling this repository and
   running an update script that drives a modular hook system
   ([system/scripts/hooks/](system/scripts/)). Hooks deploy systemd units, udev
