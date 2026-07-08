@@ -114,7 +114,7 @@ never see the hardware — only these files and sockets.
 | `ctt-leds` | Daemon: drive the V3 status LEDs (GPS / diag-A / diag-B); idles on V2 | `/run/ctt/leds` (`key=value`: `gps`/`a`/`b` = `on\|off\|blink\|blink:<ms>`) | SX1509B output registers (the LEDs) |
 | `ctt-lcd` | Daemon: render the front-panel character LCD; idles if no backpack found. Shows a boot splash until the Node app publishes its first frame. | `/run/ctt/lcd` (fixed 144-byte framebuffer: 8 CGRAM glyphs + 80 character cells) | HD44780 LCD over the PCF8574 backpack |
 | `ctt-radio-flash` | One-shot: flash a radio MCU (ATmega32U4 Feather) via the GPIO-free 1200-baud-touch Caterina bootloader, then exec `avrdude`. Works for any channel — on-board or USB. | the radio's serial port (the touch) + a firmware file | the MCU flash (through `avrdude`) |
-| `ctt-modem-provision` | **Manual / manufacturing CLI** (no longer auto-run by a service): ensure the Telit LE910Q1 RNDIS data path is bound. Reads `AT#RNDIS?`; if unbound, writes `AT#RNDIS=1,0` + reboots the modem. Read-only on the happy path. RNDIS provisioning is done at manufacturing; the runtime assumes an already-provisioned modem. | the modem AT control port (`/dev/ctt-modem-at`, or a path arg) | the modem RNDIS NV binding (only if unbound) |
+| `ctt-modem-provision` | Boot service (`ctt-modem-provision.service`, `Before=ModemManager`): bring up the Telit LE910Q1 **CDC-ECM** data path. Ensures the USB composition is ECM (`AT#USBCFG?`; if not `1`, writes `AT#USBCFG=1` + reboots the modem → re-enumerates as `1bc7:7021`), then starts the ECM session (`AT#ECM=1,0`), retrying through the cold-boot registration race. The ECM session is **not** persistent (a modem power-cycle drops it), so this runs every boot — unlike the old RNDIS NV binding. Fails open. | the modem AT control port (`/dev/ctt-modem-at`, or a path arg) | the modem USB composition NV (only if not ECM) + the live ECM session |
 
 Notes:
 
@@ -208,7 +208,7 @@ Current state:
 | `ctt-leds` | 0.1.0 | 0.1.0 |
 | `ctt-lcd` | 0.4.0 | 0.4.0 |
 | `ctt-radio-flash` | 0.1.0 | 0.1.0 |
-| `ctt-modem-provision` | 0.1.0 | 0.1.0 |
+| `ctt-modem-provision` | 0.2.0 | 0.2.0 |
 
 ---
 

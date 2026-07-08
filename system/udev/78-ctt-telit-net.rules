@@ -1,7 +1,12 @@
-# CTT: rename the Telit LE910Q1 (1bc7:7020) RNDIS network interface to a
+# CTT: rename the Telit LE910Q1 (1bc7:7021) ECM network interface to a
 # stable name "mdm0", off the eth* pool.
 #
-# Why: the rndis_host netdev otherwise lands as ethN and races the USB
+# Data path is CDC-ECM (USBCFG=1, USB id 1bc7:7021): the modem's cdc_ether
+# netdev, self-NAT/DHCP (192.168.225.1 hands out .2/24) — same addressing as
+# the old RNDIS path, cleaner CDC-standard driver. The ECM composition's
+# product id is 7021 (RNDIS was 7020), so this rule keys on 7021.
+#
+# Why: the cdc_ether netdev otherwise lands as ethN/wwan0 and races the USB
 # wired-LAN dongle for eth0/eth1 — non-deterministic across boots (we have
 # observed the Telit taking eth0 and the wired ASIX getting bumped to eth1,
 # which breaks the wired-con catch-all and routing). Renaming it to mdm0:
@@ -10,10 +15,20 @@
 #   - gives ModemManager / NetworkManager / the /modem/ppp check a single
 #     fixed interface name to key on regardless of enumeration order.
 #
-# Telit-VID-scoped (1bc7:7020) — does not affect Quectel or any other device.
+# Telit-VID-scoped (1bc7:7021) — does not affect Quectel or any other device.
 #
-# VERIFY ON REBOOT: confirm `ip -br link` shows `mdm0` (not ethN) and the
-# wired dongle keeps its eth slot. udev net renames can interact with
-# systemd .link policies; the image ships empty 73-usb-net-by-mac.link /
-# 99-default.link, so this NAME assignment should win — but confirm live.
-ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0"
+# ID_MM_PORT_IGNORE=1: keep ModemManager OFF this net port. In the ECM
+# composition MM recognizes the cdc_ether interface as the modem's data port and
+# claims it (ports: mdm0 (net) + ttyACM4 (at)), which leaves mdm0 UNMANAGED by
+# NetworkManager so it is never DHCPed. Our data path is modem self-NAT (AT#ECM),
+# not an MM-dialed bearer, so MM has no business on the net port — ignoring it
+# hands mdm0 back to NM (which auto-DHCPs it to 192.168.225.2), while MM keeps the
+# AT port (interface 02) for signal/registration. This is per-PORT, not
+# ID_MM_DEVICE_IGNORE — the modem itself stays managed by MM.
+#
+# VERIFY ON REBOOT: confirm `ip -br link` shows `mdm0` (not ethN/wwan0), the
+# wired dongle keeps its eth slot, and `nmcli device` lists mdm0 as managed.
+# udev net renames can interact with systemd .link policies; the image ships
+# empty 73-usb-net-by-mac.link / 99-default.link, so this NAME should win — but
+# confirm live.
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", ENV{ID_MM_PORT_IGNORE}="1", NAME="mdm0"

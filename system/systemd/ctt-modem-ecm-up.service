@@ -1,0 +1,17 @@
+[Unit]
+Description=Bring up the Telit CDC-ECM data interface (mdm0, self-NAT, fallback route)
+# After the ECM session is started (ctt-modem-provision) and after NM/MM have
+# settled so nothing races the static config. NM does not manage mdm0 (it is an
+# MM modem net port), so there is no conflict — we own this interface.
+After=ctt-modem-provision.service NetworkManager.service ModemManager.service
+Wants=ctt-modem-provision.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+# Fails open (exit 0) when the modem is off/disabled/absent so it never blocks
+# boot. Assigns 192.168.225.2/24 + a high-metric fallback default route on mdm0.
+ExecStart=/lib/ctt/sensor-station-software/system/scripts/modem-ecm-up.sh
+
+[Install]
+WantedBy=multi-user.target

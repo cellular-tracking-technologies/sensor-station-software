@@ -12,13 +12,15 @@
 # the Telit-only power saving; a station that isn't using cellular has its modem
 # physically removed.
 #
-# Writes the /etc/ctt/modem-disabled intent marker so modem-boot-state.sh
-# re-applies the deauthorize on the next boot (authorized resets to 1 when the
-# modem re-enumerates).
+# Writes the modem-disabled intent marker in tmpfs (/run/ctt, cleared on every
+# boot) — NOT /etc — so a disable is deliberately NON-persistent: it holds for
+# the current power session, but any reboot or hard reset clears it and the modem
+# comes back ON (fail-safe — a remote station is never stranded without cellular
+# after a power event). Enable is the persistent state (no marker → ON at boot).
 set -u
 
 SCRIPT_DIR='/lib/ctt/sensor-station-software/system/scripts'
-MARKER='/etc/ctt/modem-disabled'
+MARKER='/run/ctt/modem-disabled'
 
 mkdir -p "$(dirname "$MARKER")"
 touch "$MARKER"

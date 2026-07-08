@@ -1,0 +1,23 @@
+[Unit]
+Description=Bring up the Telit LE910Q1 CDC-ECM data path (composition + session)
+# Needs /etc mounted and udev settled so the /dev/ctt-modem-at symlink exists,
+# and the modem authorized first (modem-boot-state applies the on/off intent).
+# Unlike the old RNDIS NV binding, the ECM session (AT#ECM=1,0) does NOT survive
+# a modem power-cycle, so it must be (re)started every boot. Runs BEFORE
+# ModemManager so it owns the AT port while it works.
+After=local-fs.target systemd-udev-settle.service modem-boot-state.service
+Before=ModemManager.service
+DefaultDependencies=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+# ctt-modem-provision (fails open): ensures the USB composition is ECM
+# (AT#USBCFG=1, rebooting the modem once if it is still on the legacy RNDIS
+# composition 1bc7:7020), then starts the ECM session (AT#ECM=1,0), retrying
+# through the cold-boot registration race. Any problem logs and exits 0 so boot
+# proceeds and ModemManager starts normally.
+ExecStart=/usr/local/bin/ctt-modem-provision
+
+[Install]
+WantedBy=multi-user.target

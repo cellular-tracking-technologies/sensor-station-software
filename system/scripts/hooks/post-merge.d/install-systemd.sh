@@ -34,6 +34,8 @@ DST_DIR="/etc/systemd/system"
 # / Ansible / operator action.
 MUST_BE_ENABLED=(
   modem-boot-state.service       # state persistence (Meelyn's), runs Before MM
+  ctt-modem-provision.service    # Telit ECM composition + session start, runs Before MM
+  ctt-modem-ecm-up.service       # bring up mdm0 (static self-NAT addr + fallback route), After MM/NM
   ctt-board-detect.service         # boot-time hardware identity; writes /run/ctt/board.env
   ctt-device-config.service      # single owner of config.txt: copies the canonical per-revision file (RTC + buttons + LEDs), loop-safe. Replaces the old rtc/buttons/leds overlay services.
   ctt-sensors.service            # I2C ADC + temp reader -> /run/ctt/sensors.json
@@ -43,9 +45,11 @@ MUST_BE_ENABLED=(
   # activates per-channel instances via ENV{SYSTEMD_WANTS}; they are deployed as
   # files but must NOT be enabled here.
 )
-# NOTE: Telit RNDIS + IP-passthrough NV provisioning (AT#RNDIS / AT#IPPASSTH)
-# is done at MANUFACTURING, not in the image — the old provision-modem-rndis
-# service was removed. The runtime here assumes an already-provisioned modem.
+# NOTE: the Telit data path is CDC-ECM (USBCFG=1). ctt-modem-provision.service
+# runs at boot (Before=ModemManager) because — unlike the old RNDIS NV binding —
+# the ECM session (AT#ECM=1,0) does not persist across a modem power-cycle and
+# must be re-started every boot. The same tool also self-heals the USB
+# composition (AT#USBCFG=1) if a modem is still on the legacy RNDIS composition.
 
 CHANGED=0
 

@@ -1,33 +1,24 @@
-# CTT: Telit LE910Q1-WWG (vid:pid 1bc7:7020) USB interface minimization — RNDIS data path.
+# CTT: Telit LE910Q1-WWG (vid:pid 1bc7:7021) USB interface minimization — ECM data path.
 #
-# The modem advertises 8 USB interfaces by default:
-#   0 - RNDIS control   (with iface 1, creates the RNDIS net device — renamed to mdm0 by 78-ctt-telit-net.rules)
-#   1 - RNDIS data
+# In the ECM composition (USBCFG=1) the modem advertises 8 USB interfaces:
+#   0 - CDC ECM control (with iface 1, creates the cdc_ether net device — renamed to mdm0 by 78-ctt-telit-net.rules)
+#   1 - CDC ECM data
 #   2 - CDC ACM control (ttyACM, ModemManager AT port)
 #   3 - CDC ACM data partner for iface 2
-#   4 - CDC ACM control (MM rejects as "unhandled serial type", unused)
-#   5 - CDC ACM data partner for the unused port
-#   6 - CDC ACM control (second ACM AT port)
+#   4 - CDC ACM control (second AT port, unused)
+#   5 - CDC ACM data partner for iface 4
+#   6 - CDC ACM control (third AT port, unused)
 #   7 - CDC ACM data partner for iface 6
 #
-# RNDIS data path: leave 0+1 AUTHORIZED so rndis_host binds and the RNDIS
-# net interface comes up (renamed to mdm0). Keep 2+3 and 6+7 for
-# ModemManager AT access (signal / registration / operator), which works on
-# the RNDIS path too — over the AT port, independent of the bearer.
-# Deauthorize only 4+5 (the ACM pair MM can't use) to trim unused USB
+# ECM data path: leave 0+1 AUTHORIZED so cdc_ether binds and the ECM net
+# interface comes up (renamed to mdm0). Keep 2+3 for ModemManager AT access
+# (signal / registration / operator) and for ctt-modem-provision to start the
+# ECM session (AT#ECM=1,0) — the AT port works independent of the bearer.
+# Deauthorize the two spare ACM/AT pairs 4+5 and 6+7 to trim unused USB
 # endpoints (each active endpoint adds dwc_otg FIQ scheduling pressure on the
-# CM3 — a contributor to FunCube NYET errors on V3).
-#
-# NOTE: this rule previously also deauthorized 0+1 to force the PPP-only
-# path. RNDIS needs them, so those two lines are removed. (Blocking 6+7 as a
-# further FunCube-bandwidth trim is viable on RNDIS — pppd no longer holds
-# ttyACM4 — but is deferred until the RNDIS path is verified, to avoid
-# disturbing MM's AT access in the same change.)
-ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="04", ATTR{authorized}="0"
-ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="05", ATTR{authorized}="0"
-# 06/07 also blocked: on RNDIS the second ACM/AT pair is unused (pppd no
-# longer holds ttyACM4; MM runs on 02/03 alone). Frees 2 USB endpoints to
-# reduce dwc_otg pressure with 4 FunCubes. Net active = 4 ifaces (00/01+02/03),
-# same footprint as the old PPP config.
-ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="06", ATTR{authorized}="0"
-ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", ATTR{bInterfaceNumber}=="07", ATTR{authorized}="0"
+# CM3 — a contributor to FunCube NYET errors on V3). Net active = 4 ifaces
+# (00/01 ECM + 02/03 AT), same footprint as the RNDIS config it replaces.
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", ATTR{bInterfaceNumber}=="04", ATTR{authorized}="0"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", ATTR{bInterfaceNumber}=="05", ATTR{authorized}="0"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", ATTR{bInterfaceNumber}=="06", ATTR{authorized}="0"
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", ATTR{bInterfaceNumber}=="07", ATTR{authorized}="0"

@@ -1,9 +1,10 @@
 [Unit]
 Description=Restore cellular modem on/off state at boot
-# Run after /etc is mounted (we read /etc/ctt/modem-disabled) and after udev has
-# populated /sys/bus/usb so lsusb + the authorize sysfs node exist. Run BEFORE
-# ModemManager so its first scan sees the intended authorization state without us
-# having to deauthorize after MM has already cached it.
+# Run after udev has populated /sys/bus/usb so lsusb + the authorize sysfs node
+# exist. Run BEFORE ModemManager so its first scan sees the intended authorization
+# state without us having to deauthorize after MM has already cached it. The
+# disable marker is in tmpfs (/run/ctt/modem-disabled), available from early boot,
+# so it is cleared on every boot — a disable never survives a reboot/hard reset.
 After=local-fs.target systemd-udev-settle.service
 Before=ModemManager.service
 DefaultDependencies=yes
@@ -11,7 +12,7 @@ DefaultDependencies=yes
 [Service]
 Type=oneshot
 RemainAfterExit=true
-# modem-boot-state.sh reconciles the /etc/ctt/modem-disabled marker to the USB
+# modem-boot-state.sh reconciles the /run/ctt/modem-disabled marker to the USB
 # authorization (authorize = on, deauthorize = off) via modem-power.sh. Both the
 # Telit LE910Q1 and Quectel EC25 self-enumerate on VBAT, so there is no GPIO/pulse
 # step and no fixed settle here — the script waits (bounded) for the modem to

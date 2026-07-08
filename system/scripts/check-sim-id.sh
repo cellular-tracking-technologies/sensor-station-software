@@ -14,7 +14,7 @@
 
 # A disabled (deauthorized) modem can't report an ICCID — skip. The next enable
 # reboots the station, so this runs once the modem is back and authorized.
-if [ -e /etc/ctt/modem-disabled ]; then
+if [ -e /run/ctt/modem-disabled ]; then
   echo 'check-sim-id: modem disabled — skipping APN selection'
   exit 0
 fi

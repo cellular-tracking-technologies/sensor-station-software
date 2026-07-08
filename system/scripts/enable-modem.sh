@@ -7,7 +7,8 @@
 #   station-boot (After=MM):      data-path autoconnect policy + per-SIM APN
 #
 # Steps:
-#   1. Clear the /etc/ctt/modem-disabled marker (intent = ON).
+#   1. Clear the /run/ctt/modem-disabled marker (intent = ON; the marker is
+#      volatile tmpfs, so ON is also the default after any reboot/hard reset).
 #   2. If no modem is on the bus, a Telit may be in ON_OFF# shutdown (a soft
 #      reboot won't clear that — VBAT stays up), so pulse ON_OFF# once to power it
 #      on. It finishes enumerating during the reboot; modem-boot-state's wait
@@ -21,13 +22,13 @@
 # drive-and-hold.
 set -u
 
-MARKER='/etc/ctt/modem-disabled'
+MARKER='/run/ctt/modem-disabled'
 
 [ -r /run/ctt/board.env ] && . /run/ctt/board.env
 ONOFF_GPIO="${CTT_MODEM_ONOFF_GPIO:-23}"
 
 modem_on_bus() {
-  lsusb -d 1bc7:7020 >/dev/null 2>&1 || lsusb -d 2c7c:0125 >/dev/null 2>&1
+  lsusb -d 1bc7: >/dev/null 2>&1 || lsusb -d 2c7c:0125 >/dev/null 2>&1
 }
 
 rm -f "$MARKER"
