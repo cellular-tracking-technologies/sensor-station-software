@@ -173,6 +173,27 @@ from USB regardless of DTR, so clearing only releases reset. This needs
 `ctt-radio-driver >= 0.3.0` — keep [the fleet pin](system/native/ctt-radio-driver.version)
 at `>= 0.3.0` wherever the blu unit is deployed.
 
+**Cellular data path (Telit RNDIS).** The Telit LE910Q1 self-NATs the cellular
+context onto its RNDIS net port (modem-internal DHCP server at `192.168.225.1`). A
+udev rule ([78-ctt-telit-net.rules](system/udev/78-ctt-telit-net.rules)) renames
+that interface to a stable `mdm0` (off the `eth*` pool), and **NetworkManager**
+brings it up by DHCP as a low-priority default route so a wired uplink stays
+primary and cellular is the failover. The gsm/PPP profile is deliberately kept from
+autodialing to avoid an `ESM_MULTIPLE_PDN` collision with that context
+([modem-datapath.sh](system/scripts/modem-datapath.sh)).
+
+After a hard reset (VBAT loss) the Telit can come up in **ON_OFF# shutdown** —
+absent from the USB bus, so it never self-enumerates. `ctt-board-detect`'s modem
+boot chain assumed self-enumeration, so the station used to come up with no modem
+until a manual `enable-modem`. [ctt-modem-wake.service](system/systemd/ctt-modem-wake.service)
+([modem-wake.sh](system/scripts/modem-wake.sh)) closes that gap: at boot, when the
+modem is intent-ON (no disable marker) but absent from the bus, it pulses the
+ON_OFF# line (GPIO from `board.env`, fallback 23) so the Telit powers on and
+enumerates; the normal chain then authorizes it and NetworkManager leases `mdm0`.
+It no-ops when a modem is already present or the operator disable marker is set,
+and needs no ON_OFF# pin on modems that self-power. Verified on v3r3, v3r0, and a
+Telit-on-V2 board (all use GPIO 23).
+
 ---
 
 ## License
