@@ -17,6 +17,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Version tags (vX.Y.Z) are push events that touch no native/ code, but GitHub's
+    # `paths:` filter does NOT gate tag pushes — so guard them out here. This job is a
+    # compile-check for native/** changes on branches/PRs only.
+    if: github.ref_type != 'tag'
     steps:
       - uses: actions/checkout@v4
 
