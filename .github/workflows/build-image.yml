@@ -20,12 +20,20 @@
 name: build-image
 
 on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'      # release tags (npm version -> v2.1.0) auto-build the image
   workflow_dispatch:
     inputs:
       base_image:
-        description: "Base image object key to update (under the images/ prefix)"
-        required: true
-        default: "sensor-station.2026-07-06.img.xz"
+        description: "Base image key to layer onto (images/ prefix). Blank / tag-push -> sensor-station.latest.img.xz"
+        required: false
+        default: "sensor-station.latest.img.xz"
+
+# Serialize image builds so a tag-push and a manual run can't race on the same S3 keys.
+concurrency:
+  group: build-image
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -58,7 +66,7 @@ jobs:
           # the image at /<basename>, so a base.img.xz left in the workspace gets
           # baked into the built image (~875MB of self-nested bloat). RUNNER_TEMP is
           # not copied.
-          aws s3 cp "$S3_PREFIX/${{ inputs.base_image }}" "$RUNNER_TEMP/base.img.xz"
+          aws s3 cp "$S3_PREFIX/${{ inputs.base_image || 'sensor-station.latest.img.xz' }}" "$RUNNER_TEMP/base.img.xz"
 
       - name: Update software inside the image
         uses: pguyot/arm-runner-action@v2
