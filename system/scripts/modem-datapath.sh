@@ -5,9 +5,10 @@
 # enable/disable path — re-deriving it there, racing USB enumeration, was the
 # cause of the Telit PPP-dial collision.
 #
-#   Telit LE910Q1 (1bc7:7020): RNDIS data path (mdm0, modem-internal NAT). The gsm
-#     'station-modem' PPP profile must NOT autodial — a PPP context collides with
-#     the RNDIS PDP context (ESM_MULTIPLE_PDN) and kills mdm0.  => autoconnect no
+#   Telit LE910Q1 (1bc7:7021 ECM / 1bc7:7020 RNDIS): net data path (mdm0, modem-
+#     internal NAT). The gsm 'station-modem' PPP profile must NOT autodial — a PPP
+#     context collides with the ECM/RNDIS PDP context (ESM_MULTIPLE_PDN) and kills
+#     mdm0.  => autoconnect no
 #   Quectel EC25 (2c7c:0125): QMI/PPP bearer on that same profile (wwan0).
 #                                                                 => autoconnect yes
 #
@@ -17,11 +18,12 @@
 # station-boot.service (After=NetworkManager) so nmcli is available.
 set -u
 
-TELIT='1bc7:7020'
+TELIT_ECM='1bc7:7021'
+TELIT_RNDIS='1bc7:7020'
 QUECTEL='2c7c:0125'
 
-if lsusb -d "$TELIT" >/dev/null 2>&1; then
-  echo 'modem-datapath: Telit LE910Q1 — station-modem autoconnect=no (RNDIS, no PPP dial)'
+if lsusb -d "$TELIT_ECM" >/dev/null 2>&1 || lsusb -d "$TELIT_RNDIS" >/dev/null 2>&1; then
+  echo 'modem-datapath: Telit LE910Q1 — station-modem autoconnect=no (ECM/RNDIS mdm0, no PPP dial)'
   sudo nmcli connection modify station-modem connection.autoconnect no
 elif lsusb -d "$QUECTEL" >/dev/null 2>&1; then
   echo 'modem-datapath: Quectel EC25 — station-modem autoconnect=yes (QMI/PPP)'

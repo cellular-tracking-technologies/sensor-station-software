@@ -1,19 +1,19 @@
-# CTT: rename the Telit LE910Q1 (1bc7:7020) RNDIS network interface to a
-# stable name "mdm0", off the eth* pool.
+# CTT: rename the Telit LE910Q1 cellular network interface to a stable name "mdm0".
+# Covers the ECM composition (1bc7:7021, cdc_ether — the current data path) and the
+# legacy RNDIS composition (1bc7:7020, rndis_host — seen only transiently on a modem
+# still being migrated to ECM).
 #
-# Why: the rndis_host netdev otherwise lands as ethN and races the USB
-# wired-LAN dongle for eth0/eth1 — non-deterministic across boots (we have
-# observed the Telit taking eth0 and the wired ASIX getting bumped to eth1,
-# which breaks the wired-con catch-all and routing). Renaming it to mdm0:
-#   - keeps `wired-con` ([match] interface-name=eth*) matching only real
-#     Ethernet dongles, so the wired LAN name stays deterministic;
-#   - gives ModemManager / NetworkManager / the /modem/ppp check a single
-#     fixed interface name to key on regardless of enumeration order.
+# Why: the modem netdev otherwise lands as ethN (RNDIS) or wwanN (ECM) and can race
+# the USB wired-LAN dongle for eth0/eth1, or land on a name downstream config does
+# not key on. Renaming it to mdm0:
+#   - keeps `wired-con` ([match] interface-name=eth*) matching only real Ethernet
+#     dongles, so the wired LAN name stays deterministic;
+#   - gives ModemManager / NetworkManager / the /modem/ppp check a single fixed
+#     interface name regardless of composition or enumeration order.
 #
-# Telit-VID-scoped (1bc7:7020) — does not affect Quectel or any other device.
-#
-# VERIFY ON REBOOT: confirm `ip -br link` shows `mdm0` (not ethN) and the
-# wired dongle keeps its eth slot. udev net renames can interact with
-# systemd .link policies; the image ships empty 73-usb-net-by-mac.link /
-# 99-default.link, so this NAME assignment should win — but confirm live.
+# VERIFY ON REBOOT: `ip -br link` shows `mdm0` (not ethN/wwanN) and the wired dongle
+# keeps its eth slot. udev net renames can interact with systemd .link policies; the
+# image ships empty 73-usb-net-by-mac.link / 99-default.link, so this NAME assignment
+# should win — but confirm live.
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0"
 ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0"
