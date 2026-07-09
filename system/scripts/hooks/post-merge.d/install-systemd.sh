@@ -40,19 +40,23 @@ MUST_BE_ENABLED=(
   ctt-leds.service               # status LED driver (SX1509B) <- /run/ctt/leds
   ctt-lcd.service                # character LCD driver (HD44780/PCF8574) <- /run/ctt/lcd
   ctt-modem-wake.service         # wake a shut-down Telit at boot (ON_OFF# pulse) so a hard reset self-recovers; runs Before modem-boot-state
+  ctt-modem-provision.service    # idempotent ECM provision GUARD; Before MM, no-op on a provisioned modem, converts a fresh/swapped RNDIS one
   ctt-modem-ecm-up.service       # bring up the ECM data iface mdm0 (DHCP + fallback route); NM won't manage an MM modem net port
   # ctt-radio-driver@.service and ctt-blu-driver@.service are TEMPLATES — udev
   # activates per-channel instances via ENV{SYSTEMD_WANTS}; they are deployed as
   # files but must NOT be enabled here.
 )
-# NOTE: Telit modem-side ECM provisioning (composition AT#USBCFG=1 + session bind
-# AT#ECM=1,0) is NV-persistent — it survives reboots AND hard power cycles (verified
-# on fw M0Y.300002), so it is done ONCE via ctt-modem-provision (manual / manufacturing),
-# NOT re-run every boot. The HOST side is NOT auto-configured by NetworkManager: NM
-# folds the ECM net port into the ModemManager modem and never DHCPs mdm0. So
-# ctt-modem-ecm-up.service brings mdm0 up via DHCP (the Telit-documented method) with a
-# fallback route metric each boot. ctt-modem-wake only powers the modem ON after a hard
-# reset; it does not touch the data path.
+# NOTE: ctt-modem-provision.service is an idempotent boot GUARD, not an every-boot
+# re-provisioner. It reads AT#USBCFG?/AT#ECM? and only writes when a modem is not
+# already ECM + bound. ECM provisioning (composition AT#USBCFG=1 + session bind
+# AT#ECM=1,0) is NV-persistent — survives reboots AND hard power cycles (verified fw
+# M0Y.300002) — so on a provisioned modem the guard is a read-and-exit no-op; on a
+# fresh/swapped RNDIS modem (ships 1bc7:7020) it converts it (USBCFG=1 + reboot, then
+# ECM=1,0 on the next boot), so there is NO manual provision step. It runs Before
+# ModemManager for exclusive AT-port access — no MM/NM shutdown, so no races. The HOST
+# side is NOT auto-configured by NetworkManager (NM folds the ECM net port into the MM
+# modem and never DHCPs mdm0), so ctt-modem-ecm-up.service brings mdm0 up via DHCP with a
+# fallback route each boot. ctt-modem-wake only powers the modem ON after a hard reset.
 
 CHANGED=0
 
