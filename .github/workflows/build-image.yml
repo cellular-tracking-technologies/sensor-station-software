@@ -100,18 +100,29 @@ jobs:
             command -v npm >/dev/null 2>&1 && npm cache clean --force || true
             find /var/log -type f -delete 2>/dev/null || true
             rm -rf /var/log/journal/* /tmp/* /var/tmp/* /root/.npm /root/.cache /home/*/.npm /home/*/.cache || true
+            # Restore the STANDARD Raspberry Pi first-boot resize and drop the buggy custom
+            # rc.local expand loop (a base-image artifact: the cmdline init= key self-deletes
+            # after first boot, was lost when a post-first-boot image became a base, and an
+            # rc.local workaround with a recursion bug -- 'cp rc.local.bak rc.local && /etc/rc.local'
+            # -- was added; it loops forever instead of rebooting, so stations booted 96% full).
+            # init_resize.sh (already shipped in the image) grows the rootfs on first boot then
+            # removes its own cmdline hook -- stock Pi OS behaviour. Idempotent.
+            printf '%s\n' '#!/bin/sh' 'exit 0' > /etc/rc.local; chmod +x /etc/rc.local
+            if [ -f /usr/lib/raspi-config/init_resize.sh ] && ! grep -q init_resize /boot/cmdline.txt; then
+              sed -i '1 s|$| init=/usr/lib/raspi-config/init_resize.sh|' /boot/cmdline.txt
+            fi
 
-      - name: Shrink image (real PiShrink — truncate partition + first-boot auto-expand)
+      - name: Shrink image (PiShrink -s — truncate only; init_resize owns first-boot expand)
         run: |
           # arm-runner's optimize_image does not truncate the image down to used size, so the
           # published .img was ~6 GiB (mostly zeroed free space: compresses away in xz, but the
           # imager writes it in full -> ~3x slower to burn, esp. over rpiboot's USB 2.0 link).
-          # PiShrink shrinks the ext4 root to its minimum, truncates the .img, and adds a
-          # first-boot resize so the station expands to fill the eMMC on boot. Matches the
-          # manual (Ansible+PiShrink) process that has always produced fast-to-burn images.
+          # PiShrink shrinks the ext4 root to its minimum and truncates the .img. -s skips
+          # PiShrink's OWN autoexpand -- the standard cmdline init_resize.sh (wired above) owns
+          # the first-boot resize, matching stock Pi OS and the historical Ansible+PiShrink images.
           curl -fsSL https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh -o pishrink.sh
           chmod +x pishrink.sh
-          sudo ./pishrink.sh -v "${{ steps.build.outputs.image }}"
+          sudo ./pishrink.sh -s -v "${{ steps.build.outputs.image }}"
 
       - name: Compress + publish versioned image
         run: |
