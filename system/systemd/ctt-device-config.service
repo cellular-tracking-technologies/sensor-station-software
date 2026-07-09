@@ -20,7 +20,7 @@ Conflicts=shutdown.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/lib/ctt/sensor-station-software/system/scripts/device-config.sh
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/device-config.sh
 
 [Install]
 WantedBy=sysinit.target

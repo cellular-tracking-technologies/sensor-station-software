@@ -16,7 +16,7 @@ RemainAfterExit=true
 # Telit LE910Q1 and Quectel EC25 self-enumerate on VBAT, so there is no GPIO/pulse
 # step and no fixed settle here — the script waits (bounded) for the modem to
 # appear on USB before applying the intent.
-ExecStart=/lib/ctt/sensor-station-software/system/scripts/modem-boot-state.sh
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-boot-state.sh
 
 [Install]
 WantedBy=multi-user.target

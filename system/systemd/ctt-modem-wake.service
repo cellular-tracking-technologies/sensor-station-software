@@ -12,7 +12,7 @@ DefaultDependencies=yes
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStart=/lib/ctt/sensor-station-software/system/scripts/modem-wake.sh
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-wake.sh
 
 [Install]
 WantedBy=multi-user.target
