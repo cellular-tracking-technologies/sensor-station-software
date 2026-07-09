@@ -80,7 +80,10 @@ jobs:
           # (not the copied workspace). arm-runner decompresses the .xz itself.
           base_image: file://${{ runner.temp }}/base.img.xz
           image_additional_mb: 600      # headroom for npm install / fetched binaries
-          optimize_image: true          # shrink (PiShrink-equivalent) on the way out
+          # optimize_image only zeroes free space; it does NOT truncate the partition, so
+          # the .img stayed padded to full size (~6 GiB). That compresses away in xz but the
+          # imager writes it in full (~3x slower to burn). We shrink explicitly below instead.
+          optimize_image: false
           commands: |
             # In the chroot, HOME is inherited as the runner's /home/runner (absent
             # in the image), so update-station.sh can't write its safe.directory
@@ -89,6 +92,18 @@ jobs:
             export HOME=/root
             git config --global --add safe.directory '*'
             bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh
+
+      - name: Shrink image (real PiShrink — truncate partition + first-boot auto-expand)
+        run: |
+          # arm-runner's optimize_image does not truncate the image down to used size, so the
+          # published .img was ~6 GiB (mostly zeroed free space: compresses away in xz, but the
+          # imager writes it in full -> ~3x slower to burn, esp. over rpiboot's USB 2.0 link).
+          # PiShrink shrinks the ext4 root to its minimum, truncates the .img, and adds a
+          # first-boot resize so the station expands to fill the eMMC on boot. Matches the
+          # manual (Ansible+PiShrink) process that has always produced fast-to-burn images.
+          curl -fsSL https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh -o pishrink.sh
+          chmod +x pishrink.sh
+          sudo ./pishrink.sh -v "${{ steps.build.outputs.image }}"
 
       - name: Compress + publish versioned image
         run: |
