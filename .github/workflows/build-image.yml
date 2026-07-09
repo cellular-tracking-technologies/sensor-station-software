@@ -92,6 +92,14 @@ jobs:
             export HOME=/root
             git config --global --add safe.directory '*'
             bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh
+            # Reclaim rootfs space so PiShrink can reach the real minimum. OTA/npm/apt leave
+            # caches, package lists, and logs behind that inflate the fs (and thus the burn
+            # size). Safe: apt lists regenerate on `apt update`; logs/caches are recreated.
+            apt-get clean || true
+            rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb || true
+            command -v npm >/dev/null 2>&1 && npm cache clean --force || true
+            find /var/log -type f -delete 2>/dev/null || true
+            rm -rf /var/log/journal/* /tmp/* /var/tmp/* /root/.npm /root/.cache /home/*/.npm /home/*/.cache || true
 
       - name: Shrink image (real PiShrink — truncate partition + first-boot auto-expand)
         run: |
