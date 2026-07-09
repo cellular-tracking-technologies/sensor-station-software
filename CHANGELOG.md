@@ -12,6 +12,83 @@ regenerated from these entries.
 
 ---
 
+## [2.2.0] — 2026-07-09
+
+Migrates the Telit LE910Q1 cellular data path from RNDIS to CDC-ECM and makes
+modem provisioning zero-touch at boot. RNDIS is deprecated in the Linux kernel and
+is not manageable by ModemManager; ECM is standards-based and yields a clean,
+MM-visible `mdm0` path. A modem is provisioned once (the NV state persists), and if
+a fresh/replacement modem is ever fitted, an idempotent boot guard converts it
+automatically — no manual step. Hardware-validated from ECM-provisioned,
+RNDIS-provisioned, and factory (unbound) starting states.
+
+### Added
+
+- **`ctt-modem-provision.service` — idempotent ECM boot guard.** Runs
+  `Before=ModemManager` for exclusive AT-port access (no MM/NM shutdown, so none of
+  the old provisioner races). Read-only no-op on an already-provisioned modem;
+  converts a fresh/swapped RNDIS modem to ECM over two boots (`AT#USBCFG=1` + reboot,
+  then `AT#ECM=1,0`); re-asserts a lost bind. Fails open — never blocks boot.
+- **`ctt-modem-ecm-up.service` + `modem-ecm-up.sh` — ECM data-path bring-up.**
+  NetworkManager folds the ECM net port into the ModemManager modem and never DHCPs
+  `mdm0`, so it is brought up out of band: `dhclient` on `mdm0` (the module serves
+  `192.168.225.1` and leases `.2`, the Telit-documented handshake), then the default
+  route is re-pinned to a high fallback metric (700) so cellular never preempts
+  wired/Wi-Fi.
+
+### Changed
+
+- **Telit data path RNDIS → CDC-ECM.** `ctt-modem-provision` (0.2.0) provisions ECM
+  (`AT#USBCFG=1` + `AT#ECM=1,0`) and migrates existing RNDIS units. udev rules
+  dual-recognize `1bc7:7021` (ECM) alongside `1bc7:7020` (RNDIS, transitional) and
+  rename the net device to `mdm0`; `modem-datapath`/`modem-wake`/`enable-modem`
+  recognize `7021`.
+- **systemd units invoke their scripts via `/bin/bash <script>`** instead of relying
+  on the file's executable bit, which does not survive Git reliably on Windows.
+
+### Fixed
+
+- **`ctt-modem-ecm-up.service` failed `203/EXEC`.** `modem-ecm-up.sh` had been
+  committed non-executable, so the data interface never came up on a clean deploy.
+  The script is executable again and the unit invokes it via `bash`.
+- **The ECM boot guard was deleted immediately after install.**
+  `ctt-modem-provision.service` was still listed in the systemd `REMOVED` manifest
+  from when the RNDIS auto-provisioner was retired, so the OTA installed the new
+  guard and then removed it. Dropped the stale entry.
+
+## [2.1.1] — 2026-07-08
+
+CI/image-pipeline release: release tags now build immutable, versioned images.
+
+### Changed
+
+- **`build-image` auto-builds on a release-tag push (`v*.*.*`)** and serializes
+  builds. Each build publishes an **immutable, version-named** artifact
+  (`sensor-station-v<version>.img.xz`) rather than a bare-date name, and cuts a
+  GitHub **pre-release** pointing at it. The `lts_26_07` image line is isolated under
+  `images/lts_26_07/` so it never touches the current public LTS.
+
+## [2.1.0] — 2026-07-08
+
+Cellular modem robustness and the incremental CI image build.
+
+### Added
+
+- **`ctt-modem-wake.service` — modem power-state recovery at boot.** A Telit
+  LE910Q1 in `ON_OFF#` shutdown (after a hard reset / VBAT loss) does not
+  self-enumerate; this pulses `ON_OFF#` so it returns before ModemManager scans.
+  No-op when the modem is already present or intent is OFF.
+- **Incremental CI image build (`build-image`).** Loop-mounts the previous image
+  under qemu-arm and runs `update-station.sh` inside it, then shrinks and publishes
+  to S3 — the manual image process, automated.
+
+### Fixed
+
+- **Web-triggered `update-station` killed itself.** The dashboard spawns the updater
+  inside `station-radio-interface`; restarting that service mid-run SIGKILLed the
+  updater. The radio-interface restart is now the last action, and the updater runs
+  in a decoupled transient unit.
+
 ## [2.0.1] — unreleased
 
 Bug-fix release cut for a fresh test image on top of 2.0.0: two fixes that

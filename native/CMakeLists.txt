@@ -73,6 +73,7 @@ ctt_tool(ctt-lcd SOURCES src/ctt-lcd/main.cpp LINK ctthw)
 # (GPIO-free); execs avrdude. Pure serial/POSIX, no ctthw.
 ctt_tool(ctt-radio-flash SOURCES src/ctt-radio-flash/main.cpp)
 
-# ctt-modem-provision — bind the Telit RNDIS data path (AT#RNDIS=1,0) on boot if
-# unbound; self-healing, runs Before=ModemManager. Pure serial/POSIX, no ctthw.
+# ctt-modem-provision — provision the Telit CDC-ECM data path (AT#USBCFG=1 +
+# AT#ECM=1,0) on boot if not already ECM; idempotent guard, runs Before=ModemManager.
+# Pure serial/POSIX, no ctthw.
 ctt_tool(ctt-modem-provision SOURCES src/ctt-modem-provision/main.cpp)

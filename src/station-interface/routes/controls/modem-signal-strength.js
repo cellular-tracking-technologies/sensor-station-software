@@ -2,7 +2,7 @@
 // modem icon. The icon's connected/not-connected state is driven by the real
 // connectivity probe (/modem/ppp), NOT by ModemManager's `state`.
 //
-// Why not trust mmcli `state`: on the RNDIS fleet (Telit LE910Q1) mmcli reports
+// Why not trust mmcli `state`: on the Telit LE910Q1 (CDC-ECM) mmcli reports
 // `connected` as soon as it has a bearer, even when the modem-side NAT isn't
 // actually forwarding traffic (e.g. just after a power-cycle, before the data
 // session re-establishes). That's a false positive — the same one the ping

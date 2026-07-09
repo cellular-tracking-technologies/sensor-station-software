@@ -124,10 +124,10 @@ matters.
   `23-quectel-modem.rules` keeps the modem manager off non-modem tty interfaces;
   `77-ctt-telit-block-unused.rules` deauthorizes unused CDC-ACM interface pairs to
   trim USB endpoint pressure on the CM3; `78-ctt-telit-net.rules` renames the
-  modem's RNDIS network device to a stable `mdm0` so it does not race the wired
+  modem's CDC-ECM network device to a stable `mdm0` so it does not race the wired
   Ethernet dongle for an `eth*` slot. These describe interface-selection
-  mechanism only; provisioning of modem NV settings happens at manufacturing,
-  not here.
+  mechanism only; modem NV provisioning (ECM composition + session bind) is
+  ensured each boot by the idempotent `ctt-modem-provision.service` guard.
 
 ---
 

@@ -45,9 +45,9 @@ class StationStats {
       const wifi_signal = network && network.connected == true ? network.signal : undefined
       // Show modem signal whenever the modem is alive and reporting a value.
       // Don't gate on state=='connected' — ModemManager only reports 'connected'
-      // when MM owns the bearer. With the Telit RNDIS path the bearer is set
-      // up at the modem (AT#RNDIS / AT#IPPASSTH), so MM sees 'registered' and
-      // never advances to 'connected' even though data is flowing fine.
+      // when MM owns the bearer. With the Telit CDC-ECM path the bearer is set
+      // up at the modem (AT#ECM), so MM sees 'registered' and never advances to
+      // 'connected' even though data is flowing fine.
       const live_states = ['connected', 'registered', 'enabled', 'searching']
       const modem_signal = (modem && live_states.includes(modem.state) && typeof modem.signal === 'number')
         ? modem.signal

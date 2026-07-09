@@ -173,14 +173,19 @@ from USB regardless of DTR, so clearing only releases reset. This needs
 `ctt-radio-driver >= 0.3.0` — keep [the fleet pin](system/native/ctt-radio-driver.version)
 at `>= 0.3.0` wherever the blu unit is deployed.
 
-**Cellular data path (Telit RNDIS).** The Telit LE910Q1 self-NATs the cellular
-context onto its RNDIS net port (modem-internal DHCP server at `192.168.225.1`). A
+**Cellular data path (Telit CDC-ECM).** The Telit LE910Q1 self-NATs the cellular
+context onto its CDC-ECM net port (modem-internal DHCP server at `192.168.225.1`). A
 udev rule ([78-ctt-telit-net.rules](system/udev/78-ctt-telit-net.rules)) renames
-that interface to a stable `mdm0` (off the `eth*` pool), and **NetworkManager**
-brings it up by DHCP as a low-priority default route so a wired uplink stays
-primary and cellular is the failover. The gsm/PPP profile is deliberately kept from
-autodialing to avoid an `ESM_MULTIPLE_PDN` collision with that context
-([modem-datapath.sh](system/scripts/modem-datapath.sh)).
+that interface to a stable `mdm0` (off the `eth*` pool). Because ModemManager owns
+the modem and NetworkManager never manages that net port, `mdm0` is brought up **out
+of band by [`ctt-modem-ecm-up.service`](system/systemd/ctt-modem-ecm-up.service)**:
+`dhclient` on `mdm0`, then the default route is re-pinned to a high fallback metric
+so a wired/Wi-Fi uplink stays primary and cellular is the failover. The gsm/PPP
+profile is deliberately kept from autodialing to avoid an `ESM_MULTIPLE_PDN`
+collision with that context ([modem-datapath.sh](system/scripts/modem-datapath.sh)).
+The modem is provisioned to ECM (`AT#USBCFG=1` + `AT#ECM=1,0`) once and re-checked
+each boot by the idempotent [`ctt-modem-provision.service`](system/systemd/ctt-modem-provision.service)
+guard, which converts a fresh/RNDIS modem automatically.
 
 After a hard reset (VBAT loss) the Telit can come up in **ON_OFF# shutdown** —
 absent from the USB bus, so it never self-enumerates. `ctt-board-detect`'s modem
