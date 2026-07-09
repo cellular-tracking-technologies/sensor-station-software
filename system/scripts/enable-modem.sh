@@ -27,7 +27,7 @@ MARKER='/etc/ctt/modem-disabled'
 ONOFF_GPIO="${CTT_MODEM_ONOFF_GPIO:-23}"
 
 modem_on_bus() {
-  lsusb -d 1bc7:7020 >/dev/null 2>&1 || lsusb -d 2c7c:0125 >/dev/null 2>&1
+  lsusb -d 1bc7:7021 >/dev/null 2>&1 || lsusb -d 1bc7:7020 >/dev/null 2>&1 || lsusb -d 2c7c:0125 >/dev/null 2>&1
 }
 
 rm -f "$MARKER"
