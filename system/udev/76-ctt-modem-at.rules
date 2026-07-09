@@ -1,16 +1,20 @@
-# CTT: stable symlink for the Telit LE910Q1 (1bc7:7021) AT control port (USB
-# interface 02): /dev/ctt-modem-at.
+# CTT: stable symlink for the Telit LE910Q1 AT control port (USB interface 02):
+# /dev/ctt-modem-at.
 #
 # ModemManager uses interface 02 as the modem's AT port (signal/registration),
 # and it floats across /dev/ttyACMx between boots, so we give it a fixed name.
 # That fixed name is what ctt-modem-provision binds the ECM data path on: it
-# starts the CDC-ECM session (AT#ECM=1,0) at boot, which — unlike the old RNDIS
-# NV binding — does not persist across a modem power-cycle and must be re-issued
-# every boot (ctt-modem-provision.service, ordered Before=ModemManager).
+# ensures the USB composition is ECM (AT#USBCFG=1) and starts the CDC-ECM session
+# (AT#ECM=1,0) at boot — the session, unlike the old RNDIS NV binding, does not
+# persist across a modem power-cycle and must be re-issued every boot
+# (ctt-modem-provision.service, ordered Before=ModemManager).
 #
-# Telit-VID scoped (1bc7:7021) — Quectel/QMI and every other device is untouched.
-# Interface 02 is the AT control port in both the RNDIS (7020) and ECM (7021)
-# compositions, so only the product id changes here.
+# CRITICAL: match by VID + interface only, NOT product id. Interface 02 is the AT
+# port in BOTH the RNDIS (1bc7:7020) and ECM (1bc7:7021) compositions. A station
+# still on RNDIS must expose /dev/ctt-modem-at so ctt-modem-provision can reach
+# the modem to switch it to ECM — pinning this to 7021 would make the symlink
+# absent on exactly the modems that still need migrating (chicken-and-egg).
+# Telit-VID scoped (1bc7) — Quectel/QMI and every other device is untouched.
 #
 # Match on the tty's own ID_* properties (set by the usb_id builtin in the
 # earlier 60-serial rules), NOT ATTRS{}: idVendor/idProduct live on the USB
@@ -18,4 +22,4 @@
 # udev requires all ATTRS{} in one rule to match the SAME parent, so an ATTRS
 # matcher can never match all three. ID_USB_INTERFACE_NUM=="02" selects the AT
 # control port (ModemManager's primary AT port).
-ACTION=="add", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1bc7", ENV{ID_MODEL_ID}=="7021", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="ctt-modem-at"
+ACTION=="add", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1bc7", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="ctt-modem-at"
