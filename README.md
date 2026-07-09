@@ -203,4 +203,5 @@ Telit-on-V2 board (all use GPIO 23).
 
 ## License
 
-ISC. See [package.json](package.json).
+Licensed under the **GNU Affero General Public License v3.0 or later**
+(`AGPL-3.0-or-later`). See [LICENSE.txt](LICENSE.txt).
