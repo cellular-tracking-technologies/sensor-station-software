@@ -102,39 +102,36 @@ jobs:
             rm -rf /var/log/journal/* /tmp/* /var/tmp/* /root/.npm /root/.cache /home/*/.npm /home/*/.cache || true
             # Drop the buggy custom rc.local expand loop (base-image artifact: an rc.local
             # workaround with a recursion bug -- 'cp rc.local.bak rc.local && /etc/rc.local' --
-            # looped forever instead of rebooting, so stations booted 96% full). Neutralize it
-            # here (root-partition edits DO persist through arm-runner); the standard first-boot
-            # resize hook is wired into the BOOT partition in the next step.
+            # looped forever instead of rebooting, so stations booted 96% full). Neutralize it.
+            # Rootfs expansion is now ctt-firstboot-resize.service (deployed above by
+            # update-station on the ROOT partition) -- fail-safe, NOT a PID-1 cmdline hook.
             printf '%s\n' '#!/bin/sh' 'exit 0' > /etc/rc.local; chmod +x /etc/rc.local
 
-      - name: Wire standard first-boot resize into cmdline (boot partition, loop-mounted)
+      - name: Strip any PID-1 init_resize hook from cmdline (defensive)
         run: |
-          # arm-runner does NOT persist in-chroot edits to the BOOT partition (its root-partition
-          # edits do), so a cmdline.txt edit inside the arm-runner commands is silently lost and
-          # the image ships with no auto-expand -> the rootfs never grows. Wire the stock hook by
-          # loop-mounting the image's boot partition (p1) directly. init_resize.sh (on the root
-          # partition) grows the rootfs on first boot then removes its own cmdline key. Idempotent.
+          # We deliberately do NOT use the stock init=/usr/lib/raspi-config/init_resize.sh cmdline
+          # hook: it runs as PID 1 BEFORE the OS and BRICKED the boot when it failed on the CM3+.
+          # Expansion is handled by ctt-firstboot-resize.service (fail-safe, root partition). Strip
+          # any init_resize hook a base image might carry, by loop-mounting the boot partition (p1).
           IMG="${{ steps.build.outputs.image }}"
           LOOP="$(sudo losetup -Pf --show "$IMG")"
           MNT="$(mktemp -d)"
           sudo mount "${LOOP}p1" "$MNT"
-          if ! grep -q init_resize "$MNT/cmdline.txt"; then
-            sudo sed -i '1 s|$| init=/usr/lib/raspi-config/init_resize.sh|' "$MNT/cmdline.txt"
-          fi
+          sudo sed -i 's| init=/usr/lib/raspi-config/init_resize.sh||g' "$MNT/cmdline.txt" || true
           echo "cmdline.txt now: $(cat "$MNT/cmdline.txt")"
           sudo sync
           sudo umount "$MNT"
           sudo losetup -d "$LOOP"
           rmdir "$MNT"
 
-      - name: Shrink image (PiShrink -s — truncate only; init_resize owns first-boot expand)
+      - name: Shrink image (PiShrink -s — truncate only; ctt-firstboot-resize owns first-boot expand)
         run: |
           # arm-runner's optimize_image does not truncate the image down to used size, so the
           # published .img was ~6 GiB (mostly zeroed free space: compresses away in xz, but the
           # imager writes it in full -> ~3x slower to burn, esp. over rpiboot's USB 2.0 link).
           # PiShrink shrinks the ext4 root to its minimum and truncates the .img. -s skips
-          # PiShrink's OWN autoexpand -- the standard cmdline init_resize.sh (wired above) owns
-          # the first-boot resize, matching stock Pi OS and the historical Ansible+PiShrink images.
+          # PiShrink's OWN autoexpand -- ctt-firstboot-resize.service grows the rootfs to fill the
+          # card on first boot (fail-safe), matching the historical Ansible+PiShrink image sizes.
           curl -fsSL https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh -o pishrink.sh
           chmod +x pishrink.sh
           sudo ./pishrink.sh -s -v "${{ steps.build.outputs.image }}"

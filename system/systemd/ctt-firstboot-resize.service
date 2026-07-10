@@ -1,0 +1,19 @@
+[Unit]
+Description=CTT first-boot rootfs expansion (fail-safe; boots first, resizes after)
+# Runs AFTER the OS is up -- NOT as PID 1 like the stock init=/init_resize.sh cmdline hook,
+# which bricked the boot when it failed on the CM3+. A failure here just leaves a booted,
+# usable (shrunk) station, recoverable over SSH. ConditionPathExists makes it a true one-shot:
+# firstboot-resize.sh writes the marker after it runs, so the unit is skipped on every later
+# boot even if an OTA re-enables it.
+After=local-fs.target
+ConditionPathExists=!/etc/ctt/.rootfs-expanded
+DefaultDependencies=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+# bash-invoked (the Git exec bit is unreliable on Windows; do not rely on it).
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/firstboot-resize.sh
+
+[Install]
+WantedBy=multi-user.target
