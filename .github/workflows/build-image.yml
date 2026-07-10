@@ -100,17 +100,32 @@ jobs:
             command -v npm >/dev/null 2>&1 && npm cache clean --force || true
             find /var/log -type f -delete 2>/dev/null || true
             rm -rf /var/log/journal/* /tmp/* /var/tmp/* /root/.npm /root/.cache /home/*/.npm /home/*/.cache || true
-            # Restore the STANDARD Raspberry Pi first-boot resize and drop the buggy custom
-            # rc.local expand loop (a base-image artifact: the cmdline init= key self-deletes
-            # after first boot, was lost when a post-first-boot image became a base, and an
-            # rc.local workaround with a recursion bug -- 'cp rc.local.bak rc.local && /etc/rc.local'
-            # -- was added; it loops forever instead of rebooting, so stations booted 96% full).
-            # init_resize.sh (already shipped in the image) grows the rootfs on first boot then
-            # removes its own cmdline hook -- stock Pi OS behaviour. Idempotent.
+            # Drop the buggy custom rc.local expand loop (base-image artifact: an rc.local
+            # workaround with a recursion bug -- 'cp rc.local.bak rc.local && /etc/rc.local' --
+            # looped forever instead of rebooting, so stations booted 96% full). Neutralize it
+            # here (root-partition edits DO persist through arm-runner); the standard first-boot
+            # resize hook is wired into the BOOT partition in the next step.
             printf '%s\n' '#!/bin/sh' 'exit 0' > /etc/rc.local; chmod +x /etc/rc.local
-            if [ -f /usr/lib/raspi-config/init_resize.sh ] && ! grep -q init_resize /boot/cmdline.txt; then
-              sed -i '1 s|$| init=/usr/lib/raspi-config/init_resize.sh|' /boot/cmdline.txt
-            fi
+
+      - name: Wire standard first-boot resize into cmdline (boot partition, loop-mounted)
+        run: |
+          # arm-runner does NOT persist in-chroot edits to the BOOT partition (its root-partition
+          # edits do), so a cmdline.txt edit inside the arm-runner commands is silently lost and
+          # the image ships with no auto-expand -> the rootfs never grows. Wire the stock hook by
+          # loop-mounting the image's boot partition (p1) directly. init_resize.sh (on the root
+          # partition) grows the rootfs on first boot then removes its own cmdline key. Idempotent.
+          IMG="${{ steps.build.outputs.image }}"
+          LOOP="$(sudo losetup -Pf --show "$IMG")"
+          MNT="$(mktemp -d)"
+          sudo mount "${LOOP}p1" "$MNT"
+          if ! grep -q init_resize "$MNT/cmdline.txt"; then
+            sudo sed -i '1 s|$| init=/usr/lib/raspi-config/init_resize.sh|' "$MNT/cmdline.txt"
+          fi
+          echo "cmdline.txt now: $(cat "$MNT/cmdline.txt")"
+          sudo sync
+          sudo umount "$MNT"
+          sudo losetup -d "$LOOP"
+          rmdir "$MNT"
 
       - name: Shrink image (PiShrink -s — truncate only; init_resize owns first-boot expand)
         run: |
