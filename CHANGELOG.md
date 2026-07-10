@@ -12,6 +12,31 @@ regenerated from these entries.
 
 ---
 
+## [2.2.1] — 2026-07-09
+
+Image-pipeline fixes so CI-built images burn fast and expand correctly on first boot,
+plus a license-metadata correction. The station software is functionally identical to 2.2.0.
+
+### Fixed
+
+- **Images burned ~3× too slowly.** `arm-runner`'s `optimize_image` zeroed free space but
+  never truncated the padded image, so every CI image shipped ~6 GiB uncompressed — it
+  compresses to ~886 MB `.xz`, but the imager writes the full 6 GiB (~30 min over the CM3+
+  USB 2.0 link vs. the historical 5–10 min). The build now runs a real **PiShrink** (`-s`,
+  truncate only) and purges apt/npm/log caches before shrinking (~6.3 GiB → ~3.6 GiB).
+- **Stations booted 96% full — the rootfs never auto-expanded.** The base image had lost
+  the standard Raspberry Pi first-boot resize hook (`init=…/init_resize.sh`, which
+  self-deletes after first boot; a post-first-boot image had become a base), and a custom
+  `rc.local` expand workaround looped forever instead of rebooting. The build now restores
+  the stock `init_resize` hook in `cmdline.txt` and drops the `rc.local` hack, so the
+  rootfs expands to fill the card on first boot (stock Pi OS behaviour).
+
+### Changed
+
+- **License metadata corrected to AGPL-3.0.** `LICENSE.txt` is GNU AGPL v3, but
+  `package.json` and the README declared `ISC`. Set `package.json` to `AGPL-3.0-or-later`
+  and updated the README to match `LICENSE.txt` — no change to the license itself.
+
 ## [2.2.0] — 2026-07-09
 
 Migrates the Telit LE910Q1 cellular data path from RNDIS to CDC-ECM and makes

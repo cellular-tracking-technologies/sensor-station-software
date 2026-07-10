@@ -160,14 +160,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Tag-triggered build -> a GitHub *pre-release* pointing at the immutable image
-          # under images/lts_26_07/. Pre-release = built by CI, NOT yet field-validated
-          # or promoted to the LTS latest link. Idempotent (edits if re-run).
+          # Tag build -> a GitHub pre-release with templated notes. The notes template and
+          # this version's CHANGELOG.md section are fetched raw (the repo isn't checked out
+          # here, to keep it out of the image). Idempotent (edits the release if re-run).
+          TAG="${{ github.ref_name }}"; VERSION="${TAG#v}"
           URL="${PUBLIC_PREFIX}/${IMG_KEY}"
-          NOTES="$(printf 'CI-built image for %s (lts_26_07).\n\nImage:  %s\nSHA256: %s\n\nPre-release: built by CI, not yet field-validated or promoted to the LTS latest link.' "${{ github.ref_name }}" "$URL" "$IMG_SHA")"
-          if gh release view "${{ github.ref_name }}" -R "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release edit   "${{ github.ref_name }}" -R "${{ github.repository }}" --prerelease --notes "$NOTES"
+          SHORT_SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
+          DATE="$(date -u +%Y-%m-%d)"
+          RAW="https://raw.githubusercontent.com/${{ github.repository }}/${TAG}"
+          curl -fsSL "$RAW/.github/release-notes-template.md" > "$RUNNER_TEMP/notes.md"
+          # This version's CHANGELOG section: the "## [X.Y.Z]" body, up to the next "## [".
+          curl -fsSL "$RAW/CHANGELOG.md" \
+            | awk -v v="$VERSION" 'index($0,"## ["v"]")==1{f=1;next} f&&/^## \[/{exit} f{print}' \
+            > "$RUNNER_TEMP/section.md"
+          [ -s "$RUNNER_TEMP/section.md" ] || echo "_See CHANGELOG.md._" > "$RUNNER_TEMP/section.md"
+          # Fill single-line placeholders, then splice the CHANGELOG section in.
+          sed -i \
+            -e "s|__VERSION__|${VERSION}|g"     -e "s|__IMG_KEY__|${IMG_KEY}|g" \
+            -e "s|__URL__|${URL}|g"             -e "s|__IMG_SHA__|${IMG_SHA}|g" \
+            -e "s|__REPO__|${{ github.repository }}|g" \
+            -e "s|__SHORT_SHA__|${SHORT_SHA}|g" -e "s|__DATE__|${DATE}|g" \
+            "$RUNNER_TEMP/notes.md"
+          sed -i -e "/__CHANGELOG__/{r $RUNNER_TEMP/section.md" -e "d}" "$RUNNER_TEMP/notes.md"
+          TITLE="SensorStation OS Image ${VERSION}"
+          if gh release view "$TAG" -R "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release edit   "$TAG" -R "${{ github.repository }}" --prerelease --title "$TITLE" --notes-file "$RUNNER_TEMP/notes.md"
           else
-            gh release create "${{ github.ref_name }}" -R "${{ github.repository }}" --prerelease --title "Sensor Station ${{ github.ref_name }}" --notes "$NOTES"
+            gh release create "$TAG" -R "${{ github.repository }}" --prerelease --title "$TITLE" --notes-file "$RUNNER_TEMP/notes.md"
           fi
-          echo "pre-release ${{ github.ref_name }} ready -> $URL"
+          echo "pre-release $TAG ready -> $URL"
