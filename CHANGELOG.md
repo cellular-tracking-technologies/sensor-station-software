@@ -12,6 +12,29 @@ regenerated from these entries.
 
 ---
 
+## [2.2.2] — 2026-07-10
+
+Replaces 2.2.1's first-boot resize mechanism, which did not actually complete on the CM3+
+station image. Station software is otherwise functionally identical to 2.2.0/2.2.1.
+
+### Fixed
+
+- **First-boot rootfs expansion now actually completes — fail-safe and stateless.** 2.2.1
+  restored the stock `init=…/init_resize.sh` cmdline hook, but on the CTT image its two-stage
+  reboot dance (grow partition → reboot → `resize2fs_once` grows the fs) never finishes the
+  filesystem grow: the extra boot-time reboots / service ordering leave a full-size partition
+  with a ~3.2 GB filesystem (stations still booted ~96% full). 2.2.2 strips `init_resize` from
+  `cmdline.txt` and hands expansion to **`ctt-firstboot-resize.service`**:
+  - **fail-safe** — runs as a normal oneshot *after* the OS is up (not PID 1), so a failure
+    leaves a booted, SSH-reachable station instead of an unbootable card;
+  - **stateless** — decides purely from on-disk geometry (no marker / no `ConditionPathExists`),
+    so a QAQC-booted-then-captured base image can't silently disable field expansion, and it
+    self-heals;
+  - **one pass, no reboot** — grows the partition (`sfdisk --no-reread -N` + `partx -u`) and the
+    filesystem (`resize2fs`) using only base-image tools (what `growpart` does internally).
+  - Validated end-to-end on a fresh CM3+ eMMC flash: the rootfs expands to fill the card on
+    first boot.
+
 ## [2.2.1] — 2026-07-09
 
 Image-pipeline fixes so CI-built images burn fast and expand correctly on first boot,

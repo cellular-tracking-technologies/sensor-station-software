@@ -1,5 +1,21 @@
 [
     {
+        "version": "2.2.2",
+        "date": "2026-07-10",
+        "notes": "Replaces 2.2.1's first-boot resize mechanism, which did not complete on the CM3+ station image. Station software is otherwise functionally identical to 2.2.0/2.2.1.",
+        "bugs": [
+            "First-boot rootfs expansion now completes. 2.2.1 restored the stock init_resize cmdline hook, but on the CTT image its two-stage reboot dance (grow partition, reboot, resize2fs_once grows the fs) never finished the filesystem grow, so stations still booted ~96% full. 2.2.2 strips init_resize from cmdline.txt and hands expansion to ctt-firstboot-resize.service: fail-safe (a normal oneshot after the OS is up, not PID 1), stateless (decides purely from on-disk geometry with no marker, so a QAQC-booted base image cannot disable it and it self-heals), and one-pass with no reboot (grows the partition via sfdisk --no-reread -N + partx -u and the filesystem via resize2fs, using only base-image tools). Validated end-to-end on a fresh CM3+ eMMC flash."
+        ]
+    },
+    {
+        "version": "2.2.1",
+        "date": "2026-07-09",
+        "notes": "Image-pipeline fixes so CI-built images burn fast, plus a license-metadata correction (package.json/README set to AGPL-3.0-or-later to match LICENSE.txt). Station software is functionally identical to 2.2.0. Note: 2.2.1's first-boot resize approach was superseded by 2.2.2.",
+        "bugs": [
+            "Images burned ~3x too slowly: arm-runner's optimize_image zeroed free space but never truncated the padded image, so each CI image shipped ~6 GiB uncompressed. The build now runs PiShrink (-s, truncate only) and purges apt/npm/log caches before shrinking (~6.3 GiB to ~3.6 GiB)."
+        ]
+    },
+    {
         "version": "2.2.0",
         "date": "2026-07-09",
         "notes": "Migrates the Telit LE910Q1 cellular data path from RNDIS to CDC-ECM and makes modem provisioning zero-touch at boot. RNDIS is deprecated in the Linux kernel and is not manageable by ModemManager; ECM is standards-based and yields a clean, MM-visible mdm0 path. A modem is provisioned once (the NV state persists), and if a fresh/replacement modem is fitted an idempotent boot guard converts it automatically. Hardware-validated from ECM-provisioned, RNDIS-provisioned, and factory (unbound) starting states.",
