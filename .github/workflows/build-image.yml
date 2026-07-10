@@ -110,9 +110,10 @@ jobs:
       - name: Strip any PID-1 init_resize hook from cmdline (defensive)
         run: |
           # We deliberately do NOT use the stock init=/usr/lib/raspi-config/init_resize.sh cmdline
-          # hook: it runs as PID 1 BEFORE the OS and BRICKED the boot when it failed on the CM3+.
-          # Expansion is handled by ctt-firstboot-resize.service (fail-safe, root partition). Strip
-          # any init_resize hook a base image might carry, by loop-mounting the boot partition (p1).
+          # hook. It boots fine, but on the CTT image its reboot-based resize2fs_once fs-grow never
+          # completes (leaves a full-size partition with a ~3.2 GB fs), and its extra reboot would
+          # fight our one-pass expander. ctt-firstboot-resize.service (fail-safe, root partition) is
+          # the sole owner, so strip any init_resize hook a base image carries (loop-mount p1).
           IMG="${{ steps.build.outputs.image }}"
           LOOP="$(sudo losetup -Pf --show "$IMG")"
           MNT="$(mktemp -d)"

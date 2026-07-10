@@ -33,7 +33,7 @@ DST_DIR="/etc/systemd/system"
 # only deployed as files — their enable state is left to manufacturing
 # / Ansible / operator action.
 MUST_BE_ENABLED=(
-  ctt-firstboot-resize.service   # fail-safe first-boot rootfs expand (boots first, resizes after); replaces the PID-1 init_resize cmdline hook that bricked CM3+ boot
+  ctt-firstboot-resize.service   # fail-safe, stateless first-boot rootfs expand (grow partition + resize2fs in one pass, no reboot); replaces init_resize, whose reboot-based fs-grow never completes on the CTT image
   modem-boot-state.service       # state persistence (Meelyn's), runs Before MM
   ctt-board-detect.service         # boot-time hardware identity; writes /run/ctt/board.env
   ctt-device-config.service      # single owner of config.txt: copies the canonical per-revision file (RTC + buttons + LEDs), loop-safe. Replaces the old rtc/buttons/leds overlay services.

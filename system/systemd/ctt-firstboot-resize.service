@@ -1,12 +1,18 @@
 [Unit]
-Description=CTT first-boot rootfs expansion (fail-safe; boots first, resizes after)
-# Runs AFTER the OS is up -- NOT as PID 1 like the stock init=/init_resize.sh cmdline hook,
-# which bricked the boot when it failed on the CM3+. A failure here just leaves a booted,
-# usable (shrunk) station, recoverable over SSH. ConditionPathExists makes it a true one-shot:
-# firstboot-resize.sh writes the marker after it runs, so the unit is skipped on every later
-# boot even if an OTA re-enables it.
+Description=CTT first-boot rootfs expansion (fail-safe, stateless; boots first, resizes after)
+# Runs AFTER the OS is up -- NOT as PID 1 like the stock init=/init_resize.sh cmdline hook.
+# A failure here just leaves a booted, usable (shrunk) station, recoverable over SSH.
+#
+# STATELESS: no ConditionPathExists / marker gate. firstboot-resize.sh decides purely from
+# on-disk geometry and is idempotent, so running every boot is a no-op once the fs fills the
+# disk. This is deliberate: these images are QAQC-booted before capture, and a marker (or the
+# stock init_resize cmdline key) written during QAQC would be baked into the base image and
+# permanently disable field expansion. Geometry can't be poisoned that way.
+#
+# Replaces the init_resize approach: init_resize grows the partition and boots fine, but its
+# reboot-based resize2fs_once fs-grow does not complete on the CTT image (leaves a full-size
+# partition with a ~3.2 GB fs). This grows partition + fs in ONE pass, no reboot.
 After=local-fs.target
-ConditionPathExists=!/etc/ctt/.rootfs-expanded
 DefaultDependencies=yes
 
 [Service]
