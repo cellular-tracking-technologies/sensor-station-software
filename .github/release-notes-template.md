@@ -24,6 +24,13 @@ echo "__IMG_SHA__  __IMG_KEY__" | sha256sum -c
 
 CM3+ eMMC via `rpiboot` — see **[Flashing the Compute Module](https://cellular-tracking-technologies.github.io/ctt_documentation/flashingComputeModule.html)**. The rootfs auto-expands to fill the eMMC on first boot.
 
+## Upgrading from an older LTS?
+
+Coming from the previous LTS (**v1.7.0**)? This is a **major** upgrade — see the
+**[Migration Guide](https://github.com/__REPO__/blob/v__VERSION__/docs/guides/migrating-to-lts_26_07.md)**
+for what changed, the two behavior changes to know (**the modem ships off**; updates no longer
+auto-reboot), how to re-flash, and a post-migration checklist.
+
 ## What's changed
 
 __CHANGELOG__
