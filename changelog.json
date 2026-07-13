@@ -1,5 +1,13 @@
 [
     {
+        "version": "2.2.3",
+        "date": "2026-07-13",
+        "notes": "Radio MCUs that have only a bootloader (a blank/erased Feather 32u4, USB 239a:000c) can now be flashed. Radio flashing is also now a pure-shell script (an stty 1200-baud touch plus avrdude); the former native ctt-radio-flash tool is removed.",
+        "bugs": [
+            "Flash radio MCUs that are in bootloader-only mode (no app firmware). A blank/erased Feather 32u4 enumerates as USB 239a:000c instead of the app's 239a:800c; the radio udev rule matched 800c only, so a bootloader-mode board never got a /dev/ctt-radio/chN symlink (program-radios could not discover it) and the 1200-baud touch waited forever for a disconnect that never comes. udev now emits three rules per channel: a PID-agnostic identity symlink (the physical port is the channel, in app or bootloader mode), a CTT_RADIO_MODE=app|bootloader property, and the per-channel driver launch gated on the app PID (so a board dropping to the bootloader mid-flash never relaunches the driver and avrdude keeps the port). program-radio.sh reads the mode and either does the 1200-baud touch (app board) or flashes directly (bootloader board). Radio flashing is now pure shell (stty touch + avrdude); the native ctt-radio-flash tool is removed. Validated on a V3 station."
+        ]
+    },
+    {
         "version": "2.2.2",
         "date": "2026-07-10",
         "notes": "Replaces 2.2.1's first-boot resize mechanism, which did not complete on the CM3+ station image. Station software is otherwise functionally identical to 2.2.0/2.2.1.",

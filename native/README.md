@@ -113,7 +113,6 @@ never see the hardware — only these files and sockets.
 | `ctt-sensors` | Daemon: poll the analog sensors and publish a snapshot | I2C ADC + temperature, by board: V3 = MAX11645 + TMP411, V2 = ADS7924 + TMP102; board version from `board.env`/`station-revision` | `/run/ctt/sensors.json` (voltages + temperature + ISO-8601 timestamp) |
 | `ctt-leds` | Daemon: drive the V3 status LEDs (GPS / diag-A / diag-B); idles on V2 | `/run/ctt/leds` (`key=value`: `gps`/`a`/`b` = `on\|off\|blink\|blink:<ms>`) | SX1509B output registers (the LEDs) |
 | `ctt-lcd` | Daemon: render the front-panel character LCD; idles if no backpack found. Shows a boot splash until the Node app publishes its first frame. | `/run/ctt/lcd` (fixed 144-byte framebuffer: 8 CGRAM glyphs + 80 character cells) | HD44780 LCD over the PCF8574 backpack |
-| `ctt-radio-flash` | One-shot: flash a radio MCU (ATmega32U4 Feather) via the GPIO-free 1200-baud-touch Caterina bootloader, then exec `avrdude`. Works for any channel — on-board or USB. | the radio's serial port (the touch) + a firmware file | the MCU flash (through `avrdude`) |
 | `ctt-modem-provision` | **Idempotent ECM boot guard** (run by `ctt-modem-provision.service`, `Before=ModemManager`): ensure the Telit LE910Q1 CDC-ECM data path is provisioned. Reads `AT#USBCFG?`/`AT#ECM?`; if not ECM, writes `AT#USBCFG=1` + reboots the modem (converts a fresh/RNDIS unit), then `AT#ECM=1,0` on the next boot. Read-only no-op on an already-provisioned modem; fails open. Also a manual CLI (`--dry-run`, `--version`). | the modem AT control port (`/dev/ctt-modem-at`, or a path arg) | the modem ECM NV composition + session bind (only if not already ECM) |
 
 Notes:
@@ -207,7 +206,6 @@ Current state:
 | `ctt-sensors` | 0.3.0 | 0.2.0 |
 | `ctt-leds` | 0.1.0 | 0.1.0 |
 | `ctt-lcd` | 0.4.0 | 0.4.0 |
-| `ctt-radio-flash` | 0.1.0 | 0.1.0 |
 | `ctt-modem-provision` | 0.1.0 | 0.1.0 |
 
 ---
