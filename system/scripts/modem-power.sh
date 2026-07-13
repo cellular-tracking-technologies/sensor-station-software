@@ -1,9 +1,9 @@
 #!/bin/bash
 # modem-power.sh {on|off} — set the cellular modem's USB authorization.
 #
-# One uniform mechanism for every supported modem (Telit LE910Q1 1bc7:7020,
-# Quectel EC25 2c7c:0125): both self-enumerate on the USB bus whenever VBAT is
-# present, so we never touch GPIO / ON_OFF#.
+# One uniform mechanism for every supported modem (Telit LE910Q1 — 1bc7:7021 ECM
+# or 1bc7:7020 RNDIS — and Quectel EC25 2c7c:0125): all self-enumerate on the USB
+# bus whenever VBAT is present, so we never touch GPIO / ON_OFF#.
 #
 #   off = deauthorize (echo 0 > .../authorized): the kernel unbinds all drivers
 #         and ModemManager drops the modem, but the device stays powered and
@@ -17,7 +17,12 @@
 # intent lives in /etc/ctt/modem-disabled, which modem-boot-state.sh reconciles.
 set -u
 
-TELIT='1bc7:7020'
+# Telit LE910Q1 enumerates as either composition depending on its USBCFG:
+# 7021 (CDC-ECM, the provisioned data path) or 7020 (RNDIS). Match both, mirroring
+# enable-modem.sh / modem-wake.sh / modem-datapath.sh — otherwise disable/authorize
+# silently no-ops on an ECM-mode modem.
+TELIT_ECM='1bc7:7021'
+TELIT_RNDIS='1bc7:7020'
 QUECTEL='2c7c:0125'
 
 usage() { echo "usage: modem-power.sh {on|off}" >&2; exit 2; }
@@ -41,7 +46,7 @@ find_usb_parent() {
   return 1
 }
 
-for vidpid in "$TELIT" "$QUECTEL"; do
+for vidpid in "$TELIT_ECM" "$TELIT_RNDIS" "$QUECTEL"; do
   path="$(find_usb_parent "${vidpid%:*}" "${vidpid#*:}")" || continue
   echo "modem-power: $1 $vidpid ($path)"
   if echo "$val" > "$path/authorized"; then
@@ -51,5 +56,5 @@ for vidpid in "$TELIT" "$QUECTEL"; do
   exit 1
 done
 
-echo "modem-power: no known modem on USB (Telit $TELIT / Quectel $QUECTEL); nothing to do"
+echo "modem-power: no known modem on USB (Telit $TELIT_ECM/$TELIT_RNDIS / Quectel $QUECTEL); nothing to do"
 exit 0

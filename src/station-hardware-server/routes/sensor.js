@@ -24,6 +24,13 @@ function readSensors() {
   }
 }
 
+// GET /sensor — mirror the current snapshot (voltages + temperature). This is the
+// documented entry point (SEN-01); /details, /voltages, /temperature remain for
+// callers that want a subset.
+router.get('/', (req, res) => {
+  res.json(readSensors())
+})
+
 router.get('/voltages', (req, res) => {
   res.json(readSensors().voltages)
 })
