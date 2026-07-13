@@ -21,7 +21,8 @@ MARKER='/etc/ctt/modem-disabled'
 # after us) scans. Breaks as soon as a known modem appears; bounded so a station
 # with no modem doesn't stall boot.
 for i in $(seq 1 25); do
-  lsusb -d 1bc7:7020 >/dev/null 2>&1 && break   # Telit
+  lsusb -d 1bc7:7021 >/dev/null 2>&1 && break   # Telit (CDC-ECM)
+  lsusb -d 1bc7:7020 >/dev/null 2>&1 && break   # Telit (RNDIS)
   lsusb -d 2c7c:0125 >/dev/null 2>&1 && break   # Quectel
   sleep 1
 done
