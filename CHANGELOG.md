@@ -30,6 +30,16 @@ regenerated from these entries.
   `program-radio.sh` reads the mode and either does the 1200-baud touch (app board) or flashes
   **directly** (bootloader board). Validated on a V3 station: a blank board flashed via the
   direct path, an app board via the touch path.
+- **Disabling the cellular modem now actually disables it on ECM-mode Telit units.** The
+  deployed Telit LE910Q1 enumerates as `1bc7:7021` (CDC-ECM), but `modem-power.sh` and
+  `modem-boot-state.sh` matched only the RNDIS PID `1bc7:7020`. "Disable modem" wrote the
+  intent marker but never deauthorized the device — it stayed `authorized=1`, ModemManager
+  kept the modem, cellular kept passing traffic, and a "disabled" modem came back **fully on**
+  after a reboot. Both scripts now match `7021` and `7020` (as `enable-modem`/`modem-wake`/
+  `modem-datapath` already did). Hardware-validated: disable → `authorized=0` + ModemManager
+  drops it; disable + reboot → stays off.
+- **`station-hardware-server` `/sensor` returns the sensor snapshot again.** The root
+  `/sensor` route was missing (404); re-added to serve `/run/ctt/sensors.json`.
 
 ### Changed
 
