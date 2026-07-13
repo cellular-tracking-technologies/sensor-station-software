@@ -30,7 +30,8 @@ tools started by systemd/udev; the Node services become consumers of stable file
 contracts under **`/run/ctt/`**.
 - `ctt-board-detect` → `/run/ctt/board.env` (single runtime identity); `ctt-radio-driver@N`
   (434 MHz → `/run/ctt/radios/chN.sock`); `ctt-blu-driver@N` (BluSeries → `/run/ctt/blu/chN.sock`);
-  `ctt-sensors` → `/run/ctt/sensors.json`; `ctt-leds`; `ctt-lcd`; `ctt-radio-flash`.
+  `ctt-sensors` → `/run/ctt/sensors.json`; `ctt-leds`; `ctt-lcd`. (Radio firmware flashing is
+  a shell script — `program-radio.sh` + `stty` + `avrdude` — not a native tool.)
 - `ctt-device-config` applies one canonical per-board-revision `/boot/config.txt`.
 - Front-panel buttons move to the kernel `gpio-keys`/evdev path.
 - **Stations never compile** — drivers arrive as versioned, checksummed prebuilt binaries over OTA.
