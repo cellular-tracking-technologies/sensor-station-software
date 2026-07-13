@@ -35,10 +35,17 @@ const LABELS = { v2: 'V2', v3r0: 'V3 rev 0/1', v3r3: 'V3 rev 2+' }
 const RADIO_MATCH = 'ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="239a"'
 const BLU_MATCH = 'ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="0403"'
 
-// The radio app firmware enumerates as an Adafruit Feather 32u4 (idProduct 800c).
-// Gate the per-channel rules on that, so the Caterina bootloader (idProduct 000c,
-// which appears during programming) does NOT get a /dev/ctt-radio symlink or
-// relaunch the driver — leaving the port free for ctt-radio-flash / avrdude.
+// The radio app firmware enumerates as an Adafruit Feather 32u4 (idProduct 800c);
+// its Caterina bootloader (idProduct 000c) appears during programming and on a
+// blank/erased MCU. We split each channel into three rules so the PHYSICAL PORT is
+// the channel identity (PID-agnostic) while only the APP mode gets a driver:
+//   1. identity  — VID + ID_PATH only  -> SYMLINK /dev/ctt-radio/chN (app OR bootloader),
+//                  so a blank board is still discoverable/flashable by program-radios.
+//   2. app       — idProduct==800c     -> CTT_RADIO_MODE=app + launch the driver.
+//   3. bootloader— idProduct!=800c     -> CTT_RADIO_MODE=bootloader only (NO driver),
+//                  leaving the port free for program-radio.sh / avrdude.
+// The driver stays app-gated, so a board dropping to the bootloader mid-flash does
+// not relaunch the driver — avrdude keeps the port.
 const RADIO_APP_PID = '800c'
 
 // BluSeries receivers present as an FTDI FT231X USB-UART (single product id; no
@@ -51,14 +58,19 @@ const BLU_PID = '6015'
 const BLU_CHANNEL_OFFSET = 5
 const BLU_MAX = 6
 
-// The JSON filename (v2 / v3r0 / v3r3) IS the CTT_BOARD value.
+// The JSON filename (v2 / v3r0 / v3r3) IS the CTT_BOARD value. Emits 3 rules/channel
+// (identity / app / bootloader — see the RADIO_APP_PID note above).
 function radioRule(board, { channel, id_path }) {
-  return (
-    `${RADIO_MATCH}, ATTRS{idProduct}=="${RADIO_APP_PID}", ENV{CTT_BOARD}=="${board}", ` +
-    `ENV{ID_PATH}=="${id_path}", ENV{CTT_RADIO_CHANNEL}="${channel}", ` +
-    `SYMLINK+="ctt-radio/ch${channel}", TAG+="systemd", ` +
-    `ENV{SYSTEMD_WANTS}+="ctt-radio-driver@ch${channel}.service"`
-  )
+  const at = `ENV{CTT_BOARD}=="${board}", ENV{ID_PATH}=="${id_path}"`
+  return [
+    // 1. identity — the physical port IS the channel, in app OR bootloader mode.
+    `${RADIO_MATCH}, ${at}, ENV{CTT_RADIO_CHANNEL}="${channel}", SYMLINK+="ctt-radio/ch${channel}"`,
+    // 2. app mode — mark it and launch the per-channel driver.
+    `${RADIO_MATCH}, ATTRS{idProduct}=="${RADIO_APP_PID}", ${at}, ENV{CTT_RADIO_MODE}="app", ` +
+      `TAG+="systemd", ENV{SYSTEMD_WANTS}+="ctt-radio-driver@ch${channel}.service"`,
+    // 3. bootloader mode — mark only; leave the port free for program-radio.sh / avrdude.
+    `${RADIO_MATCH}, ATTRS{idProduct}!="${RADIO_APP_PID}", ${at}, ENV{CTT_RADIO_MODE}="bootloader"`,
+  ]
 }
 
 function bluRule(board, { channel, id_path }) {
@@ -103,7 +115,7 @@ for (const file of boards) {
   const label = LABELS[board] ?? board
 
   radioLines.push(`# --- ${label} ---`)
-  for (const entry of map) radioLines.push(radioRule(board, entry))
+  for (const entry of map) radioLines.push(...radioRule(board, entry))
   radioLines.push('')
   radioTotal += map.length
 
