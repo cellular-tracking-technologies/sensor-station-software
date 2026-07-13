@@ -69,9 +69,10 @@ ctt_tool(ctt-leds SOURCES src/ctt-leds/main.cpp LINK ctthw)
 # ctt-lcd — daemon: render the character LCD (HD44780 via PCF8574) from /run/ctt/lcd.
 ctt_tool(ctt-lcd SOURCES src/ctt-lcd/main.cpp LINK ctthw)
 
-# ctt-radio-flash — flash a radio MCU via the 1200-baud-touch Caterina bootloader
-# (GPIO-free); execs avrdude. Pure serial/POSIX, no ctthw.
-ctt_tool(ctt-radio-flash SOURCES src/ctt-radio-flash/main.cpp)
+# ctt-radio-touch — the one native step of radio flashing: a precise 1200-baud touch
+# that resets an Adafruit/Caterina 32u4 into its bootloader. Orchestration (channel
+# resolve, by-path, mode detect, avrdude) lives in program-radio.sh. Serial/POSIX only.
+ctt_tool(ctt-radio-touch SOURCES src/ctt-radio-touch/main.cpp)
 
 # ctt-modem-provision — provision the Telit CDC-ECM data path (AT#USBCFG=1 +
 # AT#ECM=1,0) on boot if not already ECM; idempotent guard, runs Before=ModemManager.
