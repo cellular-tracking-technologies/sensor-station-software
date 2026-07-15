@@ -110,7 +110,7 @@ matters.
   `ENV{SYSTEMD_WANTS}=ctt-radio-driver@ch<N>.service` — that is the mechanism by
   which a receiver plug-in starts its driver instance. Gating on the app product
   id means the Caterina **bootloader** (`000c`, which appears during programming)
-  is ignored, so it never grabs a channel from `ctt-radio-flash`/`avrdude`.
+  is ignored, so it never grabs a channel from `program-radio.sh`/`avrdude`.
 - **BluSeries identification** (`78-ctt-blu-driver.rules`, generated from the same
   maps — see below). BluSeries receivers present as an FTDI FT231X (`0403:6015`).
   They plug into the external USB ports the radio map numbers 6+, and are matched
@@ -124,10 +124,10 @@ matters.
   `23-quectel-modem.rules` keeps the modem manager off non-modem tty interfaces;
   `77-ctt-telit-block-unused.rules` deauthorizes unused CDC-ACM interface pairs to
   trim USB endpoint pressure on the CM3; `78-ctt-telit-net.rules` renames the
-  modem's RNDIS network device to a stable `mdm0` so it does not race the wired
+  modem's CDC-ECM network device to a stable `mdm0` so it does not race the wired
   Ethernet dongle for an `eth*` slot. These describe interface-selection
-  mechanism only; provisioning of modem NV settings happens at manufacturing,
-  not here.
+  mechanism only; modem NV provisioning (ECM composition + session bind) is
+  ensured each boot by the idempotent `ctt-modem-provision.service` guard.
 
 ---
 

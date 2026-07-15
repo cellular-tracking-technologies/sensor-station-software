@@ -9,8 +9,8 @@
 //
 // Why this exists: the legacy /modem/ppp endpoint just checked whether ANY
 // modem interface (wwan*/ppp*/mdm*) existed via `ifconfig`. With the Telit
-// RNDIS path on an unprovisioned modem the mdm0 interface DOES come up, but
-// the modem-side NAT refuses to forward to the LTE bearer — so the LED was
+// CDC-ECM path on an unbound/unprovisioned modem the mdm0 interface DOES come
+// up (local NAT DHCP), but refuses to forward to the LTE bearer — so the LED was
 // showing "internet OK" for a station that couldn't reach anything. Probing
 // settles the question: if 1.1.1.1 responds via the modem, internet works.
 //
@@ -30,8 +30,8 @@ const IDLE_TIMEOUT_MS = 60000     // stop probing after this long without /ppp r
 const PROBE_TIMEOUT_S = 2         // ping -W timeout
 const PROBE_TARGET = '1.1.1.1'    // Cloudflare DNS — tolerates aggressive ICMP
 
-// Modem-interface candidates in priority order. mdm0 = Telit RNDIS (current
-// branch), ppp0 = legacy Telit PPP, wwan0 = Quectel QMI. First one whose
+// Modem-interface candidates in priority order. mdm0 = Telit CDC-ECM,
+// ppp0 = legacy Telit PPP, wwan0 = Quectel QMI. First one whose
 // operstate is up wins; we re-check on every probe in case a hot-swap happened.
 const CANDIDATE_INTERFACES = ['mdm0', 'ppp0', 'wwan0']
 
@@ -47,7 +47,7 @@ const pickInterface = async () => {
     try {
       const state = (await readFile(`/sys/class/net/${iface}/operstate`, 'utf8')).trim()
       // 'up' is the unambiguous case. 'unknown' shows up for some tunnel-style
-      // interfaces (including RNDIS in some kernels) — treat it as "carrier
+      // interfaces (including cdc_ether/ECM's mdm0) — treat it as "carrier
       // present" rather than rejecting it.
       if (state === 'up' || state === 'unknown') return iface
     } catch {

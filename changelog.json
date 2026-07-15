@@ -1,5 +1,99 @@
 [
     {
+        "version": "2.2.3",
+        "date": "2026-07-13",
+        "notes": "Two hardware-validated fixes for a fresh test image. (1) The cellular modem can now actually be disabled on ECM-mode Telit units (1bc7:7021). (2) Radio MCUs that have only a bootloader (a blank/erased Feather 32u4, USB 239a:000c) can now be flashed, and radio flashing is now a pure-shell script (an stty 1200-baud touch plus avrdude; the former native ctt-radio-flash tool is removed). Also restores the station-hardware-server /sensor route.",
+        "bugs": [
+            "Disabling the cellular modem now actually disables it on ECM-mode Telit units (1bc7:7021, CDC-ECM). modem-power.sh and modem-boot-state.sh matched only the RNDIS PID 1bc7:7020, so disable wrote the intent marker but never deauthorized the device: it stayed authorized, ModemManager kept the modem, cellular kept passing traffic, and a disabled modem came back fully on after a reboot. Both scripts now match 7021 and 7020 (as enable-modem/modem-wake/modem-datapath already did). Hardware-validated: disable sets authorized=0 and ModemManager drops it; disable plus reboot stays off.",
+            "station-hardware-server /sensor returned 404 because the root route was missing; re-added to serve /run/ctt/sensors.json.",
+            "Flash radio MCUs that are in bootloader-only mode (no app firmware). A blank/erased Feather 32u4 enumerates as USB 239a:000c instead of the app's 239a:800c; the radio udev rule matched 800c only, so a bootloader-mode board never got a /dev/ctt-radio/chN symlink (program-radios could not discover it) and the 1200-baud touch waited forever for a disconnect that never comes. udev now emits three rules per channel: a PID-agnostic identity symlink (the physical port is the channel, in app or bootloader mode), a CTT_RADIO_MODE=app|bootloader property, and the per-channel driver launch gated on the app PID (so a board dropping to the bootloader mid-flash never relaunches the driver and avrdude keeps the port). program-radio.sh reads the mode and either does the 1200-baud touch (app board) or flashes directly (bootloader board). Radio flashing is now pure shell (stty touch + avrdude); the native ctt-radio-flash tool is removed. Validated on a V3 station."
+        ]
+    },
+    {
+        "version": "2.2.2",
+        "date": "2026-07-10",
+        "notes": "Replaces 2.2.1's first-boot resize mechanism, which did not complete on the CM3+ station image. Station software is otherwise functionally identical to 2.2.0/2.2.1.",
+        "bugs": [
+            "First-boot rootfs expansion now completes. 2.2.1 restored the stock init_resize cmdline hook, but on the CTT image its two-stage reboot dance (grow partition, reboot, resize2fs_once grows the fs) never finished the filesystem grow, so stations still booted ~96% full. 2.2.2 strips init_resize from cmdline.txt and hands expansion to ctt-firstboot-resize.service: fail-safe (a normal oneshot after the OS is up, not PID 1), stateless (decides purely from on-disk geometry with no marker, so a QAQC-booted base image cannot disable it and it self-heals), and one-pass with no reboot (grows the partition via sfdisk --no-reread -N + partx -u and the filesystem via resize2fs, using only base-image tools). Validated end-to-end on a fresh CM3+ eMMC flash."
+        ]
+    },
+    {
+        "version": "2.2.1",
+        "date": "2026-07-09",
+        "notes": "Image-pipeline fixes so CI-built images burn fast, plus a license-metadata correction (package.json/README set to AGPL-3.0-or-later to match LICENSE.txt). Station software is functionally identical to 2.2.0. Note: 2.2.1's first-boot resize approach was superseded by 2.2.2.",
+        "bugs": [
+            "Images burned ~3x too slowly: arm-runner's optimize_image zeroed free space but never truncated the padded image, so each CI image shipped ~6 GiB uncompressed. The build now runs PiShrink (-s, truncate only) and purges apt/npm/log caches before shrinking (~6.3 GiB to ~3.6 GiB)."
+        ]
+    },
+    {
+        "version": "2.2.0",
+        "date": "2026-07-09",
+        "notes": "Migrates the Telit LE910Q1 cellular data path from RNDIS to CDC-ECM and makes modem provisioning zero-touch at boot. RNDIS is deprecated in the Linux kernel and is not manageable by ModemManager; ECM is standards-based and yields a clean, MM-visible mdm0 path. A modem is provisioned once (the NV state persists), and if a fresh/replacement modem is fitted an idempotent boot guard converts it automatically. Hardware-validated from ECM-provisioned, RNDIS-provisioned, and factory (unbound) starting states.",
+        "features": [
+            "ctt-modem-provision.service: idempotent ECM boot guard. Runs Before=ModemManager for exclusive AT-port access (no MM/NM shutdown, so none of the old provisioner races). Read-only no-op on an already-provisioned modem; converts a fresh/swapped RNDIS modem to ECM over two boots (AT#USBCFG=1 + reboot, then AT#ECM=1,0); re-asserts a lost bind. Fails open, never blocks boot.",
+            "ctt-modem-ecm-up.service + modem-ecm-up.sh: ECM data-path bring-up. NetworkManager folds the ECM net port into the ModemManager modem and never DHCPs mdm0, so it is brought up out of band via dhclient (the module serves 192.168.225.1 and leases .2), then the default route is re-pinned to a high fallback metric (700) so cellular never preempts wired/Wi-Fi.",
+            "Telit data path migrated RNDIS to CDC-ECM: ctt-modem-provision 0.2.0 provisions ECM and migrates existing RNDIS units; udev rules dual-recognize 1bc7:7021 (ECM) alongside 1bc7:7020 (RNDIS, transitional) and rename the net device to mdm0.",
+            "systemd units invoke their scripts via /bin/bash <script> instead of relying on the file executable bit, which does not survive Git reliably on Windows."
+        ],
+        "bugs": [
+            "Fix ctt-modem-ecm-up.service failing 203/EXEC because modem-ecm-up.sh was committed non-executable, so the data interface never came up on a clean deploy.",
+            "Fix the ECM boot guard being deleted immediately after install: ctt-modem-provision.service was still listed in the systemd REMOVED manifest from when the RNDIS auto-provisioner was retired, so the OTA installed the guard and then removed it."
+        ]
+    },
+    {
+        "version": "2.1.1",
+        "date": "2026-07-08",
+        "notes": "CI/image-pipeline release: release tags now build immutable, versioned images.",
+        "features": [
+            "build-image auto-builds on a release-tag push (v*.*.*) and serializes builds. Each build publishes an immutable, version-named artifact (sensor-station-v<version>.img.xz) rather than a bare-date name, and cuts a GitHub pre-release pointing at it. The lts_26_07 image line is isolated under images/lts_26_07/ so it never touches the current public LTS."
+        ]
+    },
+    {
+        "version": "2.1.0",
+        "date": "2026-07-08",
+        "notes": "Cellular modem robustness and the incremental CI image build.",
+        "features": [
+            "ctt-modem-wake.service: modem power-state recovery at boot. A Telit LE910Q1 in ON_OFF# shutdown (after a hard reset / VBAT loss) does not self-enumerate; this pulses ON_OFF# so it returns before ModemManager scans. No-op when the modem is already present or intent is OFF.",
+            "Incremental CI image build (build-image): loop-mounts the previous image under qemu-arm and runs update-station.sh inside it, then shrinks and publishes to S3 - the manual image process, automated."
+        ],
+        "bugs": [
+            "Fix web-triggered update-station killing itself: the dashboard spawns the updater inside station-radio-interface; restarting that service mid-run SIGKILLed the updater. The radio-interface restart is now the last action, and the updater runs in a decoupled transient unit."
+        ]
+    },
+    {
+        "version": "2.0.1",
+        "date": "2026-07-08",
+        "notes": "Bug-fix release on top of 2.0.0: two fixes that restore the station internal control plane and the OTA update path on the Node 20 image. (Never tagged as a standalone release; shipped as part of the first 2.x tag, v2.1.0.)",
+        "bugs": [
+            "Fix internal HTTP over localhost resolving to IPv6 (::1): Node services reach station-hardware-server at http://localhost:3000, which binds IPv4-only (127.0.0.1). On Node 20 localhost resolves to ::1 first and node-fetch connects to that single address with no fallback, so every internal call failed with ECONNREFUSED ::1:3000. Each service now forces IPv4-first DNS ordering; external resolution is unchanged.",
+            "Fix update-station failing when launched from the web dashboard: the button spawns the script from a root service with no $HOME, so git config --global failed and the dubious-ownership guard aborted the pull. The script now sets $HOME when unset and injects safe.directory via the environment."
+        ]
+    },
+    {
+        "version": "2.0.0",
+        "date": "2026-07-08",
+        "notes": "The first 2.x: a native hardware/radio layer and a new LTS image path. Moves hardware bring-up and direct device I/O out of the Node app into small compiled C++ tools started by systemd/udev; Node services become consumers of stable /run/ctt/ file and socket contracts. Drivers ship as versioned, prebuilt armhf binaries fetched over OTA - stations never compile. Major, breaking change to the on-device architecture. (Never tagged standalone; shipped as part of the first 2.x tag, v2.1.0.)",
+        "features": [
+            "ctthw C++ hardware library: one driver class per chip (I/O expander, ADC, temperature, RTC, board-ID EEPROM, character LCD) over a single /dev/i2c-1 wrapper with cross-process bus locking. Shared by all native tools.",
+            "Native device tools: ctt-board-detect (board identity to /run/ctt/board.env), ctt-radio-driver@N and ctt-blu-driver@N (receiver serial to sockets), ctt-sensors (ADC+temp to /run/ctt/sensors.json, covering V3 MAX11645+TMP411 and V2 ADS7924+TMP102), ctt-leds (V3 status LEDs), ctt-lcd (character LCD), ctt-radio-flash (GPIO-free radio firmware flashing).",
+            "Front-panel LCD status: boot splash, shutdown indicator, an 'Updating...' splash held for the duration of an OTA, and a radio-fault banner when the radio service is down.",
+            "Kernel gpio-keys front-panel buttons via a board-gated device-tree overlay; the LCD menu reads evdev key events instead of polling GPIO in-process.",
+            "ctt-device-config applies one canonical per-board-revision /boot/config.txt (copy + reboot-once with a hash-keyed loop breaker), replacing the dynamic boot-overlay services.",
+            "OTA native-binary delivery: CI publishes a versioned, checksummed armhf binary per tool; the OTA hook fetches and verifies the fleet-pinned version (system/native/). Per-tool versioning, no lockstep.",
+            "system/migrations/ for live in-place field-station upgrades (safe by default, requires --force); reflashing the prepared image remains the recommended upgrade.",
+            "station-radio-interface consumes the ctt-radio-driver/ctt-blu-driver sockets instead of opening serial ports directly; station-hardware-server /sensor reads /run/ctt/sensors.json; Node services launch directly via node for clean SIGTERM; OS configuration consolidated into system/; ctt-sensors steady-state logging cut ~60x (heartbeat + transitions)."
+        ],
+        "bugs": [
+            "OTA durability: update-station now syncs after the pull and after the deploy hooks, so a hard power-off seconds after an update can no longer zero the freshly written files (ext4 ordered-mode writeback). The pull is hardened (--ff-only, retry, abort-on-failure).",
+            "Cellular: stations no longer auto-dial PPP on the newer modem; migrated images ship with the modem off until enabled.",
+            "WiFi reachability: disable NetworkManager WiFi power-save via a global conf.d drop-in, so a WiFi-connected station no longer sleeps and stops answering ARP.",
+            "WiFi-from-USB (/usb/wifi): await the nmcli connect before the follow-up config command and handle failures, so a failed join returns an error instead of an unhandled rejection that crashed station-hardware-server.",
+            "LCD: native re-initialization recovers a warm controller from any state (no more garbled output on a service restart); fixed a menu back-navigation crash.",
+            "station-radio-interface: guard a null data-receiver result during line parsing.",
+            "Boot: removed a deadlock path so SIM/APN selection no longer blocks modem startup."
+        ]
+    },
+    {
         "version": "1.8.0",
         "date": "2026-06-16",
         "notes": "Telit LE910Q1 cellular support and OTA modernization. Migrates the cellular data path from Quectel EC25 (QMI+PPP) to Telit LE910Q1 (RNDIS, mdm0 interface). Introduces a modular OTA hook system so future deployment changes ship without touching update-station.sh. Modernizes the /modem API so the LCD, web UI, and check-ins share one cached mmcli poller instead of each forking subprocesses.",

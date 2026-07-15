@@ -12,6 +12,167 @@ regenerated from these entries.
 
 ---
 
+## [2.2.3] — 2026-07-13
+
+### Fixed
+
+- **Radio MCUs with only a bootloader (no app) can now be flashed.** A blank/erased Feather
+  32u4 enumerates as USB `239a:000c` instead of the app's `239a:800c`. The radio udev rule
+  matched `800c` only, so a bootloader-mode board never got a `/dev/ctt-radio/chN` symlink —
+  `program-radios` couldn't discover it, and the 1200-baud touch waited forever for a
+  disconnect that never comes. Now the radio udev generator emits **three rules per channel**:
+  - a **PID-agnostic identity** symlink (the physical port *is* the channel, in app *or*
+    bootloader mode) — restoring discovery of a blank board;
+  - a `CTT_RADIO_MODE=app|bootloader` property;
+  - the per-channel driver launch **gated on the app PID (`800c`)** — so a board dropping to
+    the bootloader mid-flash never relaunches the driver, and `avrdude` keeps the port.
+
+  `program-radio.sh` reads the mode and either does the 1200-baud touch (app board) or flashes
+  **directly** (bootloader board). Validated on a V3 station: a blank board flashed via the
+  direct path, an app board via the touch path.
+- **Disabling the cellular modem now actually disables it on ECM-mode Telit units.** The
+  deployed Telit LE910Q1 enumerates as `1bc7:7021` (CDC-ECM), but `modem-power.sh` and
+  `modem-boot-state.sh` matched only the RNDIS PID `1bc7:7020`. "Disable modem" wrote the
+  intent marker but never deauthorized the device — it stayed `authorized=1`, ModemManager
+  kept the modem, cellular kept passing traffic, and a "disabled" modem came back **fully on**
+  after a reboot. Both scripts now match `7021` and `7020` (as `enable-modem`/`modem-wake`/
+  `modem-datapath` already did). Hardware-validated: disable → `authorized=0` + ModemManager
+  drops it; disable + reboot → stays off.
+- **`station-hardware-server` `/sensor` returns the sensor snapshot again.** The root
+  `/sensor` route was missing (404); re-added to serve `/run/ctt/sensors.json`.
+
+### Changed
+
+- **Radio flashing is now pure shell.** The 1200-baud touch is an `stty` step in
+  `program-radio.sh` (hold at 1200 baud + `hupcl`, close → DTR drop), and `avrdude` does the
+  write. The former native `ctt-radio-flash` tool is removed — nothing is cross-compiled for
+  flashing.
+
+## [2.2.2] — 2026-07-10
+
+Replaces 2.2.1's first-boot resize mechanism, which did not actually complete on the CM3+
+station image. Station software is otherwise functionally identical to 2.2.0/2.2.1.
+
+### Fixed
+
+- **First-boot rootfs expansion now actually completes — fail-safe and stateless.** 2.2.1
+  restored the stock `init=…/init_resize.sh` cmdline hook, but on the CTT image its two-stage
+  reboot dance (grow partition → reboot → `resize2fs_once` grows the fs) never finishes the
+  filesystem grow: the extra boot-time reboots / service ordering leave a full-size partition
+  with a ~3.2 GB filesystem (stations still booted ~96% full). 2.2.2 strips `init_resize` from
+  `cmdline.txt` and hands expansion to **`ctt-firstboot-resize.service`**:
+  - **fail-safe** — runs as a normal oneshot *after* the OS is up (not PID 1), so a failure
+    leaves a booted, SSH-reachable station instead of an unbootable card;
+  - **stateless** — decides purely from on-disk geometry (no marker / no `ConditionPathExists`),
+    so a QAQC-booted-then-captured base image can't silently disable field expansion, and it
+    self-heals;
+  - **one pass, no reboot** — grows the partition (`sfdisk --no-reread -N` + `partx -u`) and the
+    filesystem (`resize2fs`) using only base-image tools (what `growpart` does internally).
+  - Validated end-to-end on a fresh CM3+ eMMC flash: the rootfs expands to fill the card on
+    first boot.
+
+## [2.2.1] — 2026-07-09
+
+Image-pipeline fixes so CI-built images burn fast and expand correctly on first boot,
+plus a license-metadata correction. The station software is functionally identical to 2.2.0.
+
+### Fixed
+
+- **Images burned ~3× too slowly.** `arm-runner`'s `optimize_image` zeroed free space but
+  never truncated the padded image, so every CI image shipped ~6 GiB uncompressed — it
+  compresses to ~886 MB `.xz`, but the imager writes the full 6 GiB (~30 min over the CM3+
+  USB 2.0 link vs. the historical 5–10 min). The build now runs a real **PiShrink** (`-s`,
+  truncate only) and purges apt/npm/log caches before shrinking (~6.3 GiB → ~3.6 GiB).
+- **Stations booted 96% full — the rootfs never auto-expanded.** The base image had lost
+  the standard Raspberry Pi first-boot resize hook (`init=…/init_resize.sh`, which
+  self-deletes after first boot; a post-first-boot image had become a base), and a custom
+  `rc.local` expand workaround looped forever instead of rebooting. The build now restores
+  the stock `init_resize` hook in `cmdline.txt` and drops the `rc.local` hack, so the
+  rootfs expands to fill the card on first boot (stock Pi OS behaviour).
+
+### Changed
+
+- **License metadata corrected to AGPL-3.0.** `LICENSE.txt` is GNU AGPL v3, but
+  `package.json` and the README declared `ISC`. Set `package.json` to `AGPL-3.0-or-later`
+  and updated the README to match `LICENSE.txt` — no change to the license itself.
+
+## [2.2.0] — 2026-07-09
+
+Migrates the Telit LE910Q1 cellular data path from RNDIS to CDC-ECM and makes
+modem provisioning zero-touch at boot. RNDIS is deprecated in the Linux kernel and
+is not manageable by ModemManager; ECM is standards-based and yields a clean,
+MM-visible `mdm0` path. A modem is provisioned once (the NV state persists), and if
+a fresh/replacement modem is ever fitted, an idempotent boot guard converts it
+automatically — no manual step. Hardware-validated from ECM-provisioned,
+RNDIS-provisioned, and factory (unbound) starting states.
+
+### Added
+
+- **`ctt-modem-provision.service` — idempotent ECM boot guard.** Runs
+  `Before=ModemManager` for exclusive AT-port access (no MM/NM shutdown, so none of
+  the old provisioner races). Read-only no-op on an already-provisioned modem;
+  converts a fresh/swapped RNDIS modem to ECM over two boots (`AT#USBCFG=1` + reboot,
+  then `AT#ECM=1,0`); re-asserts a lost bind. Fails open — never blocks boot.
+- **`ctt-modem-ecm-up.service` + `modem-ecm-up.sh` — ECM data-path bring-up.**
+  NetworkManager folds the ECM net port into the ModemManager modem and never DHCPs
+  `mdm0`, so it is brought up out of band: `dhclient` on `mdm0` (the module serves
+  `192.168.225.1` and leases `.2`, the Telit-documented handshake), then the default
+  route is re-pinned to a high fallback metric (700) so cellular never preempts
+  wired/Wi-Fi.
+
+### Changed
+
+- **Telit data path RNDIS → CDC-ECM.** `ctt-modem-provision` (0.2.0) provisions ECM
+  (`AT#USBCFG=1` + `AT#ECM=1,0`) and migrates existing RNDIS units. udev rules
+  dual-recognize `1bc7:7021` (ECM) alongside `1bc7:7020` (RNDIS, transitional) and
+  rename the net device to `mdm0`; `modem-datapath`/`modem-wake`/`enable-modem`
+  recognize `7021`.
+- **systemd units invoke their scripts via `/bin/bash <script>`** instead of relying
+  on the file's executable bit, which does not survive Git reliably on Windows.
+
+### Fixed
+
+- **`ctt-modem-ecm-up.service` failed `203/EXEC`.** `modem-ecm-up.sh` had been
+  committed non-executable, so the data interface never came up on a clean deploy.
+  The script is executable again and the unit invokes it via `bash`.
+- **The ECM boot guard was deleted immediately after install.**
+  `ctt-modem-provision.service` was still listed in the systemd `REMOVED` manifest
+  from when the RNDIS auto-provisioner was retired, so the OTA installed the new
+  guard and then removed it. Dropped the stale entry.
+
+## [2.1.1] — 2026-07-08
+
+CI/image-pipeline release: release tags now build immutable, versioned images.
+
+### Changed
+
+- **`build-image` auto-builds on a release-tag push (`v*.*.*`)** and serializes
+  builds. Each build publishes an **immutable, version-named** artifact
+  (`sensor-station-v<version>.img.xz`) rather than a bare-date name, and cuts a
+  GitHub **pre-release** pointing at it. The `lts_26_07` image line is isolated under
+  `images/lts_26_07/` so it never touches the current public LTS.
+
+## [2.1.0] — 2026-07-08
+
+Cellular modem robustness and the incremental CI image build.
+
+### Added
+
+- **`ctt-modem-wake.service` — modem power-state recovery at boot.** A Telit
+  LE910Q1 in `ON_OFF#` shutdown (after a hard reset / VBAT loss) does not
+  self-enumerate; this pulses `ON_OFF#` so it returns before ModemManager scans.
+  No-op when the modem is already present or intent is OFF.
+- **Incremental CI image build (`build-image`).** Loop-mounts the previous image
+  under qemu-arm and runs `update-station.sh` inside it, then shrinks and publishes
+  to S3 — the manual image process, automated.
+
+### Fixed
+
+- **Web-triggered `update-station` killed itself.** The dashboard spawns the updater
+  inside `station-radio-interface`; restarting that service mid-run SIGKILLed the
+  updater. The radio-interface restart is now the last action, and the updater runs
+  in a decoupled transient unit.
+
 ## [2.0.1] — unreleased
 
 Bug-fix release cut for a fresh test image on top of 2.0.0: two fixes that

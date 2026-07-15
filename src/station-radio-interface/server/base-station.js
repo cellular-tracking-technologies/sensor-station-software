@@ -239,8 +239,40 @@ class BaseStation {
    * @param {*} cmd - run a given bash command and pipe output to web socket
    */
   runCommand(cmd) {
-    const command_process = spawn(cmd)
     this.stationLog('running command', cmd)
+    // update-station restarts station-radio-interface — this very service. A plain
+    // child shares our systemd cgroup, so that restart would SIGKILL it mid-update
+    // (frozen LCD "Updating" splash, skipped sensorgnome + image-OTA steps). Launch
+    // it as a transient systemd unit instead: it runs in its own cgroup under
+    // system.slice and survives our restart. Its output goes to the journal, so we
+    // stream progress by following that unit's journal rather than a pipe (the pipe
+    // would die with us on the restart anyway).
+    if (cmd === 'update-station') {
+      const unit = 'ctt-ota-update'
+      spawn('systemd-run', [
+        '--collect', '--unit', unit,
+        `--setenv=PATH=${process.env.PATH}`,
+        `--setenv=HOME=${process.env.HOME || '/root'}`,
+        '/usr/local/sbin/update-station',
+      ]).on('error', (err) => {
+        console.error('update-station launch error')
+        console.error(err)
+        this.stationLog('update-station launch error', err.toString())
+      })
+      this.streamProcess(spawn('journalctl', ['-f', '-o', 'cat', '--since', 'now', '-u', unit]), cmd)
+      return
+    }
+    this.streamProcess(spawn(cmd), cmd)
+  }
+
+  /**
+   * Pipe a child process's stdout/stderr to all web-socket clients as `log`
+   * messages, and log its lifecycle.
+   * @param {*} command_process - a spawned child process
+   * @param {*} label - human label for logs (defaults to the process spawnfile)
+   */
+  streamProcess(command_process, label) {
+    label = label || command_process.spawnfile
     command_process.stdout.on('data', (data) => {
       let msg = {
         data: data.toString(),
@@ -258,7 +290,7 @@ class BaseStation {
       this.broadcast(JSON.stringify(msg))
     })
     command_process.on('close', (code) => {
-      this.stationLog('finished running', cmd, code)
+      this.stationLog('finished running', label, code)
     })
     command_process.on('error', (err) => {
       console.error('command error')

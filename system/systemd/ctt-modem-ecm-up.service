@@ -1,0 +1,17 @@
+[Unit]
+Description=Bring up the Telit CDC-ECM data interface (mdm0) via DHCP, fallback route
+# NM does not manage mdm0 (it is a ModemManager modem net port, not an NM ethernet
+# device), so mdm0 must be brought up out of band. Run after MM/NM have settled so
+# nothing races the config. modem-ecm-up.sh fails open when the modem is off/absent.
+After=NetworkManager.service ModemManager.service
+DefaultDependencies=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+# Invoke via bash (not direct exec) so a lost executable bit on the script can't
+# strand the service with 203/EXEC — see investigations/2026-07-09 (ECM bring-up).
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-ecm-up.sh
+
+[Install]
+WantedBy=multi-user.target

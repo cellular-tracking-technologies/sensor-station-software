@@ -37,8 +37,7 @@ ctt-leds-overlay.service
 ctt-rtc-overlay.service
 ctt-buttons-overlay.service
 
-# Removed: the auto-run Telit RNDIS provisioner. RNDIS NV binding (AT#RNDIS=1,0)
-# is done at MANUFACTURING; the runtime assumes an already-provisioned modem, so
-# nothing should provision (and reboot the modem) at boot. The ctt-modem-provision
-# binary remains as a manual CLI; only the udev-activated service is retired.
-ctt-modem-provision.service
+# NOTE: ctt-modem-provision.service was once retired here (the RNDIS auto-provisioner,
+# 0ba6ce3) but is RE-INTRODUCED as the idempotent ECM boot GUARD (ADR 0003). It is
+# therefore intentionally NOT in this removal list — the install loop deploys the new
+# unit content, overwriting any stale copy. Do not re-add it here.

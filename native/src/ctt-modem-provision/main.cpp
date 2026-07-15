@@ -1,25 +1,31 @@
-// ctt-modem-provision — ensure the Telit LE910Q1 RNDIS data path is bound,
+// ctt-modem-provision — ensure the Telit LE910Q1 ECM data path is provisioned,
 // self-healing across the field.
 //
-// The cellular data interface (mdm0, RNDIS NAT) only forwards once the modem's
-// RNDIS session is bound to a PDP context: AT#RNDIS must read "x,1" (bound to
-// context 1), not "x,0" (unbound). That binding is a durable NV setting written
-// once at manufacturing — but a carrier/Telit firmware update, a field modem
-// swap, or an RMA replacement can leave a modem unbound. Rather than predict
-// every such case, this tool re-asserts the binding on boot:
+// The cellular data interface (mdm0, a cdc_ether NAT netdev) requires two durable
+// NV settings on the modem:
+//   1. USB composition = ECM:  AT#USBCFG must read "1" (ECM, VID:PID 1bc7:7021),
+//      not "0" (RNDIS, 1bc7:7020) or "50" (no ports). Switching it re-enumerates
+//      the modem (a reboot), so it is done first and the tool exits; the ECM bind
+//      happens on the next invocation, once the modem is in ECM composition.
+//   2. ECM session bound to a PDP context:  AT#ECM must read "x,1" (bound to
+//      context 1), not "x,0" (unbound).
 //
-//   read AT#RNDIS?  ->  bound ("x,1")    : nothing to do (read-only happy path)
-//                   ->  unbound ("x,0")  : AT#RNDIS=1,0 + AT#REBOOT, then exit
-//                                          (the modem re-enumerates already
-//                                          bound; ModemManager picks it up)
+// We migrated the data path RNDIS -> ECM: RNDIS is deprecated in the Linux kernel
+// and cannot be managed by ModemManager, whereas ECM is standards-based and gave a
+// clean single mdm0 path in bench validation (2026-07-08). Existing field modems
+// ship in RNDIS (USBCFG=0); this tool migrates them (set USBCFG=1, reboot, bind ECM).
 //
-// It runs BEFORE ModemManager (oneshot, ordered Before=ModemManager.service),
-// on the udev-symlinked AT control port /dev/ctt-modem-at, so it has the port to
-// itself — no ModemManager --debug round-trip, no contention. It is idempotent
-// and FAILS OPEN: any problem opening/parsing the port logs and exits 0 so the
-// boot proceeds and ModemManager starts normally. AT#IPPASSTH and AT#USBCFG are
-// deliberately left untouched (proven unnecessary: NAT mode carries data fine,
-// and the stock USB composition already exposes RNDIS).
+//   read AT#USBCFG?  -> not "1"  : AT#USBCFG=1 + AT#REBOOT, exit (re-enumerates as
+//                                  ECM; the ECM bind runs on the next invocation)
+//                    -> "1"      : proceed to the ECM bind check
+//   read AT#ECM?     -> bound    : nothing to do (read-only happy path)
+//                    -> unbound  : AT#ECM=1,0 (immediate; no reboot needed)
+//
+// Runs on the udev-symlinked AT control port /dev/ctt-modem-at (USB interface 02,
+// present in BOTH the RNDIS and ECM compositions), so it can reach a modem in either
+// state. It is idempotent and FAILS OPEN: any problem opening/parsing the port logs
+// and exits 0 so the boot proceeds and ModemManager starts normally. AT#IPPASSTH is
+// left untouched (NAT mode carries data fine; verified on hardware).
 //
 // Usage: ctt-modem-provision [device-path]   (default /dev/ctt-modem-at)
 //        ctt-modem-provision --dry-run        report state, never write
@@ -114,9 +120,9 @@ std::string oneLine(const std::string &s) {
   return out;
 }
 
-// "#RNDIS: <a>,<b>" — bound iff the second field (the PDP context id) is non-zero.
-bool isBound(const std::string &resp) {
-  auto p = resp.find("#RNDIS:");
+// "#ECM: <a>,<b>" — bound iff the second field (the PDP context id) is non-zero.
+bool ecmBound(const std::string &resp) {
+  auto p = resp.find("#ECM:");
   if (p == std::string::npos)
     return false;
   auto comma = resp.find(',', p);
@@ -126,6 +132,22 @@ bool isBound(const std::string &resp) {
   while (i < resp.size() && resp[i] == ' ')
     ++i;
   return i < resp.size() && resp[i] >= '1' && resp[i] <= '9';
+}
+
+// "#USBCFG: <n>" — parse the mode integer, or -1 if unparseable (0=RNDIS, 1=ECM).
+int usbcfgMode(const std::string &resp) {
+  auto p = resp.find("#USBCFG:");
+  if (p == std::string::npos)
+    return -1;
+  size_t i = p + 8;
+  while (i < resp.size() && resp[i] == ' ')
+    ++i;
+  if (i >= resp.size() || resp[i] < '0' || resp[i] > '9')
+    return -1;
+  int v = 0;
+  while (i < resp.size() && resp[i] >= '0' && resp[i] <= '9')
+    v = v * 10 + (resp[i++] - '0');
+  return v;
 }
 
 bool portPresent(const char *path) { return ::access(path, F_OK) == 0; }
@@ -161,20 +183,60 @@ int main(int argc, char **argv) {
     return 0; // fail open
   }
 
-  std::string r = atCmd(fd, "AT#RNDIS?", 3000);
-  if (r.find("#RNDIS:") == std::string::npos) {
+  // ---- Stage 1: ensure the ECM USB composition (AT#USBCFG=1). ----
+  std::string u = atCmd(fd, "AT#USBCFG?", 3000);
+  int mode = usbcfgMode(u);
+  if (mode < 0) {
     std::fprintf(stderr,
-                 "ctt-modem-provision: no #RNDIS response ('%s') — leaving "
+                 "ctt-modem-provision: no #USBCFG response ('%s') — leaving "
                  "modem untouched\n",
-                 oneLine(r).c_str());
+                 oneLine(u).c_str());
+    ::close(fd);
+    return 0; // fail open
+  }
+  if (mode != 1) {
+    std::fprintf(stderr,
+                 "ctt-modem-provision: USBCFG=%d (not ECM) [%s]\n", mode,
+                 oneLine(u).c_str());
+    if (dry_run) {
+      std::fprintf(stderr, "ctt-modem-provision: --dry-run — would write "
+                           "AT#USBCFG=1 then AT#REBOOT\n");
+      ::close(fd);
+      return 0;
+    }
+    std::string w = atCmd(fd, "AT#USBCFG=1", 5000);
+    if (w.find("OK") == std::string::npos) {
+      std::fprintf(stderr,
+                   "ctt-modem-provision: USBCFG write not confirmed ('%s') — "
+                   "NOT rebooting\n",
+                   oneLine(w).c_str());
+      ::close(fd);
+      return 0; // fail open
+    }
+    std::fprintf(stderr, "ctt-modem-provision: switching to ECM composition; "
+                         "rebooting modem (AT#REBOOT)\n");
+    atCmd(fd, "AT#REBOOT", 5000);
+    ::close(fd);
+    std::fprintf(stderr, "ctt-modem-provision: modem rebooting into ECM "
+                         "(1bc7:7021); the ECM bind runs on the next invocation\n");
+    return 0;
+  }
+
+  // ---- Stage 2: ensure the ECM session is bound (AT#ECM=1,0). ----
+  std::string e = atCmd(fd, "AT#ECM?", 3000);
+  if (e.find("#ECM:") == std::string::npos) {
+    std::fprintf(stderr,
+                 "ctt-modem-provision: no #ECM response ('%s') — leaving modem "
+                 "untouched\n",
+                 oneLine(e).c_str());
     ::close(fd);
     return 0; // fail open
   }
 
-  bool bound = isBound(r);
-  std::fprintf(stderr, "ctt-modem-provision: AT#RNDIS? -> %s [%s]\n",
-               bound ? "bound (provisioned)" : "UNBOUND (needs provisioning)",
-               oneLine(r).c_str());
+  bool bound = ecmBound(e);
+  std::fprintf(stderr, "ctt-modem-provision: ECM composition OK; AT#ECM? -> %s [%s]\n",
+               bound ? "bound (provisioned)" : "UNBOUND (needs binding)",
+               oneLine(e).c_str());
 
   if (bound) {
     ::close(fd);
@@ -183,29 +245,23 @@ int main(int argc, char **argv) {
 
   if (dry_run) {
     std::fprintf(stderr, "ctt-modem-provision: --dry-run — would write "
-                         "AT#RNDIS=1,0 then AT#REBOOT\n");
+                         "AT#ECM=1,0\n");
     ::close(fd);
     return 0;
   }
 
-  std::fprintf(stderr,
-               "ctt-modem-provision: binding RNDIS to PDP context 1 "
-               "(AT#RNDIS=1,0)\n");
-  std::string w = atCmd(fd, "AT#RNDIS=1,0", 5000);
+  std::fprintf(stderr, "ctt-modem-provision: binding ECM to PDP context 1 "
+                       "(AT#ECM=1,0)\n");
+  std::string w = atCmd(fd, "AT#ECM=1,0", 5000);
   if (w.find("OK") == std::string::npos) {
     std::fprintf(stderr,
-                 "ctt-modem-provision: write not confirmed ('%s') — NOT "
-                 "rebooting\n",
+                 "ctt-modem-provision: ECM bind not confirmed ('%s')\n",
                  oneLine(w).c_str());
     ::close(fd);
-    return 0; // fail open: don't reboot on an unconfirmed write
+    return 0; // fail open
   }
-
-  std::fprintf(stderr, "ctt-modem-provision: rebooting modem to apply the NV "
-                       "binding (AT#REBOOT)\n");
-  atCmd(fd, "AT#REBOOT", 5000);
+  std::fprintf(stderr, "ctt-modem-provision: ECM bound (mdm0 will carry data "
+                       "once ModemManager/NM bring it up)\n");
   ::close(fd);
-  std::fprintf(stderr, "ctt-modem-provision: modem rebooting; it will "
-                       "re-enumerate bound (verified next boot)\n");
   return 0;
 }

@@ -1,0 +1,34 @@
+[Unit]
+Description=Provision the Telit LE910Q1 for CDC-ECM (idempotent boot guard)
+# Self-healing guard, NOT an every-boot re-provisioner. ctt-modem-provision reads
+# state first (AT#USBCFG? / AT#ECM?) and only writes when the modem is not already
+# ECM + bound:
+#   - already provisioned  -> read-and-exit, ZERO writes. ECM composition + bind are
+#     NV-persistent (survive reboot AND hard power cycle, verified fw M0Y.300002), so
+#     steady state is one cheap AT read per boot.
+#   - fresh / swapped RNDIS modem (ships 1bc7:7020, unbound) -> converts it: writes
+#     AT#USBCFG=1 + AT#REBOOT (boot 1), then AT#ECM=1,0 once it re-enumerates as ECM
+#     (boot 2). Two-boot convergence, one-time per modem. So no manual provision step.
+#   - a bind ever lost (fw update / RMA) -> re-asserted. Correct whether or not state
+#     persists.
+#
+# Ordering: after the modem is powered on (ctt-modem-wake) and authorized
+# (modem-boot-state), and BEFORE ModemManager — so it owns the /dev/ctt-modem-at AT
+# port exclusively while it works. This avoids the AT-port race WITHOUT stopping
+# MM/NM (stopping them, colliding with USB enumeration, was the source of the old
+# provisioner races). MM starts normally once this oneshot exits.
+After=local-fs.target systemd-udev-settle.service ctt-modem-wake.service modem-boot-state.service
+Before=ModemManager.service
+DefaultDependencies=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+# Best-effort: the binary fails open (exits 0) on any AT/port problem; the '-' prefix
+# additionally treats a missing/non-exec binary as success so provisioning never
+# blocks or fails the boot. On a fresh modem this fires AT#REBOOT and exits WITHOUT
+# waiting (the ECM bind lands on the next boot) — it does not stall the boot ~20-40s.
+ExecStart=-/usr/local/bin/ctt-modem-provision
+
+[Install]
+WantedBy=multi-user.target
