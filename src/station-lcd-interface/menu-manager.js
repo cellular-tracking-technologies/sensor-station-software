@@ -121,7 +121,12 @@ class MenuManager {
   autoRefresh_(enable) {
     clearTimeout(this.refresh_)
     if (enable == true) {
-      if (typeof this.focus.view.autoRefresh !== 'undefined') {
+      // Guard against focus having moved to a view-less menu node (or been
+      // popped) while a refresh cycle was in flight. Without this, a refresh
+      // that resolves/rejects after navigation dereferences a null `view` and
+      // throws, clearing the timer without re-arming it — which permanently
+      // freezes the display on its last frame.
+      if (this.focus && this.focus.view && typeof this.focus.view.autoRefresh !== 'undefined') {
         if (this.focus.view.autoRefresh > 0) {
           this.refresh_ = setTimeout(() => {
             this.view_(true)

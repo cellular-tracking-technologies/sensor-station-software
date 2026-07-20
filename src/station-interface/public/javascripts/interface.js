@@ -1265,11 +1265,11 @@ const render_modem = function () {
         let signal = json.signal
         let state = json.state
 
-        // dBm read-out: prefer the real LTE RSRP from mmcli --signal-get, and
-        // fall back to the percent-derived RSSI the modem cache always provides.
+        // dBm read-out: use the percent-derived RSSI the modem cache always
+        // provides, matching what the LCD shows (station-stats.js) so the two
+        // surfaces agree.
         const rssiNum = (json.rssi != null) ? parseFloat(json.rssi) : NaN
-        const dbm = Number.isFinite(json.rsrp) ? Math.round(json.rsrp)
-          : (Number.isFinite(rssiNum) ? Math.round(rssiNum) : null)
+        const dbm = Number.isFinite(rssiNum) ? Math.round(rssiNum) : null
         if (modemText) {
           modemText.textContent = Number.isFinite(signal)
             ? `${signal}%${dbm != null ? ` / ${dbm} dBm` : ''}`
