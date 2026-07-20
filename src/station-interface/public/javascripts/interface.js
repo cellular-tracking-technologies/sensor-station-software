@@ -1251,7 +1251,12 @@ const render_modem = function () {
     .then(function (res) { return res.json() })
     .then(function (json) {
 
+      const modemText = document.querySelector('#modem-signal-text')
+      const carrierEl = document.querySelector('#modem-carrier')
+
       if (json == null) {
+        if (modemText) modemText.textContent = '—'
+        if (carrierEl) carrierEl.textContent = '—'
         document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-0')
         document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
         document.querySelector('.modem-path0').setAttribute('d', "M0 13.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
@@ -1259,6 +1264,18 @@ const render_modem = function () {
 
         let signal = json.signal
         let state = json.state
+
+        // dBm read-out: prefer the real LTE RSRP from mmcli --signal-get, and
+        // fall back to the percent-derived RSSI the modem cache always provides.
+        const rssiNum = (json.rssi != null) ? parseFloat(json.rssi) : NaN
+        const dbm = Number.isFinite(json.rsrp) ? Math.round(json.rsrp)
+          : (Number.isFinite(rssiNum) ? Math.round(rssiNum) : null)
+        if (modemText) {
+          modemText.textContent = Number.isFinite(signal)
+            ? `${signal}%${dbm != null ? ` / ${dbm} dBm` : ''}`
+            : '—'
+        }
+        if (carrierEl) carrierEl.textContent = json.carrier || '—'
 
         if (state == "connected") {
 
@@ -1310,6 +1327,25 @@ const render_wifi = function () {
       const ipEl = document.querySelector('#wifi-ip-address')
       if (ipEl) {
         ipEl.textContent = (state == true && json.ip) ? json.ip : '—'
+      }
+
+      // Numeric read-out next to the icon: percent from nmcli plus dBm. Prefer
+      // the real level from /proc/net/wireless (json.dbm); if it's unavailable
+      // fall back to deriving dBm from the percent (NetworkManager's approximate
+      // inverse), flagged with a ~ so it's clear it's estimated.
+      const wifiText = document.querySelector('#wifi-signal-text')
+      if (wifiText) {
+        if (state == true && Number.isFinite(percent)) {
+          let dbmStr = ''
+          if (Number.isFinite(json.dbm)) {
+            dbmStr = ` / ${Math.round(json.dbm)} dBm`
+          } else {
+            dbmStr = ` / ~${Math.round(percent / 2 - 100)} dBm`
+          }
+          wifiText.textContent = `${percent}%${dbmStr}`
+        } else {
+          wifiText.textContent = '—'
+        }
       }
       // Prefill the SSID input with the currently-connected network. Only do it
       // once, and never while the user is editing or has already typed/picked a
