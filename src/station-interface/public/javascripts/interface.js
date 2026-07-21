@@ -1329,23 +1329,12 @@ const render_wifi = function () {
         ipEl.textContent = (state == true && json.ip) ? json.ip : '—'
       }
 
-      // Numeric read-out next to the icon: percent from nmcli plus dBm. Prefer
-      // the real level from /proc/net/wireless (json.dbm); if it's unavailable
-      // fall back to deriving dBm from the percent (NetworkManager's approximate
-      // inverse), flagged with a ~ so it's clear it's estimated.
+      // Numeric read-out next to the icon: signal percent from nmcli.
       const wifiText = document.querySelector('#wifi-signal-text')
       if (wifiText) {
-        if (state == true && Number.isFinite(percent)) {
-          let dbmStr = ''
-          if (Number.isFinite(json.dbm)) {
-            dbmStr = ` / ${Math.round(json.dbm)} dBm`
-          } else {
-            dbmStr = ` / ~${Math.round(percent / 2 - 100)} dBm`
-          }
-          wifiText.textContent = `${percent}%${dbmStr}`
-        } else {
-          wifiText.textContent = '—'
-        }
+        wifiText.textContent = (state == true && Number.isFinite(percent))
+          ? `${percent}%`
+          : '—'
       }
       // Prefill the SSID input with the currently-connected network. Only do it
       // once, and never while the user is editing or has already typed/picked a
