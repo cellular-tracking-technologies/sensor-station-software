@@ -1,3 +1,5 @@
+import fs from 'fs'
+
 import RunCommand from '../../../command.js'
 
 const BASE_SG_TAG_DB_NAME = 'SG_tag_database'
@@ -7,7 +9,10 @@ export default (req, res, next) => {
   const ext = req.get('file-extension')
   const filename = `${BASE_SG_TAG_DB_NAME}.${ext}`
   console.log('about to delete sg tag db files')
-  RunCommand(`rm /data/sg_files/${BASE_SG_TAG_DB_NAME}*`)
+  // Use rm -f: on a station with no existing tag DB the glob matches nothing,
+  // and a plain rm exits non-zero, rejecting the promise before the write ever
+  // runs. -f treats "nothing to remove" as success.
+  RunCommand(`rm -f /data/sg_files/${BASE_SG_TAG_DB_NAME}*`)
     .then(() => {
       let uri = `/data/sg_files/${filename}`
       console.log('writing tag database file')
