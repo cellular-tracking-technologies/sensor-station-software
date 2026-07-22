@@ -12,6 +12,17 @@ regenerated from these entries.
 
 ---
 
+## [2.2.4] — 2026-07-22
+
+### Fixed
+
+- **SensorGnome tag-database uploads now persist.** The `/upload-sg-tag-file` handler called
+  `fs.writeFileSync()` but never imported `fs`, so every upload threw `ReferenceError: fs is
+  not defined` — but only *after* it had already `rm`'d the existing `SG_tag_database*` file.
+  Net effect: uploading a tag database deleted the current one and wrote nothing, leaving an
+  empty/missing `SG_tag_database.sqlite` and the SensorGnome interface failing with
+  `no such table: tags`. Adds the missing `import fs from 'fs'`. (PR #40)
+
 ## [2.2.3] — 2026-07-13
 
 ### Fixed
