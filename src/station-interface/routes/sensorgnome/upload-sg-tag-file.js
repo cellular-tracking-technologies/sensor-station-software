@@ -1,3 +1,5 @@
+import fs from 'fs'
+
 import RunCommand from '../../../command.js'
 
 const BASE_SG_TAG_DB_NAME = 'SG_tag_database'
