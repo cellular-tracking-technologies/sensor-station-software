@@ -150,6 +150,25 @@ void test_quectel_provision_idempotent() {
   std::remove(apnFile.c_str());
 }
 
+// ---- Quectel provision: blank CID1 left alone (policy B) -----------------------
+void test_quectel_provision_blank() {
+  const std::string apnFile = "/tmp/ctt-test-modem-apn-blank";
+  std::remove(apnFile.c_str());
+
+  ScriptedAt at;
+  at.replies["AT+QCCID"] = "\r\n+QCCID: 8946071500000000001\r\n\r\nOK\r\n"; // Telenor
+  at.replies["AT+CGDCONT?"] = // CID1 APN is blank -> network default, leave alone
+      "\r\n+CGDCONT: 1,\"IPV4V6\",\"\",\"0.0.0.0\",0,0\r\n\r\nOK\r\n";
+
+  QuectelEC25 q(at, apnFile);
+  q.provision(/*dry_run=*/false);
+
+  CHECK(!at.issued("AT+CFUN=0"));                              // no radio bounce
+  CHECK(!at.issued("AT+CGDCONT=1,\"IP\",\"internet.cxn\""));   // no NV write
+  CHECK(readFile(apnFile) == "internet.cxn");                 // but dial APN still published
+  std::remove(apnFile.c_str());
+}
+
 // ---- Quectel provision: unreadable ICCID = leave everything alone --------------
 void test_quectel_provision_bad_iccid() {
   const std::string apnFile = "/tmp/ctt-test-modem-apn-bad";
@@ -195,6 +214,7 @@ int main() {
   test_dispatch();
   test_quectel_provision_divergence();
   test_quectel_provision_idempotent();
+  test_quectel_provision_blank();
   test_quectel_provision_bad_iccid();
   test_quectel_provision_dryrun();
 

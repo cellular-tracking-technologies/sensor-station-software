@@ -13,10 +13,13 @@ namespace ctthw {
 // and — unlike the Telit — it needs no ECM/USB-composition work at all.
 //
 // It reads the SIM ICCID (AT+QCCID), maps the country code to the carrier APN,
-// and if CGDCONT CID1 does not already carry that APN, sets it and bounces the
-// radio (CFUN=0/1) so the change takes effect at the next attach. The chosen APN
-// is written to /run/ctt/modem-apn — the single source provision-modem-apn.sh
-// reads to set the NM dial APN, so attach and dial stay identical by construction.
+// and if CGDCONT CID1 carries a *non-empty wrong* APN, sets it and bounces the
+// radio (CFUN=0/1) so the change takes effect at the next attach. A blank CID1 is
+// left alone (it attaches on the network-default APN — bench-verified to connect;
+// the failure mode is a non-empty wrong APN, not a blank one), so the working
+// fleet is not churned. The chosen APN is written to /run/ctt/modem-apn — the
+// single source provision-modem-apn.sh reads to set the NM dial APN, so attach and
+// dial stay identical by construction.
 //
 // Reference: reference/chipsets/modem/quectel-ec25-af/ (KB). Idempotent + fail-open.
 class QuectelEC25 : public Modem {

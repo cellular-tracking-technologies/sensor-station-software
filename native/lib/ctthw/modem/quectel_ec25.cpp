@@ -94,19 +94,30 @@ void QuectelEC25::provision(bool dry_run) {
                  flattenReply(cg).c_str());
     return; // fail open
   }
-  // We compare on the APN only — that divergence (attach APN != dial APN) is what
-  // triggers cause-55. A modem already on the correct APN is left untouched (no
-  // radio bounce), even if its PDP type differs; only a mis-APN'd context is
-  // rewritten, and the rewrite sets the documented IPv4 type (kPdpType).
+  // Rewrite only a non-empty WRONG CID1 APN — that divergence (attach APN !=
+  // dial APN) is what triggers cause-55. Two cases are left untouched (no radio
+  // bounce), and both still publish the dial APN so the NM side is set:
+  //   - already the desired APN, or
+  //   - BLANK: a blank CID1 attaches on the network-default APN (bench-verified:
+  //     connects fine). The proven failure mode is a non-empty WRONG APN, not a
+  //     blank one, so we don't churn the working fleet of blank-CID1 stations.
   std::string current = parseCgdcontApn(cg, 1);
   std::fprintf(stderr,
                "ctt-modem-provision: Quectel — CGDCONT CID1 APN '%s' (want '%s')\n",
-               current.c_str(), apn.c_str());
+               current.empty() ? "(blank)" : current.c_str(), apn.c_str());
 
   if (current == apn) {
     std::fprintf(stderr, "ctt-modem-provision: Quectel — attach APN already "
                          "correct; no NV write\n");
     publishApn(apn); // still publish so the NM side has the source of truth
+    return;
+  }
+  if (current.empty()) {
+    std::fprintf(stderr, "ctt-modem-provision: Quectel — CGDCONT CID1 blank "
+                         "(network-default APN); leaving attach context, "
+                         "publishing dial APN '%s'\n",
+                 apn.c_str());
+    publishApn(apn);
     return;
   }
 
