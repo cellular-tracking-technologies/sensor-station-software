@@ -13,8 +13,8 @@
 # Idempotent — runtime-owned keys (stripped before diff so we don't
 # fight the runtime owner):
 #   timestamp=   — NM rewrites this on every successful connection activation
-#   apn=         — check-sim-id.sh switches station-modem.apn at boot per SIM ICCID
-#   autoconnect= — check-sim-id.sh sets this per modem type (Telit=false, Quectel=true).
+#   apn=         — provision-modem-apn.sh switches station-modem.apn at boot per SIM
+#   autoconnect= — modem-datapath.sh sets this per modem type (Telit=false, Quectel=true).
 #                  Preserving it stops a redeploy from reverting the Telit demote and
 #                  auto-dialing PPP over the AT port on the next NM reload.
 

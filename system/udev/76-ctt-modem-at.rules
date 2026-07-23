@@ -1,15 +1,19 @@
-# CTT: stable symlink for the Telit LE910Q1 AT control port (USB interface 02):
-# /dev/ctt-modem-at.
+# CTT: stable symlink for the modem AT control port (USB interface 02):
+# /dev/ctt-modem-at. `ctt-modem-provision` opens this fixed name to provision the
+# modem, so it must resolve for BOTH supported families:
 #
-# ModemManager uses interface 02 as the modem's AT port (signal/registration), and
-# it floats across /dev/ttyACMx between boots, so we give it a fixed name. That
-# fixed name is what `ctt-modem-provision` uses to provision the ECM data path
-# (AT#USBCFG=1 + AT#ECM=1,0). Interface 02 is the AT port in BOTH the ECM
-# composition (1bc7:7021) and the legacy RNDIS composition (1bc7:7020), so we
-# symlink both — the provisioner must reach a not-yet-migrated (RNDIS) modem in
-# order to switch it to ECM.
-#
-# Telit-VID scoped — Quectel/QMI and every other device is untouched.
+#   Telit LE910Q1 — interface 02 floats across /dev/ttyACMx between boots and is the
+#     AT port ModemManager also uses; the provisioner drives the ECM data path there
+#     (AT#USBCFG=1 + AT#ECM=1,0). Interface 02 is the AT port in BOTH the ECM
+#     composition (1bc7:7021) and the legacy RNDIS composition (1bc7:7020), so we
+#     symlink both — the provisioner must reach a not-yet-migrated (RNDIS) modem to
+#     switch it to ECM.
+#   Quectel EC25 (2c7c:0125) — interface 02 (ttyUSBx) is the AT primary port. It is
+#     ID_MM_DEVICE_IGNORE=1 (MM drives the Quectel over QMI/cdc-wdm0 and leaves the
+#     tty idle), so it is ours to open: the provisioner sets the LTE attach APN
+#     (CGDCONT CID1) there before MM brings the QMI bearer up. Symlinking it does NOT
+#     hand it to MM — the ignore flag stands; a one-shot open at boot is negligible
+#     versus MM's continuous polling (the historical FunCube bandwidth cost).
 #
 # Match on the tty's own ID_* properties (set by the usb_id builtin in the earlier
 # 60-serial rules), NOT ATTRS{}: idVendor/idProduct live on the USB device while
@@ -18,3 +22,4 @@
 # all three. ID_USB_INTERFACE_NUM=="02" selects the AT control port.
 ACTION=="add", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1bc7", ENV{ID_MODEL_ID}=="7021", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="ctt-modem-at"
 ACTION=="add", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1bc7", ENV{ID_MODEL_ID}=="7020", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="ctt-modem-at"
+ACTION=="add", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_MODEL_ID}=="0125", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="ctt-modem-at"
