@@ -37,8 +37,19 @@ ip link set "$IFACE" up
 
 # DHCP the address (Telit-documented method). -1: one attempt then exit — no lingering
 # daemon; the lease is long and the module always offers the same deterministic address.
-if ! timeout 25 dhclient -1 -pf "/run/dhclient-$IFACE.pid" -lf "/run/dhclient-$IFACE.leases" "$IFACE"; then
-  echo "modem-ecm-up: dhclient got no lease on $IFACE (modem not registered yet?) — leaving it"
+# Retry: right after the ECM bind (or before the modem finishes registering) the module
+# may not answer DHCP for a few seconds, so a single attempt can lose the race. Retry a
+# few times before giving up (still fail-open so it never blocks boot).
+leased=0
+for attempt in 1 2 3 4 5 6; do
+  if timeout 25 dhclient -1 -pf "/run/dhclient-$IFACE.pid" -lf "/run/dhclient-$IFACE.leases" "$IFACE"; then
+    leased=1; break
+  fi
+  echo "modem-ecm-up: no lease on $IFACE yet (attempt $attempt/6); retrying in 5s..."
+  sleep 5
+done
+if [ "$leased" != 1 ]; then
+  echo "modem-ecm-up: dhclient got no lease on $IFACE after retries (modem not registered yet?) — leaving it"
   exit 0
 fi
 

@@ -70,6 +70,50 @@ void test_telit_parsers() {
   CHECK(TelitLE910Q1::parseEcmBound("\r\nERROR\r\n") == false);
 }
 
+// ---- Telit provision: one-boot ECM convergence ---------------------------------
+void test_telit_provision() {
+  using ctthw::ProvisionResult;
+  // Fresh RNDIS (USBCFG=0): switch composition + reboot, and signal RebootedRetry so
+  // the executable re-runs on the re-enumerated ECM port to finish the bind.
+  {
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 0\r\n\r\nOK\r\n";
+    TelitLE910Q1 t(at);
+    CHECK(t.provision(/*dry_run=*/false) == ProvisionResult::RebootedRetry);
+    CHECK(at.issued("AT#USBCFG=1"));
+    CHECK(at.issued("AT#REBOOT"));
+    CHECK(!at.issued("AT#ECM=1,0")); // bind deferred to the post-reboot re-run
+  }
+  // ECM composition, unbound: bind now and report Done (the re-run's Stage 2).
+  {
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 1\r\n\r\nOK\r\n";
+    at.replies["AT#ECM?"] = "\r\n#ECM: 0,0\r\n\r\nOK\r\n";
+    TelitLE910Q1 t(at);
+    CHECK(t.provision(/*dry_run=*/false) == ProvisionResult::Done);
+    CHECK(at.issued("AT#ECM=1,0"));
+  }
+  // ECM composition, already bound: no NV write, Done.
+  {
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 1\r\n\r\nOK\r\n";
+    at.replies["AT#ECM?"] = "\r\n#ECM: 0,1\r\n\r\nOK\r\n";
+    TelitLE910Q1 t(at);
+    CHECK(t.provision(/*dry_run=*/false) == ProvisionResult::Done);
+    CHECK(!at.issued("AT#ECM=1,0"));
+  }
+  // dry-run on fresh RNDIS: reports intent, reboots nothing, returns Done (never
+  // RebootedRetry — a dry-run must not trigger the executable's reboot-wait).
+  {
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 0\r\n\r\nOK\r\n";
+    TelitLE910Q1 t(at);
+    CHECK(t.provision(/*dry_run=*/true) == ProvisionResult::Done);
+    CHECK(!at.issued("AT#USBCFG=1"));
+    CHECK(!at.issued("AT#REBOOT"));
+  }
+}
+
 // ---- Quectel parsers / mapping --------------------------------------------------
 void test_quectel_parsers() {
   // ICCID: digits after "+QCCID:". cc = digits [2:4]; "46" -> Telenor.
@@ -210,6 +254,7 @@ void test_quectel_provision_dryrun() {
 
 int main() {
   test_telit_parsers();
+  test_telit_provision();
   test_quectel_parsers();
   test_dispatch();
   test_quectel_provision_divergence();

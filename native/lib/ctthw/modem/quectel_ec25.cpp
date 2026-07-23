@@ -73,7 +73,7 @@ void QuectelEC25::publishApn(const std::string &apn) const {
   ::close(fd);
 }
 
-void QuectelEC25::provision(bool dry_run) {
+ProvisionResult QuectelEC25::provision(bool dry_run) {
   std::string iccid = parseIccid(at_.cmd("AT+QCCID", 3000));
   std::string apn = apnForIccid(iccid);
   if (apn.empty()) {
@@ -81,7 +81,7 @@ void QuectelEC25::provision(bool dry_run) {
                  "ctt-modem-provision: Quectel — no usable ICCID (got '%s') — "
                  "leaving APN untouched\n",
                  iccid.c_str());
-    return; // fail open — never guess an APN
+    return ProvisionResult::Done; // fail open — never guess an APN
   }
   std::fprintf(stderr, "ctt-modem-provision: Quectel — ICCID cc %s -> APN '%s'\n",
                iccid.substr(2, 2).c_str(), apn.c_str());
@@ -92,7 +92,7 @@ void QuectelEC25::provision(bool dry_run) {
                  "ctt-modem-provision: no +CGDCONT response ('%s') — leaving "
                  "modem untouched\n",
                  flattenReply(cg).c_str());
-    return; // fail open
+    return ProvisionResult::Done; // fail open
   }
   // Rewrite only a non-empty WRONG CID1 APN — that divergence (attach APN !=
   // dial APN) is what triggers cause-55. Two cases are left untouched (no radio
@@ -110,7 +110,7 @@ void QuectelEC25::provision(bool dry_run) {
     std::fprintf(stderr, "ctt-modem-provision: Quectel — attach APN already "
                          "correct; no NV write\n");
     publishApn(apn); // still publish so the NM side has the source of truth
-    return;
+    return ProvisionResult::Done;
   }
   if (current.empty()) {
     std::fprintf(stderr, "ctt-modem-provision: Quectel — CGDCONT CID1 blank "
@@ -118,7 +118,7 @@ void QuectelEC25::provision(bool dry_run) {
                          "publishing dial APN '%s'\n",
                  apn.c_str());
     publishApn(apn);
-    return;
+    return ProvisionResult::Done;
   }
 
   if (dry_run) {
@@ -126,7 +126,7 @@ void QuectelEC25::provision(bool dry_run) {
                  "ctt-modem-provision: --dry-run — would write CFUN=0 / "
                  "CGDCONT=1,\"%s\",\"%s\" / CFUN=1, then publish %s\n",
                  kPdpType, apn.c_str(), apn_file_.c_str());
-    return;
+    return ProvisionResult::Done;
   }
 
   // A CGDCONT change is rejected on an already-activated context (AT Commands
@@ -144,7 +144,7 @@ void QuectelEC25::provision(bool dry_run) {
                  "('%s'); re-attaching and leaving APN as-is\n",
                  flattenReply(w).c_str());
     at_.cmd("AT+CFUN=1", 5000); // restore the radio even on failure
-    return;                     // fail open
+    return ProvisionResult::Done; // fail open
   }
   at_.cmd("AT+CFUN=1", 5000);
   std::fprintf(stderr,
@@ -152,6 +152,7 @@ void QuectelEC25::provision(bool dry_run) {
                "re-attaching (MM brings the wwan0 bearer up)\n",
                apn.c_str());
   publishApn(apn);
+  return ProvisionResult::Done;
 }
 
 } // namespace ctthw

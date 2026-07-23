@@ -39,7 +39,7 @@ public:
       : Modem(at), apn_file_(std::move(apn_file)) {}
 
   const char *name() const override { return "Quectel EC25"; }
-  void provision(bool dry_run) override;
+  ProvisionResult provision(bool dry_run) override;
 
   // --- Pure helpers (no I/O; unit-tested against real fixtures) ---
 
