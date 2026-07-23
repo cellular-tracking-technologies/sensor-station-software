@@ -12,6 +12,41 @@ regenerated from these entries.
 
 ---
 
+## [2.3.0] — 2026-07-23
+
+### Added
+
+- **Native cellular modem provisioner extended to the Quectel EC25** (`ctt-modem-provision`
+  0.2.0 → 0.3.0). Modem provisioning is refactored into a small, unit-tested `ctthw/modem`
+  C++ module — an AT-port transport with one driver per modem family. For a Quectel, the
+  tool keeps the LTE **attach APN** (`CGDCONT` CID1) matched to the SIM so it cannot diverge
+  from the NetworkManager **dial APN**; that divergence is rejected by the network with 3GPP
+  **cause 55** and leaves the modem *registered but passing no data*. It reads the SIM ICCID
+  (`AT+QCCID`) and, only when CID1 carries a non-empty **wrong** APN, rewrites it
+  (`CFUN=0` / `CGDCONT=1,"IP",<apn>` / `CFUN=1`); a blank CID1 (which attaches on the
+  network-default APN) is left alone. Runs `Before=ModemManager`, idempotent and fail-open,
+  so a stale or recycled attach context self-heals on the next boot. Verified against the
+  Quectel AT Commands Manual V2.0 and on hardware. The Telit LE910Q1 ECM data-path
+  provisioning is unchanged.
+
+### Changed
+
+- **`check-sim-id.sh` renamed to `provision-modem-apn.sh`** and reworked to consume
+  `/run/ctt/modem-apn` (written by the native provisioner) as the single source for the dial
+  APN — so the modem's attach APN and NetworkManager's dial APN share one origin and cannot
+  diverge — keeping the previous `mmcli`-ICCID mapping as a fallback.
+- New udev symlink `/dev/ctt-modem-at` for the Quectel EC25 AT control port (interface 02).
+- The native-tool release workflow now publishes formatted Markdown release notes.
+
+### Fixed
+
+- **The modem now requests IPv4-only.** These M2M SIMs/APNs are provisioned IPv4-only, so a
+  dual-stack (IPv4v6) bearer request made the modem attempt an IPv6 PDN the network refused
+  (QMI `CallFailed` / `ip-version-mismatch`). Sets `ipv6.method=disabled` on the
+  `station-modem` profile. (`gsm.ip-type` is not usable on NetworkManager 1.30 / Bullseye.)
+- **First-time SensorGnome tag-database upload no longer fails** when there is no existing
+  `SG_tag_database*` file to remove (`rm -f`).
+
 ## [2.2.4] — 2026-07-22
 
 ### Fixed
