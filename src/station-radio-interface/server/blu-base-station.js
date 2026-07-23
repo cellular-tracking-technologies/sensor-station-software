@@ -207,6 +207,13 @@ class BluStation {
 
           break
         case BluReceiverTask.DETECTIONS:
+          // A timed-out/errored detections poll arrives with data undefined (the
+          // run_schedule catch emits {error, data} destructured from a plain timeout
+          // error, which has no .data), so job.data.forEach throws 'reading forEach
+          // of undefined' every poll cycle when a receiver stops responding (e.g. the
+          // FTDI is present but the adapter board/MCUs are not). Mirror the VERSION
+          // guard above: skip when there's no detections payload.
+          if (!Array.isArray(job.data)) { break }
           try {
             job.data.forEach((beep) => {
               const { id, rssi, time, channel: radio_channel, payload: { parsed: { solar, temp, } }, } = beep

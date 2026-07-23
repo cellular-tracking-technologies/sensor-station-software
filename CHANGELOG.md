@@ -12,6 +12,25 @@ regenerated from these entries.
 
 ---
 
+## [2.3.1] — 2026-07-23
+
+### Fixed
+
+- **BluSeries / 434-radio driver no longer fail-loops when its USB device is unplugged.**
+  The `ctt-blu-driver@` / `ctt-radio-driver@` template units set `StartLimitIntervalSec=0`
+  (never give up) but had only an ordering (`After=`) dependency on their device, so
+  unplugging a receiver left the instance restarting every 2 s forever
+  (`open serial /dev/ctt-…/chN: No such file or directory`, restart counter climbing).
+  Added `BindsTo=` the `.device` unit so systemd **stops** the instance on removal (udev
+  restarts it on re-attach), plus `ConditionPathExists=` as belt-and-suspenders against the
+  unplug/settle-window race. The retry-forever behavior for a *present-but-glitching*
+  receiver is preserved — the fix only distinguishes *absent* from *glitching*.
+- **BluSeries detections poll no longer throws `TypeError: … reading 'forEach'` when a
+  receiver stops responding.** On a timed-out detections poll (e.g. the FTDI dongle is
+  present but the adapter board is disconnected) the scheduler delivers `data: undefined`;
+  `blu-base-station.js` iterated it directly and threw every poll cycle. It now guards
+  `Array.isArray(job.data)` before iterating, mirroring the existing VERSION-task guard.
+
 ## [2.3.0] — 2026-07-23
 
 ### Added
