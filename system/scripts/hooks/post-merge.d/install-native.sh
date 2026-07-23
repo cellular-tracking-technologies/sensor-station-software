@@ -99,6 +99,7 @@ for pinfile in "$PINS_DIR"/*.version; do
 
   # Optional checksum verification (preferred). Absent sidecar → fall back to
   # the --version smoke test below.
+  checksum_verified=0
   sum_tmp="$(mktemp)"
   if curl -fsSL --retry 2 -o "$sum_tmp" "$url.sha256" 2>/dev/null; then
     expected="$(awk '{print $1}' "$sum_tmp")"
@@ -109,21 +110,35 @@ for pinfile in "$PINS_DIR"/*.version; do
       FAILURES=$((FAILURES + 1))
       continue
     fi
+    checksum_verified=1
     log_info "$tool: checksum ok"
   else
     log_warn "$tool: no .sha256 published; relying on --version smoke test"
   fi
   rm -f "$sum_tmp"
 
-  # Smoke test: the fetched binary must run on this host and report the pin.
-  # Catches wrong-arch / truncated downloads that still returned HTTP 200.
+  # Verify before installing. Preferred: RUN it and confirm `--version` prints the
+  # pin (catches wrong-arch / truncated downloads that still returned HTTP 200).
+  #
+  # Exception — cross-arch image build: the build provisions inside an *emulated*
+  # ARM rootfs where our fetched armhf binaries do not execute (they run fine on
+  # real hardware), so the exec smoke test always yields ''. When the caller sets
+  # CTT_NATIVE_TRUST_CHECKSUM=1 AND we verified the sha256 above, trust the
+  # checksum+pin (integrity from the sha256, version from the pinned release tag)
+  # and skip the exec test. On a station the flag is unset, so the exec smoke test
+  # still runs — a valid wrong-arch/truncation guard there. Never trust without a
+  # verified checksum.
   chmod 0755 "$tmp"
-  got="$("$tmp" --version 2>/dev/null)"
-  if [ "$got" != "$pin" ]; then
-    log_error "$tool: fetched binary reports '$got', expected '$pin'; not installing"
-    rm -f "$tmp"
-    FAILURES=$((FAILURES + 1))
-    continue
+  if [ "${CTT_NATIVE_TRUST_CHECKSUM:-0}" = "1" ] && [ "$checksum_verified" = "1" ]; then
+    log_info "$tool: trusting sha256+pin (build mode; --version smoke test skipped)"
+  else
+    got="$("$tmp" --version 2>/dev/null)"
+    if [ "$got" != "$pin" ]; then
+      log_error "$tool: fetched binary reports '$got', expected '$pin'; not installing"
+      rm -f "$tmp"
+      FAILURES=$((FAILURES + 1))
+      continue
+    fi
   fi
 
   install -o root -g root -m 0755 "$tmp" "$dst"

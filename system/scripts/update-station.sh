@@ -17,6 +17,21 @@ export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0='safe.directory'
 export GIT_CONFIG_VALUE_0='*'
 
+# CTT_BUILD_MODE: set by the image-build CI (build-image.yml), which runs this
+# script INSIDE the base image under qemu to layer updates onto it. In that mode:
+#   - fetch native binaries by checksum+pin (CTT_NATIVE_TRUST_CHECKSUM=1): the armhf
+#     binaries can't be executed under the build's emulation, so install-native's
+#     run-it-to-check-version smoke test cannot be used there;
+#   - run the deploy hooks WITHOUT sudo (already root; keeps the environment — incl.
+#     the flag above, which `sudo` would strip) and treat a hook failure as FATAL,
+#     so a broken bake cannot ship as a green build;
+#   - skip station-runtime-only steps (the LCD "Updating" splash, the image-OTA
+#     checkin/upload session).
+# When unset (a real station via SSH/cron/dashboard) every behavior below is unchanged.
+if [ -n "${CTT_BUILD_MODE:-}" ]; then
+  export CTT_NATIVE_TRUST_CHECKSUM=1
+fi
+
 home='/usr/lib/ctt'
 user_perm='ctt:ctt'
 sudo mkdir -p $home
@@ -36,7 +51,7 @@ dir="$home/sensor-station-software"
 # Ctrl-C), so the panel never gets stuck on "Updating". lcd-message.sh ships in
 # this repo, so the splash is a harmless no-op on the first update that adds it.
 lcd_msg="$dir/system/scripts/lcd-message.sh"
-if [ -x "$lcd_msg" ]; then
+if [ -z "${CTT_BUILD_MODE:-}" ] && [ -x "$lcd_msg" ]; then
   trap 'sudo systemctl restart station-lcd-interface >/dev/null 2>&1 || true' EXIT
   sudo systemctl stop station-lcd-interface >/dev/null 2>&1 || true
   sudo bash "$lcd_msg" " CTT Sensor Station" "" "   Updating..." "" || true
@@ -57,7 +72,11 @@ if [ -d $dir ]; then
   # not the one being pulled; new pre-merge hooks activate on the NEXT
   # update after their introducing release lands. See pre-merge.sh.
   if [ -x "$dir/system/scripts/hooks/pre-merge.sh" ]; then
-    sudo bash "$dir/system/scripts/hooks/pre-merge.sh"
+    if [ -n "${CTT_BUILD_MODE:-}" ]; then
+      bash "$dir/system/scripts/hooks/pre-merge.sh" || { echo "update-station: pre-merge hooks failed (build mode)"; exit 1; }
+    else
+      sudo bash "$dir/system/scripts/hooks/pre-merge.sh"
+    fi
   fi
   # The pull must be authoritative: this script has no `set -e`, so a silent pull
   # failure (transient network / DNS / GitHub blip) would otherwise let the rest
@@ -114,7 +133,13 @@ fi
 # file into that dir — this line stays unchanged. Runs for both the
 # update path (git pull) and the fresh-clone path so a freshly-cloned
 # repo also deploys its configs into /etc/.
-sudo bash $dir/system/scripts/hooks/post-merge.sh
+if [ -n "${CTT_BUILD_MODE:-}" ]; then
+  # Build: run as root (no sudo → keeps CTT_NATIVE_TRUST_CHECKSUM) and FAIL hard so a
+  # broken native / systemd / udev bake cannot be published as a green image.
+  bash $dir/system/scripts/hooks/post-merge.sh || { echo "update-station: post-merge hooks failed (build mode)"; exit 1; }
+else
+  sudo bash $dir/system/scripts/hooks/post-merge.sh
+fi
 
 sudo sh -c "date -u +'%Y-%m-%d %H:%M:%S' > /etc/ctt/station-software"
 
@@ -164,10 +189,14 @@ check_run package.json "npm install"
 sync
 sudo systemctl restart sensorgnome
 
-echo
-echo 'Checking for OTA updates'
-bash-update-station
-echo
+# Station-only: check the image-OTA endpoint + open a data-upload session. Skipped in
+# a build — the image must not impersonate a station checking in / uploading.
+if [ -z "${CTT_BUILD_MODE:-}" ]; then
+  echo
+  echo 'Checking for OTA updates'
+  bash-update-station
+  echo
+fi
 
 # Update finished — restore the front-panel menu (picks up any new code) and
 # clear the trap now that we've restored explicitly. The trap remains the safety
