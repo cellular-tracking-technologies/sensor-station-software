@@ -1,0 +1,26 @@
+# .mailmap — canonical author/committer identities.
+#
+# Git tools (shortlog, blame, log %aN/%aE) AND GitHub's contributors graph honor
+# this file, so it consolidates fragmented identities across the EXISTING history
+# without rewriting commits or force-pushing. Left = canonical; right = an identity
+# as it actually appears in history.
+#
+# Format:
+#   Canonical Name <canonical@email> <commit@email>          # remap by commit email
+#   Canonical Name <canonical@email> Old Name <commit@email> # remap a specific pair
+#
+# NOTE: for the GitHub graph to link the canonical identity to a *profile*, the
+# canonical email must be verified on that GitHub account (Settings → Emails).
+
+# --- Bob Fogg (all historical identities -> one; canonical = personal gmail, a
+#     durable open-source identity independent of the (ephemeral) CTT email) ---
+Bob Fogg <philomachus@gmail.com> <Bob Fogg>
+Bob Fogg <philomachus@gmail.com> <bob.fogg@celltracktech.com>
+Bob Fogg <philomachus@gmail.com> <37876533+bobfogg@users.noreply.github.com>
+
+# --- Meelyn Pandit (6 historical identities -> one; canonical = work email,
+#     matching Bob's; switch to a gmail here if that is the one verified on his
+#     GitHub account and profile-linking is wanted) ---
+Meelyn Pandit <meelyn.pandit@celltracktech.com> <meelyn.pandit@celltracktech.com>
+Meelyn Pandit <meelyn.pandit@celltracktech.com> <meelyn.pandit@gmail.com>
+Meelyn Pandit <meelyn.pandit@celltracktech.com> <meelyn_pandit@gmail.com>
