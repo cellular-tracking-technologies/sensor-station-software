@@ -6,6 +6,15 @@
 
 namespace ctthw {
 
+// Outcome of a provision() pass.
+enum class ProvisionResult {
+  Done,          // finished (or a fail-open no-op) — nothing more to do.
+  RebootedRetry, // the modem was rebooted mid-provision (Telit RNDIS->ECM USB
+                 // composition switch) and will re-enumerate. The executable waits
+                 // for it to come back, reopens the AT port, and runs provision()
+                 // again on the fresh port to finish — so it completes in ONE boot.
+};
+
 // Modem — abstract cellular modem driver. One subclass per family; each owns its
 // own provisioning and shares only the AT transport:
 //
@@ -27,8 +36,10 @@ public:
   virtual const char *name() const = 0;
 
   // Bring the modem's data path / attach context to the desired state.
-  // dry_run reports what it would do and makes no NV writes.
-  virtual void provision(bool dry_run) = 0;
+  // dry_run reports what it would do and makes no NV writes. Returns
+  // RebootedRetry if it rebooted the modem and must be re-run after
+  // re-enumeration (see ProvisionResult); Done otherwise.
+  virtual ProvisionResult provision(bool dry_run) = 0;
 
 protected:
   AtTransport &at_;

@@ -32,7 +32,7 @@ bool TelitLE910Q1::parseEcmBound(const std::string &resp) {
   return i < resp.size() && resp[i] >= '1' && resp[i] <= '9';
 }
 
-void TelitLE910Q1::provision(bool dry_run) {
+ProvisionResult TelitLE910Q1::provision(bool dry_run) {
   // Stage 1: ensure the ECM USB composition (AT#USBCFG=1).
   std::string u = at_.cmd("AT#USBCFG?", 3000);
   int mode = parseUsbcfg(u);
@@ -41,15 +41,15 @@ void TelitLE910Q1::provision(bool dry_run) {
                  "ctt-modem-provision: no #USBCFG response ('%s') — leaving "
                  "modem untouched\n",
                  flattenReply(u).c_str());
-    return; // fail open
+    return ProvisionResult::Done; // fail open
   }
   if (mode != 1) {
     std::fprintf(stderr, "ctt-modem-provision: USBCFG=%d (not ECM) [%s]\n", mode,
                  flattenReply(u).c_str());
     if (dry_run) {
       std::fprintf(stderr, "ctt-modem-provision: --dry-run — would write "
-                           "AT#USBCFG=1 then AT#REBOOT\n");
-      return;
+                           "AT#USBCFG=1 then AT#REBOOT (then bind ECM)\n");
+      return ProvisionResult::Done; // dry-run never reboots
     }
     std::string w = at_.cmd("AT#USBCFG=1", 5000);
     if (w.find("OK") == std::string::npos) {
@@ -57,14 +57,16 @@ void TelitLE910Q1::provision(bool dry_run) {
                    "ctt-modem-provision: USBCFG write not confirmed ('%s') — "
                    "NOT rebooting\n",
                    flattenReply(w).c_str());
-      return; // fail open
+      return ProvisionResult::Done; // fail open
     }
     std::fprintf(stderr, "ctt-modem-provision: switching to ECM composition; "
                          "rebooting modem (AT#REBOOT)\n");
     at_.cmd("AT#REBOOT", 5000);
     std::fprintf(stderr, "ctt-modem-provision: modem rebooting into ECM "
-                         "(1bc7:7021); the ECM bind runs on the next invocation\n");
-    return;
+                         "(1bc7:7021); will bind once it re-enumerates\n");
+    // The executable reopens the re-enumerated AT port and runs us again -> Stage 2,
+    // so the bind lands in THIS boot (before ModemManager) rather than the next one.
+    return ProvisionResult::RebootedRetry;
   }
 
   // Stage 2: ensure the ECM session is bound (AT#ECM=1,0).
@@ -74,7 +76,7 @@ void TelitLE910Q1::provision(bool dry_run) {
                  "ctt-modem-provision: no #ECM response ('%s') — leaving modem "
                  "untouched\n",
                  flattenReply(e).c_str());
-    return; // fail open
+    return ProvisionResult::Done; // fail open
   }
 
   bool bound = parseEcmBound(e);
@@ -84,12 +86,12 @@ void TelitLE910Q1::provision(bool dry_run) {
                flattenReply(e).c_str());
 
   if (bound)
-    return; // happy path: read-only, never touch a healthy modem's NV
+    return ProvisionResult::Done; // happy path: read-only, never touch a healthy modem's NV
 
   if (dry_run) {
     std::fprintf(stderr, "ctt-modem-provision: --dry-run — would write "
                          "AT#ECM=1,0\n");
-    return;
+    return ProvisionResult::Done;
   }
 
   std::fprintf(stderr, "ctt-modem-provision: binding ECM to PDP context 1 "
@@ -98,10 +100,11 @@ void TelitLE910Q1::provision(bool dry_run) {
   if (w.find("OK") == std::string::npos) {
     std::fprintf(stderr, "ctt-modem-provision: ECM bind not confirmed ('%s')\n",
                  flattenReply(w).c_str());
-    return; // fail open
+    return ProvisionResult::Done; // fail open
   }
   std::fprintf(stderr, "ctt-modem-provision: ECM bound (mdm0 will carry data "
                        "once ModemManager/NM bring it up)\n");
+  return ProvisionResult::Done;
 }
 
 } // namespace ctthw

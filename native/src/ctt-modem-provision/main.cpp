@@ -21,7 +21,10 @@
 
 #include <cstdio>
 #include <exception>
+#include <memory>
 #include <string>
+
+#include <unistd.h> // sleep
 
 #include "modem/at_port.h"
 #include "modem/modem.h"
@@ -29,6 +32,14 @@
 #ifndef CTT_VERSION
 #define CTT_VERSION "0.0.0-dev"
 #endif
+
+namespace {
+// A Telit RNDIS->ECM switch reboots the modem; it drops off USB then re-enumerates
+// as the ECM composition in ~20-40 s. Give it time to drop, then wait (generously)
+// for the ECM AT port to reappear so we can finish the bind in this same boot.
+constexpr unsigned kRebootDropSecs = 8;
+constexpr int kRebootWaitMs = 45000;
+} // namespace
 
 int main(int argc, char **argv) {
   std::string port = "/dev/ctt-modem-at";
@@ -50,7 +61,20 @@ int main(int argc, char **argv) {
     std::unique_ptr<ctthw::Modem> modem = ctthw::makeModem(at);
     std::fprintf(stderr, "ctt-modem-provision: provisioning %s%s\n", modem->name(),
                  dry_run ? " (dry-run)" : "");
-    modem->provision(dry_run);
+    ctthw::ProvisionResult r = modem->provision(dry_run);
+
+    // One-boot convergence: if the driver rebooted the modem (Telit RNDIS->ECM), it
+    // re-enumerates on a fresh AT port. Wait for it, reopen, and run again to finish
+    // (Stage 2 bind) — all before ModemManager starts, so it's uncontended. Without
+    // this the bind would wait for the next station reboot (no cellular until then).
+    if (r == ctthw::ProvisionResult::RebootedRetry && !dry_run) {
+      std::fprintf(stderr, "ctt-modem-provision: waiting for the modem to re-enumerate "
+                           "as ECM to finish provisioning in this boot...\n");
+      ::sleep(kRebootDropSecs); // let it drop off USB before we wait for the new port
+      ctthw::AtPort at2(port, kRebootWaitMs); // waits (long) for the ECM AT port; throws -> fail-open
+      std::unique_ptr<ctthw::Modem> modem2 = ctthw::makeModem(at2);
+      modem2->provision(dry_run); // now on ECM composition -> binds
+    }
   } catch (const std::exception &e) {
     std::fprintf(stderr, "ctt-modem-provision: %s — nothing to do (fail open)\n",
                  e.what());
