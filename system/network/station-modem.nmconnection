@@ -4,7 +4,7 @@ uuid=2fb513d7-5472-40c9-8796-bf6c2a68fe14
 type=gsm
 # Data-path policy: ship OFF so the Telit ECM/RNDIS path never auto-dials PPP over
 # the modem AT port (a PPP context collides with the ECM PDP context and kills mdm0).
-# check-sim-id.sh flips this to true at boot for a non-Telit (Quectel/QMI) modem,
+# modem-datapath.sh flips this to true at boot for a non-Telit (Quectel/QMI) modem,
 # which needs autoconnect for its wwan0 bearer.
 autoconnect=false
 permissions=

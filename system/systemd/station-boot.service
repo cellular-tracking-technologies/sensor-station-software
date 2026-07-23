@@ -1,7 +1,7 @@
 [Unit]
 Description=Station modem data-path policy + per-SIM APN selection
-# Runs modem-datapath.sh (autoconnect by modem type) then check-sim-id.sh (per-SIM
-# APN) — the two modem-config steps that need NetworkManager/ModemManager up.
+# Runs modem-datapath.sh (autoconnect by modem type) then provision-modem-apn.sh
+# (per-SIM APN) — the two modem-config steps that need NetworkManager/ModemManager up.
 # Hardware identity and the RTC overlay that save-station-id.sh used to do are now
 # owned by ctt-board-detect / ctt-device-config; the modem on/off authorization is
 # owned by modem-boot-state (Before=MM).
@@ -14,7 +14,7 @@ After=network.target ModemManager.service
 [Service]
 Type=oneshot
 ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-datapath.sh
-ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/check-sim-id.sh
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/provision-modem-apn.sh
 RemainAfterExit=true
 
 [Install]

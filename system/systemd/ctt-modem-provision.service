@@ -1,8 +1,10 @@
 [Unit]
-Description=Provision the Telit LE910Q1 for CDC-ECM (idempotent boot guard)
-# Self-healing guard, NOT an every-boot re-provisioner. ctt-modem-provision reads
-# state first (AT#USBCFG? / AT#ECM?) and only writes when the modem is not already
-# ECM + bound:
+Description=Provision the cellular modem data path / attach APN (idempotent boot guard)
+# Self-healing guard, NOT an every-boot re-provisioner. Dispatches by modem
+# manufacturer (AT+CGMI): a Quectel EC25 gets its LTE attach APN (CGDCONT CID1)
+# matched to the SIM — set Before=ModemManager so the QMI bearer comes up on the
+# right APN and never diverges (cause-55); a Telit LE910Q1 gets the CDC-ECM data
+# path. In BOTH cases it reads state first and only writes when needed:
 #   - already provisioned  -> read-and-exit, ZERO writes. ECM composition + bind are
 #     NV-persistent (survive reboot AND hard power cycle, verified fw M0Y.300002), so
 #     steady state is one cheap AT read per boot.

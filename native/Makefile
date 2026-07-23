@@ -11,7 +11,7 @@ DOCKER ?= docker
 
 RUN = $(DOCKER) run --rm -u $$(id -u):$$(id -g) -v "$(CURDIR)":/src -w /src $(IMAGE)
 
-.PHONY: help image arm native shell clean
+.PHONY: help image arm native test shell clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -28,6 +28,9 @@ arm: image ## Cross-compile the deployable armhf binaries
 native: ## Local x86 build (dev / compile-check only)
 	cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Debug
 	cmake --build build-native -j
+
+test: native ## Build + run the native unit tests (x86)
+	ctest --test-dir build-native --output-on-failure
 
 shell: image ## Interactive shell in the build container
 	$(DOCKER) run --rm -it -v "$(CURDIR)":/src -w /src $(IMAGE) bash

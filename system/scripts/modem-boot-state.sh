@@ -10,7 +10,7 @@
 # authorization. This step is pure USB sysfs (modem-power.sh) — no nmcli/mmcli —
 # so it is safe before NetworkManager/ModemManager are up. The data-path
 # autoconnect policy and per-SIM APN are owned by station-boot (After=MM):
-# modem-datapath.sh + check-sim-id.sh.
+# modem-datapath.sh + provision-modem-apn.sh.
 set -u
 
 SCRIPT_DIR='/lib/ctt/sensor-station-software/system/scripts'
