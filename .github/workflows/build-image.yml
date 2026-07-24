@@ -105,6 +105,11 @@ jobs:
             # `|| exit 1` fails the image build loudly instead of publishing a
             # green-but-broken image. See update-station.sh.
             CTT_BUILD_MODE=1 bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh || exit 1
+            # Stamp the image build date: /etc/ctt/station-image should reflect when THIS
+            # image was generated, not the frozen base-image cut date it inherits. update-
+            # station.sh writes /etc/ctt/station-software (last software update) on every run
+            # incl. OTA; the image stamp is distinct and set ONLY here, at image-build time.
+            date -u +'%Y-%m-%d' > /etc/ctt/station-image
             # Reclaim rootfs space so PiShrink can reach the real minimum. OTA/npm/apt leave
             # caches, package lists, and logs behind that inflate the fs (and thus the burn
             # size). Safe: apt lists regenerate on `apt update`; logs/caches are recreated.
