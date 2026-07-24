@@ -12,10 +12,37 @@ regenerated from these entries.
 
 ---
 
-## [2.3.1] — 2026-07-23
+## [2.3.1] — 2026-07-24
+
+### Changed
+
+- **`ctt-modem-provision` pinned to 0.3.1** across the fleet.
+- **`/etc/ctt/station-image` is now stamped with the image build date** at CI build time
+  (`build-image.yml`), instead of inheriting the frozen base-image cut date it was hand-set
+  to. It is distinct from `/etc/ctt/station-software`, which records the last software-update
+  time on every `update-station` run (build and OTA).
 
 ### Fixed
 
+- **Native binaries now actually land in built images.** Since the native-tool pipeline was
+  introduced, `install-native.sh` verified each fetched armhf binary by executing it for
+  `--version` — which cannot run under the image build's qemu-arm emulation, so the check
+  failed and the install was silently skipped, publishing images with **no** native binaries
+  (modem provisioner, radio/blu drivers, board-detect). In `CTT_BUILD_MODE` the tool now
+  trusts the checksum+pin and skips the exec smoke test, and the build fails loudly if a
+  deploy hook errors, so a broken bake can never ship as a green build. A second silent
+  failure — `nmcli connection reload` hard-failing in the chroot (no NetworkManager D-Bus) —
+  is fixed by skipping runtime NM/udev reloads in build mode; the configs apply on first
+  boot. (PRs #44, #46.)
+- **Telit LE910Q1 RNDIS→ECM conversion completes in a single boot** (`ctt-modem-provision`
+  0.3.0 → 0.3.1). A fresh/replacement Telit previously took two station reboots to converge —
+  boot 1 switched the USB composition (`AT#USBCFG=1` + reboot) and deferred the ECM bind to
+  the next boot, leaving `mdm0` down (no cellular) until then. The provisioner now waits for
+  the modem to re-enumerate as ECM within the same boot, reopens the AT port, and completes
+  the bind (`AT#ECM=1,0`) — running `Before=ModemManager` so the wait is uncontended, and
+  failing open to the previous two-boot behavior if the port does not return in time.
+  Hardware-validated on a fresh RNDIS Telit (switch → reboot → rebind in ~8 s); an
+  already-provisioned modem stays a cheap read-only no-op.
 - **BluSeries / 434-radio driver no longer fail-loops when its USB device is unplugged.**
   The `ctt-blu-driver@` / `ctt-radio-driver@` template units set `StartLimitIntervalSec=0`
   (never give up) but had only an ordering (`After=`) dependency on their device, so
