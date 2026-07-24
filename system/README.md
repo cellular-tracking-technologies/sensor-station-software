@@ -62,7 +62,7 @@ All are deployed to `/etc/systemd/system/` by the OTA `install-systemd.sh` hook.
 | `station-web-interface.service` | simple | Local web dashboard (port 80). | `station-hardware-server` |
 | `station-lcd-interface.service` | simple | Front-panel LCD menu + buttons; writes `/run/ctt/lcd`. | `station-hardware-server` |
 | `modem-boot-state.service` | oneshot | Restores last operator modem on/off state before the modem manager scans. | `local-fs.target`, `systemd-udev-settle`; `Before=` modem manager |
-| `station-boot.service` | oneshot | Runs `check-sim-id.sh`: modem data-path policy + per-SIM APN selection. | `network.target`, modem manager |
+| `station-boot.service` | oneshot | Runs `modem-datapath.sh` + `provision-modem-apn.sh`: modem data-path policy + per-SIM APN selection. | `network.target`, modem manager |
 | `sensorgnome.service` | simple | Starts the companion Motus/SDR tag-detection process. | `network.target`, `station-boot` |
 | `bootcount.service` | simple | Runs `boottime_compute.sh`: links the board's sensorgnome USB-hub udev rules. | `station-boot` |
 
@@ -227,7 +227,7 @@ only step needed to roll a new native binary to the fleet.
 ## Other scripts
 
 `scripts/` also holds the boot helpers invoked by the units above
-(`boottime_compute.sh`, `device-config.sh`, `check-sim-id.sh`,
+(`boottime_compute.sh`, `device-config.sh`, `provision-modem-apn.sh`,
 `modem-boot-state.sh`), modem on/off and Wi-Fi toggles
 (`enable-modem.sh` / `disable-modem.sh`, `enable-wifi.sh` / `disable-wifi.sh`),
 receiver-firmware flashing (`program-radios.sh`, firmware images in

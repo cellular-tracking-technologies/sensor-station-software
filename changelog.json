@@ -1,5 +1,13 @@
 [
     {
+        "version": "2.2.4",
+        "date": "2026-07-22",
+        "notes": "Fixes SensorGnome tag-database uploads through the station web interface.",
+        "bugs": [
+            "SensorGnome tag-database uploads now persist. The /upload-sg-tag-file handler called fs.writeFileSync() but never imported fs, so every upload threw ReferenceError: fs is not defined after it had already removed the existing SG_tag_database* file. Uploading a tag database therefore deleted the current one and wrote nothing, leaving an empty/missing SG_tag_database.sqlite and causing the SensorGnome interface to fail with 'no such table: tags'. Adds the missing import fs from 'fs' (PR #40)."
+        ]
+    },
+    {
         "version": "2.2.3",
         "date": "2026-07-13",
         "notes": "Two hardware-validated fixes for a fresh test image. (1) The cellular modem can now actually be disabled on ECM-mode Telit units (1bc7:7021). (2) Radio MCUs that have only a bootloader (a blank/erased Feather 32u4, USB 239a:000c) can now be flashed, and radio flashing is now a pure-shell script (an stty 1200-baud touch plus avrdude; the former native ctt-radio-flash tool is removed). Also restores the station-hardware-server /sensor route.",

@@ -4,7 +4,7 @@ uuid=2fb513d7-5472-40c9-8796-bf6c2a68fe14
 type=gsm
 # Data-path policy: ship OFF so the Telit ECM/RNDIS path never auto-dials PPP over
 # the modem AT port (a PPP context collides with the ECM PDP context and kills mdm0).
-# check-sim-id.sh flips this to true at boot for a non-Telit (Quectel/QMI) modem,
+# modem-datapath.sh flips this to true at boot for a non-Telit (Quectel/QMI) modem,
 # which needs autoconnect for its wwan0 bearer.
 autoconnect=false
 permissions=
@@ -17,8 +17,17 @@ dns-search=
 method=auto
 
 [ipv6]
+# Request IPv4-only. These M2M SIMs/APNs are provisioned IPv4-only (carrier never
+# assigns IPv6 — confirmed from Telenor session logs), so a dual-stack (ipv4v6) request
+# makes the modem attempt an IPv6 PDN the network refuses -> QMI 'CallFailed' with
+# verbose reason ip-version-mismatch. method=disabled makes the bearer request IPv4-only.
+# NOTE: gsm.ip-type=ipv4 is NOT usable here (NetworkManager 1.30 on Bullseye rejects it;
+# needs NM >= 1.32), so we force IPv4 via ipv6.method.
+# SCOPE: this removes the ip-version-mismatch failure mode only. It does NOT fix a modem
+# that also fails with 'multiple-connection-to-same-pdn-not-allowed' (3GPP cause 55) —
+# that is a separate default-EPS-bearer/ModemManager issue.
 addr-gen-mode=stable-privacy
 dns-search=
-method=auto
+method=disabled
 
 [proxy]

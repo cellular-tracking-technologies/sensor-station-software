@@ -12,6 +12,98 @@ regenerated from these entries.
 
 ---
 
+## [2.3.1] — 2026-07-24
+
+### Changed
+
+- **`ctt-modem-provision` pinned to 0.3.1** across the fleet.
+- **`/etc/ctt/station-image` is now stamped with the image build date** at CI build time
+  (`build-image.yml`), instead of inheriting the frozen base-image cut date it was hand-set
+  to. It is distinct from `/etc/ctt/station-software`, which records the last software-update
+  time on every `update-station` run (build and OTA).
+
+### Fixed
+
+- **Native binaries now actually land in built images.** Since the native-tool pipeline was
+  introduced, `install-native.sh` verified each fetched armhf binary by executing it for
+  `--version` — which cannot run under the image build's qemu-arm emulation, so the check
+  failed and the install was silently skipped, publishing images with **no** native binaries
+  (modem provisioner, radio/blu drivers, board-detect). In `CTT_BUILD_MODE` the tool now
+  trusts the checksum+pin and skips the exec smoke test, and the build fails loudly if a
+  deploy hook errors, so a broken bake can never ship as a green build. A second silent
+  failure — `nmcli connection reload` hard-failing in the chroot (no NetworkManager D-Bus) —
+  is fixed by skipping runtime NM/udev reloads in build mode; the configs apply on first
+  boot. (PRs #44, #46.)
+- **Telit LE910Q1 RNDIS→ECM conversion completes in a single boot** (`ctt-modem-provision`
+  0.3.0 → 0.3.1). A fresh/replacement Telit previously took two station reboots to converge —
+  boot 1 switched the USB composition (`AT#USBCFG=1` + reboot) and deferred the ECM bind to
+  the next boot, leaving `mdm0` down (no cellular) until then. The provisioner now waits for
+  the modem to re-enumerate as ECM within the same boot, reopens the AT port, and completes
+  the bind (`AT#ECM=1,0`) — running `Before=ModemManager` so the wait is uncontended, and
+  failing open to the previous two-boot behavior if the port does not return in time.
+  Hardware-validated on a fresh RNDIS Telit (switch → reboot → rebind in ~8 s); an
+  already-provisioned modem stays a cheap read-only no-op.
+- **BluSeries / 434-radio driver no longer fail-loops when its USB device is unplugged.**
+  The `ctt-blu-driver@` / `ctt-radio-driver@` template units set `StartLimitIntervalSec=0`
+  (never give up) but had only an ordering (`After=`) dependency on their device, so
+  unplugging a receiver left the instance restarting every 2 s forever
+  (`open serial /dev/ctt-…/chN: No such file or directory`, restart counter climbing).
+  Added `BindsTo=` the `.device` unit so systemd **stops** the instance on removal (udev
+  restarts it on re-attach), plus `ConditionPathExists=` as belt-and-suspenders against the
+  unplug/settle-window race. The retry-forever behavior for a *present-but-glitching*
+  receiver is preserved — the fix only distinguishes *absent* from *glitching*.
+- **BluSeries detections poll no longer throws `TypeError: … reading 'forEach'` when a
+  receiver stops responding.** On a timed-out detections poll (e.g. the FTDI dongle is
+  present but the adapter board is disconnected) the scheduler delivers `data: undefined`;
+  `blu-base-station.js` iterated it directly and threw every poll cycle. It now guards
+  `Array.isArray(job.data)` before iterating, mirroring the existing VERSION-task guard.
+
+## [2.3.0] — 2026-07-23
+
+### Added
+
+- **Native cellular modem provisioner extended to the Quectel EC25** (`ctt-modem-provision`
+  0.2.0 → 0.3.0). Modem provisioning is refactored into a small, unit-tested `ctthw/modem`
+  C++ module — an AT-port transport with one driver per modem family. For a Quectel, the
+  tool keeps the LTE **attach APN** (`CGDCONT` CID1) matched to the SIM so it cannot diverge
+  from the NetworkManager **dial APN**; that divergence is rejected by the network with 3GPP
+  **cause 55** and leaves the modem *registered but passing no data*. It reads the SIM ICCID
+  (`AT+QCCID`) and, only when CID1 carries a non-empty **wrong** APN, rewrites it
+  (`CFUN=0` / `CGDCONT=1,"IP",<apn>` / `CFUN=1`); a blank CID1 (which attaches on the
+  network-default APN) is left alone. Runs `Before=ModemManager`, idempotent and fail-open,
+  so a stale or recycled attach context self-heals on the next boot. Verified against the
+  Quectel AT Commands Manual V2.0 and on hardware. The Telit LE910Q1 ECM data-path
+  provisioning is unchanged.
+
+### Changed
+
+- **`check-sim-id.sh` renamed to `provision-modem-apn.sh`** and reworked to consume
+  `/run/ctt/modem-apn` (written by the native provisioner) as the single source for the dial
+  APN — so the modem's attach APN and NetworkManager's dial APN share one origin and cannot
+  diverge — keeping the previous `mmcli`-ICCID mapping as a fallback.
+- New udev symlink `/dev/ctt-modem-at` for the Quectel EC25 AT control port (interface 02).
+- The native-tool release workflow now publishes formatted Markdown release notes.
+
+### Fixed
+
+- **The modem now requests IPv4-only.** These M2M SIMs/APNs are provisioned IPv4-only, so a
+  dual-stack (IPv4v6) bearer request made the modem attempt an IPv6 PDN the network refused
+  (QMI `CallFailed` / `ip-version-mismatch`). Sets `ipv6.method=disabled` on the
+  `station-modem` profile. (`gsm.ip-type` is not usable on NetworkManager 1.30 / Bullseye.)
+- **First-time SensorGnome tag-database upload no longer fails** when there is no existing
+  `SG_tag_database*` file to remove (`rm -f`).
+
+## [2.2.4] — 2026-07-22
+
+### Fixed
+
+- **SensorGnome tag-database uploads now persist.** The `/upload-sg-tag-file` handler called
+  `fs.writeFileSync()` but never imported `fs`, so every upload threw `ReferenceError: fs is
+  not defined` — but only *after* it had already `rm`'d the existing `SG_tag_database*` file.
+  Net effect: uploading a tag database deleted the current one and wrote nothing, leaving an
+  empty/missing `SG_tag_database.sqlite` and the SensorGnome interface failing with
+  `no such table: tags`. Adds the missing `import fs from 'fs'`. (PR #40)
+
 ## [2.2.3] — 2026-07-13
 
 ### Fixed

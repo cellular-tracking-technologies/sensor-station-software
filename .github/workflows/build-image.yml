@@ -1,18 +1,26 @@
-# Build a distributable sensor-station SD-card image in CI — incrementally.
+# Build a distributable sensor-station eMMC image (Raspberry Pi Compute Module,
+# flashed via rpiboot over USB — there is no SD card) in CI, incrementally.
 #
 # Mirrors the manual process (loop-mount the last image, update the software in
 # the mount, shrink, upload to S3), but pguyot/arm-runner-action does the
 # loop-mount + qemu-arm binfmt so update-station.sh runs INSIDE the image's ARM
-# rootfs exactly as it does on a field station.
+# rootfs.
 #
-# What runs in the image (via update-station.sh):
-#   - git pull sensor-station-software + sensorgnome  (public HTTPS, no creds)
-#   - post-merge.sh hooks -> install-native fetches the pinned armhf binaries,
-#     install-systemd / install-udev deploy units + rules
-#   - npm install if package.json changed (runs under qemu — slow but correct)
-# Its `systemctl restart` calls are harmless no-ops here (no systemd in the
-# chroot) and don't abort the run (update-station.sh has no `set -e`); the image
-# starts services fresh on first boot regardless.
+# It runs in CTT_BUILD_MODE (see update-station.sh), which differs from a field
+# station in exactly three ways the build requires:
+#   - native binaries install by checksum+pin (install-native's run-it-to-check
+#     `--version` smoke test can't work under emulation), so the pinned binaries
+#     actually get baked in;
+#   - a failed deploy hook is FATAL and fails the build (no more green-but-broken
+#     images), enforced by `|| exit 1` on the update-station call below;
+#   - station-runtime steps are skipped (LCD splash, and the image-OTA
+#     checkin/upload session — a build must not impersonate a station).
+#
+# What still runs: git pull sensor-station-software + sensorgnome (public HTTPS),
+# npm install if package.json changed, and the post-merge deploy hooks
+# (install-native / install-systemd / install-udev). `systemctl restart` calls are
+# harmless no-ops here (no systemd in the chroot); the image starts services fresh
+# on first boot.
 #
 # The base image is assumed ALREADY sanitized (prepare-image.sh was run when the
 # base was generated) and ALREADY checked out on the release branch — this job
@@ -91,7 +99,17 @@ jobs:
             # ownership"). Point HOME at the image's /root and pre-trust all repos.
             export HOME=/root
             git config --global --add safe.directory '*'
-            bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh
+            # CTT_BUILD_MODE: install natives by checksum+pin (can't exec armhf under
+            # emulation), run deploy hooks without sudo so the flag survives + FATAL on
+            # failure, and skip station-runtime steps (LCD, image-OTA checkin/upload).
+            # `|| exit 1` fails the image build loudly instead of publishing a
+            # green-but-broken image. See update-station.sh.
+            CTT_BUILD_MODE=1 bash /usr/lib/ctt/sensor-station-software/system/scripts/update-station.sh || exit 1
+            # Stamp the image build date: /etc/ctt/station-image should reflect when THIS
+            # image was generated, not the frozen base-image cut date it inherits. update-
+            # station.sh writes /etc/ctt/station-software (last software update) on every run
+            # incl. OTA; the image stamp is distinct and set ONLY here, at image-build time.
+            date -u +'%Y-%m-%d' > /etc/ctt/station-image
             # Reclaim rootfs space so PiShrink can reach the real minimum. OTA/npm/apt leave
             # caches, package lists, and logs behind that inflate the fs (and thus the burn
             # size). Safe: apt lists regenerate on `apt update`; logs/caches are recreated.
@@ -132,7 +150,7 @@ jobs:
           # imager writes it in full -> ~3x slower to burn, esp. over rpiboot's USB 2.0 link).
           # PiShrink shrinks the ext4 root to its minimum and truncates the .img. -s skips
           # PiShrink's OWN autoexpand -- ctt-firstboot-resize.service grows the rootfs to fill the
-          # card on first boot (fail-safe), matching the historical Ansible+PiShrink image sizes.
+          # eMMC on first boot (fail-safe), matching the historical Ansible+PiShrink image sizes.
           curl -fsSL https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh -o pishrink.sh
           chmod +x pishrink.sh
           sudo ./pishrink.sh -s -v "${{ steps.build.outputs.image }}"

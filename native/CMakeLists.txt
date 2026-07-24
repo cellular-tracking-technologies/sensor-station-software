@@ -28,9 +28,10 @@ function(ctt_tool name)
   install(TARGETS ${name} RUNTIME DESTINATION bin)
 endfunction()
 
-# ctthw — shared native hardware library: the I2C bus resource, one driver class
-# per chip, and the board-identity composition. Tools link it instead of
-# re-implementing hardware access; new tools (sensor readers, etc.) reuse it.
+# ctthw — shared native hardware library: the I2C bus resource + one driver class
+# per chip, the board-identity composition, and the modem module (an AT-port
+# transport with one driver class per modem family). Tools link it instead of
+# re-implementing hardware access; new tools reuse it.
 add_library(ctthw STATIC
   lib/ctthw/i2c/i2c_bus.cpp
   lib/ctthw/chips/sx1509b.cpp
@@ -43,7 +44,11 @@ add_library(ctthw STATIC
   lib/ctthw/chips/tmp102.cpp
   lib/ctthw/chips/lcd_pcf8574.cpp
   lib/ctthw/board/board_id.cpp
-  lib/ctthw/board/sensors.cpp)
+  lib/ctthw/board/sensors.cpp
+  lib/ctthw/modem/at_port.cpp
+  lib/ctthw/modem/modem.cpp
+  lib/ctthw/modem/telit_le910q1.cpp
+  lib/ctthw/modem/quectel_ec25.cpp)
 target_include_directories(ctthw PUBLIC lib/ctthw)
 
 # ctt-radio-driver — bridges a radio serial port to an AF_UNIX socket. Needs nlohmann/json.
@@ -72,7 +77,16 @@ ctt_tool(ctt-lcd SOURCES src/ctt-lcd/main.cpp LINK ctthw)
 # (Radio flashing has no native tool — the 1200-baud touch is a pure-shell stty step
 # in system/scripts/program-radio.sh; avrdude does the write.)
 
-# ctt-modem-provision — provision the Telit CDC-ECM data path (AT#USBCFG=1 +
-# AT#ECM=1,0) on boot if not already ECM; idempotent guard, runs Before=ModemManager.
-# Pure serial/POSIX, no ctthw.
-ctt_tool(ctt-modem-provision SOURCES src/ctt-modem-provision/main.cpp)
+# ctt-modem-provision — provision the cellular modem on boot (Telit CDC-ECM data
+# path, or Quectel LTE attach APN), idempotent, runs Before=ModemManager. Thin
+# executable over the ctthw modem module (which holds the testable logic).
+ctt_tool(ctt-modem-provision SOURCES src/ctt-modem-provision/main.cpp LINK ctthw)
+
+# Native-only unit tests (dependency-free). Not built when cross-compiling: the
+# armhf binary can't run on the x86 build host. Run with `make test` / ctest.
+if(NOT CMAKE_CROSSCOMPILING)
+  enable_testing()
+  add_executable(test-modem-provision test/test-modem-provision.cpp)
+  target_link_libraries(test-modem-provision PRIVATE ctthw)
+  add_test(NAME modem-provision COMMAND test-modem-provision)
+endif()

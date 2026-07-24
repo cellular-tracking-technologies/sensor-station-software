@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history + tags, for the "since previous tag" changelog
 
       - name: Parse tool + version from tag
         id: parse
@@ -63,11 +65,52 @@ jobs:
           cat "$asset.sha256"
           echo "asset=$asset" >>"$GITHUB_OUTPUT"
 
+      - name: Compose release notes
+        run: |
+          tool='${{ steps.parse.outputs.tool }}'
+          version='${{ steps.parse.outputs.version }}'
+          asset='${{ steps.pkg.outputs.asset }}'
+          tag="$GITHUB_REF_NAME"
+          repo='${{ github.repository }}'
+          short_sha="$(echo "$GITHUB_SHA" | cut -c1-7)"
+          today="$(date -u +%Y-%m-%d)"
+
+          # Per-tool description (optional native/src/<tool>/DESCRIPTION; generic fallback).
+          if [ -s "native/src/$tool/DESCRIPTION" ]; then
+            cp "native/src/$tool/DESCRIPTION" "$RUNNER_TEMP/desc.md"
+          else
+            printf 'Native `%s` tool for the CTT SensorStation.\n' "$tool" > "$RUNNER_TEMP/desc.md"
+          fi
+
+          # Changelog: commits touching native/ since the previous <tool>-v* tag.
+          prev="$(git tag -l "$tool-v*" --sort=-version:refname | sed "/^$tag\$/d" | head -1)"
+          if [ -n "$prev" ]; then
+            range="since $prev"
+            git log --no-merges --pretty='- %s (%h)' "$prev..$tag" -- native/ > "$RUNNER_TEMP/section.md" || true
+          else
+            range="(first tagged release)"
+            git log --no-merges --pretty='- %s (%h)' -n 15 "$tag" -- native/ > "$RUNNER_TEMP/section.md" || true
+          fi
+          [ -s "$RUNNER_TEMP/section.md" ] || echo "_No native/ changes recorded._" > "$RUNNER_TEMP/section.md"
+
+          cp .github/native-release-notes-template.md "$RUNNER_TEMP/notes.md"
+          # Single-line tokens ('|' delimiter — repo contains '/').
+          sed -i \
+            -e "s|__TOOL__|$tool|g"           -e "s|__VERSION__|$version|g" \
+            -e "s|__TAG__|$tag|g"             -e "s|__ASSET__|$asset|g" \
+            -e "s|__REPO__|$repo|g"           -e "s|__RANGE__|$range|g" \
+            -e "s|__SHORT_SHA__|$short_sha|g" -e "s|__DATE__|$today|g" \
+            "$RUNNER_TEMP/notes.md"
+          # Multi-line splices via file-read (avoids sed special-char pitfalls).
+          sed -i -e "/__DESCRIPTION__/{r $RUNNER_TEMP/desc.md" -e "d}" "$RUNNER_TEMP/notes.md"
+          sed -i -e "/__CHANGELOG__/{r $RUNNER_TEMP/section.md" -e "d}" "$RUNNER_TEMP/notes.md"
+          echo '----- composed release notes -----'; cat "$RUNNER_TEMP/notes.md"
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           asset='${{ steps.pkg.outputs.asset }}'
           gh release create "$GITHUB_REF_NAME" "$asset" "$asset.sha256" \
-            --title "$GITHUB_REF_NAME" \
-            --notes "Automated native release: \`$asset\` (armhf) + sha256 sidecar. Fetched by install-native.sh per system/native/${{ steps.parse.outputs.tool }}.version."
+            --title "${{ steps.parse.outputs.tool }} ${{ steps.parse.outputs.version }} (armhf)" \
+            --notes-file "$RUNNER_TEMP/notes.md"

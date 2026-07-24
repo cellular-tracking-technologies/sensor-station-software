@@ -24,6 +24,16 @@
 [Unit]
 Description=CTT radio receiver driver (%i)
 After=dev-ctt\x2dradio-%i.device
+# Tie this instance's lifecycle to its device node: on unplug the .device unit goes
+# away and systemd STOPS us — instead of Restart= fail-looping forever on a missing
+# port ("open serial ...: No such file or directory"). udev's SYSTEMD_WANTS restarts
+# us on re-attach. This is what distinguishes *absent* (stop) from the *present-but-
+# glitching* case that StartLimitIntervalSec=0 below is meant for (retry forever).
+BindsTo=dev-ctt\x2dradio-%i.device
+# Belt-and-suspenders: if a restart fires during the unplug/settle window, skip it as a
+# clean no-op (condition unmet) rather than a failure, so Restart= cannot spin before
+# BindsTo takes effect.
+ConditionPathExists=/dev/ctt-radio/%i
 # Never give up restarting an acquisition channel on a remote station.
 StartLimitIntervalSec=0
 
