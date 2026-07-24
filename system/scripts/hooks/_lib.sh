@@ -130,8 +130,19 @@ deploy_dir() {
   [ "${REMOVED_COUNT:-0}" -gt 0 ] && changed=1
 
   if [ "$changed" = "1" ] && [ -n "$reload_cmd" ]; then
-    log_info "reloading via: $reload_cmd"
-    $reload_cmd
+    # In an image bake (CTT_BUILD_MODE) there is no running daemon to signal:
+    # the hooks run inside the base image under qemu, where NetworkManager and
+    # udevd are not up, so a runtime reload (nmcli/udevadm) either hard-fails
+    # (nmcli: "Could not connect") or is meaningless. The freshly-installed
+    # files are read when the daemon first starts on the flashed station's boot,
+    # so the reload is purely a runtime-activation step — skip it, don't fail the
+    # build on it. On a real station (flag unset) the reload runs as before.
+    if [ -n "${CTT_BUILD_MODE:-}" ]; then
+      log_info "installed (build mode: skipping runtime reload '$reload_cmd' — applies on first boot)"
+    else
+      log_info "reloading via: $reload_cmd"
+      $reload_cmd
+    fi
   elif [ "$changed" = "0" ]; then
     log_info "no changes"
   fi
