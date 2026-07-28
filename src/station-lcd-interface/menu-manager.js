@@ -31,13 +31,32 @@ class MenuManager {
   }
   up() {
     this.autoRefresh_(false)
+    this.exitView_()
     this.scroller.up()
     this.update_()
   }
   down() {
     this.autoRefresh_(false)
+    this.exitView_()
     this.scroller.down()
     this.update_()
+  }
+  // Entering a view (Station Stats, any leaf task) does NOT re-init the
+  // scroller — the scroller keeps the *parent* menu's rows while `focus` moves
+  // to the view. So up()/down() used to redraw the parent list while focus was
+  // still the view: the screen looked like it had returned to the menu, but the
+  // next select() saw `focus.childCount() == 0 && focus.view != null` and just
+  // re-ran the view — so highlighting "System" and pressing select bounced the
+  // operator back into Station Stats. Scrolling out of a view now pops focus for
+  // real, matching the list that is already on screen.
+  //
+  // Deliberately no scroller.init() here: the scroller already holds the parent's
+  // rows and the operator's selection, and re-initializing would snap the
+  // highlight back to the first row mid-scroll.
+  exitView_() {
+    if (this.focus.view != null && this.stack.length > 0) {
+      this.focus = this.stack.pop()
+    }
   }
   select() {
     this.autoRefresh_(false)
@@ -83,20 +102,32 @@ class MenuManager {
     this.update_()
   }
   view_(refresh = false) {
+    // Pin the view we were asked to render. results() is async and some tasks
+    // are slow (Ping, and Station Stats allows up to 3s per fetch), so the
+    // operator can navigate away before it settles. Without this check the
+    // resolved rows get painted over whatever menu they navigated to.
+    const view = this.focus.view
+
     // On first entry show the view's loading placeholder (Station Stats returns
     // [] to clear the menu underneath). On an auto-refresh, do NOT blank — keep
     // the current frame until results() re-renders, so a slow or failed refresh
     // can never leave the screen blank.
     if (!refresh) {
-      display.write(this.focus.view.loading())
+      display.write(view.loading())
     }
 
-    this.focus.view.results().then((rows) => {
+    view.results().then((rows) => {
+      if (this.focus.view !== view) {
+        return
+      }
       if (rows != null) {
         display.write(rows)
       }
       this.autoRefresh_(true)
     }).catch((err) => {
+      if (this.focus.view !== view) {
+        return
+      }
       display.write(["Error", String(err), "", ""])
       // Re-arm on failure too, so a bad cycle can never permanently stop the
       // refresh loop (which previously stranded the view on a blank screen).
