@@ -87,10 +87,15 @@ a button:
 
 | Button | Operation | Behavior |
 |--------|-----------|----------|
-| Up | `up()` | Move selection up one row |
-| Down | `down()` | Move selection down one row |
+| Up | `up()` | Move selection up one row (leaves the current view first, keeping the selection) |
+| Down | `down()` | Move selection down one row (leaves the current view first, keeping the selection) |
 | Select | `select()` | Enter a submenu, or run/refresh the selected item's view |
-| Back | `back()` | Return to the parent menu |
+| Back | `back()` | Return to the parent menu (selection resets to the first row) |
+
+While a view is on screen, Up/Down exit it back to the menu it was launched from
+— the scroller still holds that menu's rows, so the highlight stays where the
+operator left it. Back also exits, but re-initializes the scroller. Select inside
+a view re-runs `results()` (a manual refresh) rather than navigating.
 
 `MenuScroller` keeps a 4-row window over the current submenu's item names so
 lists longer than the screen scroll smoothly; the selected row is marked with a
