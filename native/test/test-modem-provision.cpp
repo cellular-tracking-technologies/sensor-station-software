@@ -126,6 +126,43 @@ void test_quectel_parsers() {
   CHECK(QuectelEC25::apnForIccid("").empty());                              // too short
   CHECK(QuectelEC25::apnForIccid("89").empty());
 
+  // IMSI: AT+CIMI answers with the bare IMSI (no "+CIMI:" prefix).
+  CHECK(QuectelEC25::parseImsi("\r\n240080008862744\r\n\r\nOK\r\n") ==
+        "240080008862744");
+  CHECK(QuectelEC25::parseImsi("\r\nERROR\r\n").empty());
+  CHECK(QuectelEC25::parseImsi("\r\nOK\r\n").empty());
+  // A short digit run (not an IMSI) must not be mistaken for one.
+  CHECK(QuectelEC25::parseImsi("\r\n12345\r\n\r\nOK\r\n").empty());
+
+  // IMSI -> APN: recognized Telenor PLMN, else "" so the caller falls back.
+  CHECK(QuectelEC25::isTelenorImsi("240080008862744"));      // MCC 240 / MNC 08
+  CHECK(!QuectelEC25::isTelenorImsi("901405500000000"));     // Twilio Super SIM
+  CHECK(QuectelEC25::apnForImsi("240080008862744") == "internet.cxn");
+  CHECK(QuectelEC25::apnForImsi("901405500000000").empty()); // unknown -> fall back
+  CHECK(QuectelEC25::apnForImsi("").empty());
+  CHECK(QuectelEC25::apnForImsi("2400").empty());            // too short
+
+  // chooseApn: IMSI wins; ICCID is the fallback.
+  //
+  // The regression this fix exists for: a Telenor SIM issued in an 8901
+  // (US-numbered) ICCID range. ICCID cc reads "01" -> the old ICCID-only rule
+  // said `super`, and the network refused the bearer with 3GPP cause 33
+  // (option-unsubscribed). The IMSI says Telenor, so the APN must be internet.cxn.
+  // Real values from V2 station F5C51E6B6AFA (2026-07-29).
+  CHECK(QuectelEC25::apnForIccid("89012400800088627441") == "super"); // the old bug
+  CHECK(QuectelEC25::chooseApn("240080008862744", "89012400800088627441") ==
+        "internet.cxn");
+  // Telenor-numbered ICCID: both sources agree.
+  CHECK(QuectelEC25::chooseApn("240080008862744", "8946071500000000001") ==
+        "internet.cxn");
+  // Super SIM: IMSI unrecognized -> ICCID decides.
+  CHECK(QuectelEC25::chooseApn("901405500000000", "8988280666000000001") == "super");
+  // No IMSI at all (modem won't report one) -> ICCID decides, old behavior intact.
+  CHECK(QuectelEC25::chooseApn("", "8946071500000000001") == "internet.cxn");
+  CHECK(QuectelEC25::chooseApn("", "8988280666000000001") == "super");
+  // Neither usable -> "" so provision() fails open instead of guessing.
+  CHECK(QuectelEC25::chooseApn("", "").empty());
+
   // CGDCONT CID1 APN = 2nd quoted field on the CID-1 line.
   const std::string cg =
       "\r\n+CGDCONT: 1,\"IPV4V6\",\"super\",\"0.0.0.0\",0,0,0,0\r\n"
@@ -172,6 +209,31 @@ void test_quectel_provision_divergence() {
   CHECK(at.issued("AT+CFUN=1"));
   // And publishes the same APN for the NM side.
   CHECK(readFile(apnFile) == "internet.cxn");
+  std::remove(apnFile.c_str());
+}
+
+// ---- Quectel provision: Telenor SIM in an 8901 ICCID range (the cause-33 bug) ---
+// End-to-end guard for the regression: before the IMSI-first fix, this SIM's ICCID
+// cc "01" selected `super`, the modem attached on a blank CID1 but the network
+// refused the dial with 3GPP cause 33 (option-unsubscribed), and the station lost
+// cellular on every boot. Real values from V2 station F5C51E6B6AFA (2026-07-29).
+void test_quectel_provision_telenor_us_iccid() {
+  const std::string apnFile = "/tmp/ctt-test-modem-apn-telenor-us";
+  std::remove(apnFile.c_str());
+
+  ScriptedAt at;
+  at.replies["AT+CIMI"] = "\r\n240080008862744\r\n\r\nOK\r\n";   // Telenor Sweden
+  at.replies["AT+QCCID"] =
+      "\r\n+QCCID: 89012400800088627441\r\n\r\nOK\r\n";          // 8901 -> cc "01"
+  at.replies["AT+CGDCONT?"] = // blank CID1, exactly as observed on the station
+      "\r\n+CGDCONT: 1,\"IPV4V6\",\"\",\"0.0.0.0\",0,0\r\n\r\nOK\r\n";
+
+  QuectelEC25 q(at, apnFile);
+  q.provision(/*dry_run=*/false);
+
+  CHECK(at.issued("AT+CIMI"));                                 // IMSI is consulted
+  CHECK(!at.issued("AT+CFUN=0"));                              // blank CID1: no bounce
+  CHECK(readFile(apnFile) == "internet.cxn");                  // NOT "super"
   std::remove(apnFile.c_str());
 }
 
@@ -258,6 +320,7 @@ int main() {
   test_quectel_parsers();
   test_dispatch();
   test_quectel_provision_divergence();
+  test_quectel_provision_telenor_us_iccid();
   test_quectel_provision_idempotent();
   test_quectel_provision_blank();
   test_quectel_provision_bad_iccid();

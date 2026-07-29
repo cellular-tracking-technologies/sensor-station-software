@@ -12,6 +12,47 @@ regenerated from these entries.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Quectel APN is now selected from the SIM's IMSI, not its ICCID country code.**
+  `ctt-modem-provision`'s Quectel driver mapped ICCID digits `[2:4] == "46"` to the Telenor
+  APN and everything else to `super`. Telenor also ships SIMs in an **`8901` (US-numbered)
+  ICCID range**, whose country code reads `01` — so a Telenor subscription was assigned
+  `super`, and the network refused the data bearer with **3GPP cause 33
+  (`option-unsubscribed`)**: the modem registered with good signal but carried no traffic,
+  and it re-broke on every boot because the provisioner kept re-applying the wrong APN.
+
+  Carrier identity now comes from the **IMSI's home PLMN** (`AT+CIMI`; MCC 240 / MNC 08 =
+  Telenor Connexion), which names the *subscription*, with the ICCID country code kept as a
+  fallback for modems that will not report an IMSI. Extend `isTelenorImsi()` for new carriers
+  rather than widening the ICCID rule. `provision-modem-apn.sh`'s mmcli fallback mirrors the
+  same order, and now also refuses to guess from a truncated ICCID.
+
+  Found on V2 station `F5C51E6B6AFA` and corroborated by the Telenor subscription-activity
+  log (192 successful sessions on the correct APN over the preceding 8 days, stopping at the
+  boot that stamped `super`). Correcting the APN restored the bearer on the first attempt.
+
+- **`station-modem` now retries forever instead of giving up after four attempts.** The
+  profile left `autoconnect-retries` at NetworkManager's default (`-1`), which means **4
+  attempts and then permanent surrender** — nothing on the station re-arms it, so a station
+  whose modem is still doing a cold cell search at boot (>120 s is normal) stayed offline
+  until the next reboot. Now pinned to `0`. Unlike `autoconnect`, `0` is not NM's default, so
+  it is written to the keyfile and survives an `install-network` redeploy.
+
+- **Cellular can no longer steal the default route.** `station-modem` now pins
+  `ipv4.route-metric=700`, matching what `modem-ecm-up.sh` already does for the Telit path.
+  Previously the metric was unset (`-1`), leaving NetworkManager to choose one.
+
+### Changed
+
+- `ctt-modem-provision` source version → **0.3.2**. The fleet pin
+  (`system/native/ctt-modem-provision.version`) still reads `0.3.1` and must not move until
+  the 0.3.2 armhf binary is built, tagged and published.
+
+---
+
 ## [2.3.2] — 2026-07-29
 
 ### Fixed
