@@ -12,6 +12,19 @@ regenerated from these entries.
 
 ---
 
+## [2.3.2] — 2026-07-29
+
+### Fixed
+
+- **The front-panel "IP Address" screen now shows USB-ethernet dongles.** The LCD menu
+  matched only `eth*`/`wlan*` interface names, so a USB-ethernet adapter that enumerates
+  under a predictable name (`enx<mac>`) or the legacy `usb0` displayed a blank IP despite
+  having a valid address. The interface allowlist now also matches `enx*`/`usb0` (anchored,
+  so virtual interfaces such as `veth*` that merely contain "eth" are excluded), and long
+  `enx…` names get their own row before the address. The modem's point-to-point NAT (`mdm0`,
+  `192.168.225.x`) and `ppp0` remain deliberately off the screen — they are not reachable
+  addresses. (PR #48.)
+
 ## [2.3.1] — 2026-07-24
 
 ### Changed
