@@ -1,5 +1,7 @@
 #include "modem/quectel_ec25.h"
 
+#include "modem/at_commands.h"
+
 #include <cctype>
 #include <cstdio>
 
@@ -52,10 +54,86 @@ std::string QuectelEC25::parseCgdcontApn(const std::string &resp, int cid) {
   return "";
 }
 
+std::string QuectelEC25::parseImsi(const std::string &cimiResp) {
+  // AT+CIMI answers with the bare IMSI, no "+CIMI:" prefix, e.g.
+  //   "\r\n240080008862744\r\n\r\nOK\r\n"
+  // Take the first run of >= 14 digits so a command echo or status token can't be
+  // mistaken for it (an IMSI is 14-15 digits).
+  size_t i = 0;
+  while (i < cimiResp.size()) {
+    if (!std::isdigit(static_cast<unsigned char>(cimiResp[i]))) {
+      ++i;
+      continue;
+    }
+    size_t j = i;
+    while (j < cimiResp.size() &&
+           std::isdigit(static_cast<unsigned char>(cimiResp[j])))
+      ++j;
+    if (j - i >= 14)
+      return cimiResp.substr(i, j - i);
+    i = j;
+  }
+  return "";
+}
+
+bool QuectelEC25::isTelenorImsi(const std::string &imsi) {
+  // Telenor Connexion's home PLMN (MCC 240 = Sweden, MNC 08). MCC 240 uses
+  // 2-digit MNCs, so a 5-digit MCC+MNC prefix is unambiguous.
+  //
+  // Add PLMNs here as carriers are onboarded. Do NOT widen the ICCID
+  // country-code rule instead — the ICCID range is the issuer's, not the
+  // subscription's, and conflating the two is the original defect.
+  static const char *const kTelenorPlmns[] = {"24008"};
+  for (const char *plmn : kTelenorPlmns) {
+    const std::string prefix(plmn);
+    if (imsi.size() >= prefix.size() &&
+        imsi.compare(0, prefix.size(), prefix) == 0)
+      return true;
+  }
+  return false;
+}
+
+std::string QuectelEC25::apnForImsi(const std::string &imsi) {
+  if (imsi.size() < 5)
+    return "";
+  return isTelenorImsi(imsi) ? kApnTelenor : "";
+}
+
+bool QuectelEC25::isTelenorIccid(const std::string &iccid) {
+  // Match the Telenor *issuer prefix*, not the 2-digit ICCID country code —
+  // matching only cc "46" missed Telenor's US-numbered 8901 SIMs and mis-mapped
+  // them to `super` (F5C51E6B6AFA, 3GPP cause 33). Telenor ships two ICCID
+  // families: Swedish "8946…" and US "8901240080…" (8901 + the embedded Telenor
+  // PLMN 24008).
+  //
+  // Do NOT widen this to bare "8901": that is a broad US range Kore/Twilio also
+  // issue from — validated 2026-07-30 against the full fleet, 964 Kore SIMs are
+  // "890126…"/"890124011…"/"890124020…", and 0 Kore ICCIDs start "890124008",
+  // so the 9-digit "890124008" prefix is Telenor-exclusive. This is only the
+  // fallback anyway; the IMSI PLMN (24008) is the reliable primary. Add issuer
+  // prefixes here as carriers are onboarded.
+  static const char *const kTelenorIccidPrefixes[] = {"8946", "890124008"};
+  for (const char *pfx : kTelenorIccidPrefixes) {
+    const std::string prefix(pfx);
+    if (iccid.size() >= prefix.size() &&
+        iccid.compare(0, prefix.size(), prefix) == 0)
+      return true;
+  }
+  return false;
+}
+
 std::string QuectelEC25::apnForIccid(const std::string &iccid) {
   if (iccid.size() < 4)
     return "";
-  return iccid.substr(2, 2) == "46" ? kApnTelenor : kApnDefault;
+  return isTelenorIccid(iccid) ? kApnTelenor : kApnDefault;
+}
+
+std::string QuectelEC25::chooseApn(const std::string &imsi,
+                                   const std::string &iccid) {
+  const std::string byImsi = apnForImsi(imsi);
+  if (!byImsi.empty())
+    return byImsi;
+  return apnForIccid(iccid);
 }
 
 void QuectelEC25::publishApn(const std::string &apn) const {
@@ -74,19 +152,27 @@ void QuectelEC25::publishApn(const std::string &apn) const {
 }
 
 ProvisionResult QuectelEC25::provision(bool dry_run) {
-  std::string iccid = parseIccid(at_.cmd("AT+QCCID", 3000));
-  std::string apn = apnForIccid(iccid);
+  // IMSI first (names the subscription's home network, which decides the APN),
+  // ICCID second (names only the issuer's numbering range). See chooseApn().
+  const std::string imsi = parseImsi(at_.cmd(at::kCimi, 3000));
+  const std::string iccid = parseIccid(at_.cmd(at::kQccid, 3000));
+  const std::string apn = chooseApn(imsi, iccid);
   if (apn.empty()) {
     std::fprintf(stderr,
-                 "ctt-modem-provision: Quectel — no usable ICCID (got '%s') — "
-                 "leaving APN untouched\n",
-                 iccid.c_str());
+                 "ctt-modem-provision: Quectel — no usable IMSI or ICCID (IMSI "
+                 "'%s', ICCID '%s') — leaving APN untouched\n",
+                 imsi.c_str(), iccid.c_str());
     return ProvisionResult::Done; // fail open — never guess an APN
   }
-  std::fprintf(stderr, "ctt-modem-provision: Quectel — ICCID cc %s -> APN '%s'\n",
-               iccid.substr(2, 2).c_str(), apn.c_str());
+  const std::string plmn = imsi.size() >= 5 ? imsi.substr(0, 5) : "(none)";
+  const std::string cc = iccid.size() >= 4 ? iccid.substr(2, 2) : "(none)";
+  const char *source = apnForImsi(imsi).empty() ? "ICCID cc" : "IMSI PLMN";
+  std::fprintf(stderr,
+               "ctt-modem-provision: Quectel — IMSI PLMN %s / ICCID cc %s -> APN "
+               "'%s' (by %s)\n",
+               plmn.c_str(), cc.c_str(), apn.c_str(), source);
 
-  std::string cg = at_.cmd("AT+CGDCONT?", 3000);
+  std::string cg = at_.cmd(at::kCgdcontQuery, 3000);
   if (cg.find("+CGDCONT:") == std::string::npos) {
     std::fprintf(stderr,
                  "ctt-modem-provision: no +CGDCONT response ('%s') — leaving "
@@ -135,18 +221,17 @@ ProvisionResult QuectelEC25::provision(bool dry_run) {
   // next attach. Run Before=ModemManager, this radio bounce is uncontended.
   std::fprintf(stderr, "ctt-modem-provision: Quectel — setting attach APN "
                        "(CFUN=0 / CGDCONT CID1 / CFUN=1)\n");
-  at_.cmd("AT+CFUN=0", 5000);
-  std::string w =
-      at_.cmd(std::string("AT+CGDCONT=1,\"") + kPdpType + "\",\"" + apn + "\"", 5000);
+  at_.cmd(at::kCfunOff, 5000);
+  std::string w = at_.cmd(at::cgdcontDefine(1, kPdpType, apn), 5000);
   if (w.find("OK") == std::string::npos) {
     std::fprintf(stderr,
                  "ctt-modem-provision: Quectel — CGDCONT write not confirmed "
                  "('%s'); re-attaching and leaving APN as-is\n",
                  flattenReply(w).c_str());
-    at_.cmd("AT+CFUN=1", 5000); // restore the radio even on failure
+    at_.cmd(at::kCfunOn, 5000); // restore the radio even on failure
     return ProvisionResult::Done; // fail open
   }
-  at_.cmd("AT+CFUN=1", 5000);
+  at_.cmd(at::kCfunOn, 5000);
   std::fprintf(stderr,
                "ctt-modem-provision: Quectel — attach APN set to '%s'; radio "
                "re-attaching (MM brings the wwan0 bearer up)\n",

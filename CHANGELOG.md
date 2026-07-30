@@ -12,6 +12,60 @@ regenerated from these entries.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Quectel APN is now selected from the SIM's IMSI, not its ICCID country code.**
+  `ctt-modem-provision`'s Quectel driver mapped ICCID digits `[2:4] == "46"` to the Telenor
+  APN and everything else to `super`. Telenor also ships SIMs in an **`8901` (US-numbered)
+  ICCID range**, whose country code reads `01` — so a Telenor subscription was assigned
+  `super`, and the network refused the data bearer with **3GPP cause 33
+  (`option-unsubscribed`)**: the modem registered with good signal but carried no traffic,
+  and it re-broke on every boot because the provisioner kept re-applying the wrong APN.
+
+  Carrier identity now comes from the **IMSI's home PLMN** (`AT+CIMI`; MCC 240 / MNC 08 =
+  Telenor Connexion), which names the *subscription*, with a hardened **ICCID issuer-prefix**
+  match kept as a fallback for modems that will not report an IMSI. Extend `isTelenorImsi()` /
+  `isTelenorIccid()` for new carriers rather than widening the rule. `provision-modem-apn.sh`'s mmcli fallback mirrors the
+  same order, and now also refuses to guess from a truncated ICCID.
+
+  Found on V2 station `F5C51E6B6AFA` and corroborated by the Telenor subscription-activity
+  log (192 successful sessions on the correct APN over the preceding 8 days, stopping at the
+  boot that stamped `super`). Correcting the APN restored the bearer on the first attempt.
+  Hardware-verified end-to-end on a Quectel bench station: install 0.3.2 → break `CID1` to
+  `super` → reboot → the boot guard recovered the attach context to `internet.cxn` **by IMSI
+  PLMN 24008** and the bearer came back with no human touch.
+
+- **ICCID fallback hardened to the Telenor issuer prefix.** When no IMSI is available, APN
+  selection uses `isTelenorIccid()` — an ICCID starting `8946` or `890124008` (`8901` + the
+  embedded Telenor PLMN `24008`) — not the 2-digit country code. Bare `8901` is a broad US
+  range: fleet-validated 2026-07-30, **964 Kore SIMs** live there (`890126…`, `890124011/020`)
+  and would have been mis-routed to `internet.cxn`; `890124008` is Telenor-exclusive. The rule
+  classifies all **7,858 Telenor + 2,792 Kore** fleet ICCIDs with zero misclassification.
+
+- **`station-modem` now retries forever instead of giving up after four attempts.** The
+  profile left `autoconnect-retries` at NetworkManager's default (`-1`), which means **4
+  attempts and then permanent surrender** — nothing on the station re-arms it, so a station
+  whose modem is still doing a cold cell search at boot (>120 s is normal) stayed offline
+  until the next reboot. Now pinned to `0`. Unlike `autoconnect`, `0` is not NM's default, so
+  it is written to the keyfile and survives an `install-network` redeploy.
+
+- **Cellular can no longer steal the default route.** `station-modem` now pins
+  `ipv4.route-metric=700`, matching what `modem-ecm-up.sh` already does for the Telit path.
+  Previously the metric was unset (`-1`), leaving NetworkManager to choose one.
+
+### Changed
+
+- `ctt-modem-provision` **0.3.2** built, tagged (`ctt-modem-provision-v0.3.2`) and published
+  (armhf binary + `.sha256`); the fleet pin (`system/native/ctt-modem-provision.version`) is
+  rolled to **0.3.2**, so stations pick it up on the next OTA.
+- **All modem AT-command strings are centralized** in `native/lib/ctthw/modem/at_commands.h`
+  (named constants + a `cgdcontDefine` builder), replacing inline literals across the Quectel,
+  Telit, and modem-detect drivers — one authoritative place to find or change a command.
+
+---
+
 ## [2.3.2] — 2026-07-29
 
 ### Fixed
