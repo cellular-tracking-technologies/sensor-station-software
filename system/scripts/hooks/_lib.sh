@@ -74,6 +74,48 @@ apply_removals() {
   done < "$list"
 }
 
+# Emit $src, but with every line matching $keys_re replaced by the DESTINATION's
+# live value for that key — or dropped entirely when the destination has no such
+# line.
+#
+# Dropping is the half that matters. The mutable_keys list exists so a redeploy
+# does not fight the runtime owner of a key, but stripping those lines only from
+# the *diff* is not enough: once any other line differs we install the source
+# wholesale, and the source's own value for a mutable key overwrites the live one.
+#
+# It fails hardest where the live value is the daemon's default, because
+# NetworkManager's keyfile writer OMITS any property equal to its default.
+# `connection.autoconnect=yes` is the default, so setting it writes *no line at
+# all* — a "preserve the line if present" rule then preserves nothing, and the
+# repo's explicit `autoconnect=false` lands unopposed. Absent must therefore be
+# read as "the daemon's default" and reproduced by omitting the key, never by
+# falling back to the source's value. The asymmetry is why this only ever bit
+# Quectel: a Telit's `autoconnect=false` is non-default, so it IS written to disk
+# and did survive.
+#
+# Limitation: a preserved key the destination has but the source does not ship
+# cannot be emitted, because we would not know which keyfile section to place it
+# in. Runtime policy re-asserts those — see the modem-datapath re-run at the end
+# of install-network.sh.
+#
+# Args: $1 src  $2 dst  $3 keys_re (egrep pattern, matched against whole lines)
+merge_preserved_keys() {
+  local src="$1" dst="$2" keys_re="$3"
+  local line key dst_line
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    if printf '%s\n' "$line" | grep -qE "$keys_re"; then
+      key="${line%%=*}"
+      dst_line="$(grep -m1 -E "^${key}=" "$dst" 2>/dev/null)" || dst_line=""
+      # Present in dst → keep the live value. Absent → omit, so the daemon's
+      # default applies (do NOT fall back to the source's value).
+      [ -n "$dst_line" ] && printf '%s\n' "$dst_line"
+      continue
+    fi
+    printf '%s\n' "$line"
+  done <"$src"
+}
+
 # Generic deploy: walk a source dir for files matching $glob, install each
 # to $dst_dir if the destination is missing or content-differs, then run
 # $reload_cmd if anything changed.
@@ -119,7 +161,19 @@ deploy_dir() {
       fi
     fi
 
-    install -o root -g root -m "$mode" "$src" "$dst"
+    # Install the source, except that runtime-owned keys keep their live values
+    # (or stay omitted, so the daemon's default applies). Without this the
+    # wholesale copy below reverts every mutable key it ships a value for —
+    # see merge_preserved_keys.
+    local payload="$src" merged=""
+    if [ -n "$mutable_keys" ] && [ -f "$dst" ]; then
+      merged="$(mktemp)"
+      merge_preserved_keys "$src" "$dst" "$mutable_keys" >"$merged"
+      payload="$merged"
+    fi
+
+    install -o root -g root -m "$mode" "$payload" "$dst"
+    [ -n "$merged" ] && rm -f "$merged"
     log_info "installed $dst"
     changed=1
   done
