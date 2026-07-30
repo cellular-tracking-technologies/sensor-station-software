@@ -57,9 +57,9 @@ regenerated from these entries.
 
 ### Changed
 
-- `ctt-modem-provision` source version → **0.3.2**. The fleet pin
-  (`system/native/ctt-modem-provision.version`) still reads `0.3.1` and must not move until
-  the 0.3.2 armhf binary is built, tagged and published.
+- `ctt-modem-provision` **0.3.2** built, tagged (`ctt-modem-provision-v0.3.2`) and published
+  (armhf binary + `.sha256`); the fleet pin (`system/native/ctt-modem-provision.version`) is
+  rolled to **0.3.2**, so stations pick it up on the next OTA.
 - **All modem AT-command strings are centralized** in `native/lib/ctthw/modem/at_commands.h`
   (named constants + a `cgdcontDefine` builder), replacing inline literals across the Quectel,
   Telit, and modem-detect drivers — one authoritative place to find or change a command.
