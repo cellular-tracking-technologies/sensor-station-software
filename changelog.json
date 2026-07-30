@@ -1,5 +1,21 @@
 [
     {
+        "version": "2.3.3",
+        "date": "2026-07-30",
+        "notes": "Cellular integrity and boot-sequence finalization for the lts_26_07 image. The Quectel dial/attach APN is now chosen from the SIM's IMSI home PLMN (Telenor 24008) instead of the ICCID country code — a Telenor SIM in an 8901 (US-numbered) ICCID range had been assigned 'super' and refused by the network with 3GPP cause 33. OTA no longer clobbers a Quectel's autoconnect, the modem retries forever and cannot steal the default route, and the application layer is now OTA-self-enabling with corrected startup ordering. ctt-modem-provision rolls to 0.3.2.",
+        "features": [
+            "ctt-modem-provision built, tagged (ctt-modem-provision-v0.3.2) and published (armhf binary + sha256); the fleet pin system/native/ctt-modem-provision.version is rolled to 0.3.2, so stations pick it up on the next OTA.",
+            "All modem AT-command strings are centralized in native/lib/ctthw/modem/at_commands.h (named constants + a cgdcontDefine builder), replacing inline literals across the Quectel, Telit, and modem-detect drivers."
+        ],
+        "bugs": [
+            "Quectel APN is selected from the SIM's IMSI home PLMN (AT+CIMI; MCC 240 / MNC 08 = Telenor Connexion), not the ICCID country code. Telenor also ships SIMs in an 8901 (US-numbered) ICCID range whose country code reads 01, so the old rule assigned 'super' and the network refused the data bearer with 3GPP cause 33 (option-unsubscribed): registered with good signal but no traffic, re-broken on every boot. A hardened ICCID issuer-prefix match (8946 or 890124008) is kept as a fallback for modems that will not report an IMSI. Found on V2 station F5C51E6B6AFA and corroborated by the Telenor subscription-activity log; hardware-verified end-to-end (break CID1 to super, reboot, boot guard recovers to internet.cxn by IMSI).",
+            "ICCID fallback hardened to the Telenor issuer prefix. When no IMSI is available, APN selection matches an ICCID starting 8946 or 890124008 (8901 plus the embedded Telenor PLMN 24008), not the 2-digit country code. Bare 8901 is a broad US range: fleet-validated against 7858 Telenor and 2792 Kore ICCIDs, 964 Kore SIMs start 8901 and would have been mis-routed to internet.cxn; 890124008 is Telenor-exclusive. Zero misclassification across the full fleet.",
+            "OTA no longer clobbers a Quectel's autoconnect. deploy_dir copied the station-modem profile wholesale and only stripped runtime-owned keys from the diff, so the repo's autoconnect=false overwrote the live value on any redeploy. It bit only Quectel because NetworkManager omits autoconnect=true (its default) from the keyfile. deploy_dir now reads an absent preserved key as the daemon default and omits it (never falling back to the source value), and install-network.sh re-runs modem-datapath.sh after the deploy to re-assert the per-modem policy. Verified on real NM 1.30.6 and on hardware.",
+            "station-modem retries forever instead of surrendering after four attempts: autoconnect-retries is pinned to 0 (non-default, so it is written to the keyfile and survives an install-network redeploy). Cellular can no longer steal the default route: ipv4.route-metric is pinned to 700.",
+            "Application layer is now OTA-self-enabling and correctly ordered. install-systemd.sh MUST_BE_ENABLED now covers the Node and SensorGnome units (previously deployed as files but enabled only by Ansible/manufacturing, so a lost symlink or an Ansible-free image came up with no application layer). sensorgnome.service orders After=ctt-board-detect.service bootcount.service, the two units that produce its synchronous inputs /etc/ctt/station-id and /etc/bootcount, fixing a stale premise and a race on bootcount. The four long-running station-* services get StartLimitIntervalSec=0 and RestartSec=5, so a transient boot-time crash-loop retries forever instead of hitting systemd's default 5-starts-in-10s give-up and leaving a headless station dark."
+        ]
+    },
+    {
         "version": "2.3.2",
         "date": "2026-07-29",
         "notes": "Makes the front-panel IP Address screen show USB-ethernet dongles that do not enumerate as eth*.",

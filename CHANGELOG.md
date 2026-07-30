@@ -12,7 +12,7 @@ regenerated from these entries.
 
 ---
 
-## [Unreleased]
+## [2.3.3] — 2026-07-30
 
 ### Fixed
 

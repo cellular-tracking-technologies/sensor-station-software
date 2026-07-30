@@ -10,7 +10,7 @@ This monorepo holds the on-device application layer: a set of Node.js services,
 a layer of small compiled C++ hardware tools, and the OS configuration (systemd
 units, udev rules, boot and update scripts) that ties them together.
 
-`v2.0.1` · Node.js (ES modules) + C++17 · Raspberry Pi OS (32-bit armhf)
+`v2.3.3` · Node.js (ES modules) + C++17 · Raspberry Pi OS (32-bit armhf)
 
 ---
 
