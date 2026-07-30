@@ -7,6 +7,14 @@ type=gsm
 # modem-datapath.sh flips this to true at boot for a non-Telit (Quectel/QMI) modem,
 # which needs autoconnect for its wwan0 bearer.
 autoconnect=false
+# Retry forever. NetworkManager's default (autoconnect-retries=-1) means FOUR
+# attempts and then it gives up permanently — nothing on the station re-arms it, so
+# a station that boots before the network is reachable (a cold cell search can take
+# >120 s) burns its four tries and stays offline until the next reboot. Observed on
+# V2 station F5C51E6B6AFA, 2026-07-29: exactly 4 "connection attempt #N failed".
+# 0 is NOT NetworkManager's default, so unlike autoconnect= it is written to the
+# keyfile and therefore survives an install-network redeploy.
+autoconnect-retries=0
 permissions=
 
 [gsm]
@@ -15,6 +23,10 @@ apn=super
 [ipv4]
 dns-search=
 method=auto
+# Cellular is the FALLBACK uplink: keep its default route worse than wired (metric
+# 50) and Wi-Fi so bringing the bearer up can never steal the default route from a
+# working LAN link. Matches the metric modem-ecm-up.sh pins for the Telit path.
+route-metric=700
 
 [ipv6]
 # Request IPv4-only. These M2M SIMs/APNs are provisioned IPv4-only (carrier never
