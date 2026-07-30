@@ -12,6 +12,27 @@ regenerated from these entries.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **`collect-diagnostics` is now an on-station CLI** (`/usr/local/sbin/collect-diagnostics`).
+  `system/scripts/collect-diagnostics.sh` gathers a read-only bundle — identity, hardware,
+  services, modem **+ SIM ICCID/IMSI**, and logs — as the `ctt` user (no sudo) and prints the
+  `.tar.gz` path. It is the single source of truth for what a diagnostic bundle contains; the
+  client-side SSH wrappers (Unix `.sh` / Windows `.ps1`, in the KB repo) become thin invokers.
+
+### Changed
+
+- **User-facing CLI symlinks are created by an OTA hook, not only by the Ansible image build.**
+  New `install-scripts.sh` (post-merge) symlinks the shell CLIs — `station-id`, `program-radios`,
+  `program-radio`, `update-station`, `bash-update-station`, `upload-station-data`,
+  `collect-diagnostics` — into `/usr/local/sbin`, so an OTA self-heals a lost symlink and an image
+  built without the legacy Ansible role still ships its CLIs. Moves CLI ownership into the
+  monorepo (retiring that slice of the Ansible boot-path debt). Runs in image-bake mode too.
+
+---
+
 ## [2.3.3] — 2026-07-30
 
 ### Fixed
