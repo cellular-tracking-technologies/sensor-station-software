@@ -5,12 +5,17 @@ Description=start station-hardware-server
 # After=station-hardware-server, so they inherit the ordering.
 After=network.target ctt-board-detect.service
 Wants=ctt-board-detect.service
+# Retry forever on a headless field station: without this, systemd's default
+# start-limit (5 starts / 10s) gives up and leaves a core service dark until a
+# manual reboot. Paired with RestartSec below so it backs off, not hammer-restarts.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 WorkingDirectory=/lib/ctt/sensor-station-software
 ExecStart=/usr/local/bin/node ./src/station-hardware-server/bin/www.js
 Restart=on-failure
+RestartSec=5
 TimeoutSec=60
 
 [Install]

@@ -16,6 +16,30 @@ regenerated from these entries.
 
 ### Fixed
 
+- **OTA no longer clobbers a Quectel's `autoconnect` (cellular survives every update).**
+  `deploy_dir` copied the repo `station-modem` profile wholesale, and its "preserve the
+  runtime-owned keys" step only stripped them from the *diff*, not the installed file — so
+  the repo's `autoconnect=false` overwrote the live value on any redeploy. It bit only
+  Quectel because NetworkManager omits `autoconnect=true` (the default) from the keyfile, so
+  "preserve the line if present" preserved nothing. `merge_preserved_keys` now reads an
+  **absent** preserved key as the daemon default and omits it (never falling back to the
+  source value); `install-network.sh` also re-runs `modem-datapath.sh` after the deploy to
+  re-assert the per-modem policy. Verified on real NM 1.30.6 (absent line → `autoconnect: yes`)
+  and on hardware. (PR #50.)
+- **Application layer is now OTA-self-enabling, correctly ordered, and retries forever.**
+  Boot-sequence hardening from the boot-sequence review: (1) `install-systemd.sh`'s
+  `MUST_BE_ENABLED` now covers the Node/SensorGnome units (`station-hardware-server`,
+  `station-radio-interface`, `station-web-interface`, `station-lcd-interface`,
+  `station-boot`, `bootcount`, `sensorgnome`) — previously deployed as files but enabled only
+  by Ansible/manufacturing, so a lost symlink or an Ansible-free image came up with **no app
+  layer**. (2) `sensorgnome.service` now orders `After=ctt-board-detect.service
+  bootcount.service` — the units that actually produce its two synchronous inputs
+  (`/etc/ctt/station-id`, `/etc/bootcount`); the old `After=station-boot` rested on a stale
+  premise (station-boot no longer writes `station-id`) and raced `bootcount`. Its malformed
+  `WantedBy=…station-boot.service` is dropped. (3) The four long-running `station-*` services
+  get `StartLimitIntervalSec=0` + `RestartSec=5`, so a transient boot-time crash-loop retries
+  forever instead of hitting systemd's default 5-starts-in-10s give-up and leaving a headless
+  station dark (matching the radio driver's policy).
 - **Quectel APN is now selected from the SIM's IMSI, not its ICCID country code.**
   `ctt-modem-provision`'s Quectel driver mapped ICCID digits `[2:4] == "46"` to the Telenor
   APN and everything else to `super`. Telenor also ships SIMs in an **`8901` (US-numbered)
