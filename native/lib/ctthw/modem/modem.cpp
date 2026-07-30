@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <string>
 
+#include "modem/at_commands.h"
 #include "modem/quectel_ec25.h"
 #include "modem/telit_le910q1.h"
 
@@ -20,7 +21,7 @@ std::string toLower(std::string s) {
 } // namespace
 
 std::unique_ptr<Modem> makeModem(AtTransport &at) {
-  std::string mfg = toLower(at.cmd("AT+CGMI", 3000));
+  std::string mfg = toLower(at.cmd(at::kCgmi, 3000));
   if (mfg.find("quectel") != std::string::npos) {
     std::fprintf(stderr, "ctt-modem-provision: manufacturer = Quectel\n");
     return std::make_unique<QuectelEC25>(at);

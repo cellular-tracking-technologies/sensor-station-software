@@ -55,10 +55,14 @@ public:
   static std::string parseCgdcontApn(const std::string &resp, int cid);
   // True if the IMSI's MCC+MNC is a known Telenor (Connexion) home PLMN.
   static bool isTelenorImsi(const std::string &imsi);
+  // True if the ICCID starts with a known Telenor *issuer* prefix (8946 or
+  // 890124008). Prefix, not the 2-digit country code — see the .cpp for why bare
+  // "8901" is unsafe (collides with 964 Kore SIMs; fleet-validated 2026-07-30).
+  static bool isTelenorIccid(const std::string &iccid);
   // Carrier APN from the IMSI's home PLMN, or "" when the PLMN is not recognized
   // (so the caller can fall back to the ICCID rule). Never guesses a default.
   static std::string apnForImsi(const std::string &imsi);
-  // Carrier APN for an ICCID (country code = digits [2:4]); "" if too short.
+  // Carrier APN from the ICCID issuer prefix (isTelenorIccid); "" if too short.
   static std::string apnForIccid(const std::string &iccid);
   // The APN to use: IMSI first, ICCID second, "" if neither is usable.
   //

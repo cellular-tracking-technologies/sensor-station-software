@@ -121,8 +121,15 @@ void test_quectel_parsers() {
         "8946071500000000001");
   CHECK(QuectelEC25::parseIccid("\r\nERROR\r\n").empty());
 
-  CHECK(QuectelEC25::apnForIccid("8946071500000000001") == "internet.cxn"); // cc 46
-  CHECK(QuectelEC25::apnForIccid("8988280666000000001") == "super");        // cc 88
+  // Telenor issuer prefixes: Swedish 8946… and US 890124008… (8901 + PLMN 24008).
+  CHECK(QuectelEC25::isTelenorIccid("8946071500000000001"));  // Swedish
+  CHECK(QuectelEC25::isTelenorIccid("89012400800088627441")); // US (F5C51E6B6AFA)
+  CHECK(!QuectelEC25::isTelenorIccid("8988280666000000001")); // Twilio Super
+  // Bare "8901" must NOT match — 964 Kore SIMs live there (fleet-validated 2026-07-30).
+  CHECK(!QuectelEC25::isTelenorIccid("8901260852391558350")); // Kore 890126…
+  CHECK(!QuectelEC25::isTelenorIccid("8901240110000000000")); // Kore 890124011…
+  CHECK(QuectelEC25::apnForIccid("8946071500000000001") == "internet.cxn");
+  CHECK(QuectelEC25::apnForIccid("8988280666000000001") == "super");
   CHECK(QuectelEC25::apnForIccid("").empty());                              // too short
   CHECK(QuectelEC25::apnForIccid("89").empty());
 
@@ -145,21 +152,25 @@ void test_quectel_parsers() {
   // chooseApn: IMSI wins; ICCID is the fallback.
   //
   // The regression this fix exists for: a Telenor SIM issued in an 8901
-  // (US-numbered) ICCID range. ICCID cc reads "01" -> the old ICCID-only rule
-  // said `super`, and the network refused the bearer with 3GPP cause 33
-  // (option-unsubscribed). The IMSI says Telenor, so the APN must be internet.cxn.
-  // Real values from V2 station F5C51E6B6AFA (2026-07-29).
-  CHECK(QuectelEC25::apnForIccid("89012400800088627441") == "super"); // the old bug
+  // (US-numbered) ICCID range. ICCID cc reads "01" -> the old cc-only rule said
+  // `super` and the network refused the bearer with 3GPP cause 33
+  // (option-unsubscribed). Real values from V2 station F5C51E6B6AFA (2026-07-29).
+  // The IMSI says Telenor -> internet.cxn regardless of the ICCID:
   CHECK(QuectelEC25::chooseApn("240080008862744", "89012400800088627441") ==
         "internet.cxn");
+  // The ICCID fallback now also resolves it, via the hardened 890124008 prefix,
+  // when no IMSI is available:
+  CHECK(QuectelEC25::apnForIccid("89012400800088627441") == "internet.cxn");
   // Telenor-numbered ICCID: both sources agree.
   CHECK(QuectelEC25::chooseApn("240080008862744", "8946071500000000001") ==
         "internet.cxn");
   // Super SIM: IMSI unrecognized -> ICCID decides.
   CHECK(QuectelEC25::chooseApn("901405500000000", "8988280666000000001") == "super");
-  // No IMSI at all (modem won't report one) -> ICCID decides, old behavior intact.
+  // No IMSI at all (modem won't report one) -> ICCID decides.
   CHECK(QuectelEC25::chooseApn("", "8946071500000000001") == "internet.cxn");
+  CHECK(QuectelEC25::chooseApn("", "89012400800088627441") == "internet.cxn"); // US Telenor
   CHECK(QuectelEC25::chooseApn("", "8988280666000000001") == "super");
+  CHECK(QuectelEC25::chooseApn("", "8901260852391558350") == "super"); // Kore 890126 — no collision
   // Neither usable -> "" so provision() fails open instead of guessing.
   CHECK(QuectelEC25::chooseApn("", "").empty());
 
