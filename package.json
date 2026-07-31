@@ -1,6 +1,6 @@
 {
   "name": "sensor-station-software",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "monorepo for CTT Sensor Station Software",
   "main": "index.js",
   "type": "module",

@@ -12,6 +12,32 @@ regenerated from these entries.
 
 ---
 
+## [2.3.4] — 2026-07-31
+
+### Fixed
+
+- **A recycled or SIM-swapped Telit no longer strands on a stale APN (`ctt-modem-provision`
+  0.3.3).** The Telit ECM provisioner returned as soon as the ECM session was bound and never
+  checked the attach context, so a Telit carrying a wrong `CGDCONT` CID1 from a prior deployment
+  (e.g. `internet.cxn` baked in, now paired with a Kore SIM) bound ECM to the wrong APN and the
+  PDN stayed dead through every reboot — the Telit-side mirror of the Quectel cause-55/33 trap.
+  The provisioner now runs the **shared attach-APN heal after the ECM bind** for *both* modem
+  families: read `CGDCONT` CID1, rewrite a non-blank wrong APN via `CFUN=0` / `CGDCONT` / `CFUN=1`,
+  and publish the dial APN — keyed on the SIM's IMSI home PLMN with a hardened ICCID issuer-prefix
+  fallback. The carrier/APN logic and the rewrite routine move into the base `Modem`; modem AT
+  commands are split into `at::` / `at::quectel::` / `at::telit::` namespaces. Hardware-verified on
+  a Telit: a bad context survived a 0.3.2 boot, and 0.3.3 healed it (`internet.cxn` → `super`) at
+  boot before ModemManager. The fleet pin `system/native/ctt-modem-provision.version` rolls to
+  **0.3.3**.
+
+### Changed
+
+- **Release docs brought current.** Each native tool now carries a `DESCRIPTION` for its GitHub
+  release notes; the image release-notes template calls out that the station runs a **SensorGnome**
+  build feeding the **Motus** network; and the `lts_26_07` migration guide extends through v2.3.x
+  (cellular provisioner maturation, SIM-aware APN self-heal, front-panel IP-dongle fix,
+  `collect-diagnostics`, timeline to 2.3.3).
+
 ## [2.3.3] — 2026-07-30
 
 ### Added
