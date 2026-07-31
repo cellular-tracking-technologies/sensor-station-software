@@ -68,6 +68,11 @@ void test_telit_parsers() {
   CHECK(TelitLE910Q1::parseEcmBound("\r\n#ECM: 0,1\r\n\r\nOK\r\n") == true);
   CHECK(TelitLE910Q1::parseEcmBound("\r\n#ECM: 0,0\r\n\r\nOK\r\n") == false);
   CHECK(TelitLE910Q1::parseEcmBound("\r\nERROR\r\n") == false);
+  // ICCID: the shared parser reads the Telit "#CCID: <iccid>" form too (not just
+  // the Quectel "+QCCID:"), via the inherited generic digit-run scan.
+  CHECK(TelitLE910Q1::parseIccid("\r\n#CCID: 89883070000067330512\r\n\r\nOK\r\n") ==
+        "89883070000067330512");
+  CHECK(TelitLE910Q1::parseIccid("\r\nERROR\r\n").empty());
 }
 
 // ---- Telit provision: one-boot ECM convergence ---------------------------------
@@ -111,6 +116,91 @@ void test_telit_provision() {
     CHECK(t.provision(/*dry_run=*/true) == ProvisionResult::Done);
     CHECK(!at.issued("AT#USBCFG=1"));
     CHECK(!at.issued("AT#REBOOT"));
+  }
+}
+
+// ---- Telit provision: recycled/stale attach context heal -----------------------
+// The bug this fix exists for: a Telit is perfectly ECM-bound, but CGDCONT CID1
+// carries a WRONG APN it kept in NV from a prior deployment. The ECM PDN dials CID1,
+// so the modem enumerates, mdm0 gets its lease, and the WAN stays dead through every
+// reboot. Bench-proven on 10.1.94.239 (2026-07-31): CID1="internet.cxn" + Kore Super
+// SIM -> 100% loss; the 2.3.2 provisioner reported "provisioned" and never touched
+// CGDCONT. Stage 3 now mirrors the Quectel heal.
+void test_telit_provision_recycled_context() {
+  using ctthw::ProvisionResult;
+
+  // (a) Recycled Telenor context, now a Kore Super SIM: heal CID1 -> super.
+  {
+    const std::string apnFile = "/tmp/ctt-test-telit-recycled-super";
+    std::remove(apnFile.c_str());
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 1\r\n\r\nOK\r\n";
+    at.replies["AT#ECM?"] = "\r\n#ECM: 0,1\r\n\r\nOK\r\n";                 // already bound
+    at.replies["AT#CCID"] = "\r\n#CCID: 89883070000067330512\r\n\r\nOK\r\n"; // Kore Super
+    at.replies["AT+CGDCONT?"] = // stale Telenor APN baked in from a prior deployment
+        "\r\n+CGDCONT: 1,\"IP\",\"internet.cxn\",\"0.0.0.0\",0,0\r\n\r\nOK\r\n";
+    TelitLE910Q1 t(at, apnFile);
+    CHECK(t.provision(/*dry_run=*/false) == ProvisionResult::Done);
+    CHECK(!at.issued("AT#ECM=1,0"));                          // already bound: no rebind
+    CHECK(at.issued("AT+CFUN=0"));                            // detach…
+    CHECK(at.issued("AT+CGDCONT=1,\"IP\",\"super\""));        // …rewrite CID1…
+    CHECK(at.issued("AT+CFUN=1"));                            // …re-attach
+    CHECK(readFile(apnFile) == "super");                     // and publish for NM
+    std::remove(apnFile.c_str());
+  }
+
+  // (b) Recycled the other way: Kore context, now a US Telenor SIM (IMSI decides) ->
+  //     heal CID1 -> internet.cxn.
+  {
+    const std::string apnFile = "/tmp/ctt-test-telit-recycled-cxn";
+    std::remove(apnFile.c_str());
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 1\r\n\r\nOK\r\n";
+    at.replies["AT#ECM?"] = "\r\n#ECM: 0,1\r\n\r\nOK\r\n";
+    at.replies["AT+CIMI"] = "\r\n240080008862744\r\n\r\nOK\r\n";            // Telenor PLMN
+    at.replies["AT#CCID"] = "\r\n#CCID: 89012400800088627441\r\n\r\nOK\r\n"; // US Telenor
+    at.replies["AT+CGDCONT?"] =
+        "\r\n+CGDCONT: 1,\"IP\",\"super\",\"0.0.0.0\",0,0\r\n\r\nOK\r\n";   // stale Kore
+    TelitLE910Q1 t(at, apnFile);
+    t.provision(/*dry_run=*/false);
+    CHECK(at.issued("AT+CGDCONT=1,\"IP\",\"internet.cxn\""));
+    CHECK(readFile(apnFile) == "internet.cxn");
+    std::remove(apnFile.c_str());
+  }
+
+  // (c) Correct context already: no radio bounce, still publishes the dial APN.
+  {
+    const std::string apnFile = "/tmp/ctt-test-telit-ok";
+    std::remove(apnFile.c_str());
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 1\r\n\r\nOK\r\n";
+    at.replies["AT#ECM?"] = "\r\n#ECM: 0,1\r\n\r\nOK\r\n";
+    at.replies["AT#CCID"] = "\r\n#CCID: 89883070000067330512\r\n\r\nOK\r\n"; // Kore Super
+    at.replies["AT+CGDCONT?"] =
+        "\r\n+CGDCONT: 1,\"IP\",\"super\",\"0.0.0.0\",0,0\r\n\r\nOK\r\n";   // already right
+    TelitLE910Q1 t(at, apnFile);
+    t.provision(/*dry_run=*/false);
+    CHECK(!at.issued("AT+CFUN=0"));                           // no bounce
+    CHECK(readFile(apnFile) == "super");
+    std::remove(apnFile.c_str());
+  }
+
+  // (d) dry-run on a wrong context: reports intent, writes nothing.
+  {
+    const std::string apnFile = "/tmp/ctt-test-telit-dry";
+    std::remove(apnFile.c_str());
+    ScriptedAt at;
+    at.replies["AT#USBCFG?"] = "\r\n#USBCFG: 1\r\n\r\nOK\r\n";
+    at.replies["AT#ECM?"] = "\r\n#ECM: 0,1\r\n\r\nOK\r\n";
+    at.replies["AT#CCID"] = "\r\n#CCID: 89883070000067330512\r\n\r\nOK\r\n";
+    at.replies["AT+CGDCONT?"] =
+        "\r\n+CGDCONT: 1,\"IP\",\"internet.cxn\",\"0.0.0.0\",0,0\r\n\r\nOK\r\n";
+    TelitLE910Q1 t(at, apnFile);
+    t.provision(/*dry_run=*/true);
+    CHECK(!at.issued("AT+CFUN=0"));
+    CHECK(!at.issued("AT+CGDCONT=1,\"IP\",\"super\""));
+    CHECK(std::ifstream(apnFile).good() == false);
+    std::remove(apnFile.c_str());
   }
 }
 
@@ -328,6 +418,7 @@ void test_quectel_provision_dryrun() {
 int main() {
   test_telit_parsers();
   test_telit_provision();
+  test_telit_provision_recycled_context();
   test_quectel_parsers();
   test_dispatch();
   test_quectel_provision_divergence();
