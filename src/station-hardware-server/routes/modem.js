@@ -3,6 +3,7 @@ import express from 'express'
 import { exec } from 'child_process'
 import ModemCache from '../../hardware/pi/network/modem-cache.js'
 import ConnectivityProbe from '../../hardware/pi/network/connectivity-probe.js'
+import CellUsage from '../../hardware/pi/network/cell-usage.js'
 import RunCommand from '../../command.js'
 
 const router = express.Router()
@@ -10,8 +11,22 @@ const router = express.Router()
 /* GET home page. */
 router.get('/', async function (req, res, next) {
   try {
+    // Modem state (mmcli) plus cumulative cellular data usage (sysfs byte
+    // counters, accumulated across interface resets). Usage rides along here
+    // rather than on its own endpoint so it reaches the cloud automatically:
+    // server-api.js posts this route's body as `modem` in the 6-hourly health
+    // check-in, so no new client or server plumbing is needed.
+    //
+    // Usage is best-effort — a failure to account bytes must never turn the
+    // modem-status endpoint into a 500, so it degrades to null.
     const info = await ModemCache.get()
-    res.json(info)
+    let usage = null
+    try {
+      usage = await CellUsage.get()
+    } catch (err) {
+      console.error('cell usage unavailable', err.message)
+    }
+    res.json({ ...info, usage })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

@@ -71,6 +71,23 @@ cap 05-nmcli-modem.txt    nmcli c show station-modem
 cap 05-ip-addr.txt        ip -br addr
 cap 05-ip-route.txt       ip route
 
+# Cellular data usage. Two views, because they answer different questions:
+#   - the cumulative total maintained by cell-usage.js, which survives the
+#     counter resets that happen on every boot and modem re-enumeration;
+#   - the raw per-interface kernel counters, which are only valid for the
+#     CURRENT interface lifetime and are here to cross-check the total.
+[ -r /var/lib/ctt/cell-usage.json ] && cp /var/lib/ctt/cell-usage.json "$OUT/05-cell-usage.json" 2>/dev/null
+{
+  echo "\$ per-interface byte counters (raw; reset on interface recreation)"
+  for i in mdm0 wwan0 ppp0; do
+    [ -d "/sys/class/net/$i" ] || continue
+    echo "$i ifindex=$(cat "/sys/class/net/$i/ifindex" 2>/dev/null)" \
+         "rx_bytes=$(cat "/sys/class/net/$i/statistics/rx_bytes" 2>/dev/null)" \
+         "tx_bytes=$(cat "/sys/class/net/$i/statistics/tx_bytes" 2>/dev/null)" \
+         "operstate=$(cat "/sys/class/net/$i/operstate" 2>/dev/null)"
+  done
+} >"$OUT/05-net-counters.txt" 2>&1
+
 cap 06-dmesg.txt          dmesg -T   # note: pre-NTP boot lines may be mis-timestamped
 
 # pack: tar syslogs straight from /var/log (no copy -> safe on low disk / tmpfs)
