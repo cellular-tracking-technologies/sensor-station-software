@@ -12,6 +12,137 @@ regenerated from these entries.
 
 ---
 
+## [2.3.4] — 2026-07-31
+
+### Fixed
+
+- **A recycled or SIM-swapped Telit no longer strands on a stale APN (`ctt-modem-provision`
+  0.3.3).** The Telit ECM provisioner returned as soon as the ECM session was bound and never
+  checked the attach context, so a Telit carrying a wrong `CGDCONT` CID1 from a prior deployment
+  (e.g. `internet.cxn` baked in, now paired with a Kore SIM) bound ECM to the wrong APN and the
+  PDN stayed dead through every reboot — the Telit-side mirror of the Quectel cause-55/33 trap.
+  The provisioner now runs the **shared attach-APN heal after the ECM bind** for *both* modem
+  families: read `CGDCONT` CID1, rewrite a non-blank wrong APN via `CFUN=0` / `CGDCONT` / `CFUN=1`,
+  and publish the dial APN — keyed on the SIM's IMSI home PLMN with a hardened ICCID issuer-prefix
+  fallback. The carrier/APN logic and the rewrite routine move into the base `Modem`; modem AT
+  commands are split into `at::` / `at::quectel::` / `at::telit::` namespaces. Hardware-verified on
+  a Telit: a bad context survived a 0.3.2 boot, and 0.3.3 healed it (`internet.cxn` → `super`) at
+  boot before ModemManager. The fleet pin `system/native/ctt-modem-provision.version` rolls to
+  **0.3.3**.
+
+### Changed
+
+- **Release docs brought current.** Each native tool now carries a `DESCRIPTION` for its GitHub
+  release notes; the image release-notes template calls out that the station runs a **SensorGnome**
+  build feeding the **Motus** network; and the `lts_26_07` migration guide extends through v2.3.x
+  (cellular provisioner maturation, SIM-aware APN self-heal, front-panel IP-dongle fix,
+  `collect-diagnostics`, timeline to 2.3.3).
+
+## [2.3.3] — 2026-07-30
+
+### Added
+
+- **`collect-diagnostics` is now an on-station CLI** (`/usr/local/sbin/collect-diagnostics`).
+  `system/scripts/collect-diagnostics.sh` gathers a read-only bundle — identity, hardware,
+  services, modem **+ SIM ICCID/IMSI**, and logs — as the `ctt` user (no sudo) and prints the
+  `.tar.gz` path. It is the single source of truth for what a diagnostic bundle contains; the
+  client-side SSH wrappers (Unix `.sh` / Windows `.ps1`, in the KB repo) become thin invokers.
+
+### Fixed
+
+- **OTA no longer clobbers a Quectel's `autoconnect` (cellular survives every update).**
+  `deploy_dir` copied the repo `station-modem` profile wholesale, and its "preserve the
+  runtime-owned keys" step only stripped them from the *diff*, not the installed file — so
+  the repo's `autoconnect=false` overwrote the live value on any redeploy. It bit only
+  Quectel because NetworkManager omits `autoconnect=true` (the default) from the keyfile, so
+  "preserve the line if present" preserved nothing. `merge_preserved_keys` now reads an
+  **absent** preserved key as the daemon default and omits it (never falling back to the
+  source value); `install-network.sh` also re-runs `modem-datapath.sh` after the deploy to
+  re-assert the per-modem policy. Verified on real NM 1.30.6 (absent line → `autoconnect: yes`)
+  and on hardware. (PR #50.)
+- **Application layer is now OTA-self-enabling, correctly ordered, and retries forever.**
+  Boot-sequence hardening from the boot-sequence review: (1) `install-systemd.sh`'s
+  `MUST_BE_ENABLED` now covers the Node/SensorGnome units (`station-hardware-server`,
+  `station-radio-interface`, `station-web-interface`, `station-lcd-interface`,
+  `station-boot`, `bootcount`, `sensorgnome`) — previously deployed as files but enabled only
+  by Ansible/manufacturing, so a lost symlink or an Ansible-free image came up with **no app
+  layer**. (2) `sensorgnome.service` now orders `After=ctt-board-detect.service
+  bootcount.service` — the units that actually produce its two synchronous inputs
+  (`/etc/ctt/station-id`, `/etc/bootcount`); the old `After=station-boot` rested on a stale
+  premise (station-boot no longer writes `station-id`) and raced `bootcount`. Its malformed
+  `WantedBy=…station-boot.service` is dropped. (3) The four long-running `station-*` services
+  get `StartLimitIntervalSec=0` + `RestartSec=5`, so a transient boot-time crash-loop retries
+  forever instead of hitting systemd's default 5-starts-in-10s give-up and leaving a headless
+  station dark (matching the radio driver's policy).
+- **Quectel APN is now selected from the SIM's IMSI, not its ICCID country code.**
+  `ctt-modem-provision`'s Quectel driver mapped ICCID digits `[2:4] == "46"` to the Telenor
+  APN and everything else to `super`. Telenor also ships SIMs in an **`8901` (US-numbered)
+  ICCID range**, whose country code reads `01` — so a Telenor subscription was assigned
+  `super`, and the network refused the data bearer with **3GPP cause 33
+  (`option-unsubscribed`)**: the modem registered with good signal but carried no traffic,
+  and it re-broke on every boot because the provisioner kept re-applying the wrong APN.
+
+  Carrier identity now comes from the **IMSI's home PLMN** (`AT+CIMI`; MCC 240 / MNC 08 =
+  Telenor Connexion), which names the *subscription*, with a hardened **ICCID issuer-prefix**
+  match kept as a fallback for modems that will not report an IMSI. Extend `isTelenorImsi()` /
+  `isTelenorIccid()` for new carriers rather than widening the rule. `provision-modem-apn.sh`'s mmcli fallback mirrors the
+  same order, and now also refuses to guess from a truncated ICCID.
+
+  Found on V2 station `F5C51E6B6AFA` and corroborated by the Telenor subscription-activity
+  log (192 successful sessions on the correct APN over the preceding 8 days, stopping at the
+  boot that stamped `super`). Correcting the APN restored the bearer on the first attempt.
+  Hardware-verified end-to-end on a Quectel bench station: install 0.3.2 → break `CID1` to
+  `super` → reboot → the boot guard recovered the attach context to `internet.cxn` **by IMSI
+  PLMN 24008** and the bearer came back with no human touch.
+
+- **ICCID fallback hardened to the Telenor issuer prefix.** When no IMSI is available, APN
+  selection uses `isTelenorIccid()` — an ICCID starting `8946` or `890124008` (`8901` + the
+  embedded Telenor PLMN `24008`) — not the 2-digit country code. Bare `8901` is a broad US
+  range: fleet-validated 2026-07-30, **964 Kore SIMs** live there (`890126…`, `890124011/020`)
+  and would have been mis-routed to `internet.cxn`; `890124008` is Telenor-exclusive. The rule
+  classifies all **7,858 Telenor + 2,792 Kore** fleet ICCIDs with zero misclassification.
+
+- **`station-modem` now retries forever instead of giving up after four attempts.** The
+  profile left `autoconnect-retries` at NetworkManager's default (`-1`), which means **4
+  attempts and then permanent surrender** — nothing on the station re-arms it, so a station
+  whose modem is still doing a cold cell search at boot (>120 s is normal) stayed offline
+  until the next reboot. Now pinned to `0`. Unlike `autoconnect`, `0` is not NM's default, so
+  it is written to the keyfile and survives an `install-network` redeploy.
+
+- **Cellular can no longer steal the default route.** `station-modem` now pins
+  `ipv4.route-metric=700`, matching what `modem-ecm-up.sh` already does for the Telit path.
+  Previously the metric was unset (`-1`), leaving NetworkManager to choose one.
+
+### Changed
+
+- **User-facing CLI symlinks are created by an OTA hook, not only by the Ansible image build.**
+  New `install-scripts.sh` (post-merge) symlinks the shell CLIs — `station-id`, `program-radios`,
+  `program-radio`, `update-station`, `bash-update-station`, `upload-station-data`,
+  `collect-diagnostics` — into `/usr/local/sbin`, so an OTA self-heals a lost symlink and an image
+  built without the legacy Ansible role still ships its CLIs. Moves CLI ownership into the
+  monorepo (retiring that slice of the Ansible boot-path debt). Runs in image-bake mode too.
+- `ctt-modem-provision` **0.3.2** built, tagged (`ctt-modem-provision-v0.3.2`) and published
+  (armhf binary + `.sha256`); the fleet pin (`system/native/ctt-modem-provision.version`) is
+  rolled to **0.3.2**, so stations pick it up on the next OTA.
+- **All modem AT-command strings are centralized** in `native/lib/ctthw/modem/at_commands.h`
+  (named constants + a `cgdcontDefine` builder), replacing inline literals across the Quectel,
+  Telit, and modem-detect drivers — one authoritative place to find or change a command.
+
+---
+
+## [2.3.2] — 2026-07-29
+
+### Fixed
+
+- **The front-panel "IP Address" screen now shows USB-ethernet dongles.** The LCD menu
+  matched only `eth*`/`wlan*` interface names, so a USB-ethernet adapter that enumerates
+  under a predictable name (`enx<mac>`) or the legacy `usb0` displayed a blank IP despite
+  having a valid address. The interface allowlist now also matches `enx*`/`usb0` (anchored,
+  so virtual interfaces such as `veth*` that merely contain "eth" are excluded), and long
+  `enx…` names get their own row before the address. The modem's point-to-point NAT (`mdm0`,
+  `192.168.225.x`) and `ppp0` remain deliberately off the screen — they are not reachable
+  addresses. (PR #48.)
+
 ## [2.3.1] — 2026-07-24
 
 ### Changed

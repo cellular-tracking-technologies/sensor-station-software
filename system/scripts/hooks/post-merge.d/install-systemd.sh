@@ -43,6 +43,19 @@ MUST_BE_ENABLED=(
   ctt-modem-wake.service         # wake a shut-down Telit at boot (ON_OFF# pulse) so a hard reset self-recovers; runs Before modem-boot-state
   ctt-modem-provision.service    # idempotent ECM provision GUARD; Before MM, no-op on a provisioned modem, converts a fresh/swapped RNDIS one
   ctt-modem-ecm-up.service       # bring up the ECM data iface mdm0 (DHCP + fallback route); NM won't manage an MM modem net port
+
+  # Application layer (Node services + SensorGnome). Enable here so an OTA self-heals
+  # a lost symlink and an image built without the legacy Ansible enablement still comes
+  # up with a full app layer — previously these were deployed as files only and their
+  # enable state depended solely on Ansible / manufacturing.
+  station-hardware-server.service  # REST hardware API :3000 (the other station-* units order after it)
+  station-radio-interface.service  # radio acquisition + pipeline, WS :8001
+  station-web-interface.service    # dashboard :80
+  station-lcd-interface.service    # LCD menu + buttons
+  station-boot.service             # modem data-path policy + per-SIM APN (oneshot, After ModemManager)
+  bootcount.service                # writes /etc/bootcount (SensorGnome reads it at load) + SG hub-map symlink
+  sensorgnome.service              # SG master :3010 (tag detection)
+
   # ctt-radio-driver@.service and ctt-blu-driver@.service are TEMPLATES — udev
   # activates per-channel instances via ENV{SYSTEMD_WANTS}; they are deployed as
   # files but must NOT be enabled here.

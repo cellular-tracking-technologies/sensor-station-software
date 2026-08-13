@@ -7,6 +7,12 @@ receiving station. Flash it to a station's Compute Module for a field-ready rece
 upload over cellular / Wi-Fi / Ethernet (optional Iridium satellite), GPS/PPS timing,
 a local LCD + web dashboard, and over-the-air updates.
 
+As an internet-connected **Motus** receiving station it runs a build of **SensorGnome**
+— the open-source Motus tag-detection software — alongside the native CTT radio
+services, decoding Lotek and CTT coded-ID tags and contributing detections to the
+**[Motus Wildlife Tracking System](https://motus.org)**, the collaborative research
+network CTT partners with. Detections upload to both the CTT cloud and Motus.
+
 ## Download
 
 | | |
@@ -41,7 +47,8 @@ __CHANGELOG__
 - **User guide:** <https://cellular-tracking-technologies.github.io/ctt_documentation/SensorStation-User-Guide.html>
 - **Source:** <https://github.com/__REPO__> — open source under **AGPL-3.0-or-later**
 - **Data portal:** <https://account.celltracktech.com>
-- Part of the **Internet of Wildlife** / Motus network
+- **Motus network:** <https://motus.org> — the collaborative tracking network CTT partners with; this image runs a build of **[SensorGnome](https://sensorgnome.org)** for Motus tag detection
+- Part of the **Internet of Wildlife**
 
 ---
 _Built from `__SHORT_SHA__` · __DATE___

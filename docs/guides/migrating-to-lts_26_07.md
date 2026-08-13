@@ -1,7 +1,7 @@
-# Migrating a SensorStation to the `lts_26_07` image (v2.2.x)
+# Migrating a SensorStation to the `lts_26_07` image (v2.3.x)
 
 This is a **major upgrade** from the previous production LTS (**v1.7.0**, the `lts_24-06`
-image line) to **v2.2.x** (`lts_26_07`) — a full 2.x rework, not a point update.
+image line) to **v2.3.x** (`lts_26_07`) — a full 2.x rework, not a point update.
 **Re-flashing the `lts_26_07` image is the recommended path.**
 
 Two behavior changes to know before you start:
@@ -16,8 +16,8 @@ migration-oriented summary, organized by impact.
 
 | | Old LTS (`lts_24-06`) | New LTS (`lts_26_07`) |
 |---|---|---|
-| App version | **v1.7.0** | **v2.2.x** |
-| Cellular | Quectel EC25, QMI + ModemManager **PPP** | Telit LE910Q1, **CDC-ECM** (`mdm0`), zero-touch boot provisioning |
+| App version | **v1.7.0** | **v2.3.x** |
+| Cellular | Quectel EC25, QMI + ModemManager **PPP** | Telit LE910Q1 **CDC-ECM** (`mdm0`) / Quectel EC25 QMI, zero-touch provisioning + **SIM-aware APN self-heal** |
 | Hardware I/O | in the Node app at boot | **native C++ tools** → `/run/ctt/` contracts; the app is a consumer |
 | Driver delivery | compiled on-station | **prebuilt armhf binaries** fetched over OTA, per-tool version pins |
 | Image pipeline | manual, date-named | **CI-built, immutable `v<version>` images** |
@@ -45,6 +45,18 @@ contracts under **`/run/ctt/`**.
   so cellular never preempts wired/Wi-Fi.
 - A boot service pulses `ON_OFF#` so a Telit in shutdown (after a hard reset) self-recovers.
 - **Modem NV persists across a reflash** — so after flashing there is **no manual provisioning step**.
+- **v2.3.x — native provisioner for *both* families + SIM-aware APN that self-heals.** Provisioning
+  is now a native tool (`ctt-modem-provision`) for the Quectel EC25 as well as the Telit, the Telit
+  RNDIS→ECM conversion completes in a **single boot**, and the LTE attach APN is chosen from the
+  **SIM's IMSI** (home PLMN) with an ICCID issuer-prefix fallback — so Telenor SIMs (including those
+  issued in a US-numbered `8901` ICCID range) no longer strand on the wrong APN with **3GPP cause
+  55/33** (registered, no data). The attach context is matched to the SIM and **self-heals a
+  recycled/swapped modem** that carried a stale APN in from a prior deployment (Quectel `CGDCONT`
+  CID1; and, in the latest `ctt-modem-provision`, the Telit ECM context too). Cellular also now
+  **survives every OTA** (an update can't clobber the Quectel's autoconnect) and **can't steal the
+  default route** from a wired/Wi-Fi uplink; `station-modem` retries indefinitely rather than giving
+  up. *Field note:* after a boot-time re-attach, cellular data takes **~15–30 s** to come up — the
+  modem is *registered* before the PDN is *connected*.
 
 ### OTA + delivery
 - Modular post-merge hooks (`system/scripts/hooks/post-merge.d/*.sh`): new subsystem deploys are a
@@ -60,6 +72,10 @@ contracts under **`/run/ctt/`**.
 - LCD boot/shutdown/updating splashes + a radio-fault banner; native re-init recovers a warm
   controller. Native `ctt-leds` / `ctt-sensors` (V3 **and** V2 sensor sets) with quieter logging.
   BluSeries receivers discovered via udev.
+- **v2.3.x:** the front-panel **IP Address** screen now also shows USB-ethernet dongles (`enx…`),
+  and an on-station **`collect-diagnostics`** CLI bundles identity / hardware / services / modem+SIM
+  / logs into a single `.tar.gz` for field triage. User-facing CLIs are (re)created by an OTA hook,
+  so a lost symlink self-heals on the next update.
 
 ### Network reachability
 - Wi-Fi power-save disabled (stations stayed unreachable when the USB Wi-Fi adapter slept);
@@ -96,7 +112,7 @@ station you can't physically reach.
   or Wi-Fi uplink.
 - **Station checks in** to the cloud.
 
-## Version timeline (v1.7.0 → v2.2.2)
+## Version timeline (v1.7.0 → v2.3.3)
 
 | Version | Theme |
 |---|---|
@@ -109,5 +125,9 @@ station you can't physically reach.
 | **2.2.0** | Cellular **RNDIS → CDC-ECM**, zero-touch provisioning |
 | 2.2.1 | Fast burns (PiShrink); license metadata (AGPL-3.0) |
 | **2.2.2** | Fail-safe, stateless first-boot resize |
+| 2.3.0 | Native provisioner extended to the **Quectel EC25**; IPv4-only PDN; `provision-modem-apn` |
+| 2.3.1 | Native binaries actually baked into images; **Telit RNDIS→ECM in one boot** (`ctt-modem-provision` 0.3.1) |
+| 2.3.2 | Front-panel **IP Address** screen shows USB-ethernet dongles |
+| **2.3.3** | **APN by IMSI** (Telenor cause-55/33 heal, provisioner 0.3.2); OTA-safe autoconnect; cellular can't steal the route; **`collect-diagnostics`** CLI |
 
 See [`CHANGELOG.md`](../../CHANGELOG.md) for the full per-release detail.

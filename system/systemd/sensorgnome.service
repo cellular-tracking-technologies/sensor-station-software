@@ -1,11 +1,13 @@
 [Unit]
 Description=Sensorgnome Startup
-# Wait for station-boot to finish before starting. station-boot creates
-# /etc/ctt/station-id (among other things), and sensorgnome's master/machine.js
-# reads it synchronously at module load — without the After= dependency,
-# sensorgnome races station-boot and crashes with ENOENT, then waits the
-# 60s RestartSec before retrying. With it, sensorgnome starts cleanly first time.
-After=network.target station-boot.service
+# master/machine.js reads TWO files synchronously at module load:
+#   /etc/ctt/station-id  (written by ctt-board-detect.service)
+#   /etc/bootcount       (written by bootcount.service, itself After=station-boot)
+# Order after BOTH producers so a fresh boot can't ENOENT-crash and then wait out
+# the 60s RestartSec. bootcount is After=station-boot, so the old modem-policy
+# ordering is subsumed. (Historic note: this comment used to say station-boot
+# creates station-id — ctt-board-detect owns that identity now.)
+After=network.target ctt-board-detect.service bootcount.service
 
 [Service]
 ExecStart=nohup /etc/ctt/scripts/start-sensorgnome.sh
@@ -15,4 +17,4 @@ RestartSec=60
 Restart=on-failure
 
 [Install]
-WantedBy=multi-user.target station-boot.service
+WantedBy=multi-user.target

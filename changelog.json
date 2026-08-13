@@ -1,5 +1,70 @@
 [
     {
+        "version": "2.3.4",
+        "date": "2026-07-31",
+        "notes": "Extends the SIM-aware attach-APN self-heal to the Telit ECM data path. A recycled or SIM-swapped Telit that carried a stale CGDCONT CID1 APN from a prior deployment (e.g. internet.cxn now paired with a Kore SIM) bound ECM to the wrong APN and stayed dark through every reboot — the Telit mirror of the Quectel cause-55/33 trap. ctt-modem-provision rolls to 0.3.3; the fleet pin picks it up on the next OTA.",
+        "features": [],
+        "bugs": [
+            "A recycled or SIM-swapped Telit no longer strands on a stale attach APN (ctt-modem-provision 0.3.3). The Telit ECM provisioner returned as soon as the ECM session was bound and never checked the attach context, so a Telit carrying a wrong CGDCONT CID1 from a prior deployment (internet.cxn baked in, now with a Kore SIM) bound ECM to the wrong APN and the PDN stayed dead through every reboot — the Telit-side mirror of the Quectel cause-55/33 trap. The provisioner now runs the shared attach-APN heal after the ECM bind for both modem families: read CGDCONT CID1, rewrite a non-blank wrong APN via CFUN=0/CGDCONT/CFUN=1, and publish the dial APN, keyed on the SIM IMSI home PLMN with a hardened ICCID issuer-prefix fallback. The carrier/APN logic and rewrite routine move into the base Modem class; modem AT commands are split into at::/at::quectel::/at::telit:: namespaces. Hardware-verified on a Telit: a bad context survived a 0.3.2 boot and 0.3.3 healed it (internet.cxn to super) at boot before ModemManager. The fleet pin system/native/ctt-modem-provision.version rolls to 0.3.3."
+        ]
+    },
+    {
+        "version": "2.3.3",
+        "date": "2026-07-30",
+        "notes": "Cellular integrity and boot-sequence finalization for the lts_26_07 image. The Quectel dial/attach APN is now chosen from the SIM's IMSI home PLMN (Telenor 24008) instead of the ICCID country code — a Telenor SIM in an 8901 (US-numbered) ICCID range had been assigned 'super' and refused by the network with 3GPP cause 33. OTA no longer clobbers a Quectel's autoconnect, the modem retries forever and cannot steal the default route, and the application layer is now OTA-self-enabling with corrected startup ordering. ctt-modem-provision rolls to 0.3.2.",
+        "features": [
+            "collect-diagnostics is now an on-station CLI (/usr/local/sbin/collect-diagnostics): system/scripts/collect-diagnostics.sh gathers a read-only bundle (identity, hardware, services, modem plus SIM ICCID/IMSI, and logs) as the ctt user with no sudo and prints the tarball path. Single source of truth for what a diagnostic bundle contains; the client-side SSH wrappers become thin invokers.",
+            "User-facing CLI symlinks are now created by an OTA hook (install-scripts.sh), not only by the Ansible image build: station-id, program-radios, program-radio, update-station, bash-update-station, upload-station-data and collect-diagnostics are symlinked into /usr/local/sbin, so an OTA self-heals a lost symlink and an image built without the Ansible role still ships its CLIs. Runs in image-bake mode too.",
+            "ctt-modem-provision built, tagged (ctt-modem-provision-v0.3.2) and published (armhf binary + sha256); the fleet pin system/native/ctt-modem-provision.version is rolled to 0.3.2, so stations pick it up on the next OTA.",
+            "All modem AT-command strings are centralized in native/lib/ctthw/modem/at_commands.h (named constants + a cgdcontDefine builder), replacing inline literals across the Quectel, Telit, and modem-detect drivers."
+        ],
+        "bugs": [
+            "Quectel APN is selected from the SIM's IMSI home PLMN (AT+CIMI; MCC 240 / MNC 08 = Telenor Connexion), not the ICCID country code. Telenor also ships SIMs in an 8901 (US-numbered) ICCID range whose country code reads 01, so the old rule assigned 'super' and the network refused the data bearer with 3GPP cause 33 (option-unsubscribed): registered with good signal but no traffic, re-broken on every boot. A hardened ICCID issuer-prefix match (8946 or 890124008) is kept as a fallback for modems that will not report an IMSI. Found on V2 station F5C51E6B6AFA and corroborated by the Telenor subscription-activity log; hardware-verified end-to-end (break CID1 to super, reboot, boot guard recovers to internet.cxn by IMSI).",
+            "ICCID fallback hardened to the Telenor issuer prefix. When no IMSI is available, APN selection matches an ICCID starting 8946 or 890124008 (8901 plus the embedded Telenor PLMN 24008), not the 2-digit country code. Bare 8901 is a broad US range: fleet-validated against 7858 Telenor and 2792 Kore ICCIDs, 964 Kore SIMs start 8901 and would have been mis-routed to internet.cxn; 890124008 is Telenor-exclusive. Zero misclassification across the full fleet.",
+            "OTA no longer clobbers a Quectel's autoconnect. deploy_dir copied the station-modem profile wholesale and only stripped runtime-owned keys from the diff, so the repo's autoconnect=false overwrote the live value on any redeploy. It bit only Quectel because NetworkManager omits autoconnect=true (its default) from the keyfile. deploy_dir now reads an absent preserved key as the daemon default and omits it (never falling back to the source value), and install-network.sh re-runs modem-datapath.sh after the deploy to re-assert the per-modem policy. Verified on real NM 1.30.6 and on hardware.",
+            "station-modem retries forever instead of surrendering after four attempts: autoconnect-retries is pinned to 0 (non-default, so it is written to the keyfile and survives an install-network redeploy). Cellular can no longer steal the default route: ipv4.route-metric is pinned to 700.",
+            "Application layer is now OTA-self-enabling and correctly ordered. install-systemd.sh MUST_BE_ENABLED now covers the Node and SensorGnome units (previously deployed as files but enabled only by Ansible/manufacturing, so a lost symlink or an Ansible-free image came up with no application layer). sensorgnome.service orders After=ctt-board-detect.service bootcount.service, the two units that produce its synchronous inputs /etc/ctt/station-id and /etc/bootcount, fixing a stale premise and a race on bootcount. The four long-running station-* services get StartLimitIntervalSec=0 and RestartSec=5, so a transient boot-time crash-loop retries forever instead of hitting systemd's default 5-starts-in-10s give-up and leaving a headless station dark."
+        ]
+    },
+    {
+        "version": "2.3.2",
+        "date": "2026-07-29",
+        "notes": "Makes the front-panel IP Address screen show USB-ethernet dongles that do not enumerate as eth*.",
+        "bugs": [
+            "The LCD Ip Address screen showed a blank address for a USB-ethernet dongle that enumerates under a name other than eth* (a predictable name such as enx<mac>, or the legacy usb0), because the interface filter matched only eth* and wlan*. It now also matches enx* and usb0, anchored so virtual interfaces such as veth* that merely contain 'eth' are excluded, and long enx names are shown on their own row before the address. The modem point-to-point NAT (mdm0, 192.168.225.x) and ppp0 stay off the screen because they are not reachable addresses (PR #48)."
+        ]
+    },
+    {
+        "version": "2.3.1",
+        "date": "2026-07-24",
+        "notes": "Fixes the image bake so native binaries actually land in built images, completes the Telit RNDIS-to-ECM conversion within a single boot, and hardens the BluSeries/radio driver against an unplugged receiver. Pins ctt-modem-provision 0.3.1 fleet-wide and stamps the image build date.",
+        "features": [
+            "ctt-modem-provision is pinned to 0.3.1 across the fleet.",
+            "/etc/ctt/station-image is now stamped with the image build date at CI build time, distinct from /etc/ctt/station-software, which records the last software-update time on every update-station run (build and OTA)."
+        ],
+        "bugs": [
+            "Native binaries now actually land in built images. install-native.sh verified each fetched armhf binary by running it for --version, which cannot execute under the image build's qemu-arm emulation, so the check failed and the install was silently skipped, publishing images with no native binaries (modem provisioner, radio/blu drivers, board-detect). In build mode the tool now trusts the checksum and pin and skips the exec smoke test, and the build fails loudly if a deploy hook errors. A second silent failure, nmcli connection reload hard-failing in the chroot with no NetworkManager D-Bus, is fixed by skipping runtime NM/udev reloads in build mode; the configs apply on first boot (PRs #44, #46).",
+            "Telit LE910Q1 RNDIS-to-CDC-ECM conversion now completes in a single boot (ctt-modem-provision 0.3.0 to 0.3.1). A fresh or replacement Telit previously needed two reboots to converge, leaving mdm0 down (no cellular) in between. The provisioner now waits for the modem to re-enumerate as ECM within the same boot, reopens the AT port, and completes the bind (AT#ECM=1,0), running Before=ModemManager so the wait is uncontended, and fails open to the previous two-boot behavior if the port does not return in time.",
+            "The BluSeries and 434-radio driver template units no longer fail-loop when their USB device is unplugged. They set StartLimitIntervalSec=0 (never give up) but had only an ordering dependency on the device, so unplugging a receiver left the instance restarting every 2 s forever. Added BindsTo the .device unit so systemd stops the instance on removal (udev restarts it on re-attach), plus ConditionPathExists against the unplug/settle race. Retry-forever for a present-but-glitching receiver is preserved.",
+            "BluSeries detections poll no longer throws TypeError reading 'forEach' when a receiver stops responding. A timed-out poll delivers data undefined; blu-base-station.js now guards Array.isArray before iterating, mirroring the existing VERSION-task guard."
+        ]
+    },
+    {
+        "version": "2.3.0",
+        "date": "2026-07-23",
+        "notes": "Extends the native modem provisioner to the Quectel EC25 so its LTE attach APN cannot diverge from the dial APN (the 3GPP cause 55 'registered but no data' failure), unifies the dial-APN source, and requests an IPv4-only bearer for IPv4-only M2M SIMs.",
+        "features": [
+            "Native cellular modem provisioner extended to the Quectel EC25 (ctt-modem-provision 0.2.0 to 0.3.0). Provisioning is refactored into a small unit-tested ctthw/modem C++ module, an AT-port transport with one driver per modem family. For a Quectel it keeps the LTE attach APN (CGDCONT CID1) matched to the SIM so it cannot diverge from the NetworkManager dial APN, a divergence the network rejects with 3GPP cause 55, leaving the modem registered but passing no data. It reads the SIM ICCID (AT+QCCID) and, only when CID1 carries a non-empty wrong APN, rewrites it (CFUN=0 / CGDCONT=1,'IP',<apn> / CFUN=1); a blank CID1 is left alone. Runs Before=ModemManager, idempotent and fail-open, so a stale or recycled attach context self-heals on the next boot. Verified against the Quectel AT Commands Manual V2.0 and on hardware. The Telit LE910Q1 ECM data-path provisioning is unchanged.",
+            "check-sim-id.sh renamed to provision-modem-apn.sh and reworked to consume /run/ctt/modem-apn (written by the native provisioner) as the single source for the dial APN, so the attach APN and the dial APN share one origin and cannot diverge; the previous mmcli-ICCID mapping is kept as a fallback.",
+            "New udev symlink /dev/ctt-modem-at for the Quectel EC25 AT control port (interface 02).",
+            "The native-tool release workflow now publishes formatted Markdown release notes."
+        ],
+        "bugs": [
+            "The modem now requests IPv4-only. These M2M SIMs and APNs are provisioned IPv4-only, so a dual-stack (IPv4v6) bearer request made the modem attempt an IPv6 PDN the network refused (QMI CallFailed / ip-version-mismatch). Sets ipv6.method=disabled on the station-modem profile (gsm.ip-type is not usable on NetworkManager 1.30 / Bullseye).",
+            "First-time SensorGnome tag-database upload no longer fails when there is no existing SG_tag_database file to remove (rm -f)."
+        ]
+    },
+    {
         "version": "2.2.4",
         "date": "2026-07-22",
         "notes": "Fixes SensorGnome tag-database uploads through the station web interface.",
