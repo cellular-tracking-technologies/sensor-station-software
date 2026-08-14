@@ -65,7 +65,12 @@ dtoverlay=gpio-key,gpio=5,active_low=0,gpio_pull=down,keycode=108,label=ctt-btn-
 dtoverlay=gpio-key,gpio=6,active_low=0,gpio_pull=down,keycode=28,label=ctt-btn-select
 dtoverlay=gpio-key,gpio=7,active_low=0,gpio_pull=down,keycode=1,label=ctt-btn-back
 
-[cm4]
+# BCM2711 USB filter. [pi4] matches EVERY 2711 variant (CM4, CM4S, Pi 4B); do not
+# narrow it to [cm4], which does not match a CM4S. When it does not match, otg_mode
+# is never applied and the module falls back to the legacy DWC2 controller — seen on
+# a CM4S as "using dwc2" in the kernel log where a CM3 logs "dwc_otg", with unstable
+# USB host behaviour on a fully populated hub.
+[pi4]
 # Enable host mode on the 2711 built-in XHCI USB controller.
 # This line should be removed if the legacy DWC2 controller is required
 # (e.g. for USB device mode) or if USB support is not required.
