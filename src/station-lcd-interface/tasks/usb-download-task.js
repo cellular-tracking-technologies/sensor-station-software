@@ -26,19 +26,45 @@ class UsbDownloadTask {
     const filled = Math.min(Math.round((copied / total) * barWidth), barWidth)
     return BLOCK.repeat(filled) + SPACE.repeat(barWidth - filled)
   }
+  /**
+   * Build the four panel rows for a progress snapshot, or null when there is
+   * nothing to repaint (idle, or a terminal state that results() renders).
+   *
+   * A copy pauses between files while the radio interface rotates data files, so
+   * the panel has to explain itself rather than looking frozen — which is exactly
+   * how the old build read when a copy stopped moving.
+   */
+  rowsFor(progress) {
+    const status = progress.status
+    const phase = progress.phase
+    const copied = progress.copied || 0
+    const total = progress.total || 0
+    const pct = total > 0 ? Math.round((copied / total) * 100) : 0
+    const bar = this.progressBar(copied, total)
+
+    if (status === "paused") {
+      return [this.header, phase === "rotating" ? "Data Rotating" : "Data Paused", bar, `${pct}%`]
+    }
+    if (status === "copying" && phase === "restarting") {
+      // "Data Download Restart" is 21 characters — one wider than the panel — so
+      // it is split across two rows instead of being silently truncated.
+      return [this.header, "Data Download", "Restarting...", `${pct}%`]
+    }
+    if (status === "copying" && total > 0) {
+      return [this.header, `${copied}/${total} files`, bar, `${pct}%`]
+    }
+    return null
+  }
+
   fetchProgress() {
     fetch(this.progressUrl, { timeout: 3000 })
       .then(res => res.json())
       .then(progress => {
         console.log('usb download progress', progress)
-        if (progress.status === "copying" && progress.total > 0) {
-          const pct = Math.round((progress.copied / progress.total) * 100)
-          display.write([
-            this.header,
-            `${progress.copied}/${progress.total} files`,
-            this.progressBar(progress.copied, progress.total),
-            `${pct}%`
-          ])
+        if (!progress) return
+        const rows = this.rowsFor(progress)
+        if (rows) {
+          display.write(rows)
         }
       })
       .catch((err) => {

@@ -1,6 +1,7 @@
 import express from 'express'
 import fs from 'fs'
 import { UsbStorage } from '../../usb-storage-driver/index.js'
+import CopyQueue from '../../usb-storage-driver/copy-queue.js'
 import drivelist from 'drivelist'
 import command from '../../command.js'
 
@@ -9,36 +10,17 @@ const router = express.Router()
 const usb = new UsbStorage()
 const USB_MOUNT_POINT = '/mnt/usb'
 
-// total ceiling on any single copy operation. If ncp hasn't called back by
-// then, the watchdog forces the in-progress flag clear so the station can
-// recover without a service restart.
+// Hard ceiling on a single copy run. CopyQueue enforces this internally, and
+// additionally bounds every individual file — so a wedged write fails that one
+// file rather than hanging the whole download until a service restart.
 const COPY_TOTAL_DEADLINE_MS = 20 * 60 * 1000
-// inactivity watchdog. If `copied` hasn't increased in this many ms, declare
-// the copy stalled and abort. Catches ncp callback races (e.g. when a source
-// file rotates out from under the walk).
-const COPY_STALL_MS = 5 * 60 * 1000
-// how often the stall watchdog samples the file count.
-const COPY_PROGRESS_SAMPLE_MS = 30 * 1000
 
 let mountInProgress = false
-let copyInProgress = false
-let copySession = 0
-let copyProgress = { total: 0, baselineFiles: 0, lastCopiedCount: 0, lastIncreaseAt: 0 }
-
-function countFiles(dir) {
-  let count = 0
-  try {
-    const entries = fs.readdirSync(dir, { withFileTypes: true })
-    for (const entry of entries) {
-      if (entry.isFile()) {
-        count++
-      } else if (entry.isDirectory()) {
-        count += countFiles(`${dir}/${entry.name}`)
-      }
-    }
-  } catch (e) { /* directory may not exist yet */ }
-  return count
-}
+// The active CopyQueue, or null when no copy is running. This single reference
+// replaces the old copyInProgress / copySession / copyProgress trio: the queue
+// object *is* the session, so a late callback from an aborted run cannot stomp on
+// a newer one, and progress is read straight off it.
+let copyQueue = null
 
 // true iff /mnt/usb is a real mountpoint (different filesystem from /mnt).
 function isUsbMounted() {
@@ -99,15 +81,62 @@ router.get('/unmount', (req, res) => {
 })
 
 /**
- * report copy progress as file counts
+ * report copy progress as file counts, plus the phase label the LCD renders
+ * ('paused', 'rotating', 'restarting'). Read from the queue's in-memory counters,
+ * so this never touches the USB volume — a faulted stick can't make this hang.
  */
 router.get('/data/progress', (req, res) => {
-  if (!copyInProgress) {
-    res.json({ status: "idle", total: 0, copied: 0 })
+  if (!copyQueue) {
+    res.json({ status: "idle", phase: null, total: 0, copied: 0 })
     return
   }
-  const copied = countFiles("/mnt/usb") - copyProgress.baselineFiles
-  res.json({ status: "copying", total: copyProgress.total, copied: Math.max(copied, 0) })
+  res.json(copyQueue.snapshot())
+})
+
+/**
+ * pause an in-flight copy between files, so another service can touch /data
+ * without racing the copy. `phase` labels why, for the front-panel display:
+ *   POST /usb/data/pause?phase=paused    -> LCD "Data Paused"
+ *   POST /usb/data/pause?phase=rotating  -> LCD "Data Rotating"
+ *
+ * Idempotent, and safe to call when nothing is copying (answers `idle`). The
+ * caller is not required to resume: a pause self-releases inside the queue after
+ * MAX_PAUSE_MS so a crashed pauser cannot strand a download.
+ */
+router.post('/data/pause', async (req, res) => {
+  if (!copyQueue) {
+    res.json({ status: "idle", paused: false })
+    return
+  }
+  const phase = (req.query.phase || 'paused').toString()
+  const queue = copyQueue
+  queue.pause(phase)
+
+  // A pause takes effect BETWEEN files, so the file already in flight finishes
+  // first. Wait briefly for it so a `paused` answer means "nothing is being
+  // written", not merely "asked to stop" — the caller is about to move files
+  // around in the source tree. Bounded well under the caller's ack timeout; if a
+  // file is genuinely wedged we answer anyway and let its per-file ceiling deal
+  // with it.
+  const quiesce_deadline = Date.now() + 1000
+  while (queue.current_file && Date.now() < quiesce_deadline) {
+    await new Promise((r) => setTimeout(r, 50))
+  }
+
+  res.json({ ...queue.snapshot(), quiesced: queue.current_file === null })
+})
+
+/**
+ * resume a paused copy. The queue reports phase 'restarting' for a few seconds
+ * afterwards so the LCD's 2-second poll still catches the restart banner.
+ */
+router.post('/data/resume', (req, res) => {
+  if (!copyQueue) {
+    res.json({ status: "idle", paused: false })
+    return
+  }
+  copyQueue.resume()
+  res.json(copyQueue.snapshot())
 })
 
 /**
@@ -122,8 +151,8 @@ router.get('/data/progress', (req, res) => {
  * watchdog-aborted copy are no-ops (they would otherwise stomp on a newer
  * copy's module-level state).
  */
-router.get('/data', (req, res, next) => {
-  if (copyInProgress) {
+router.get('/data', async (req, res, next) => {
+  if (copyQueue) {
     console.log('hardware-server USB data copy already in progress, ignoring duplicate request')
     res.json({ status: "busy" })
     return
@@ -134,84 +163,45 @@ router.get('/data', (req, res, next) => {
     return
   }
 
-  copyInProgress = true
-  const mySession = ++copySession
-  copyProgress.total = countFiles("/data")
-  copyProgress.baselineFiles = countFiles(USB_MOUNT_POINT)
-  copyProgress.lastCopiedCount = 0
-  copyProgress.lastIncreaseAt = Date.now()
-  // leave the watchdogs to fire first; HTTP socket gets a little extra slack.
-  req.setTimeout(COPY_TOTAL_DEADLINE_MS + 60 * 1000)
-  const startTime = Date.now()
-  console.log(`hardware-server USB data copy started from /data to USB (${copyProgress.total} files)`)
-
-  let responseSent = false
-  const sendOnce = (body) => {
-    if (responseSent) return
-    responseSent = true
-    res.json(body)
-  }
-
-  // Tear down module-level state for *this* session only. A watchdog-aborted
-  // copy whose ncp callback arrives late will see mySession !== copySession
-  // and bail before reaching this branch.
-  const finish = (body) => {
-    if (mySession === copySession) {
-      clearInterval(stallInterval)
-      clearTimeout(totalDeadline)
-      copyInProgress = false
-    }
-    sendOnce(body)
-  }
-
-  // When a watchdog aborts, ncp is still running in the background and will
-  // keep writing to /mnt/usb. Unmounting forces those writes to fail, which
-  // typically convinces ncp to release file handles and call its callback.
-  const abortByUnmount = (reason) => {
-    usb.unmount()
-      .then(() => console.log(`hardware-server unmounted ${USB_MOUNT_POINT} after ${reason}`))
-      .catch((err) => console.log(`hardware-server unmount-after-${reason} failed:`, err.message || err))
-  }
-
-  const stallInterval = setInterval(() => {
-    if (mySession !== copySession) return
-    const copied = Math.max(countFiles(USB_MOUNT_POINT) - copyProgress.baselineFiles, 0)
-    if (copied > copyProgress.lastCopiedCount) {
-      copyProgress.lastCopiedCount = copied
-      copyProgress.lastIncreaseAt = Date.now()
-      return
-    }
-    if (Date.now() - copyProgress.lastIncreaseAt > COPY_STALL_MS) {
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-      console.log(`hardware-server USB data copy stalled at ${copied}/${copyProgress.total} after ${elapsed}s — aborting`)
-      finish({ status: "stalled", copied, total: copyProgress.total })
-      abortByUnmount('stall')
-    }
-  }, COPY_PROGRESS_SAMPLE_MS)
-
-  const totalDeadline = setTimeout(() => {
-    if (mySession !== copySession) return
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-    console.log(`hardware-server USB data copy exceeded ${COPY_TOTAL_DEADLINE_MS / 1000}s deadline after ${elapsed}s — aborting`)
-    finish({ status: "timeout" })
-    abortByUnmount('timeout')
-  }, COPY_TOTAL_DEADLINE_MS)
-
-  usb.copyTo("/data", /.*$/, (err) => {
-    if (mySession !== copySession) {
-      // a watchdog already aborted this session; ignore the late callback
-      console.log('hardware-server USB data copy late callback (watchdog already aborted) — ignoring')
-      return
-    }
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-    if (err) {
-      console.log(`hardware-server USB data copy failed after ${elapsed}s`, err)
-      finish(fail)
-    } else {
-      console.log(`hardware-server USB data copy completed successfully in ${elapsed}s`)
-      finish(success)
-    }
+  const queue = new CopyQueue({
+    src: "/data",
+    dest: USB_MOUNT_POINT,
+    deadlineMs: COPY_TOTAL_DEADLINE_MS,
   })
+  copyQueue = queue
+  // leave the queue's own deadline to fire first; the HTTP socket gets slack.
+  req.setTimeout(COPY_TOTAL_DEADLINE_MS + 60 * 1000)
+
+  const total = queue.enumerate()
+  console.log(`hardware-server USB data copy started from /data to USB (${total} files)`)
+
+  try {
+    const result = await queue.run()
+    console.log(
+      `hardware-server USB data copy ${result.status} — ` +
+      `${result.copied}/${result.total} files (${result.skipped} already present, ` +
+      `${result.failed.length} failed) in ${result.elapsed_s}s`
+    )
+
+    if (result.status === 'done' && result.failed.length === 0) {
+      res.json(success)
+    } else if (result.status === 'stalled' || result.status === 'timeout') {
+      // The volume stopped accepting writes. Unmount so the next attempt starts
+      // from a clean mount rather than inheriting wedged descriptors.
+      usb.unmount()
+        .then(() => console.log(`hardware-server unmounted ${USB_MOUNT_POINT} after ${result.status}`))
+        .catch((err) => console.log(`hardware-server unmount-after-${result.status} failed:`, err.message || err))
+      res.json({ status: result.status, copied: result.copied, total: result.total })
+    } else {
+      res.json({ status: "partial", copied: result.copied, total: result.total, failed: result.failed.length })
+    }
+  } catch (err) {
+    console.log('hardware-server USB data copy error', err)
+    res.json(fail)
+  } finally {
+    // Only clear the module reference if a newer copy hasn't already claimed it.
+    if (copyQueue === queue) copyQueue = null
+  }
 })
 
 /**

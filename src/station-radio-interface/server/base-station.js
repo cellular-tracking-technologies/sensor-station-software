@@ -25,6 +25,17 @@ const RADIO_SOCKET_DIR = '/run/ctt/radios'
 // consumes the socket in place of a direct serial port.
 const BLU_SOCKET_DIR = '/run/ctt/blu'
 
+// Hardware server, which owns USB copy state (see rotateDataFiles).
+const HARDWARE_SERVER = 'http://localhost:3000/'
+
+// How long to wait for the hardware server to acknowledge a pause/resume. Kept
+// short: rotation must not be held up by a wedged or missing hardware server.
+const USB_PAUSE_ACK_MS = 3 * 1000
+
+// Minimum time to leave each pause phase in place, so the LCD's 2-second progress
+// poll is guaranteed to sample it and show the operator what is happening.
+const USB_PHASE_HOLD_MS = 2500
+
 /**
  * manager class for controlling / reading radios
  * and writing to disk
@@ -363,15 +374,88 @@ class BaseStation {
     }
   }
 
-  rotateDataFiles() {
+  /**
+   * Rotate live data files into rotated/.
+   *
+   * Rotation is never skipped or postponed — a missed rotation is worse than a
+   * raced copy. Instead, an in-flight USB download is asked to PAUSE between
+   * files for the duration and is then restarted, because rotating mid-copy moves
+   * files out from under the copy, which is what wedges it.
+   *
+   * Every hardware-server call here fails open: if it is unreachable, slow, or
+   * nothing is copying, rotation proceeds exactly as it did before. The queue's
+   * pause also self-releases, so a crash between pause and resume cannot strand a
+   * download.
+   */
+  async rotateDataFiles() {
+    const paused = await this.pauseUsbCopy('paused')
+
+    if (paused) {
+      // Hold each phase long enough for the LCD's 2-second progress poll to
+      // sample it; otherwise the panel would jump straight from the bar to the
+      // restart banner and the operator would never see why it stopped. Costs a
+      // few seconds, and only while a download is actually running.
+      await this.holdForLcd()
+      await this.pauseUsbCopy('rotating')
+    }
+
     this.stationLog('rotating data files')
-    this.data_manager.rotate()
-      .then(() => {
-        this.stationLog('rotation finished')
+    const rotation_started = Date.now()
+    try {
+      await this.data_manager.rotate()
+      this.stationLog('rotation finished')
+    } catch (err) {
+      this.stationLog(`error rotating data files: ${err}`)
+    } finally {
+      if (paused) {
+        // keep "Data Rotating" on the panel for at least one LCD poll
+        const remaining = USB_PHASE_HOLD_MS - (Date.now() - rotation_started)
+        if (remaining > 0) await this.holdForLcd(remaining)
+        await this.resumeUsbCopy()
+      }
+    }
+  }
+
+  holdForLcd(ms = USB_PHASE_HOLD_MS) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  /**
+   * Ask the hardware server to pause an in-flight USB copy, labelling the phase
+   * for the front-panel display. Returns true only if a copy is actually paused.
+   */
+  async pauseUsbCopy(phase) {
+    try {
+      const res = await fetch(`${HARDWARE_SERVER}usb/data/pause?phase=${phase}`, {
+        method: 'POST',
+        timeout: USB_PAUSE_ACK_MS,
       })
-      .catch((err) => {
-        this.stationLog(`error rotating data files: ${err}`)
+      const body = await res.json()
+      if (body && body.status === 'paused') {
+        this.stationLog(`usb download paused (${phase}) at ${body.copied}/${body.total} files`)
+        return true
+      }
+      return false
+    } catch (err) {
+      console.log('rotation: could not pause the USB copy, rotating anyway:', err.message || err)
+      return false
+    }
+  }
+
+  /**
+   * Restart a paused USB copy. Best-effort: the queue releases its own pause if
+   * this never lands.
+   */
+  async resumeUsbCopy() {
+    try {
+      await fetch(`${HARDWARE_SERVER}usb/data/resume`, {
+        method: 'POST',
+        timeout: USB_PAUSE_ACK_MS,
       })
+      this.stationLog('usb download restarted after rotation')
+    } catch (err) {
+      console.log('rotation: could not restart the USB copy (pause self-releases):', err.message || err)
+    }
   }
 
   /**
