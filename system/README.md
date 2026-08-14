@@ -111,6 +111,12 @@ matters.
   which a receiver plug-in starts its driver instance. Gating on the app product
   id means the Caterina **bootloader** (`000c`, which appears during programming)
   is ignored, so it never grabs a channel from `program-radio.sh`/`avrdude`.
+  The `ID_PATH` match is **controller-agnostic**: the generator strips the SoC's
+  USB controller address (CM3/BCM2837 enumerates as `platform-3f980000.usb`,
+  CM4/BCM2711 as `platform-fe980000.usb`) and matches the port topology after it
+  with a glob — `ENV{ID_PATH}=="*-usb-0:1.7.1:1.0"`. The port, not the controller,
+  identifies the channel, so one rule set covers every compute module. The maps
+  still record the CM3-era path verbatim; only the emitted rule is generalized.
 - **BluSeries identification** (`78-ctt-blu-driver.rules`, generated from the same
   maps — see below). BluSeries receivers present as an FTDI FT231X (`0403:6015`).
   They plug into the external USB ports the radio map numbers 6+, and are matched

@@ -58,10 +58,25 @@ const BLU_PID = '6015'
 const BLU_CHANNEL_OFFSET = 5
 const BLU_MAX = 6
 
+// ID_PATH begins with the SoC's USB controller address, which differs per compute
+// module: CM3 (BCM2837) enumerates as platform-3f980000.usb, CM4/CM4S (BCM2711) as
+// platform-fe980000.usb. The port topology AFTER that prefix is identical on both,
+// and it is the port — not the controller — that identifies the channel. The maps
+// record the CM3-era path verbatim, so strip the controller and match the port with
+// a glob; one rule set then covers every compute module, instead of needing a map
+// (and a re-flash) per SoC generation.
+//
+// Without this, a CM4 board matches no rule at all: no /dev/ctt-radio/chN symlink,
+// so ctt-radio-driver@chN never starts (its ConditionPathExists fails) and the
+// station silently records no tag detections.
+function pathMatch(id_path) {
+  return id_path.replace(/^platform-[0-9a-f]+\.usb/, '*')
+}
+
 // The JSON filename (v2 / v3r0 / v3r3) IS the CTT_BOARD value. Emits 3 rules/channel
 // (identity / app / bootloader — see the RADIO_APP_PID note above).
 function radioRule(board, { channel, id_path }) {
-  const at = `ENV{CTT_BOARD}=="${board}", ENV{ID_PATH}=="${id_path}"`
+  const at = `ENV{CTT_BOARD}=="${board}", ENV{ID_PATH}=="${pathMatch(id_path)}"`
   return [
     // 1. identity — the physical port IS the channel, in app OR bootloader mode.
     `${RADIO_MATCH}, ${at}, ENV{CTT_RADIO_CHANNEL}="${channel}", SYMLINK+="ctt-radio/ch${channel}"`,
@@ -77,7 +92,7 @@ function bluRule(board, { channel, id_path }) {
   const blu = channel - BLU_CHANNEL_OFFSET
   return (
     `${BLU_MATCH}, ATTRS{idProduct}=="${BLU_PID}", ENV{CTT_BOARD}=="${board}", ` +
-    `ENV{ID_PATH}=="${id_path}", ENV{CTT_BLU_CHANNEL}="${blu}", ` +
+    `ENV{ID_PATH}=="${pathMatch(id_path)}", ENV{CTT_BLU_CHANNEL}="${blu}", ` +
     `SYMLINK+="ctt-blu/ch${blu}", TAG+="systemd", ` +
     `ENV{SYSTEMD_WANTS}+="ctt-blu-driver@ch${blu}.service"`
   )
