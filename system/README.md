@@ -64,7 +64,7 @@ All are deployed to `/etc/systemd/system/` by the OTA `install-systemd.sh` hook.
 | `modem-boot-state.service` | oneshot | Restores last operator modem on/off state before the modem manager scans. | `local-fs.target`, `systemd-udev-settle`; `Before=` modem manager |
 | `station-boot.service` | oneshot | Runs `modem-datapath.sh` + `provision-modem-apn.sh`: modem data-path policy + per-SIM APN selection. | `network.target`, modem manager |
 | `sensorgnome.service` | simple | Starts the companion Motus/SDR tag-detection process. | `network.target`, `station-boot` |
-| `bootcount.service` | simple | Runs `boottime_compute.sh`: links the board's sensorgnome USB-hub udev rules. | `station-boot` |
+| `bootcount.service` | simple | Runs `boottime_compute.sh`: publishes the board's sensorgnome USB-hub port map to `/data/usb_hub_rules.txt`, re-anchored on this boot's USB controller. | `station-boot` |
 
 The `install-systemd.sh` hook keeps an internal `MUST_BE_ENABLED` list and
 auto-enables the boot/identity/sensor/LED units on deploy. The `ctt-radio-driver@`
@@ -93,6 +93,46 @@ A subtlety: USB radios can enumerate before `board.env` exists, so their udev
 rule would not match the board-gated condition. `ctt-board-detect` handles this
 with `ExecStartPost=udevadm trigger --action=add --subsystem-match=tty`, re-firing
 the tty rules once identity is known.
+
+### The sensorgnome USB-hub port map
+
+`boottime_compute.sh` publishes `/data/usb_hub_rules.txt`, the table that names
+the physical antenna port behind each FUNcube / RTL-SDR. sensorgnome's
+`get_usb_device_port_number.awk` reads it and resolves a udev `%p` devpath to a
+port number by **literal prefix match** on column 1 — it does no globbing.
+
+The shipped `hub-rules/` maps record the CM3 controller
+(`/devices/platform/soc/3f980000.usb/usb1/...`), but that address is a property
+of the SoC *and* its config: a CM4/CM4S with `otg_mode` enumerates under
+`/devices/platform/scb/fe9c0000.xhci/usb1/...`, the same module without
+`otg_mode` under `/devices/platform/soc/fe980000.usb/usb1/...`, and a
+VL805-equipped CM4 hangs off PCIe. The port topology *after* the controller is
+identical on all of them, and it is the port — not the controller — that names
+the antenna.
+
+So the script **copies** the map instead of symlinking it, adding, for every root
+hub present in sysfs this boot, the same port tail anchored under that hub's real
+devpath. The CM3 lines are kept verbatim, so swapping a CM3 module back in still
+works, and no SoC generation needs its own map or a re-flash. This is the data-side
+counterpart to the `ID_PATH` globbing in `radios/generate-rules.mjs`, which solves
+the identical problem for the 434 MHz rules; the awk gets a rewritten table because
+it cannot glob.
+
+Left unfixed, nothing matches on a CM4: the awk falls through to its `internal`
+default, which its `printf "%d"` renders as `0`, so every FUNcube and RTL-SDR is
+announced as `.port=0`. They then collide on the single `/dev/sensorgnome/usb/0`
+link and sensorgnome cannot tell which antenna each receiver is on.
+
+`bootcount` necessarily runs late (it needs `/data` mounted and `board.env`
+written), so the kernel has already enumerated USB by the time the map lands.
+The script therefore re-triggers the SDR rules afterwards, matching on the
+receiver **vid:pid** rather than the whole `usb` subsystem so the modem and
+network rules are left alone — the same re-trigger pattern `ctt-board-detect`
+uses for tty.
+
+On a V3 r3 the six external ports carry either a 434 MHz receiver or an SDR, and
+the two numbering schemes line up: radio `ch6…ch11` are SDR ports `1…6`
+(hub port `1-1.5` → SDR port 1 / radio ch6, `1-1.6` → SDR port 6 / radio ch11).
 
 ---
 
