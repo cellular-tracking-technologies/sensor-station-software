@@ -43,12 +43,14 @@ SRC="/lib/ctt/sensorgnome/sensorgnome/hub-rules/$hub_rules/rules.txt"
 # controller is identical on all of them, and it is the port -- not the
 # controller -- that names the antenna.
 #
-# So copy the map rather than linking it, and for every root hub present in
-# sysfs this boot also emit the same port tail anchored under that hub's real
-# devpath. The map's own CM3 lines are kept verbatim, so swapping a CM3 module
-# back in keeps working, and no SoC generation needs its own map or a re-flash.
-# This is the same reasoning as the ID_PATH globbing in system/radios/
-# generate-rules.mjs, expressed as data because the awk cannot glob.
+# So copy the map rather than linking it, re-anchoring every port tail under the
+# real devpath of each root hub present in sysfs. Only the module actually
+# installed is emitted -- the map's own CM3 prefix is not carried over unless
+# this *is* a CM3 -- because the file is regenerated from live sysfs every boot,
+# and root hubs always enumerate before bootcount runs. A compute-module swap
+# therefore rewrites the map on the next boot; no SoC generation needs its own
+# map or a re-flash. This is the same reasoning as the ID_PATH globbing in
+# system/radios/generate-rules.mjs, expressed as data because the awk cannot glob.
 #
 # Without it nothing matches on a CM4: the awk falls through to its "internal"
 # default, which its printf "%d" renders as 0, so every FUNcube and RTL-SDR is
@@ -77,9 +79,7 @@ generate_map() {
       *)           echo "$path $port"; continue ;;  # unrecognised shape: pass through
     esac
 
-    echo "$path $port"        # the map's own controller, verbatim
-
-    head=${path%%/usb[0-9]*}  # /devices/platform/soc/3f980000.usb
+    head=${path%%/usb[0-9]*}  # /devices/platform/soc/3f980000.usb (discarded)
     rest=${path#"$head"/usb}  # 1/1-1/1-1.5
     srcbus=${rest%%/*}        # 1
     tail=${rest#"$srcbus"}    # /1-1/1-1.5
@@ -87,7 +87,6 @@ generate_map() {
     for entry in "${roots[@]}"; do
       bus=${entry%% *}
       root=${entry#* }
-      [ "$root" = "$head/usb$srcbus" ] && continue  # already emitted verbatim above
       t=$tail
       # Port names embed the bus number ("1-1.5"); renumber if this hub differs.
       [ "$bus" = "$srcbus" ] || t=$(printf '%s' "$tail" | sed "s|/$srcbus-|/$bus-|g")

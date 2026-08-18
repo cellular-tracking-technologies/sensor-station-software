@@ -110,13 +110,16 @@ VL805-equipped CM4 hangs off PCIe. The port topology *after* the controller is
 identical on all of them, and it is the port — not the controller — that names
 the antenna.
 
-So the script **copies** the map instead of symlinking it, adding, for every root
-hub present in sysfs this boot, the same port tail anchored under that hub's real
-devpath. The CM3 lines are kept verbatim, so swapping a CM3 module back in still
-works, and no SoC generation needs its own map or a re-flash. This is the data-side
-counterpart to the `ID_PATH` globbing in `radios/generate-rules.mjs`, which solves
-the identical problem for the 434 MHz rules; the awk gets a rewritten table because
-it cannot glob.
+So the script **copies** the map instead of symlinking it, re-anchoring every port
+tail under the real devpath of each root hub present in sysfs. Only the compute
+module actually installed appears in the published file — the map's own CM3 prefix
+is dropped unless this *is* a CM3 — because the file is regenerated from live sysfs
+on every boot and root hubs always enumerate before `bootcount` runs. A
+compute-module swap therefore rewrites the map on the next boot, so no SoC
+generation needs its own map or a re-flash. This is the data-side counterpart to
+the `ID_PATH` globbing in `radios/generate-rules.mjs`, which solves the identical
+problem for the 434 MHz rules; the awk gets a rewritten table because it cannot
+glob.
 
 Left unfixed, nothing matches on a CM4: the awk falls through to its `internal`
 default, which its `printf "%d"` renders as `0`, so every FUNcube and RTL-SDR is
@@ -133,6 +136,11 @@ uses for tty.
 On a V3 r3 the six external ports carry either a 434 MHz receiver or an SDR, and
 the two numbering schemes line up: radio `ch6…ch11` are SDR ports `1…6`
 (hub port `1-1.5` → SDR port 1 / radio ch6, `1-1.6` → SDR port 6 / radio ch11).
+
+The port number is what makes a receiver's identity stable: ALSA's `controlC<N>`
+index is assigned in probe order and does not track the physical slot (three
+FUNcubes on ports 1/2/3 were observed as `controlC2`/`controlC0`/`controlC1`), so
+only the hub map can say which antenna a FUNcube is listening on.
 
 ---
 
