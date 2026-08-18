@@ -216,6 +216,7 @@ scripts/hooks/
 ├── pre-merge.d/       drop-in dir for pre-pull work (empty)
 ├── post-merge.sh      orchestrator: runs post-merge.d/*.sh AFTER the pull
 └── post-merge.d/
+    ├── install-kmod.sh      install prebuilt out-of-tree kernel modules, depmod
     ├── install-systemd.sh   deploy systemd units, daemon-reload, enable required units
     ├── install-udev.sh      deploy udev rules, udevadm reload
     ├── install-network.sh   deploy NetworkManager profiles, nmcli reload
@@ -275,6 +276,31 @@ A tool already at its pinned version is skipped. A transient download failure
 leaves the existing binary in place and retries on the next OTA; a tool with no
 usable binary at all is a hard failure. Bumping a pin and committing it is the
 only step needed to roll a new native binary to the fleet.
+
+---
+
+## Prebuilt kernel modules
+
+`modules/<kernel-release>/*.ko.xz` holds out-of-tree kernel modules cross-built
+off-station; `install-kmod.sh` installs the set matching `uname -r` into
+`/lib/modules/<release>/updates/`, runs `depmod`, and loads anything not already
+loaded (skipping modules an operator has blacklisted).
+
+These are keyed by **kernel release**, not semver, because a module only loads
+into the exact kernel it was compiled against — `vermagic` must match byte for
+byte. A kernel with no directory gets nothing, which is normal.
+
+Unlike the userspace tools in `native/` these are **committed, not fetched**: a
+station whose WiFi driver is missing may have no uplink but cellular, and
+bootstrapping that fix over the link it is meant to provide is not a chain worth
+building.
+
+Today this ships `8821cu` (Realtek RTL8821CU, `0bda:c811`) for `6.1.21-v8+`. The
+in-kernel `rtw88` driver gained that chipset only in 6.2, and the module in the
+shipped image was built for `6.1.21-v7+` — the 32-bit kernel from the CM3 era —
+so a CM4/CM4S, which boots `kernel8.img` into `6.1.21-v8+`, had no WiFi driver at
+all. See [modules/README.md](modules/README.md) for the rebuild procedure and
+[wifi-8821cu-cm4s.md](../wifi-8821cu-cm4s.md) for the diagnosis.
 
 ---
 
