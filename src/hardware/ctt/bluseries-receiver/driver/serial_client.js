@@ -143,6 +143,11 @@ class SerialClient extends EventEmitter {
         }
         // eslint-disable-next-line
         reject(`Couldn't find port matching ${params.path}, ${params.manufacturer}`)
+      }).catch((err) => {
+        // without this the rejection is unhandled -- Node's default
+        // --unhandled-rejections=throw would exit the process, and the promise
+        // returned here would never settle
+        reject(err)
       })
     })
   }
