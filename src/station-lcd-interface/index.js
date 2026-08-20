@@ -1,4 +1,5 @@
 import '../station-utils/prefer-ipv4.js'
+import '../station-utils/log-unhandled-rejections.js'
 // Import Statements
 import MenuItem from "./menu-item.js"
 import MenuManager from "./menu-manager.js"

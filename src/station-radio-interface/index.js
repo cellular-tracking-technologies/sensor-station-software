@@ -1,4 +1,5 @@
 import '../station-utils/prefer-ipv4.js'
+import '../station-utils/log-unhandled-rejections.js'
 import { BaseStation } from './server/base-station.js'
 
 // instantiate the base station software
