@@ -74,9 +74,14 @@
  * detection, just an unvalidated one — which is how the shipped firmware reports
  * it, and several real tag families do not carry this CRC at all.
  *
- * The instrumentation rides on a second JSON line that parse_subghz returns null
- * for, so RadioReceiver re-emits it as 'raw': visible in the journal, invisible
- * to the beep pipeline.
+ * The instrumentation rides on a second JSON line carrying a leading
+ * "key":"terra_uhf". That key is load-bearing: radio-receiver.js handleLine()
+ * routes a decoded line by `firmware` -> 'radio-fw', `key` -> 'response',
+ * else -> 'beep'. Without it the line reached the beep path and
+ * data-manager.js:113 dumped the whole object through util.inspect once per
+ * detection — 8529 diagnostics produced 161,435 journal lines in 20 minutes.
+ * Nothing subscribes to 'response' or 'raw', so with the key the station ignores
+ * the line while socket readers still get it verbatim.
  *
  * ---------------------------------------------------------------------------
  * MEASUREMENT RULES that cost the most to learn
@@ -107,7 +112,7 @@ static const uint8_t PIN_CS  = 8;   /* Adafruit reference; wrong CS => all reads
 static const uint8_t PIN_IRQ = 7;   /* PE6 / INT6, read out of ss_v4.0.0.hex */
 static const int8_t  PIN_RST = 4;   /* Adafruit reference; -1 disables the reset pulse */
 
-static const char FIRMWARE_VERSION[] = "5.0.0-terra";
+static const char FIRMWARE_VERSION[] = "5.0.1-terra";
 
 /* ---- RFM69 / SX1231 registers ------------------------------------------ */
 enum {
@@ -368,7 +373,18 @@ static void printTenths(int16_t half_dbm) {
 
 static void emitDiagnostic(const uint8_t *frame, bool crc_checkable, bool crcok,
                            uint8_t lna, uint32_t isr_us) {
-  Serial.print(F("{\"meta\":{\"data_type\":\"terra_uhf\",\"rssi\":"));
+  /* The leading "key" is load-bearing, not decoration. radio-receiver.js
+   * handleLine() routes a decoded line by inspecting it in order: `firmware` ->
+   * 'radio-fw', `key` -> 'response', otherwise -> 'beep'. Without `key` this
+   * line reached the beep path, and data-manager.js:113 dispatches on
+   * `if (beep.meta)` then switches on meta.data_type — so "terra_uhf" fell to
+   * `default: console.log(beep); console.error("i don't know what to do...")`,
+   * dumping the whole object through util.inspect. Measured on the bench: 8529
+   * diagnostics in 20 minutes produced 161,435 journal lines, ~8000/min of
+   * eMMC churn. Nothing subscribes to 'response', so with `key` present the line
+   * is silently ignored by the station while socket readers (tools/probe-radio-
+   * config.mjs) still see it verbatim — which is where the diagnostics belong. */
+  Serial.print(F("{\"key\":\"terra_uhf\",\"meta\":{\"data_type\":\"terra_uhf\",\"rssi\":"));
   printTenths(cap_rssi_half);
   Serial.print(F(",\"rssi_src\":\""));
   Serial.print(cap_rssi_valid ? F("sync") : F("late"));

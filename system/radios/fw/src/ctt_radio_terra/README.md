@@ -12,8 +12,8 @@ against the shipped firmware; its value is the instrumentation.
 
 | | |
 |---|---|
-| Version | `5.0.0-terra` (clean reimplementation; supersedes the terra.1-.10 patch series) |
-| Flash | 11638 bytes (40%) of 28672 |
+| Version | `5.0.1-terra` (clean reimplementation; supersedes the terra.1-.10 patch series) |
+| Flash | 11656 bytes (40%) of 28672 |
 | RAM | 524 bytes of 2560 |
 | Build target | `adafruit:avr:feather32u4` **only** (see Build) |
 | Verified | RSSI within 1.21 dB of stock; real-tag rate ratio median 0.99; FEI r=+0.999 cross-receiver |
