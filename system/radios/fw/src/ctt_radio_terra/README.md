@@ -12,12 +12,12 @@ against the shipped firmware; its value is the instrumentation.
 
 | | |
 |---|---|
-| Version | `5.0.1-terra` (clean reimplementation; supersedes the terra.1-.10 patch series) |
-| Flash | 11656 bytes (40%) of 28672 |
-| RAM | 524 bytes of 2560 |
+| Version | `5.1.0-terra` (adds the recovered ID gate; supersedes 5.0.1) |
+| Flash | 12432 bytes (43%) of 28672 |
+| RAM | 568 bytes of 2560 |
 | Build target | `adafruit:avr:feather32u4` **only** (see Build) |
 | Verified | RSSI within 1.21 dB of stock; real-tag rate ratio median 0.99; FEI r=+0.999 cross-receiver |
-| Known gap | still emits more phantom IDs than stock; `snr_min` defaults to 3 dB to curb it |
+| Known gap | closed in 5.1.0 — see **The ID gate** |
 
 ### Commands
 
@@ -25,10 +25,14 @@ against the shipped firmware; its value is the instrumentation.
 `modulation:fsk|ook`, `rssi_thresh:<dbm>`, `snr_min:<0-40>`, `sync_size:<1-8>`,
 `sync_tol:<0-7>`, `sync_val:<1-4>:<hex>`, `regread:<hex>`.
 
-`snr_min` defaults to **3 dB** and fails OPEN before the first noise sample, so a
-cold boot never drops frames. Set `snr_min:0` for a stock-comparable A/B. There is
-deliberately no CRC gate: a failing CRC labels a detection (BEEP_0) rather than
-discarding it, because several real tag families do not carry that CRC.
+`version`, `status`, `preset:fsktag`, `rxbw:<raw>`, `rx_size:<n>`,
+`modulation:fsk|ook`, `rssi_thresh:<dbm>`, `id_gate:0|1`, `snr_min:<0-40>`,
+`sync_size:<1-8>`, `sync_tol:<0-7>`, `sync_val:<1-4>:<hex>`, `regread:<hex>`.
+
+`id_gate` defaults to **1**. `snr_min` defaults to **0** and fails OPEN before the
+first noise sample. There is deliberately no CRC *gate*: a failing CRC labels a
+detection (BEEP_0) rather than discarding it, because several real tag families
+do not carry that CRC — which is exactly what the shipped firmware does.
 
 ### Verifying a flash
 
@@ -37,8 +41,12 @@ node tools/probe-radio-config.mjs --socket /run/ctt/radios/ch5.sock \
      --mode set --set version --set status --no-restore
 ```
 
-`radio_ok` must be 1, and `rssi_ok` should track `emitted` + `snr_dropped` — that
-is the check that RSSI is being captured at sync match rather than falling back.
+`radio_ok` must be 1, and `rssi_ok` should track `emitted` + `snr_dropped` +
+`gate_dropped` — that is the check that RSSI is being captured at sync match
+rather than falling back. `status` also breaks the gate down by reason
+(`gate_pass`/`gate_short`/`gate_zero`/`gate_msb`/`gate_ff`/`gate_parity`), and
+those counters tick even with `id_gate:0`, so you can measure what the gate
+would reject without enforcing it.
 Do NOT infer success from the absence of `Radio Init Failed`; that line is printed
 at boot, before any socket consumer can attach.
 
@@ -69,6 +77,58 @@ reproduced here literally. The PHY is not a new design — and notably it is the
 
 ## The three fixes
 
+### The ID gate (5.1.0)
+
+The shipped firmware's phantom-suppression rule was found by disassembling
+`ss_v4.0.0.hex`. It is **not** the PHY, the sync word, the driver, or an SNR
+floor — all four were tested and cleared. It is a linear block code on the tag
+ID, checked in software at `0x2ea8-0x2f6c`:
+
+| Order | Test | On failure |
+|---|---|---|
+| 1 | `len >= 5` | drop |
+| 2 | `id != 00000000` | drop |
+| 3 | at most 2 of the 4 id bytes have bit 7 set | drop |
+| 4 | `id != FFFFFFFF` | drop |
+| 5 | **every id byte satisfies 3 parity equations** | drop |
+| 6 | `crc8(poly 0x07, init 0) == byte[4]` | label BEEP_0 instead of BEEP_1 |
+
+The parity equations, for bit *i* of byte *b* written `b<i>`:
+
+```
+p0 = b1 ^ b2 ^ b3 ^ b4
+p1 = b0 ^ b2 ^ b3 ^ b5
+p2 = b0 ^ b1 ^ b3 ^ b6
+```
+
+Bit 7 appears in none of them, so it is free: **32 of 256 octet values are
+legal**, and a 4-byte ID has 32^4 = 1,048,576 legal values out of 2^32. Random
+noise passes 1 time in 4096. Step 6 is what this firmware already did, which is
+why the CRC handling needed no change — our `terraCrc8` is byte-identical to the
+shipped image's loop.
+
+Verified against 681,578 detections logged by the shipped firmware on this
+station over 2026-08-13/14: **100.00% pass, zero failures**, and the observed
+octet alphabet is exactly the 32 legal values — all 32 present, nothing outside:
+
+```
+00 07 19 1E 2A 2D 33 34 4B 4C 52 55 61 66 78 7F
+80 87 99 9E AA AD B3 B4 CB CC D2 D5 E1 E6 F8 FF
+```
+
+Over the same corpus, 5.0.1's own 2026-08-26 window failed 35.5% of frames
+(126,932 parity, 45,486 msb, 650 zero). That was the phantom gap.
+
+`tools/gate_test.c` is the host-side cross-check: it carries a verbatim copy of
+the firmware's `idGate()` and reports a verdict histogram for tag IDs on stdin.
+
+Because the gate is 1-in-4096 selective, `snr_min` now **defaults to 0**. It had
+been set to 3 dB on the theory that it was the missing filter; it is not, and it
+costs real detections (quiet-channel tags sit at SNR 3-4 dB). `id_gate:0`
+disables the gate for measurement.
+
+## The three fixes
+
 | # | Fix | Shipped firmware | Here |
 |---|---|---|---|
 | 1 | `RegRssiThresh` (0x29) | **never written** → sits at its `0xFF` reset value | `0xE4` = −114 dBm, and settable via `rssi_thresh:<dbm>` |
@@ -84,16 +144,18 @@ driver inherited one bug; only terra's side had been fixed.
 Detections are emitted as `PROTOCOL_OUT_BEEP_0` — `00` + 4 id bytes + int8 RSSI,
 hex-encoded — which `src/hardware/ctt/atmega32u4_receiver.js:36-50` already
 decodes. **Nothing downstream of the socket changes.** The instrumentation rides
-on a separate JSON line that `parse_subghz` returns null for, so `RadioReceiver`
-re-emits it as `raw`: visible in the journal, invisible to the beep pipeline.
+on a separate JSON line carrying a leading `"key":"terra_uhf"`. That key is
+load-bearing: `radio-receiver.js handleLine()` routes a decoded line by
+`firmware` -> 'radio-fw', `key` -> 'response', else -> 'beep'. Nothing subscribes
+to 'response', so the station ignores the line while socket readers still see it
+verbatim. Without the key it hit the beep path and `data-manager.js:113` dumped
+every detection through `util.inspect`.
 
 The command grammar (`key:value`, replying `{"key":…,"res":…[,"err":…]}`) and the
 `version` response shape are copied from the shipped firmware, so existing
 per-channel config strings in `default-config.js` keep working. `version` reports
-`4.0.0-terra.1` — deliberately distinguishable in the radio-fw poll.
-
-Commands: `version`, `preset:fsktag`, `rxbw:<raw>`, `rx_size:<n>`,
-`modulation:fsk|ook`, `rssi_thresh:<dbm>` *(new)*.
+`5.1.0-terra` — deliberately distinguishable in the radio-fw poll. See
+**Commands** above for the full surface.
 
 ## Build and verify
 
@@ -134,6 +196,7 @@ exactly 434.000 MHz.
 | `tools/parity.py` | Diffs two images' register configuration; non-zero exit on disagreement |
 | `tools/fw-tokens.sh` | String tables of one or two images, plus their diff |
 | `tools/probe-radio-config.mjs` | Live config-surface probe over `/run/ctt/radios/ch<N>.sock` |
+| `tools/gate_test.c` | Host copy of `idGate()`; verdict histogram for tag IDs on stdin |
 
 `regpairs.py` takes the register/value calling convention as arguments: the
 shipped firmware passes them in `r22`/`r20`, avr-gcc's ABI uses `r24`/`r22`.
@@ -185,10 +248,12 @@ so it does not need address bounds that go stale when code size shifts.
   5565 distinct IDs with real detections flat, `sync_size:1` breaks framing. The
   baseline size=2/tol=0 is the strictest usable setting, so the phantom-ID gap
   versus stock is NOT a sync-word issue.
-- **An SNR floor is the missing filter.** Sweeping `snr_min` 0->10 dB drops distinct
-  IDs 64->20 (stock logs 21) with CRC-valid real detections flat at 18-19. Not
-  enabled by default: on a quiet channel some real tags sit at SNR 3-4 dB, so a
-  high threshold would discard them. `snr_min:3` is the value to pilot.
+- **An SNR floor is NOT the missing filter — that was wrong.** Sweeping `snr_min`
+  0->10 dB does drop distinct IDs 64->20 (stock logs 21) with CRC-valid real
+  detections flat at 18-19, which is why it looked like the answer. It is a
+  coincidence of magnitude. The real filter is the ID gate above, read straight
+  out of the shipped image and confirmed on 681,578 of its own detections.
+  `snr_min` now defaults to 0.
 
 ## Known deviations from terra-rfm69
 

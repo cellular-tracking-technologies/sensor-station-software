@@ -38,6 +38,20 @@
  * is measurement, not sensitivity. Do not deploy it expecting more detections.
  *
  * ---------------------------------------------------------------------------
+ * 5.1.0 — THE ID GATE
+ *
+ * Through 5.0.1 this firmware emitted roughly 35% more records than the shipped
+ * image, all of them junk IDs, and the rule the shipped image used to suppress
+ * them was unknown. It is now known: a linear block code on the tag ID, checked
+ * in software. It was not the PHY, the sync word, the driver or an SNR floor —
+ * each of those was tested and cleared, and the SNR theory recorded below in
+ * MEASUREMENT RULES was simply wrong. See idGate() for the derivation, the
+ * addresses it was read from, and the 681,578-detection verification.
+ *
+ * Consequence: snr_min now defaults to 0. It was 3 dB on the strength of the
+ * mistaken theory, and it costs real detections.
+ *
+ * ---------------------------------------------------------------------------
  * PIN MAP — Adafruit reference wiring, each confirmed on hardware
  *
  *   CS = D8    IRQ = D7 (PE6/INT6)    RESET = D4
@@ -112,7 +126,7 @@ static const uint8_t PIN_CS  = 8;   /* Adafruit reference; wrong CS => all reads
 static const uint8_t PIN_IRQ = 7;   /* PE6 / INT6, read out of ss_v4.0.0.hex */
 static const int8_t  PIN_RST = 4;   /* Adafruit reference; -1 disables the reset pulse */
 
-static const char FIRMWARE_VERSION[] = "5.0.1-terra";
+static const char FIRMWARE_VERSION[] = "5.1.0-terra";
 
 /* ---- RFM69 / SX1231 registers ------------------------------------------ */
 enum {
@@ -194,24 +208,29 @@ struct Config {
   uint8_t modulation;
   uint8_t sync_config;
   int8_t  rssi_thresh_dbm;
-  /* Minimum SNR in dB for a detection to reach the pipeline. The sync word
-   * cannot discriminate any further (see BASE_SYNC_CONFIG), so this is the only
-   * selectivity knob left, and it is almost certainly what the shipped firmware
-   * applies in software: sweeping it 0->10 dB took distinct IDs from 64 to 20,
-   * where the shipped firmware logs 21, with CRC-valid real detections flat at
-   * 18-19. Defaulted to 3 because observed real tags on a quiet channel sit at
-   * SNR 3-4 dB and a higher floor would discard them. Set 0 for a
-   * stock-comparable A/B. */
+  /* Minimum SNR in dB for a detection to reach the pipeline. Sweeping it 0->10
+   * dB took distinct IDs from 64 to 20, with CRC-valid real detections flat at
+   * 18-19, which made it look like the shipped firmware's phantom filter.
+   * It is NOT: that filter is idGate(), read directly out of the image. So this
+   * is now a blunt instrument with a known cost (real tags on a quiet channel
+   * sit at SNR 3-4 dB) and no remaining justification. DEFAULT 0 = off. Keep it
+   * only as a manual knob for noisy sites. */
   int8_t  snr_min_db;
+  /* Apply the shipped firmware's ID gate. Default on; set 0 to measure what the
+   * gate is rejecting. */
+  uint8_t id_gate;
 };
 static Config cfg = { BASE_RXBW, BASE_PAYLOAD_LEN, BASE_DATAMODUL,
-                      BASE_SYNC_CONFIG, -114, 3 };
+                      BASE_SYNC_CONFIG, -114, 0, 1 };
 
 static uint8_t rssiThreshReg(int8_t dbm) { return (uint8_t)(-2 * (int16_t)dbm); }
 
 /* ---- state -------------------------------------------------------------- */
 static bool     radio_ok = false;
 static uint32_t emitted = 0, snr_dropped = 0;
+static uint32_t gate_dropped = 0;
+/* indexed by GATE_*; [GATE_PASS] counts accepted frames */
+static uint32_t gate_reason[6] = { 0, 0, 0, 0, 0, 0 };
 static uint32_t fei_ok = 0, rssi_ok = 0;
 
 /* Captured at sync match, consumed at PayloadReady. "Not measured" is reported
@@ -257,6 +276,74 @@ static void setMode(uint8_t mode) {
   regWrite(REG_OPMODE, (regRead(REG_OPMODE) & 0xE3) | mode);
   uint32_t deadline = millis() + 1000;      /* bounded: a dead radio must not wedge us */
   while (!(regRead(REG_IRQ_FLAGS1) & IRQ1_MODEREADY) && millis() < deadline) { }
+}
+
+/* ---- the ID gate: recovered from ss_v4.0.0.hex ---------------------------- *
+ * This is the phantom-suppression rule the shipped firmware applies and that
+ * this firmware went ten revisions without. It was NOT the PHY, the sync word,
+ * the driver, or an SNR floor — every one of those was tested and cleared. It is
+ * a linear block code on the tag ID, checked in software.
+ *
+ * Recovered at ss_v4.0.0.hex:0x2ea8-0x2f6c, in the frame handler reached from
+ * the INT6 trampoline (vector 7 -> 0x2026 -> intFunc[4] at RAM 0x0114, set by
+ * the image's single attachInterrupt call at 0x162e with handler word-address
+ * 0x0AD0). The frame lands at RAM 0x03B7 and is filtered in this exact order:
+ *
+ *   0x2ea8  len >= 5                        else drop
+ *   0x2eae  id != 00000000                  else drop
+ *   0x2ed4  at most 2 of 4 id bytes msb-set  else drop
+ *   0x2eee  id != FFFFFFFF                  else drop
+ *   0x2efc  every id byte passes 3 parities  else drop     <-- the real filter
+ *   0x2f6e  crc8(poly 0x07) vs byte[4] -> BEEP_1 if equal, else BEEP_0
+ *
+ * That last line is what this firmware already did, which is why the CRC
+ * handling needed no change. The parity constraints, read off the asr/ror/eor
+ * chain at 0x2f02-0x2f62 (bit i of byte b written b<i>):
+ *
+ *   p0 = b1 ^ b2 ^ b3 ^ b4
+ *   p1 = b0 ^ b2 ^ b3 ^ b5
+ *   p2 = b0 ^ b1 ^ b3 ^ b6
+ *
+ * All three must be zero. Bit 7 appears in no equation, so it is free: 32 of the
+ * 256 octet values are legal, and a 4-byte ID has 32^4 = 1,048,576 legal values
+ * out of 2^32. Random noise therefore passes 1 time in 4096. The shipped image
+ * sums the three-bit syndromes of all four bytes and requires the sum to be
+ * zero, which is equivalent to requiring each byte's syndrome to be zero.
+ *
+ * VERIFIED against 681,578 detections logged by the shipped firmware on this
+ * station across 2026-08-13 and 2026-08-14: 100.00% pass, zero failures, and the
+ * observed octet alphabet is exactly the 32 legal values, all 32 seen and
+ * nothing outside. Over the same corpus this firmware's 2026-08-26 window failed
+ * 35.5% of frames (126,932 on parity alone) — that is the phantom gap, measured.
+ *
+ * Gate order here differs from the image's only in that the loop is fused; the
+ * verdict is identical because the tests are independent. */
+enum { GATE_PASS = 0, GATE_SHORT, GATE_ZERO, GATE_MSB, GATE_FF, GATE_PARITY };
+
+static uint8_t idOctetSyndrome(uint8_t b) {
+  uint8_t p0 = ((b >> 1) ^ (b >> 2) ^ (b >> 3) ^ (b >> 4)) & 1;
+  uint8_t p1 = ((b >> 0) ^ (b >> 2) ^ (b >> 3) ^ (b >> 5)) & 1;
+  uint8_t p2 = ((b >> 0) ^ (b >> 1) ^ (b >> 3) ^ (b >> 6)) & 1;
+  return (uint8_t)(p0 | (p1 << 1) | (p2 << 2));
+}
+
+/* Returns GATE_PASS to accept, else the GATE_* reason to reject. */
+static uint8_t idGate(const uint8_t *frame, uint8_t len) {
+  if (len < TAG_FRAME_BYTES) return GATE_SHORT;
+
+  uint8_t zeros = 0, ones = 0, msb = 0, syndrome = 0;
+  for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
+    uint8_t b = frame[i];
+    if (b == 0x00) zeros++;
+    if (b == 0xFF) ones++;
+    if (b & 0x80)  msb++;
+    syndrome = (uint8_t)(syndrome + idOctetSyndrome(b));
+  }
+  if (zeros == TAG_ID_BYTES) return GATE_ZERO;
+  if (msb >= 3)              return GATE_MSB;
+  if (ones == TAG_ID_BYTES)  return GATE_FF;
+  if (syndrome != 0)         return GATE_PARITY;
+  return GATE_PASS;
 }
 
 /* ---- terra's tag CRC-8 -------------------------------------------------- *
@@ -371,7 +458,8 @@ static void printTenths(int16_t half_dbm) {
   Serial.print(t / 10); Serial.print('.'); Serial.print(abs(t % 10));
 }
 
-static void emitDiagnostic(const uint8_t *frame, bool crc_checkable, bool crcok,
+static void emitDiagnostic(const uint8_t *frame, uint8_t verdict,
+                           bool crc_checkable, bool crcok,
                            uint8_t lna, uint32_t isr_us) {
   /* The leading "key" is load-bearing, not decoration. radio-receiver.js
    * handleLine() routes a decoded line by inspecting it in order: `firmware` ->
@@ -403,6 +491,7 @@ static void emitDiagnostic(const uint8_t *frame, bool crc_checkable, bool crcok,
     Serial.print(F(",\"crc\":"));   Serial.print(frame[TAG_ID_BYTES]);
     Serial.print(F(",\"crcok\":")); Serial.print(crcok ? 1 : 0);
   }
+  Serial.print(F(",\"gate\":")); Serial.print(verdict);  /* 0=pass, see GATE_* */
   Serial.print(F("},\"data\":{\"id\":\""));
   for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
     if (frame[i] < 0x10) Serial.print('0');
@@ -435,6 +524,14 @@ static void printStatus() {
   Serial.print(F(",\"snr_min\":"));       Serial.print(cfg.snr_min_db);
   Serial.print(F(",\"emitted\":"));       Serial.print(emitted);
   Serial.print(F(",\"snr_dropped\":"));   Serial.print(snr_dropped);
+  Serial.print(F(",\"id_gate\":"));       Serial.print(cfg.id_gate);
+  Serial.print(F(",\"gate_dropped\":"));  Serial.print(gate_dropped);
+  Serial.print(F(",\"gate_pass\":"));     Serial.print(gate_reason[GATE_PASS]);
+  Serial.print(F(",\"gate_short\":"));    Serial.print(gate_reason[GATE_SHORT]);
+  Serial.print(F(",\"gate_zero\":"));     Serial.print(gate_reason[GATE_ZERO]);
+  Serial.print(F(",\"gate_msb\":"));      Serial.print(gate_reason[GATE_MSB]);
+  Serial.print(F(",\"gate_ff\":"));       Serial.print(gate_reason[GATE_FF]);
+  Serial.print(F(",\"gate_parity\":"));   Serial.print(gate_reason[GATE_PARITY]);
   Serial.print(F(",\"rssi_ok\":"));       Serial.print(rssi_ok);
   Serial.print(F(",\"fei_ok\":"));        Serial.print(fei_ok);
   Serial.print(F(",\"irq_count\":"));     Serial.print(irq_count);
@@ -486,6 +583,11 @@ static void handleCommand(char *cmd) {
     cfg.rssi_thresh_dbm = (int8_t)dbm;
     regWrite(REG_RSSI_THRESH, rssiThreshReg(cfg.rssi_thresh_dbm));
     reply(cmd, true, NULL); return;
+  }
+  if (!strcmp(cmd, "id_gate")) {
+    long n = strtol(arg, NULL, 10);
+    if (n < 0 || n > 1) { reply(cmd, false, "0 or 1"); return; }
+    cfg.id_gate = (uint8_t)n; reply(cmd, true, NULL); return;
   }
   if (!strcmp(cmd, "snr_min")) {
     long n = strtol(arg, NULL, 10);
@@ -600,20 +702,29 @@ void loop() {
     bool crcok = crc_checkable &&
                  (terraCrc8(frame, TAG_ID_BYTES) == frame[TAG_ID_BYTES]);
 
-    /* SNR gate. Fails OPEN when the noise floor is not yet known — at boot that
-     * is every frame, and dropping them would be a self-inflicted outage. */
+    /* ID gate — the shipped firmware's phantom filter, see idGate(). Counted by
+     * reason whether or not it is enforcing, so `status` reports what it would
+     * have rejected even with id_gate:0. */
+    uint8_t verdict = idGate(frame, len);
+    gate_reason[verdict]++;
+    bool gate_ok = (verdict == GATE_PASS) || !cfg.id_gate;
+    if (!gate_ok) gate_dropped++;
+
+    /* SNR gate. Off by default. Fails OPEN when the noise floor is not yet
+     * known — at boot that is every frame, and dropping them would be a
+     * self-inflicted outage. */
     bool snr_ok = true;
     if (cfg.snr_min_db > 0 && noise_valid)
       snr_ok = (cap_rssi_half - noise_half) >= (int16_t)cfg.snr_min_db * 2;
 
     if (!snr_ok) snr_dropped++;
-    else {
+    if (gate_ok && snr_ok) {
       int8_t rssi_dbm = (int8_t)(cap_rssi_half / 2);
       if (crcok) emitBeep1(frame, frame[TAG_ID_BYTES], rssi_dbm);
       else       emitBeep0(frame, rssi_dbm);
       emitted++;
     }
-    emitDiagnostic(frame, crc_checkable, crcok, lna, isr_us);  /* always, even if gated */
+    emitDiagnostic(frame, verdict, crc_checkable, crcok, lna, isr_us); /* always */
     cap_rssi_valid = cap_fei_valid = false;
   }
 
