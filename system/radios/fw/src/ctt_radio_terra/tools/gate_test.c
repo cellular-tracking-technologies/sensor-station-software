@@ -43,6 +43,25 @@ static uint8_t idGate(const uint8_t *frame, uint8_t len) {
   return GATE_PASS;
 }
 
+static uint8_t terraCrc8(const uint8_t *data, uint8_t len) {
+  uint8_t crc = 0x00;
+  for (uint8_t i = 0; i < len; i++) {
+    crc ^= data[i];
+    for (uint8_t b = 0; b < 8; b++)
+      crc = (crc & 0x80) ? (uint8_t)((crc << 1) ^ 0x07) : (uint8_t)(crc << 1);
+  }
+  return crc;
+}
+
+static int idCorrectBit7(uint8_t *out, uint8_t crc_rx) {
+  for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
+    out[i] ^= 0x80;
+    if (terraCrc8(out, TAG_ID_BYTES) == crc_rx) return 1;
+    out[i] ^= 0x80;
+  }
+  return 0;
+}
+
 static uint8_t idCorrectOneOctet(uint8_t *out) {
   uint8_t fixed = 0;
   for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
@@ -76,6 +95,33 @@ static int selftest(void) {
     }
   }
   printf("single-bit corrections over 32 codewords x 7 bits: %d wrong (expect 0)\n", fail);
+  /* Bit 7 is outside the parity code, so only the CRC can locate a bit-7 flip.
+   * The search returns the first candidate that verifies; prove that cannot be
+   * ambiguous. CRC-8 is linear, so a bit-7 flip at byte i xors the CRC by a
+   * constant -- if those four constants are distinct, at most one candidate can
+   * ever match. */
+  printf("crc delta for a bit-7 flip at byte i:");
+  uint8_t d[4];
+  for (int i = 0; i < 4; i++) {
+    uint8_t z[4] = {0,0,0,0}; z[i] = 0x80;
+    d[i] = terraCrc8(z, 4); printf(" %02X", d[i]);
+  }
+  int dup = 0;
+  for (int i = 0; i < 4; i++) for (int j = i+1; j < 4; j++) if (d[i] == d[j]) dup++;
+  printf("   distinct: %s\n", dup ? "NO -- AMBIGUOUS" : "yes");
+  fail += dup;
+
+  int amb = 0;
+  for (unsigned long v = 0; v < 200000UL; v++) {
+    uint8_t id[4] = { (uint8_t)(v*7), (uint8_t)(v>>3), (uint8_t)(v>>11), (uint8_t)(v>>19) };
+    uint8_t crc = terraCrc8(id, 4);
+    int i = (int)(v & 3);
+    uint8_t bad[4]; memcpy(bad, id, 4); bad[i] ^= 0x80;
+    if (!idCorrectBit7(bad, crc) || memcmp(bad, id, 4) != 0) amb++;
+  }
+  printf("bit-7 recovery over 200000 ids: %d failures (expect 0)\n", amb);
+  fail += amb;
+
   /* the shipped alphabet, for eyeballing against a datasheet or a tag label */
   printf("alphabet:");
   for (int b = 0; b < 256; b++) if (idOctetSyndrome((uint8_t)b) == 0) printf(" %02X", b);

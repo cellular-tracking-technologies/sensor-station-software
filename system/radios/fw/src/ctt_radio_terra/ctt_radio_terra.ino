@@ -126,7 +126,7 @@ static const uint8_t PIN_CS  = 8;   /* Adafruit reference; wrong CS => all reads
 static const uint8_t PIN_IRQ = 7;   /* PE6 / INT6, read out of ss_v4.0.0.hex */
 static const int8_t  PIN_RST = 4;   /* Adafruit reference; -1 disables the reset pulse */
 
-static const char FIRMWARE_VERSION[] = "5.2.0-terra";
+static const char FIRMWARE_VERSION[] = "5.3.0-terra";
 
 /* ---- RFM69 / SX1231 registers ------------------------------------------ */
 enum {
@@ -234,7 +234,7 @@ static uint8_t rssiThreshReg(int8_t dbm) { return (uint8_t)(-2 * (int16_t)dbm); 
 static bool     radio_ok = false;
 static uint32_t emitted = 0, snr_dropped = 0;
 static uint32_t gate_dropped = 0;
-static uint32_t ecc_fixed = 0, ecc_declined = 0;
+static uint32_t ecc_fixed = 0, ecc_declined = 0, b7_fixed = 0;
 /* indexed by GATE_*; [GATE_PASS] counts accepted frames */
 static uint32_t gate_reason[6] = { 0, 0, 0, 0, 0, 0 };
 static uint32_t fei_ok = 0, rssi_ok = 0;
@@ -389,6 +389,35 @@ static uint8_t idGate(const uint8_t *frame, uint8_t len) {
 
 /* syndrome (1-7) -> bit position to flip. Index 0 is unused. */
 static const uint8_t ECC_SYNDROME_BIT[8] = { 0, 4, 5, 2, 6, 1, 0, 3 };
+
+/* ---- bit 7: the gate's structural blind spot ----------------------------- *
+ * Bit 7 appears in none of the three parity equations, so flipping it turns a
+ * legal id into a DIFFERENT legal id. The gate cannot see it, and neither
+ * shipped image can either — this is a property of the code, not a bug in them.
+ *
+ * It is not hypothetical. In the shipped firmware's own 2026-08-13/14 output,
+ * 137 of the 547 weak distinct ids (25%) are a single bit-7 flip of an id seen
+ * at least 10x more often, accounting for 5,503 frames. Every strong tag shows
+ * all four of its bit-7 neighbours at comparable rates — 55076161 (8,055 frames)
+ * appears alongside D5076161 (243), 5507E161 (222) and 550761E1 (199).
+ *
+ * The CRC-8 does cover bit 7, so it can both detect and locate the flip: for a
+ * genuine bit-7 error the transmitted CRC was computed over the TRUE id, so
+ * flipping the bit back is the unique candidate that makes the CRC agree. There
+ * are only four candidates, and requiring the CRC to match makes a false accept
+ * a 4-in-256 coincidence.
+ *
+ * Applies only to a frame that PASSES the gate but FAILS the CRC — i.e. an id
+ * the parity code called legal but which does not verify. Recovering it turns a
+ * confidently-wrong BEEP_0 into a correct BEEP_1. */
+static bool idCorrectBit7(uint8_t *out, uint8_t crc_rx) {
+  for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
+    out[i] ^= 0x80;
+    if (terraCrc8(out, TAG_ID_BYTES) == crc_rx) return true;
+    out[i] ^= 0x80;
+  }
+  return false;
+}
 
 /* Corrects `out` in place. Returns the number of octets corrected, or 0xFF if
  * more than one octet needed correcting. */
@@ -593,6 +622,7 @@ static void printStatus() {
   Serial.print(F(",\"ecc\":"));           Serial.print(cfg.ecc);
   Serial.print(F(",\"ecc_fixed\":"));     Serial.print(ecc_fixed);
   Serial.print(F(",\"ecc_declined\":"));  Serial.print(ecc_declined);
+  Serial.print(F(",\"b7_fixed\":"));      Serial.print(b7_fixed);
   Serial.print(F(",\"rssi_ok\":"));       Serial.print(rssi_ok);
   Serial.print(F(",\"fei_ok\":"));        Serial.print(fei_ok);
   Serial.print(F(",\"irq_count\":"));     Serial.print(irq_count);
@@ -796,6 +826,20 @@ void loop() {
                 (terraCrc8(frame, TAG_ID_BYTES) == frame[TAG_ID_BYTES]);
       } else {
         ecc_declined++;
+      }
+    }
+
+    /* Bit-7 recovery: gate says legal, CRC says otherwise. See idCorrectBit7().
+     * Shares the ecc setting; ECC_ALWAYS does not loosen it, because the CRC is
+     * the only thing that can locate a bit-7 flip at all. */
+    if (verdict == GATE_PASS && crc_checkable && !crcok && cfg.ecc != ECC_OFF) {
+      uint8_t fixed[TAG_ID_BYTES];
+      memcpy(fixed, frame, TAG_ID_BYTES);
+      if (idCorrectBit7(fixed, frame[TAG_ID_BYTES])) {
+        memcpy(frame, fixed, TAG_ID_BYTES);
+        crcok = true;                 /* true by construction of the search */
+        ecc_applied = true;
+        b7_fixed++;
       }
     }
 

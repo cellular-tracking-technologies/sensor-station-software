@@ -12,9 +12,9 @@ against the shipped firmware; its value is the instrumentation.
 
 | | |
 |---|---|
-| Version | `5.2.0-terra` (ID gate + single-bit correction; supersedes 5.1.0) |
-| Flash | 12974 bytes (45%) of 28672 |
-| RAM | 616 bytes of 2560 |
+| Version | `5.3.0-terra` (ID gate + single-bit + bit-7 correction) |
+| Flash | 13166 bytes (45%) of 28672 |
+| RAM | 620 bytes of 2560 |
 | Build target | `adafruit:avr:feather32u4` **only** (see Build) |
 | Verified | RSSI within 1.21 dB of stock; real-tag rate ratio median 0.99; FEI r=+0.999 cross-receiver |
 | Known gap | closed in 5.1.0 — see **The ID gate** |
@@ -163,6 +163,35 @@ Correction is attempted **only when parity is the sole complaint** — never on 
 degenerate or msb-heavy ID, which are noise signatures rather than corrupted
 tags. A corrected frame whose CRC then verifies is emitted as BEEP_1, so the
 recovery shows up in the station's `Validated` column.
+
+### Bit 7: the gate's structural blind spot (5.3.0)
+
+Bit 7 appears in none of the three parity equations, so **flipping it turns a
+legal ID into a different legal ID**. The gate cannot see it and neither shipped
+image can either — that is a property of the code, not a defect in them.
+
+It is not hypothetical. In the shipped firmware's own 08-13/14 output, **137 of
+the 547 weak distinct IDs (25%) are a single bit-7 flip of an ID seen at least
+10× more often**, accounting for 5,503 frames. Every strong tag carries all four
+of its bit-7 neighbours at comparable rates:
+
+| parent | frames | bit-7 neighbours |
+|---|---|---|
+| `55076161` | 8,055 | `D5076161` (243), `5507E161` (222), `550761E1` (199) |
+| `4C073378` | 12,491 | `4C0733F8` (243), `CC073378` (243), `4C07B378` (178) |
+| `4B551934` | 200,876 | `CB551934` (197), `4BD51934` (161) |
+
+The CRC-8 covers all 8 bits, so it can both detect and *locate* the flip: for a
+genuine bit-7 error the transmitted CRC was computed over the true ID, so
+flipping the bit back is the one candidate that makes the CRC agree. There are
+only four candidates, and `-selftest` proves the search is unambiguous — the CRC
+deltas for a bit-7 flip at each byte are `31 0B B6 89`, all distinct, so at most
+one candidate can ever match (confirmed over 200,000 IDs).
+
+Applies only to a frame that **passes** the gate but **fails** the CRC, turning a
+confidently-wrong BEEP_0 into a correct BEEP_1. Shares the `ecc` setting;
+`ecc:2` does not loosen it, because the CRC is the only thing that can locate a
+bit-7 flip at all. Counter: `b7_fixed` in `status`.
 
 Because the gate is 1-in-4096 selective, `snr_min` now **defaults to 0**. It had
 been set to 3 dB on the theory that it was the missing filter; it is not, and it
