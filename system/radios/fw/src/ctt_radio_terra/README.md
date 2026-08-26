@@ -12,9 +12,9 @@ against the shipped firmware; its value is the instrumentation.
 
 | | |
 |---|---|
-| Version | `5.1.0-terra` (adds the recovered ID gate; supersedes 5.0.1) |
-| Flash | 12432 bytes (43%) of 28672 |
-| RAM | 568 bytes of 2560 |
+| Version | `5.2.0-terra` (ID gate + single-bit correction; supersedes 5.1.0) |
+| Flash | 12974 bytes (45%) of 28672 |
+| RAM | 616 bytes of 2560 |
 | Build target | `adafruit:avr:feather32u4` **only** (see Build) |
 | Verified | RSSI within 1.21 dB of stock; real-tag rate ratio median 0.99; FEI r=+0.999 cross-receiver |
 | Known gap | closed in 5.1.0 — see **The ID gate** |
@@ -26,8 +26,9 @@ against the shipped firmware; its value is the instrumentation.
 `sync_tol:<0-7>`, `sync_val:<1-4>:<hex>`, `regread:<hex>`.
 
 `version`, `status`, `preset:fsktag`, `rxbw:<raw>`, `rx_size:<n>`,
-`modulation:fsk|ook`, `rssi_thresh:<dbm>`, `id_gate:0|1`, `snr_min:<0-40>`,
-`sync_size:<1-8>`, `sync_tol:<0-7>`, `sync_val:<1-4>:<hex>`, `regread:<hex>`.
+`modulation:fsk|ook`, `rssi_thresh:<dbm>`, `id_gate:0|1`, `ecc:0|1|2`,
+`snr_min:<0-40>`, `sync_size:<1-8>`, `sync_tol:<0-7>`, `sync_val:<1-4>:<hex>`,
+`regread:<hex>`.
 
 `id_gate` defaults to **1**. `snr_min` defaults to **0** and fails OPEN before the
 first noise sample. There is deliberately no CRC *gate*: a failing CRC labels a
@@ -119,8 +120,49 @@ octet alphabet is exactly the 32 legal values — all 32 present, nothing outsid
 Over the same corpus, 5.0.1's own 2026-08-26 window failed 35.5% of frames
 (126,932 parity, 45,486 msb, 650 zero). That was the phantom gap.
 
-`tools/gate_test.c` is the host-side cross-check: it carries a verbatim copy of
-the firmware's `idGate()` and reports a verdict histogram for tag IDs on stdin.
+`tools/gate_test.c` is the host-side cross-check: it carries verbatim copies of
+the firmware's `idGate()` and `idCorrectOneOctet()`, proves both by exhaustion
+with `-selftest`, and sizes their effect on a corpus of tag IDs read from stdin.
+
+### Single-bit correction (5.2.0)
+
+The per-octet code is **systematic Hamming(7,4)** — data in bits 0-3, parity
+`b4 = b1^b2^b3`, `b5 = b0^b2^b3`, `b6 = b0^b1^b3`, bit 7 outside the code. Proved
+by exhaustion: the 32 accepted values are exactly the 16 codewords times the free
+bit, and each of the 7 non-zero syndromes names a unique bit. So single-bit
+errors are **correctable**, and neither shipped image does it — both only detect
+and drop.
+
+The loss is measured, not theoretical. Of the 173,068 frames the gate rejected in
+the 2026-08-26 window, 31,975 differ from a legal ID by one bit in exactly one
+octet, and 27,165 of those correct onto an ID **independently observed >= 20
+times in the same window** — 8269x the null expectation over 200 draws of
+equally sized decoy ID sets. The signature is conclusive: every heavily detected
+tag carries all 28 of its single-bit neighbours at a near-uniform rate
+(`33075555`: 28 neighbours, median 215 frames each). That is a per-bit error
+rate, not noise.
+
+**Why this is not simply on.** Hamming(7,4) is a *perfect* code: all 256 octet
+values sit within one bit of exactly one codeword, so "correctable" is a vacuous
+property and pure noise corrects as readily as a real tag. Two constraints keep
+it honest:
+
+1. **One octet only.** Over the same window the octets-needing-correction
+   distribution was 1 → 32,468 frames, 2 → 20,203, 3 → 45,709, 4 → 72,793. A
+   frame needing two or more is noise.
+2. **`ecc:1` (the default) also requires the CRC-8 to agree after correction** —
+   an independent 8-bit test, so a false accept needs a 1-in-256 coincidence on
+   top of the single-octet constraint. It recovers only the CRC-carrying families
+   (stock validates 35.5% of its own frames) and is otherwise phantom-free.
+
+`ecc:2` skips the CRC test. On the same window it would have recovered 27,165
+real frames while ~5,303 landed on legal-but-unseen IDs — a 5.1:1 ratio: better
+yield, measurably worse purity. `ecc:0` disables correction for an A/B.
+
+Correction is attempted **only when parity is the sole complaint** — never on a
+degenerate or msb-heavy ID, which are noise signatures rather than corrupted
+tags. A corrected frame whose CRC then verifies is emitted as BEEP_1, so the
+recovery shows up in the station's `Validated` column.
 
 Because the gate is 1-in-4096 selective, `snr_min` now **defaults to 0**. It had
 been set to 3 dB on the theory that it was the missing filter; it is not, and it

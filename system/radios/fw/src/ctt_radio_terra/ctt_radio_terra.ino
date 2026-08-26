@@ -126,7 +126,7 @@ static const uint8_t PIN_CS  = 8;   /* Adafruit reference; wrong CS => all reads
 static const uint8_t PIN_IRQ = 7;   /* PE6 / INT6, read out of ss_v4.0.0.hex */
 static const int8_t  PIN_RST = 4;   /* Adafruit reference; -1 disables the reset pulse */
 
-static const char FIRMWARE_VERSION[] = "5.1.0-terra";
+static const char FIRMWARE_VERSION[] = "5.2.0-terra";
 
 /* ---- RFM69 / SX1231 registers ------------------------------------------ */
 enum {
@@ -202,6 +202,8 @@ static const uint8_t TAG_FRAME_BYTES = 5;
  * Key names mirror the shipped firmware's command surface, discovered by probing
  * a live radio (tools/probe-radio-config.mjs): rxbw, modulation, rx_type,
  * rx_size, tx_dbm, preset and version all answer there. The rest are new. */
+enum { ECC_OFF = 0, ECC_CRC = 1, ECC_ALWAYS = 2 };
+
 struct Config {
   uint8_t rxbw;
   uint8_t rx_size;
@@ -219,9 +221,12 @@ struct Config {
   /* Apply the shipped firmware's ID gate. Default on; set 0 to measure what the
    * gate is rejecting. */
   uint8_t id_gate;
+  /* ECC_OFF / ECC_CRC / ECC_ALWAYS — see idCorrectOneOctet(). Neither shipped
+   * image does this at all. */
+  uint8_t ecc;
 };
 static Config cfg = { BASE_RXBW, BASE_PAYLOAD_LEN, BASE_DATAMODUL,
-                      BASE_SYNC_CONFIG, -114, 0, 1 };
+                      BASE_SYNC_CONFIG, -114, 0, 1, ECC_CRC };
 
 static uint8_t rssiThreshReg(int8_t dbm) { return (uint8_t)(-2 * (int16_t)dbm); }
 
@@ -229,6 +234,7 @@ static uint8_t rssiThreshReg(int8_t dbm) { return (uint8_t)(-2 * (int16_t)dbm); 
 static bool     radio_ok = false;
 static uint32_t emitted = 0, snr_dropped = 0;
 static uint32_t gate_dropped = 0;
+static uint32_t ecc_fixed = 0, ecc_declined = 0;
 /* indexed by GATE_*; [GATE_PASS] counts accepted frames */
 static uint32_t gate_reason[6] = { 0, 0, 0, 0, 0, 0 };
 static uint32_t fei_ok = 0, rssi_ok = 0;
@@ -346,6 +352,57 @@ static uint8_t idGate(const uint8_t *frame, uint8_t len) {
   return GATE_PASS;
 }
 
+/* ---- single-bit error correction ----------------------------------------- *
+ * The per-octet code is systematic Hamming(7,4): data in bits 0-3, parity
+ * b4 = b1^b2^b3, b5 = b0^b2^b3, b6 = b0^b1^b3, and bit 7 outside the code.
+ * Verified exhaustively against the gate: the 32 accepted octet values are
+ * exactly the 16 Hamming codewords times the free bit 7, and each of the seven
+ * non-zero syndromes identifies a unique bit position, so every single-bit error
+ * in bits 0-6 is correctable. Both shipped images only DETECT and drop.
+ *
+ * That is a measurable loss, not a theoretical one. Over the 2026-08-26 window
+ * the gate rejected 173,068 frames; 32,468 of them differed from a legal ID by
+ * one bit in exactly one octet, and 27,165 of those correct onto an ID that was
+ * independently observed >= 20 times in the same window — 8269x the null
+ * expectation from 200 draws of equally sized decoy ID sets. The signature is
+ * unmistakable: every heavily detected tag carries all 28 of its single-bit
+ * neighbours at a near-uniform rate per neighbour (33075555: 28 neighbours,
+ * median 215 frames each). That is a per-bit error rate, not noise.
+ *
+ * CAUTION, and the reason ecc is not simply "on": Hamming(7,4) is a PERFECT
+ * code. Every one of the 256 octet values is within distance 1 of exactly one
+ * codeword, so "correctable" is a vacuous property — pure noise corrects just as
+ * readily as a real tag. Two things keep this honest:
+ *
+ *   1. Only ONE octet may be corrected. A frame needing two or more is noise.
+ *      Distribution over the same window: 1 octet 32,468 frames, 2 octets
+ *      20,203, 3 octets 45,709, 4 octets 72,793.
+ *   2. ECC_CRC (the default) additionally requires the CRC-8 to agree after
+ *      correction — an independent 8-bit test, so a false accept needs a 1-in-256
+ *      coincidence on top of the single-octet constraint. It recovers only the
+ *      CRC-carrying tag families (stock validates 35.5% of its own frames), and
+ *      is otherwise phantom-free.
+ *
+ * ECC_ALWAYS skips the CRC test. On the same window it would have recovered
+ * 27,165 real frames at the cost of ~5,303 frames landing on legal-but-unseen
+ * ids, a 5.1:1 ratio. Better yield, measurably worse purity. Not the default. */
+
+/* syndrome (1-7) -> bit position to flip. Index 0 is unused. */
+static const uint8_t ECC_SYNDROME_BIT[8] = { 0, 4, 5, 2, 6, 1, 0, 3 };
+
+/* Corrects `out` in place. Returns the number of octets corrected, or 0xFF if
+ * more than one octet needed correcting. */
+static uint8_t idCorrectOneOctet(uint8_t *out) {
+  uint8_t fixed = 0;
+  for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
+    uint8_t s = idOctetSyndrome(out[i]);
+    if (s == 0) continue;
+    if (++fixed > 1) return 0xFF;
+    out[i] = (uint8_t)(out[i] ^ (1 << ECC_SYNDROME_BIT[s]));
+  }
+  return fixed;
+}
+
 /* ---- terra's tag CRC-8 -------------------------------------------------- *
  * Same polynomial and seed as firmware/terra-rfm69/terra_crc8.c, so a frame
  * judged good here is judged good there. Only some CTT tag families carry it:
@@ -458,7 +515,7 @@ static void printTenths(int16_t half_dbm) {
   Serial.print(t / 10); Serial.print('.'); Serial.print(abs(t % 10));
 }
 
-static void emitDiagnostic(const uint8_t *frame, uint8_t verdict,
+static void emitDiagnostic(const uint8_t *frame, uint8_t verdict, bool ecc_applied,
                            bool crc_checkable, bool crcok,
                            uint8_t lna, uint32_t isr_us) {
   /* The leading "key" is load-bearing, not decoration. radio-receiver.js
@@ -492,6 +549,7 @@ static void emitDiagnostic(const uint8_t *frame, uint8_t verdict,
     Serial.print(F(",\"crcok\":")); Serial.print(crcok ? 1 : 0);
   }
   Serial.print(F(",\"gate\":")); Serial.print(verdict);  /* 0=pass, see GATE_* */
+  if (ecc_applied) Serial.print(F(",\"ecc\":1"));
   Serial.print(F("},\"data\":{\"id\":\""));
   for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
     if (frame[i] < 0x10) Serial.print('0');
@@ -532,6 +590,9 @@ static void printStatus() {
   Serial.print(F(",\"gate_msb\":"));      Serial.print(gate_reason[GATE_MSB]);
   Serial.print(F(",\"gate_ff\":"));       Serial.print(gate_reason[GATE_FF]);
   Serial.print(F(",\"gate_parity\":"));   Serial.print(gate_reason[GATE_PARITY]);
+  Serial.print(F(",\"ecc\":"));           Serial.print(cfg.ecc);
+  Serial.print(F(",\"ecc_fixed\":"));     Serial.print(ecc_fixed);
+  Serial.print(F(",\"ecc_declined\":"));  Serial.print(ecc_declined);
   Serial.print(F(",\"rssi_ok\":"));       Serial.print(rssi_ok);
   Serial.print(F(",\"fei_ok\":"));        Serial.print(fei_ok);
   Serial.print(F(",\"irq_count\":"));     Serial.print(irq_count);
@@ -583,6 +644,11 @@ static void handleCommand(char *cmd) {
     cfg.rssi_thresh_dbm = (int8_t)dbm;
     regWrite(REG_RSSI_THRESH, rssiThreshReg(cfg.rssi_thresh_dbm));
     reply(cmd, true, NULL); return;
+  }
+  if (!strcmp(cmd, "ecc")) {
+    long n = strtol(arg, NULL, 10);
+    if (n < 0 || n > 2) { reply(cmd, false, "0=off 1=crc-gated 2=always"); return; }
+    cfg.ecc = (uint8_t)n; reply(cmd, true, NULL); return;
   }
   if (!strcmp(cmd, "id_gate")) {
     long n = strtol(arg, NULL, 10);
@@ -706,6 +772,33 @@ void loop() {
      * reason whether or not it is enforcing, so `status` reports what it would
      * have rejected even with id_gate:0. */
     uint8_t verdict = idGate(frame, len);
+
+    /* Single-bit correction, attempted only when parity is the sole complaint —
+     * never on a degenerate or msb-heavy id, which are noise signatures rather
+     * than corrupted tags. See idCorrectOneOctet() for why one octet and why the
+     * CRC test is the default. */
+    bool ecc_applied = false;
+    if (verdict == GATE_PARITY && cfg.ecc != ECC_OFF) {
+      uint8_t fixed[TAG_ID_BYTES];
+      memcpy(fixed, frame, TAG_ID_BYTES);
+      if (idCorrectOneOctet(fixed) == 1 &&
+          (cfg.ecc == ECC_ALWAYS ||
+           terraCrc8(fixed, TAG_ID_BYTES) == frame[TAG_ID_BYTES])) {
+        memcpy(frame, fixed, TAG_ID_BYTES);
+        verdict = GATE_PASS;
+        ecc_applied = true;
+        ecc_fixed++;
+        /* crcok was computed on the uncorrected id above and is now stale.
+         * Under ECC_CRC it is true by construction; under ECC_ALWAYS it may go
+         * either way. Recompute, so a corrected frame that does verify is
+         * emitted as BEEP_1 and reaches the station's Validated column. */
+        crcok = crc_checkable &&
+                (terraCrc8(frame, TAG_ID_BYTES) == frame[TAG_ID_BYTES]);
+      } else {
+        ecc_declined++;
+      }
+    }
+
     gate_reason[verdict]++;
     bool gate_ok = (verdict == GATE_PASS) || !cfg.id_gate;
     if (!gate_ok) gate_dropped++;
@@ -724,7 +817,7 @@ void loop() {
       else       emitBeep0(frame, rssi_dbm);
       emitted++;
     }
-    emitDiagnostic(frame, verdict, crc_checkable, crcok, lna, isr_us); /* always */
+    emitDiagnostic(frame, verdict, ecc_applied, crc_checkable, crcok, lna, isr_us);
     cap_rssi_valid = cap_fei_valid = false;
   }
 
