@@ -42,11 +42,22 @@
  *
  * Through 5.0.1 this firmware emitted roughly 35% more records than the shipped
  * image, all of them junk IDs, and the rule the shipped image used to suppress
- * them was unknown. It is now known: a linear block code on the tag ID, checked
- * in software. It was not the PHY, the sync word, the driver or an SNR floor —
- * each of those was tested and cleared, and the SNR theory recorded below in
- * MEASUREMENT RULES was simply wrong. See idGate() for the derivation, the
- * addresses it was read from, and the 681,578-detection verification.
+ * them was unknown TO THIS WORK. It is a linear block code on the tag ID,
+ * checked in software. It was not the PHY, the sync word, the driver or an SNR
+ * floor — each of those was tested and cleared, and the SNR theory recorded
+ * below in MEASUREMENT RULES was simply wrong.
+ *
+ * ATTRIBUTION, because an earlier revision of this comment got it wrong: the
+ * rule is NOT a discovery. terra-rfm69's own README documents it — "the per-byte
+ * Hamming parity check admits 32 of 256 values per byte, so a random four-byte
+ * frame passes with p = (1/8)^4 = 1/4096 ... it discards about 99.8% of what
+ * this program emits" — and implements it one process downstream in
+ * terra_uhf.py, deliberately, so the receiver stays a receiver. What this work
+ * contributes is narrower and still worth having: the exact three equations and
+ * the 32-value octet alphabet, recovered independently from ss_v4.0.0.hex, which
+ * proves the CTT 32u4 lineage enforces the identical rule in firmware; and a
+ * verification against 681,578 of the shipped firmware's own detections. See
+ * idGate().
  *
  * Consequence: snr_min now defaults to 0. It was 3 dB on the strength of the
  * mistaken theory, and it costs real detections.
@@ -126,7 +137,7 @@ static const uint8_t PIN_CS  = 8;   /* Adafruit reference; wrong CS => all reads
 static const uint8_t PIN_IRQ = 7;   /* PE6 / INT6, read out of ss_v4.0.0.hex */
 static const int8_t  PIN_RST = 4;   /* Adafruit reference; -1 disables the reset pulse */
 
-static const char FIRMWARE_VERSION[] = "5.3.0-terra";
+static const char FIRMWARE_VERSION[] = "5.3.1-terra";
 
 /* ---- RFM69 / SX1231 registers ------------------------------------------ */
 enum {
@@ -203,6 +214,9 @@ static const uint8_t TAG_FRAME_BYTES = 5;
  * a live radio (tools/probe-radio-config.mjs): rxbw, modulation, rx_type,
  * rx_size, tx_dbm, preset and version all answer there. The rest are new. */
 enum { ECC_OFF = 0, ECC_CRC = 1, ECC_ALWAYS = 2 };
+/* Reported as the diagnostic line's "ecc" value, so the two recovery paths are
+ * distinguishable per frame and not just in aggregate. */
+enum { ECC_APPLIED_NONE = 0, ECC_APPLIED_HAMMING = 1, ECC_APPLIED_BIT7 = 2 };
 
 struct Config {
   uint8_t rxbw;
@@ -289,6 +303,13 @@ static void setMode(uint8_t mode) {
  * this firmware went ten revisions without. It was NOT the PHY, the sync word,
  * the driver, or an SNR floor — every one of those was tested and cleared. It is
  * a linear block code on the tag ID, checked in software.
+ *
+ * PRIOR ART: terra-rfm69's README already documents this gate ("32 of 256 values
+ * per byte ... p = 1/4096 ... discards about 99.8%") and implements it in
+ * terra_uhf.py rather than in the receiver. The contribution here is the exact
+ * equations and alphabet, recovered from the image rather than from the daemon,
+ * plus the verification below. The two lineages enforce the same rule in
+ * different places: CTT in the 32u4, Terra in Python.
  *
  * Recovered at ss_v4.0.0.hex:0x2ea8-0x2f6c, in the frame handler reached from
  * the INT6 trampoline (vector 7 -> 0x2026 -> intFunc[4] at RAM 0x0114, set by
@@ -544,7 +565,7 @@ static void printTenths(int16_t half_dbm) {
   Serial.print(t / 10); Serial.print('.'); Serial.print(abs(t % 10));
 }
 
-static void emitDiagnostic(const uint8_t *frame, uint8_t verdict, bool ecc_applied,
+static void emitDiagnostic(const uint8_t *frame, uint8_t verdict, uint8_t ecc_applied,
                            bool crc_checkable, bool crcok,
                            uint8_t lna, uint32_t isr_us) {
   /* The leading "key" is load-bearing, not decoration. radio-receiver.js
@@ -578,7 +599,7 @@ static void emitDiagnostic(const uint8_t *frame, uint8_t verdict, bool ecc_appli
     Serial.print(F(",\"crcok\":")); Serial.print(crcok ? 1 : 0);
   }
   Serial.print(F(",\"gate\":")); Serial.print(verdict);  /* 0=pass, see GATE_* */
-  if (ecc_applied) Serial.print(F(",\"ecc\":1"));
+  if (ecc_applied) { Serial.print(F(",\"ecc\":")); Serial.print(ecc_applied); }
   Serial.print(F("},\"data\":{\"id\":\""));
   for (uint8_t i = 0; i < TAG_ID_BYTES; i++) {
     if (frame[i] < 0x10) Serial.print('0');
@@ -807,7 +828,10 @@ void loop() {
      * never on a degenerate or msb-heavy id, which are noise signatures rather
      * than corrupted tags. See idCorrectOneOctet() for why one octet and why the
      * CRC test is the default. */
-    bool ecc_applied = false;
+    /* Which recovery path fired, if any. An earlier revision reported both as
+     * "ecc":1, so a log reader could not tell a Hamming fix from a bit-7 fix and
+     * only the status counters distinguished them. */
+    uint8_t ecc_applied = ECC_APPLIED_NONE;
     if (verdict == GATE_PARITY && cfg.ecc != ECC_OFF) {
       uint8_t fixed[TAG_ID_BYTES];
       memcpy(fixed, frame, TAG_ID_BYTES);
@@ -816,7 +840,7 @@ void loop() {
            terraCrc8(fixed, TAG_ID_BYTES) == frame[TAG_ID_BYTES])) {
         memcpy(frame, fixed, TAG_ID_BYTES);
         verdict = GATE_PASS;
-        ecc_applied = true;
+        ecc_applied = ECC_APPLIED_HAMMING;
         ecc_fixed++;
         /* crcok was computed on the uncorrected id above and is now stale.
          * Under ECC_CRC it is true by construction; under ECC_ALWAYS it may go
@@ -838,7 +862,7 @@ void loop() {
       if (idCorrectBit7(fixed, frame[TAG_ID_BYTES])) {
         memcpy(frame, fixed, TAG_ID_BYTES);
         crcok = true;                 /* true by construction of the search */
-        ecc_applied = true;
+        ecc_applied = ECC_APPLIED_BIT7;
         b7_fixed++;
       }
     }
