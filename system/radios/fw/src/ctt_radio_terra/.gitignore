@@ -1,0 +1,6 @@
+# arduino-cli build output. The flashable image is kept deliberately — this
+# firmware exists because ss_v4.0.0.hex was committed WITHOUT its source, and a
+# hex beside its source lets anyone reflash without an AVR toolchain. The rest
+# is derived noise.
+build/*
+!build/ctt_radio_terra.ino.hex
