@@ -12,11 +12,35 @@ against the shipped firmware; its value is the instrumentation.
 
 | | |
 |---|---|
-| Flash | 12186 bytes (42%) of 28672 |
-| RAM | ~470 bytes of 2560 |
+| Version | `5.0.0-terra` (clean reimplementation; supersedes the terra.1-.10 patch series) |
+| Flash | 11638 bytes (40%) of 28672 |
+| RAM | 524 bytes of 2560 |
 | Build target | `adafruit:avr:feather32u4` **only** (see Build) |
 | Verified | RSSI within 1.21 dB of stock; real-tag rate ratio median 0.99; FEI r=+0.999 cross-receiver |
-| Known gap | emits far more phantom IDs than stock unless `snr_min` is raised |
+| Known gap | still emits more phantom IDs than stock; `snr_min` defaults to 3 dB to curb it |
+
+### Commands
+
+`version`, `status`, `preset:fsktag`, `rxbw:<raw>`, `rx_size:<n>`,
+`modulation:fsk|ook`, `rssi_thresh:<dbm>`, `snr_min:<0-40>`, `sync_size:<1-8>`,
+`sync_tol:<0-7>`, `sync_val:<1-4>:<hex>`, `regread:<hex>`.
+
+`snr_min` defaults to **3 dB** and fails OPEN before the first noise sample, so a
+cold boot never drops frames. Set `snr_min:0` for a stock-comparable A/B. There is
+deliberately no CRC gate: a failing CRC labels a detection (BEEP_0) rather than
+discarding it, because several real tag families do not carry that CRC.
+
+### Verifying a flash
+
+```sh
+node tools/probe-radio-config.mjs --socket /run/ctt/radios/ch5.sock \
+     --mode set --set version --set status --no-restore
+```
+
+`radio_ok` must be 1, and `rssi_ok` should track `emitted` + `snr_dropped` — that
+is the check that RSSI is being captured at sync match rather than falling back.
+Do NOT infer success from the absence of `Radio Init Failed`; that line is printed
+at boot, before any socket consumer can attach.
 
 ### Pin map (recovered from ss_v4.0.0.hex, then confirmed on hardware)
 
@@ -94,7 +118,9 @@ Register-config parity against the shipped image:
 tools/parity.py ../../ss_v4.0.0.hex build/ctt_radio_terra.ino.hex
 ```
 
-Known false positive: `FrfMid DIFFERS`. `regpairs.py` pairs each `ldi r22,<reg>`
+Expected rows: `0x29 RssiThresh ADDED by ours` (that is delta 1) and
+`0x30 SyncValue2 ADDED by ours` (the shipped image writes both sync bytes through
+a helper the extractor cannot pair). Known false positive: `FrfMid DIFFERS`. `regpairs.py` pairs each `ldi r22,<reg>`
 with the nearest preceding `ldi r20,<val>`, which mis-pairs when the compiler
 reorders. Disproven on hardware — `regread:07/08/09` returns `6C/80/00`, i.e.
 exactly 434.000 MHz.
