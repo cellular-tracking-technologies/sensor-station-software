@@ -1176,6 +1176,176 @@ All five radios verified back on stock **`4.0.0`**, all five drivers running, al
 `/tmp/terra/` on the station (`run.sh`, `analyze.py`, `fwver.mjs`, `status.mjs`) — `/tmp` is
 wiped on reboot, so re-copy from the workstation scratch if resuming.
 
+## Update 2026-08-27 (later) — the RegRssiThresh prediction is REFUTED, on mechanism
+
+**Closes the last standing open item.** The record has carried this since the
+close-of-day session: *"stock should out-detect terra here because `RegRssiThresh`
+is `0xFF` (−127.5 dBm) on stock versus `0xE4` (−114 dBm) on terra, with the tag
+only 5 dB above terra's threshold — UNTESTED, not refuted. It remains the one
+regime where the firmwares should diverge."*
+
+It is now tested. It does not hold, and the reason is more fundamental than a
+margin: **`RegRssiThresh` does not gate packet reception on this part in this
+configuration at all.**
+
+### The test did not need a −95…−105 dBm environment
+
+The RESUME NOTES said this needed the tag at −95…−105 dBm, which is why it kept
+being deferred. That framing was unnecessarily strict. The prediction is about
+the **margin between signal and threshold**, not about absolute dBm — and terra
+exposes `rssi_thresh` as a runtime command (−127…−20 dBm, `reg = -2*dbm`), so the
+threshold can be raised to meet a fixed signal instead of lowering the signal to
+meet a fixed threshold.
+
+That is a strictly better experiment than the one originally proposed:
+
+- it isolates **the single register** the prediction is about, where stock-vs-terra
+  differs in many other ways;
+- it needs **no reflash between conditions**, so nothing else changes;
+- terra reaches **−127 (`0xFE`)**, within 0.5 dB of stock's `0xFF`, so one
+  firmware can stand in for both sides of the comparison;
+- and it can place the threshold **above every tag present**, which no amount of
+  waiting for a quiet environment can guarantee.
+
+ch5 ran `5.3.1-terra` throughout; ch1 held stock `4.0.0`, untouched, as the
+simultaneous control. Retention for tag *t* at threshold *T* is
+`R_T(t) = n_ch5,T(t)/n_ch1,T(t)`, normalised to the baseline run. Every setting was
+verified by reading the register back before its window opened.
+
+### Sweep 1 (−114 → −80 dBm) — inconclusive, and it says so
+
+| | −114 | −127 | −100 | −95 | −90 | −87 | −85 | −80 | −114 |
+|---|---|---|---|---|---|---|---|---|---|
+| ch5 n | 694 | 570 | 591 | 550 | 534 | 545 | 640 | 630 | 626 |
+| ch1 n | 692 | 785 | 761 | 715 | 574 | 605 | 779 | 797 | 792 |
+
+Retention, stable tags only:
+
+| tag | ch5 dBm | −114 | −127 | −100 | −95 | −90 | −87 | −85 | −80 |
+|---|---|---|---|---|---|---|---|---|---|
+| `33075555` | −59 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| `071E6661` | −69 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.01 | 1.00 |
+| `55613461` | −69 | 1.03 | 1.00 | 1.03 | 1.07 | 1.03 | 1.07 | 1.07 | 1.07 |
+| `66557866` | −70 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| `19331955` | −71 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 0.94 | 1.00 |
+| `2D341934` | −84 | 0.96 | 1.00 | 0.99 | 0.99 | 0.99 | 1.01 | 1.00 | 1.01 |
+
+Excluded as unstable by the `−114` repeat (C1 vs C9, identical setting):
+`4B551934`, `55074B4B`, `61556678`, `6178191E`, `78614C4B`.
+
+**This sweep cannot answer the question and must not be read as if it does.** The
+tags stable enough to measure all sit at −59…−84 dBm while the sweep stopped at
+−80, so it never rose above the strongest of them. The tags weak enough for −80
+to gate (−88…−90 dBm) are exactly the marginal ones this record has already
+caught drifting — one of them reported "retention" **8.64**, which no gating
+mechanism can produce.
+
+The one result that does stand from sweep 1 is the head-to-head that motivated
+everything: **`T = −114` vs `T = −127`, same radio, same firmware, same signal —
+median retention `1.000` over 11 tags spanning −59 to −89 dBm.** That is the exact
+register difference between terra and stock, measured directly.
+
+### Sweep 2 (−114 → −55 dBm) — the positive control fires, and fails
+
+Rather than wait for weak tags, bring the threshold **up** to the strong,
+high-count, stable ones. `−55 dBm` sits above *every* tag present and is a
+positive control: if detections do not collapse there, the register is inert.
+
+| | −114 | −75 | −70 | −67 | −64 | −61 | −58 | −55 | −114 |
+|---|---|---|---|---|---|---|---|---|---|
+| ch5 n | 672 | 619 | 596 | 644 | 570 | 623 | 626 | **662** | 556 |
+| ch1 n | 752 | 756 | 791 | 776 | 761 | 788 | 785 | 795 | 793 |
+
+| tag | ch5 dBm | −114 | −75 | −70 | −67 | −64 | −61 | −58 | **−55** |
+|---|---|---|---|---|---|---|---|---|---|
+| `33075555` | −59 | 1.00 | 1.00 | 1.02 | 1.00 | 1.00 | 1.02 | 1.00 | **1.00** |
+| `071E6661` | −69 | 1.00 | 1.01 | 1.01 | 1.00 | 1.00 | 1.00 | 1.00 | **0.99** |
+| `55613461` | −70 | 1.00 | 1.03 | 1.00 | 1.03 | 1.03 | 1.03 | 1.00 | **1.00** |
+| `19331955` | −71 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | **1.00** |
+| `55074B4B` | −80 | 1.00 | 0.96 | 0.93 | 0.93 | 1.00 | 0.96 | 0.95 | **0.93** |
+
+Excluded by the `−114` repeat (D1 vs D9): `2D341934`, `4B551934`, `61074C4B`,
+`61556678`, `66557866`, `78614C4B`.
+
+**At `T = −55 dBm` the threshold is 4 dB above the strongest tag and 25 dB above
+the weakest stable one, and every stable tag retains 0.93–1.00.** ch5's total
+count is flat across the entire sweep (556–672) with no trend; if the register
+gated reception that column would collapse. Both floors — C1/C9 and D1/D9, same
+setting revisited — are `1.000`.
+
+### Verdict: refuted on mechanism, not on margin
+
+`RegRssiThresh` does not gate packet reception here, so the `0xE4` vs `0xFF`
+difference cannot produce a detection gap at **any** signal level, and the "one
+regime where the firmwares should diverge" does not exist.
+
+This is consistent with what this record already established in
+§"Measurement rules": `RegIrqFlags1.Rssi` is *"Set in Rx when RssiValue exceeds
+RssiThreshold, cleared when leaving Rx"* — a one-way latch that never clears in
+continuous RX. `RegRssiThresh` sets **when that flag asserts**, not whether a
+packet is received. Sync detection and `PayloadReady` proceed independently. The
+prediction assumed the register was a squelch; it is an interrupt threshold.
+
+Practical consequence: terra's `RegRssiThresh` write — "DELTA 1", one of the three
+genuine differences from stock this whole investigation began with — is
+**inert for detection purposes**. Of terra's three deltas, that leaves the
+signal-quality instrumentation and the forwarded CRC byte as the real ones.
+
+### Two metric bugs found while doing this — the same failure mode, twice
+
+This record's §Prevention warns: *"Built a counter that could only report
+success… Any success metric must be able to say no."* The onset detector hit that
+failure **twice**, and both times it produced a confident, false confirmation of
+the prediction:
+
+1. **On a partial sweep**, every tag trivially looked "still fine at the highest
+   threshold tested", yielding a 34 dB margin and `PREDICTION HOLDS` from a single
+   condition. Fixed by requiring the sweep to actually *bracket* a loss before any
+   margin is stated.
+2. **The repeat control was read as a result.** The stability screen keyed on the
+   `−127` condition, which sweep 2 does not have, so the screen never ran and the
+   `−114` **repeat's own drift** was scored as an onset "at −114" — inventing a
+   +28 dB margin and `PREDICTION HOLDS` out of four tags that had merely drifted
+   over 50 minutes. Fixed by keying the screen on *whatever threshold was visited
+   twice*, and by excluding control settings from the onset scan.
+
+Both were caught only because a same-setting repeat was built into the design.
+**A sweep without a repeated condition cannot distinguish an effect from drift**,
+and on this bench drift is large enough to fake any effect being looked for.
+
+The distinction the corrected tool now draws is the one that matters: "no loss,
+and the sweep never challenged the register" (inconclusive) versus "no loss, and
+the threshold was above every signal present" (refuted). Sweep 1 is the first;
+sweep 2 is the second.
+
+### The rotation trap is fixed in the repo
+
+The trap recorded in the previous update — a rotated CSV is gzipped into
+`/data/rotated/` and then **moved** to `/data/uploaded/<svc>/<date>/`, so an
+analysis reading only the live file reports **zeros rather than an error** — now
+has a committed fix rather than a warning.
+
+`system/scripts/read-detections.py` (CLI `read-detections`, installed by
+`install-scripts.sh` so an OTA self-heals the symlink) is the one correct reader.
+It globs all four locations and is loud by construction, since the bug is silence:
+it always writes a manifest of every file, row count and time span to stderr;
+**exits non-zero rather than printing an empty result as success**; strips the NUL
+padding a file rotated across a power-off carries (which `csv` otherwise rejects
+outright, losing the file); and checks for duplicate **rows** rather than
+overlapping spans — adjacent files legitimately share a boundary *second* while
+sharing no rows, so a span check false-alarms on every healthy pair, 25 times on
+this station, and a warning that fires on healthy data gets ignored.
+
+Verified: it recovers the previously lost P1 window exactly (`ch5=1914`,
+`ch1=2633`) and reports zero duplicates across 55 files and 1.46M rows. Both
+sweeps above were analysed through it. Documented in `system/README.md`.
+
+### Fleet state at close
+
+All five radios verified back on stock **`4.0.0`**, all five drivers running, all
+collecting. ch5 was reflashed to stock by the sweep's own restore step. Sweep
+tooling is committed at `system/radios/fw/src/ctt_radio_terra/tools/`.
+
 ---
 <!-- Immutable record: correct only by appending a dated "Update" section below,
      never by editing the findings above. -->
