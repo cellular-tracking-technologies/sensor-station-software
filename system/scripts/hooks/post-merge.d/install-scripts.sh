@@ -36,6 +36,7 @@ update-station        update-station.sh
 bash-update-station   bash-update-station.sh
 upload-station-data   upload-station-data.sh
 collect-diagnostics   collect-diagnostics.sh
+read-detections       read-detections.py
 "
 
 mkdir -p "$BIN_DIR"

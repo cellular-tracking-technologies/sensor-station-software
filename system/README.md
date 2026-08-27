@@ -224,6 +224,53 @@ only step needed to roll a new native binary to the fleet.
 
 ---
 
+## Reading the detection record
+
+**Use `read-detections` for anything that reads detections. Not `cat /data/*.csv`.**
+
+A data CSV is rotated hourly (`record.rotation_frequency_minutes`), and a rotated
+file does not stay where it was written:
+
+```
+/data/CTT-<id>-raw-data.csv                   live, being appended
+/data/rotated/<id>-raw-data.<stamp>.csv.gz    rotated, awaiting upload
+/data/uploaded/<svc>/<date>/...csv.gz         MOVED here once the server accepts it
+/data/rotated-failed/...csv.gz                upload gave up
+```
+
+An analysis that reads only the live file — or only the live file plus
+`rotated/` — silently loses every window older than the last rotation. It does
+not fail; it reports **zero rows**, which is indistinguishable from "the radio
+heard nothing". That cost a real measurement: a four-phase firmware comparison
+came back with `ch5=0` for its first phase because the hourly rotation had fired
+mid-run and moved the file to `uploaded/`.
+
+`scripts/read-detections.py` (CLI: `read-detections`) is the single correct
+reader. It globs all four locations, and:
+
+- **always writes a manifest to stderr** — every file read, its row count and
+  time span, plus which locations were empty. The original bug was silence, so
+  the tool is loud by construction.
+- **exits non-zero rather than printing an empty success** if no source was read.
+- **tolerates NUL padding**, which a file rotated across a power-off can carry
+  and which `csv` otherwise rejects outright, losing the whole file.
+- **checks for duplicate rows** across files, not merely overlapping spans:
+  adjacent files legitimately share a boundary *second* while sharing no rows, so
+  a span check false-alarms on every healthy pair (25 times on one station). A
+  warning that fires on healthy data gets ignored, and then the real one is
+  missed too.
+
+```bash
+read-detections --since '2026-08-27 13:58' --until '2026-08-27 14:18' --summary
+read-detections --radio 5 --tag 071E6661 > ch5.csv
+read-detections --kind gps
+```
+
+Times compare as strings against the CSV's own UTC `Time` column, so a prefix is
+a valid bound (`--since '2026-08-27 14'` means from 14:00:00).
+
+---
+
 ## Other scripts
 
 `scripts/` also holds the boot helpers invoked by the units above
