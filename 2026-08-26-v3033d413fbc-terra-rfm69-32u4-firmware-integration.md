@@ -1346,6 +1346,144 @@ All five radios verified back on stock **`4.0.0`**, all five drivers running, al
 collecting. ch5 was reflashed to stock by the sweep's own restore step. Sweep
 tooling is committed at `system/radios/fw/src/ctt_radio_terra/tools/`.
 
+## Update 2026-08-27 (later still) — false detections: terra's error correction is the source
+
+**Qualifies the recommendation in §"Verdict: stock is the better production
+firmware"** — *"the recovery finding does not need this firmware at all… Hamming
+and bit-7 correction are pure post-processing on `(id, crc)` and would work
+fleet-wide in `terra_uhf.py` or `beep-formatter.js` with zero radio risk. That is
+the highest-value home for it."* The mechanism is sound and that is still the
+right home, but it must not be moved **as-is**: measured here, correction
+manufactures false detections at a rate comparable to the real ones it recovers.
+
+### Comparison by false-detection rate
+
+A false detection is an emitted ID that **no other channel saw in the same
+window**. All five radios are co-located and every real tag here is heard by all
+five (`071E6661` was 227/222/204/200/203), so a real tag corroborates and noise
+does not. ch5 is the device under test; ch1–ch4 stay on stock, so every window
+carries its own control.
+
+From the four-phase comparison earlier today (20 min per phase):
+
+| phase | ch5 firmware | rows | false IDs | false rows | false rate |
+|---|---|---|---|---|---|
+| P1 | stock `4.0.0` | 1914 | 3 | 3 | **0.16%** |
+| P2 | `5.3.1-terra` | 2111 | 10 | 21 | **0.99%** |
+| P3 | `5.3.1-terra` | 1994 | 12 | 34 | **1.71%** |
+| P4 | stock `4.0.0` | 2198 | 3 | 3 | **0.14%** |
+
+**stock 0.15% vs terra 1.35% — about 9×.** Not environmental: ch1's own false
+rate during the two terra phases was 0.00% and 0.07%, its quietest of the session.
+
+**Both gates are perfect on their own terms.** Zero emitted IDs failed the Hamming
+parity equations in any phase, either firmware. This is not a leaking gate; it is
+something adding IDs that are legal but wrong.
+
+### The false IDs are bit-7 neighbours of the loudest real tags
+
+Stock's false IDs are all singletons. Terra's **repeat**, and every repeat
+offender is a single bit-7 flip of a strongly detected tag:
+
+| false ID | n | one bit from | n |
+|---|---|---|---|
+| `2DB41934` | 9 | `2D341934` | 352 |
+| `61874C4B` | 7 | `61074C4B` | 63 |
+| `AD341934` | 6 | `2D341934` | 352 |
+| `556134E1` | 2 | `55613461` | 119 |
+| `5561B461` | 1 | `55613461` | 119 |
+
+A repeating false ID is a systematic process, not noise. And §"Hamming(7,4) is a
+PERFECT code" already predicts the process: *"pure noise corrects as readily as a
+real tag."* Correction applied to a noise frame cannot fail — it lands on **some**
+legal ID, and the nearest legal IDs are the neighbours of whatever is loudest.
+
+### Causal test: `ecc` on vs off, one radio, one firmware
+
+`ecc:0` disables both correction paths (Hamming at the `GATE_PARITY` branch,
+bit-7 at the `GATE_PASS`/`!crcok` branch), so this is a clean on/off switch with
+nothing else changing. Conditions **interleaved 1/0/1/0**, 15 min each, so a drift
+trend cannot masquerade as the effect, and each setting is measured twice. ch5 on
+`5.3.1-terra` throughout, ch1 on stock as the simultaneous control. Counters are
+cumulative with no reflash between conditions, so status was sampled before and
+after each window and the delta reported.
+
+| cond | ecc | rows | false IDs | false rows | ch5 false% | ch1 ctrl% | **ch5/ch1** |
+|---|---|---|---|---|---|---|---|
+| E1 | **on** | 2288 | 10 | 17 | 0.74% | 0.29% | **2.55** |
+| E2 | off | 1973 | 6 | 8 | 0.41% | 0.41% | **1.00** |
+| E3 | **on** | 1739 | 6 | 21 | 1.21% | 0.33% | **3.67** |
+| E4 | off | 1599 | 6 | 7 | 0.44% | 0.35% | **1.26** |
+
+| cond | ecc | irq | emitted | gate_dropped | ecc_fixed | b7_fixed |
+|---|---|---|---|---|---|---|
+| E1 | on | 2925 | 2293 | 632 | 51 | 40 |
+| E2 | off | 2622 | 1981 | 641 | **0** | **0** |
+| E3 | on | 2322 | 1743 | 579 | 39 | 32 |
+| E4 | off | 2134 | 1604 | 530 | **0** | **0** |
+
+The counters confirm the manipulation took: `ecc_fixed` and `b7_fixed` are exactly
+zero in both off conditions and non-zero in both on conditions.
+
+```
+ecc ON   false rate 0.98%   (0.74, 1.21)     normalised to control  3.11
+ecc OFF  false rate 0.42%   (0.41, 0.44)     normalised to control  1.13
+```
+
+**Both ON values exceed both OFF values, and they do so within each adjacent
+pair** (E1>E2, E3>E4), which is what the interleaving buys: drift cannot produce
+that pattern.
+
+### Conclusion
+
+**Terra's error correction is the source of its excess false detections.** With
+correction off, terra's false rate is `1.13×` its own same-window control —
+statistically indistinguishable from the stock channels beside it. With correction
+on it is `3.11×`.
+
+Sizing the damage against the benefit, per window:
+
+| | E1/E2 | E3/E4 |
+|---|---|---|
+| corrections claimed (`ecc_fixed`+`b7_fixed`) | 91 | 71 |
+| extra false rows vs the adjacent off window | +9 | +14 |
+| implied mis-correction rate | ~10% | ~20% |
+
+So **10–20% of what the counters report as recoveries are landing on IDs no other
+radio saw.** This is the §Prevention failure again, in a new place: `ecc_fixed`
+and `b7_fixed` are counters that can only report success. They count that a
+correction was *applied*, never that it was *right* — the CRC agreeing after
+correction is true by construction of the search (the code says so at the
+`crcok = true` assignment), so it is not independent evidence.
+
+### What this means for the fleet recommendation
+
+Moving Hamming + bit-7 correction into `beep-formatter.js` or `terra_uhf.py` is
+still the right home — it is post-processing on `(id, crc)` with no radio risk —
+but moving it unchanged would export a 10–20% mis-correction rate to every
+station, and the same perfect-code argument applies wherever it runs. Correction
+needs an independent constraint before it is trusted. Two are available and cheap:
+
+1. **Require corroboration.** A corrected ID that no other channel on the station
+   ever sees is almost certainly a mis-correction. This is exactly the classifier
+   used above, and it works at the station level with no new data.
+2. **Require the corrected ID to be a deployed tag.** §"Verification" already
+   established that all **130** manufacturer-assigned IDs from two deployments
+   pass the gate, and a deployment knows its own tag list. Correcting onto an ID
+   that was never deployed is provably wrong, which turns a perfect code into a
+   usefully imperfect one.
+
+Until one of those is in place, `ecc` is better left **off** for production data,
+which is what stock effectively does by not implementing it.
+
+### Fleet state at close
+
+All five radios verified back on stock **`4.0.0`**, all five drivers running, all
+collecting. ch5 was reflashed by the test's own restore step. Analysis tooling:
+`tools/false-detections.py` (the classifier) and `tools/ecc-ab.sh` +
+`tools/ecc-ab-analyze.py` (the on/off test), all reading through
+`read-detections`.
+
 ---
 <!-- Immutable record: correct only by appending a dated "Update" section below,
      never by editing the findings above. -->
