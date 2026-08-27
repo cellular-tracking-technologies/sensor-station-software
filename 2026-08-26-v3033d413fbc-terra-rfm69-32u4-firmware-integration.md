@@ -1484,6 +1484,60 @@ collecting. ch5 was reflashed by the test's own restore step. Analysis tooling:
 `tools/ecc-ab-analyze.py` (the on/off test), all reading through
 `read-detections`.
 
+## RESUME NOTES — station powered off 2026-08-27 ~19:40 UTC
+
+**Fleet is safe:** all five radios verified on stock **`4.0.0`**, 5/5 drivers
+running, radio-interface / sensorgnome / hardware-server all active, and all four
+transient test units (`terra-compare`, `rssi-sweep`, `rssi-sweep2`, `ecc-test`)
+inactive. Station checkout clean.
+
+**Three rotated files were in `/data/rotated/` awaiting upload** at shutdown. They
+are on disk and survive the reboot; they upload on next boot and then move to
+`/data/uploaded/`. `read-detections` reads all three locations, so no analysis
+needs to care where they ended up.
+
+**The station's checkout is behind origin.** It sits at `eac1d19`; the branch is
+now at `6bc1b113`. On resume:
+
+```sh
+cd /lib/ctt/sensor-station-software && git pull --ff-only
+```
+
+Note `.git/refs/heads/feat/`, `.git/logs/refs/heads/feat/`, `.git/HEAD` and a
+backup tag were **root-owned** on this station, which made a pull update the
+working tree but fail to move the ref — leaving HEAD and the files disagreeing.
+Fixed with `sudo chown -R ctt:ctt .git`, but check for it again after anything
+that runs git as root.
+
+**`/tmp` is wiped on reboot.** Everything staged there this session is gone, but
+all of it is now committed — re-copy from the repo rather than rewriting:
+
+| was at | now at |
+|---|---|
+| `/tmp/terra/*` (4-phase runner, fwver, status) | `tools/rssi-thresh-sweep.sh`, `tools/radio-version.mjs`, `tools/radio-status.mjs` |
+| `/tmp/rssi*/` (threshold sweeps) | `tools/rssi-thresh-sweep.sh`, `tools/rssi-thresh-analyze.py`, `tools/radio-setthresh.mjs` |
+| `/tmp/ecc/` (ecc A/B) | `tools/ecc-ab.sh`, `tools/ecc-ab-analyze.py`, `tools/radio-setecc.mjs` |
+| `/tmp/false-detections.py` | `tools/false-detections.py`, `tools/false-detection-origin.py` |
+
+`read-detections` is a real CLI now (`system/scripts/read-detections.py`, symlinked
+by `install-scripts.sh`), so it survives reboots and OTAs.
+
+**RF state at shutdown:** antennas fitted, all five channels hearing tags at
+−83…−89 dBm median, ~90–140 detections/min each, core tags matched across all
+five. That is the regime every measurement in the 2026-08-27 updates was taken in.
+If the setup changes, those numbers are not comparable — re-measure the baseline
+before comparing anything to them.
+
+**What is still open**, after this session closed the RegRssiThresh item:
+
+- Absolute RSSI accuracy still needs a reference transmitter. Equivalence between
+  firmwares is settled across a 55 dB range; whether the *shared* value is right
+  is not.
+- The mis-correction constraint (corroboration, or a deployed-tag whitelist) is
+  designed but not implemented. Until it is, `ecc` stays off for production data.
+- Terra remains bench-only regardless: it implements one preset of six, so a
+  channel switched to `preset:node3` or `preset:ooktag` goes dead.
+
 ---
 <!-- Immutable record: correct only by appending a dated "Update" section below,
      never by editing the findings above. -->
