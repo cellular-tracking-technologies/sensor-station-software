@@ -26,7 +26,11 @@
 # systemd's own 99-systemd.rules already applies TAG+="systemd" and SYSTEMD_ALIAS to
 # every net device, so SYSTEMD_WANTS here is sufficient — no extra tagging needed.
 #
-# ctt-modem-ecm-up.service gates itself on /etc/ctt/modem-disabled, so this trigger
-# can never bring a route up over a modem the operator disabled.
-ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service"
-ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service"
+# Exactly one of the two units below runs per add event; their ConditionPathExists
+# on /etc/ctt/modem-disabled are exact complements:
+#   marker ABSENT  -> ctt-modem-ecm-up.service      (configure the data path)
+#   marker PRESENT -> ctt-modem-reassert-off.service (re-apply the operator's OFF
+#                     intent: `authorized` resets to 1 on re-enumeration, so a
+#                     disabled modem would otherwise silently come back on the bus)
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service", ENV{SYSTEMD_WANTS}+="ctt-modem-reassert-off.service"
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service", ENV{SYSTEMD_WANTS}+="ctt-modem-reassert-off.service"

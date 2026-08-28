@@ -1,0 +1,26 @@
+[Unit]
+Description=Re-apply the "modem disabled" intent after a USB re-enumeration
+# disable-modem.sh deauthorizes the modem (echo 0 > .../authorized) and records the
+# intent in /etc/ctt/modem-disabled. But `authorized` is RUNTIME state: it resets to
+# 1 whenever the module re-enumerates, and until now only modem-boot-state.service
+# (boot-only) reconciled that. So a disabled modem that spontaneously re-enumerated
+# silently came back on the bus and stayed there until the next reboot.
+#
+# Started from the same mdm0 add rule as ctt-modem-ecm-up.service; the two
+# ConditionPathExists are exact complements, so precisely one runs per add event.
+#
+# NOTE: deliberately does NOT order After=systemd-udev-settle.service the way
+# modem-boot-state.service does. A unit started BY a udev rule that orders after
+# udev-settle deadlocks the boot transaction (settle waits for the udev queue to
+# drain; the queue waits on this unit). Nothing here needs settle — the device whose
+# add event started us is by definition already present.
+ConditionPathExists=/etc/ctt/modem-disabled
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-power.sh off
+
+# No [Install]: udev-activated only (ENV{SYSTEMD_WANTS} in 78-ctt-telit-net.rules),
+# like the ctt-radio-driver@/ctt-blu-driver@ templates. Deployed as a file, never
+# enabled, so it must NOT be listed in install-systemd.sh's MUST_BE_ENABLED.

@@ -41,6 +41,15 @@ regenerated from these entries.
   V30B0154C65F) and would fight the new instance. Also added: an early exit when `mdm0` already
   has an address and a default route, so the now-frequent re-runs are close to free.
 
+- **A disabled modem stays disabled across a re-enumeration.** `disable-modem.sh` deauthorizes
+  the modem and records intent in `/etc/ctt/modem-disabled`, but `authorized` is runtime state
+  that resets to `1` whenever the module re-enumerates, and only boot-time
+  `modem-boot-state.service` reconciled it — so a disabled modem that re-enumerated came back
+  on the bus until the next reboot. New udev-activated `ctt-modem-reassert-off.service`
+  re-applies the deauthorize on the `mdm0` add event. It and `ctt-modem-ecm-up.service` carry
+  complementary `ConditionPathExists` on the marker, so exactly one runs per add event and the
+  recovery path can never route over a modem the operator turned off.
+
 ### Changed
 
 - `install-systemd.sh` deploys `*.timer` as well as `*.service`. The glob was `*.service` only,

@@ -60,6 +60,9 @@ MUST_BE_ENABLED=(
   # ctt-radio-driver@.service and ctt-blu-driver@.service are TEMPLATES — udev
   # activates per-channel instances via ENV{SYSTEMD_WANTS}; they are deployed as
   # files but must NOT be enabled here.
+  #
+  # ctt-modem-reassert-off.service is likewise udev-activated only (mdm0 add rule in
+  # 78-ctt-telit-net.rules) and has no [Install]; deployed as a file, never enabled.
 )
 # NOTE: ctt-modem-provision.service is an idempotent boot GUARD, not an every-boot
 # re-provisioner. It reads AT#USBCFG?/AT#ECM? and only writes when a modem is not
