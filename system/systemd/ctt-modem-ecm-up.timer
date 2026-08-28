@@ -12,8 +12,14 @@ Description=Periodically re-assert the Telit ECM data path (mdm0)
 ConditionPathExists=!/etc/ctt/modem-disabled
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=5min
+# Absolute schedule, deliberately NOT OnUnitActiveSec: that computes the next elapse
+# from the triggered unit's last activation, so if the unit is ever stuck active the
+# timer stops scheduling entirely (Trigger: n/a) — observed on V30B0154C65F during
+# the first deploy of this branch, where the pre-existing active(exited) state from
+# the old unit definition swallowed the timer's start and killed the schedule.
+# OnCalendar is immune to the triggered unit's state. Boot is already covered by the
+# unit's own WantedBy=multi-user.target.
+OnCalendar=*:0/5
 Unit=ctt-modem-ecm-up.service
 
 [Install]

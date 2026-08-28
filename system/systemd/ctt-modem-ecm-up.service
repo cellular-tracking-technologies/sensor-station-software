@@ -35,5 +35,13 @@ Type=oneshot
 # strand the service with 203/EXEC — see investigations/2026-07-09 (ECM bring-up).
 ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-ecm-up.sh
 
+# modem-ecm-up.sh leaves a DAEMONIZED dhclient behind to renew the lease, and that
+# process lives in this unit's cgroup. Now that the unit actually deactivates after
+# each run (no RemainAfterExit), the default KillMode=control-group would reap that
+# dhclient on every single run — killing lease renewal fleet-wide. KillMode=process
+# limits the kill to the main process (the bash above, already gone by then), so the
+# renewing dhclient survives exactly as it did under the old always-active unit.
+KillMode=process
+
 [Install]
 WantedBy=multi-user.target

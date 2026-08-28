@@ -50,6 +50,18 @@ regenerated from these entries.
   complementary `ConditionPathExists` on the marker, so exactly one runs per add event and the
   recovery path can never route over a modem the operator turned off.
 
+- **The renewing `dhclient` survives the unit deactivating (`KillMode=process`).** It is
+  daemonized into the unit's cgroup, so once `RemainAfterExit` was dropped the default
+  `KillMode=control-group` would have reaped it at the end of every run — trading the
+  boot-only bug for a fleet-wide loss of lease renewal. Caught on V30B0154C65F before the
+  first timer tick could do it.
+
+- **The timer uses `OnCalendar=*:0/5`, not `OnUnitActiveSec`.** The latter computes its next
+  elapse from the triggered unit's last activation, so a unit stuck active stops the timer
+  scheduling altogether (`Trigger: n/a`). That is not hypothetical: on the first deploy of
+  this branch the pre-existing `active (exited)` state from the *old* unit definition
+  swallowed the timer's start and killed the schedule.
+
 ### Changed
 
 - `install-systemd.sh` deploys `*.timer` as well as `*.service`. The glob was `*.service` only,
