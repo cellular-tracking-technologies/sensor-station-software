@@ -1,0 +1,26 @@
+[Unit]
+Description=Periodically re-assert the Telit ECM data path (mdm0)
+# The safety net for the failure the udev trigger structurally CANNOT see: the data
+# path dying with no re-enumeration, so no netdev add event. Observed on V30B0154C65F
+# (investigations/2026-08-27): after the orphaned dhclient's lease finally expired it
+# fell back to DHCPDISCOVER and the module never answered — no USB event, no trigger.
+# Also rescues the boot path where modem-ecm-up.sh exhausts its 6 DHCP attempts,
+# fails open, and currently never retries for the life of the boot.
+#
+# Same intent gate as the service, so a station with the modem deliberately disabled
+# does not wake a shell every 5 minutes.
+ConditionPathExists=!/etc/ctt/modem-disabled
+
+[Timer]
+# Absolute schedule, deliberately NOT OnUnitActiveSec: that computes the next elapse
+# from the triggered unit's last activation, so if the unit is ever stuck active the
+# timer stops scheduling entirely (Trigger: n/a) — observed on V30B0154C65F during
+# the first deploy of this branch, where the pre-existing active(exited) state from
+# the old unit definition swallowed the timer's start and killed the schedule.
+# OnCalendar is immune to the triggered unit's state. Boot is already covered by the
+# unit's own WantedBy=multi-user.target.
+OnCalendar=*:0/5
+Unit=ctt-modem-ecm-up.service
+
+[Install]
+WantedBy=timers.target

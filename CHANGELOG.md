@@ -12,22 +12,60 @@ regenerated from these entries.
 
 ---
 
-## [2.3.5] — 2026-09-09
+## [Unreleased]
 
 ### Fixed
 
-- **A modem that re-enumerates at runtime now rebuilds its ECM data path instead of going
-  IP-dead until a reboot.** On a clean `lts_26_07.iso` a Telit re-enumeration re-registers the
-  modem and re-creates `mdm0`, but `ctt-modem-ecm-up.service` was wired to run at boot only, so
-  the interface came back with no IP and the station stayed unreachable until someone power-cycled
-  it. Two changes, both required: `78-ctt-telit-net.rules` now fires the service off the `mdm0`
-  `add|move` uevent via `ENV{SYSTEMD_WANTS}` (matching Telit `idProduct` 7020/7021), and
-  `ctt-modem-ecm-up.service` drops `RemainAfterExit=true` so the oneshot no longer latches active
-  after its boot run and can be re-pulled on each re-enumeration. Hardware-verified: after a clean
-  boot, a de-enumeration re-runs `ctt-modem-ecm-up` within ~1s and `mdm0` regains its IP in ~5s,
-  with no reboot.
+- **A modem that re-enumerates at runtime no longer strands the station until a reboot.**
+  `ctt-modem-ecm-up.service` was `Type=oneshot` + `RemainAfterExit=true` + boot-only, so when
+  the Telit dropped and re-appeared on USB mid-run, the fresh `mdm0` netdev came back with no
+  address and no default route and nothing ever re-ran the bring-up. The modem stayed
+  registered on the carrier while the station was IP-dead: no checkin, no upload, no autossh
+  tunnel. Observed on V30B0154C65F — offline ~22 h (2026-08-27 22:09 → 2026-08-28 20:04 UTC),
+  recovered only by an on-site reboot. Three changes make the bring-up event-driven:
+  - `78-ctt-telit-net.rules` now pulls in the bring-up via `ENV{SYSTEMD_WANTS}` on the same
+    `mdm0` add event it already renames on (systemd's `99-systemd.rules` supplies the
+    `TAG+="systemd"` these need).
+  - `RemainAfterExit=true` is dropped. It latched the unit at `active (exited)`, and systemd
+    silently drops start requests for an already-active unit — the udev trigger and the timer
+    would both have been no-ops against it. Nothing in the tree declares `Requires=`/`After=`
+    on this unit, so the latch bought nothing.
+  - New `ctt-modem-ecm-up.timer` re-asserts the data path every 5 min, covering the failure the
+    udev trigger structurally cannot see: the path dying with no re-enumeration and so no add
+    event (an expired lease the module stops answering; or a boot where `dhclient` exhausted
+    its retries and fails open forever).
 
----
+- **`modem-ecm-up.sh` reaps the stale `dhclient` before starting a new one.** The daemon from a
+  previous bring-up survives a USB re-enumeration but can never re-lease on the new netdev — it
+  loops `send_packet: Network is unreachable` indefinitely (13,703 such lines in one day on
+  V30B0154C65F) and would fight the new instance. Also added: an early exit when `mdm0` already
+  has an address and a default route, so the now-frequent re-runs are close to free.
+
+- **A disabled modem stays disabled across a re-enumeration.** `disable-modem.sh` deauthorizes
+  the modem and records intent in `/etc/ctt/modem-disabled`, but `authorized` is runtime state
+  that resets to `1` whenever the module re-enumerates, and only boot-time
+  `modem-boot-state.service` reconciled it — so a disabled modem that re-enumerated came back
+  on the bus until the next reboot. New udev-activated `ctt-modem-reassert-off.service`
+  re-applies the deauthorize on the `mdm0` add event. It and `ctt-modem-ecm-up.service` carry
+  complementary `ConditionPathExists` on the marker, so exactly one runs per add event and the
+  recovery path can never route over a modem the operator turned off.
+
+- **The renewing `dhclient` survives the unit deactivating (`KillMode=process`).** It is
+  daemonized into the unit's cgroup, so once `RemainAfterExit` was dropped the default
+  `KillMode=control-group` would have reaped it at the end of every run — trading the
+  boot-only bug for a fleet-wide loss of lease renewal. Caught on V30B0154C65F before the
+  first timer tick could do it.
+
+- **The timer uses `OnCalendar=*:0/5`, not `OnUnitActiveSec`.** The latter computes its next
+  elapse from the triggered unit's last activation, so a unit stuck active stops the timer
+  scheduling altogether (`Trigger: n/a`). That is not hypothetical: on the first deploy of
+  this branch the pre-existing `active (exited)` state from the *old* unit definition
+  swallowed the timer's start and killed the schedule.
+
+### Changed
+
+- `install-systemd.sh` deploys `*.timer` as well as `*.service`. The glob was `*.service` only,
+  so a timer added to `system/systemd/` would have silently never reached a station.
 
 ## [2.3.4] — 2026-07-31
 
