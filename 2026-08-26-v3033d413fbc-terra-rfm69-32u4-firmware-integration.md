@@ -1713,6 +1713,82 @@ costs 1.6× in false rate but is what makes the ID space meaningful), while
 correction as currently implemented costs a further 1.8× for no measurable gain
 in real detections.
 
+## Update 2026-08-28 (later) — "5.3.1 has the fewest false IDs" is the wrong metric
+
+**Answers a fair objection to the verdict above.** The three-way table shows 5.3.1
+with the **fewest distinct false IDs** (60, against stock's 74 and 5.1.0's 84),
+which reads like an argument for it. It inverts once the distribution is examined:
+that number is low precisely *because* its errors are concentrated.
+
+### Rows per false ID
+
+| firmware | false IDs | false rows | rows per false ID |
+|---|---|---|---|
+| stock `4.0.0` | 74 | 252 | **3.4** |
+| `5.1.0-terra` | 84 | 485 | 5.8 |
+| `5.3.1-terra` | **60** | **849** | **14.2** |
+
+### A singleton is filterable; a repeat is not
+
+Where the false rows actually sit:
+
+```
+                    n=1     n=2-4    n=5-9      n>=10
+stock 4.0.0          39        75       19    119 (47%)
+5.1.0-terra          35        78       60    312 (64%)
+5.3.1-terra          37        27       25    760 (90%)
+```
+
+**90% of 5.3.1's false detections come from IDs seen 10+ times.** Applying the
+simplest hygiene rule available — drop any ID seen fewer than 10 times:
+
+| firmware | false rows | after filter | removed |
+|---|---|---|---|
+| stock `4.0.0` | 252 | 119 | **53%** |
+| `5.1.0-terra` | 485 | 312 | 36% |
+| `5.3.1-terra` | 849 | 760 | **10%** |
+
+**And the "fewest IDs" advantage disappears under that same filter.** Spurious IDs
+surviving the ≥10 rule: stock **4**, 5.1.0 **8**, 5.3.1 **10**. Stock's 74 were
+mostly one-off noise padding the raw count; on IDs that actually persist, stock is
+cleanest there too.
+
+### The class only 5.3.1 produces
+
+False IDs seen ≥10 times **and** one bit-7 flip from a real tag:
+
+| firmware | IDs | rows |
+|---|---|---|
+| stock `4.0.0` | **0** | 0 |
+| `5.1.0-terra` | **0** | 0 |
+| `5.3.1-terra` | **6** | **151** |
+
+```
+2DB41934  n=73   <- bit-7 of 2D341934 (n=1641)
+4B5519B4  n=29   <- bit-7 of 4B551934 (n=4128)
+4BD51934  n=15   <- bit-7 of 4B551934 (n=4128)
+556134E1  n=13   <- bit-7 of 55613461 (n=546)
+E1074C4B  n=11   <- bit-7 of 61074C4B (n=319)
+4B559934  n=10   <- bit-7 of 4B551934 (n=4128)
+```
+
+`2DB41934` appears **73 times**. It passes the Hamming gate, sits one bit from a
+heavily detected real tag, and bit 7 is outside the code so nothing downstream can
+reject it. At that count it is indistinguishable from a genuine weak tag — a
+phantom detection at a plausible rate, immune to frequency filtering. Stock and
+5.1.0 emit none.
+
+### Conclusion
+
+Counting distinct false IDs **rewards concentrating errors**, which is exactly what
+correction does. On every metric that reflects what reaches the data — false
+detections, filterability, false IDs surviving a threshold, and the bit-7 class —
+the order is **stock < 5.1.0 < 5.3.1**, and the verdict above is unchanged.
+
+Recorded because the objection is reasonable and the raw column genuinely does
+favour 5.3.1: anyone reading only the three-way table could reach the opposite
+conclusion.
+
 ---
 <!-- Immutable record: correct only by appending a dated "Update" section below,
      never by editing the findings above. -->
