@@ -6,9 +6,31 @@ Description=Bring up the Telit CDC-ECM data interface (mdm0) via DHCP, fallback 
 After=NetworkManager.service ModemManager.service
 DefaultDependencies=yes
 
+# Started at boot (WantedBy below), on every mdm0 add event (78-ctt-telit-net.rules),
+# and every 5 min by ctt-modem-ecm-up.timer. The three paths are complementary:
+# udev catches re-enumeration, the timer catches a datapath that dies WITHOUT one
+# (lease expiry with the module no longer answering DHCP, or a boot where dhclient
+# exhausted its retries). modem-ecm-up.sh early-exits when mdm0 is already
+# configured, so the extra starts are close to free.
+#
+# Persistent operator intent. disable-modem.sh writes this marker, enable-modem.sh
+# clears it, modem-boot-state.sh reconciles it at boot. Without this gate a
+# DEAUTHORIZED modem that re-enumerates (authorized resets to 1 by itself) would
+# fire the udev add rule and we would bring a route up over a modem the operator
+# turned off. Condition, not Assert: the unit is cleanly skipped, not failed.
+ConditionPathExists=!/etc/ctt/modem-disabled
+
+# This is a recovery path: it must never rate-limit itself into a failed state where
+# later triggers are refused until someone runs `systemctl reset-failed`. Every start
+# is driven by a real hardware event or the timer, so there is no feedback loop.
+StartLimitIntervalSec=0
+
 [Service]
 Type=oneshot
-RemainAfterExit=true
+# Deliberately NOT RemainAfterExit: that latches the unit at "active (exited)", and
+# systemd silently DROPS a start request for an already-active unit — which would
+# make both the udev trigger and the timer no-ops on a running station. Nothing in
+# the tree declares Requires=/After= on this unit, so the latch buys us nothing.
 # Invoke via bash (not direct exec) so a lost executable bit on the script can't
 # strand the service with 203/EXEC — see investigations/2026-07-09 (ECM bring-up).
 ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-ecm-up.sh

@@ -1,7 +1,7 @@
 #!/bin/bash
 # CTT OTA hook: deploy systemd unit files from the monorepo.
 #
-# Source: $REPO/system/systemd/*.service (default REPO=/usr/lib/ctt/sensor-station-software)
+# Source: $REPO/system/systemd/*.service and *.timer (default REPO=/usr/lib/ctt/sensor-station-software)
 # Dest:   /etc/systemd/system/  (root:root mode 0644)
 #
 # Source filenames pass through unchanged. Replaces any pre-existing
@@ -43,6 +43,7 @@ MUST_BE_ENABLED=(
   ctt-modem-wake.service         # wake a shut-down Telit at boot (ON_OFF# pulse) so a hard reset self-recovers; runs Before modem-boot-state
   ctt-modem-provision.service    # idempotent ECM provision GUARD; Before MM, no-op on a provisioned modem, converts a fresh/swapped RNDIS one
   ctt-modem-ecm-up.service       # bring up the ECM data iface mdm0 (DHCP + fallback route); NM won't manage an MM modem net port
+  ctt-modem-ecm-up.timer         # 5-min re-assert of the ECM data path: catches a datapath that dies with NO re-enumeration (so no udev add event to trigger recovery)
 
   # Application layer (Node services + SensorGnome). Enable here so an OTA self-heals
   # a lost symlink and an image built without the legacy Ansible enablement still comes
@@ -92,8 +93,10 @@ if [ ! -d "$SRC_DIR" ]; then
   exit 0
 fi
 
-# Deploy *.service files (could extend to .timer, .socket, etc. later)
-for src in "$SRC_DIR"/*.service; do
+# Deploy *.service and *.timer files (could extend to .socket etc. later).
+# .timer was added for ctt-modem-ecm-up.timer — before that this glob was
+# *.service only, so a timer dropped in system/systemd/ silently never deployed.
+for src in "$SRC_DIR"/*.service "$SRC_DIR"/*.timer; do
   [ -f "$src" ] || continue
   install_if_diff "$src" "$DST_DIR/$(basename "$src")"
 done

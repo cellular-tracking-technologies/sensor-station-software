@@ -12,6 +12,40 @@ regenerated from these entries.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **A modem that re-enumerates at runtime no longer strands the station until a reboot.**
+  `ctt-modem-ecm-up.service` was `Type=oneshot` + `RemainAfterExit=true` + boot-only, so when
+  the Telit dropped and re-appeared on USB mid-run, the fresh `mdm0` netdev came back with no
+  address and no default route and nothing ever re-ran the bring-up. The modem stayed
+  registered on the carrier while the station was IP-dead: no checkin, no upload, no autossh
+  tunnel. Observed on V30B0154C65F — offline ~22 h (2026-08-27 22:09 → 2026-08-28 20:04 UTC),
+  recovered only by an on-site reboot. Three changes make the bring-up event-driven:
+  - `78-ctt-telit-net.rules` now pulls in the bring-up via `ENV{SYSTEMD_WANTS}` on the same
+    `mdm0` add event it already renames on (systemd's `99-systemd.rules` supplies the
+    `TAG+="systemd"` these need).
+  - `RemainAfterExit=true` is dropped. It latched the unit at `active (exited)`, and systemd
+    silently drops start requests for an already-active unit — the udev trigger and the timer
+    would both have been no-ops against it. Nothing in the tree declares `Requires=`/`After=`
+    on this unit, so the latch bought nothing.
+  - New `ctt-modem-ecm-up.timer` re-asserts the data path every 5 min, covering the failure the
+    udev trigger structurally cannot see: the path dying with no re-enumeration and so no add
+    event (an expired lease the module stops answering; or a boot where `dhclient` exhausted
+    its retries and fails open forever).
+
+- **`modem-ecm-up.sh` reaps the stale `dhclient` before starting a new one.** The daemon from a
+  previous bring-up survives a USB re-enumeration but can never re-lease on the new netdev — it
+  loops `send_packet: Network is unreachable` indefinitely (13,703 such lines in one day on
+  V30B0154C65F) and would fight the new instance. Also added: an early exit when `mdm0` already
+  has an address and a default route, so the now-frequent re-runs are close to free.
+
+### Changed
+
+- `install-systemd.sh` deploys `*.timer` as well as `*.service`. The glob was `*.service` only,
+  so a timer added to `system/systemd/` would have silently never reached a station.
+
 ## [2.3.4] — 2026-07-31
 
 ### Fixed

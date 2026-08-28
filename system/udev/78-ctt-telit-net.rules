@@ -15,5 +15,18 @@
 # keeps its eth slot. udev net renames can interact with systemd .link policies; the
 # image ships empty 73-usb-net-by-mac.link / 99-default.link, so this NAME assignment
 # should win — but confirm live.
-ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0"
-ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0"
+#
+# The netdev add event is ALSO the runtime-recovery trigger for the data path.
+# mdm0 is created fresh on every modem re-enumeration (spontaneous modem reset, or
+# a re-authorize after disable-modem.sh), and the new interface has no address and
+# no route. Nothing used to re-run the bring-up, so a modem that re-enumerated at
+# runtime left the station cellular-attached but IP-dead until someone rebooted it
+# — see investigations/2026-08-27 (V30B0154C65F, ~22 h offline).
+#
+# systemd's own 99-systemd.rules already applies TAG+="systemd" and SYSTEMD_ALIAS to
+# every net device, so SYSTEMD_WANTS here is sufficient — no extra tagging needed.
+#
+# ctt-modem-ecm-up.service gates itself on /etc/ctt/modem-disabled, so this trigger
+# can never bring a route up over a modem the operator disabled.
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service"
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service"

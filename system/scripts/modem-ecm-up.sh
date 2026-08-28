@@ -22,6 +22,16 @@ set -u
 IFACE=mdm0
 METRIC=700   # > eth0 (~50) and wlan0 (~600): cellular is fallback-only
 
+# Persistent operator intent (disable-modem.sh writes it, enable-modem.sh clears it).
+# Also enforced as ConditionPathExists in ctt-modem-ecm-up.service; repeated here
+# because this script is invoked directly too (OTA post-merge, operator shell), where
+# the unit condition does not apply. Checked BEFORE the wait loop so a station with
+# the modem deliberately off does not burn 20 s on every timer tick.
+if [ -e /etc/ctt/modem-disabled ]; then
+  echo "modem-ecm-up: /etc/ctt/modem-disabled present — operator intent is OFF; nothing to do"
+  exit 0
+fi
+
 # Wait (bounded) for the ECM netdev, renamed from the cdc_ether port by
 # 78-ctt-telit-net.rules. Absent = modem off/disabled/non-Telit -> nothing to do.
 for _ in $(seq 1 20); do
@@ -33,7 +43,22 @@ if [ ! -e "/sys/class/net/$IFACE" ]; then
   exit 0
 fi
 
+# Already configured? Nothing to do. This script now runs on every mdm0 add event and
+# every 5 min from ctt-modem-ecm-up.timer, so the healthy path must be cheap.
+if ip -4 addr show "$IFACE" | grep -q 'inet ' &&
+   ip route show default dev "$IFACE" | grep -q .; then
+  echo "modem-ecm-up: $IFACE already configured; nothing to do"
+  exit 0
+fi
+
 ip link set "$IFACE" up
+
+# Reap a dhclient left over from an earlier bring-up. It SURVIVES a USB
+# re-enumeration but can never re-lease on the new netdev — it just loops
+# "send_packet: Network is unreachable" forever (13,703 such lines on V30B0154C65F,
+# 2026-08-27) and would fight the instance we are about to start. -x stops it without
+# sending a RELEASE, which is what we want: the lease it holds is already dead.
+dhclient -x -pf "/run/dhclient-$IFACE.pid" 2>/dev/null || true
 
 # DHCP the address (Telit-documented method). -1: one attempt then exit — no lingering
 # daemon; the lease is long and the module always offers the same deterministic address.
