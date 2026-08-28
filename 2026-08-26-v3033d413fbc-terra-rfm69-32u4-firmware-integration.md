@@ -1538,6 +1538,181 @@ before comparing anything to them.
 - Terra remains bench-only regardless: it implements one preset of six, so a
   channel switched to `preset:node3` or `preset:ooktag` goes dead.
 
+## Update 2026-08-28 — three-way comparison: stock 4.0.0 vs 5.1.0-terra vs 5.3.1-terra
+
+First comparison of all three firmwares **running simultaneously**, 90 minutes,
+ch1 `4.0.0` / ch2 `5.1.0-terra` / ch3 `5.3.1-terra`, all on `preset:fsktag`.
+(ch4/ch5 were on `preset:node3` and are excluded throughout.) `5.1.0` is the
+useful middle term this record never had on the bench: it has the recovered ID
+gate but **predates ECC entirely** — its `status` line carries `id_gate` and
+`gate_dropped` and has no `ecc`, `ecc_fixed` or `b7_fixed` fields at all. So
+stock → 5.1.0 → 5.3.1 isolates *gate* and *correction* as separate steps.
+
+### Method, and its honest precision limit
+
+Firmwares are pinned to different radios, so this is **cross-channel** — the
+design §"Better estimator" retired, because each channel carries a fixed factor
+`K(ch,tag)` from antenna, cabling and radio variation. K was measured from
+windows where those channels ran identical firmware (all three stock: yesterday
+19:32–20:52 and today 14:31–14:37; ch1+ch2 stock: today 14:39–15:07), and a tag
+was used **only if K agreed within 10% across two independent windows**.
+
+| tag | K2 spread | K3 spread | used |
+|---|---|---|---|
+| `071E6661` | 1.01× | 1.01× | yes |
+| `33075555` | 1.01× | 1.02× | yes |
+| `55613461` | 1.00× | 1.00× | yes |
+| `2D341934` | **1.13×** | 1.01× | excluded |
+| `66557866` | 1.05× | **1.27×** | excluded |
+| `4B551934` | 1.03× | **4.40×** | excluded |
+
+`4B551934` disagrees by **4.4×** between windows — the same marginal tag this
+record keeps catching. Only **3 of 6** candidates survived. That is the cost of
+pinning firmware to channels: the same-radio design reached ~1% on 8 tags, this
+reaches ~0.7% on 3.
+
+**Measurement floor from K's own reproducibility: 1.007× (worst 1.016×).**
+
+### 1. Detection rate — all three identical
+
+| tag | 5.1.0 vs stock | 5.3.1 vs stock |
+|---|---|---|
+| `071E6661` | 1.087 | 1.088 |
+| `33075555` | 1.000 | 0.994 |
+| `55613461` | 0.998 | 0.976 |
+| **median** | **1.000** | **0.994** |
+
+Against a 1.007 floor, `1.000` and `0.994` are indistinguishable from stock and
+from each other. **Neither the ID gate nor the ECC changes how many real tags the
+radio hears.** That is now five independent methods agreeing.
+
+### 2. RSSI — no difference, and the floor proves it
+
+Raw result: 5.1.0 **−2.00 dB**, 5.3.1 **−1.00 dB** versus stock. But the floor
+must be measured, not assumed. Taking two windows where *all three channels ran
+stock* and differencing the same channel offsets:
+
+```
+same-firmware RSSI floor: median |delta| 2.00 dB, worst 4.00 dB
+```
+
+**Both firmware "effects" are at or below the floor.** Consistent with the
+withdrawn 2–4 dB claim and with the ≤1 dB same-radio result; RSSI equivalence now
+holds on a third, independent geometry.
+
+### 3. Real vs false — the gradient is the finding
+
+A tag is REAL if it has ≥50 rows on ≥2 of the three channels (18 IDs qualified).
+Everything else a channel emits is false. False% is a share of each firmware's
+**own** output, so it is self-normalising and immune to the channel factor.
+
+| firmware | rows | real | false | **false%** | real IDs | false IDs |
+|---|---|---|---|---|---|---|
+| stock `4.0.0` | 12391 | 12139 | 252 | **2.03%** | 18 | 74 |
+| `5.1.0-terra` | 14618 | 14133 | 485 | **3.32%** | 18 | 84 |
+| `5.3.1-terra` | 14400 | 13551 | 849 | **5.90%** | 18 | **60** |
+
+- **All three find the same 18 real tags.** No firmware misses a real tag.
+- **The gate alone costs 1.6× stock's false rate** (5.1.0 vs stock).
+- **Adding ECC costs another 1.78×** (5.3.1 vs 5.1.0), for **2.9× stock overall**.
+
+That 1.78× independently reproduces yesterday's `ecc` on/off A/B, which measured
+**2.3×** on a single radio by toggling the register. Two different designs, two
+different days, same direction and same order of magnitude.
+
+**5.3.1 has the FEWEST distinct false IDs (60) but the MOST false rows (849).**
+That is the mis-correction signature in one line: correction does not invent new
+IDs at random, it collapses noise onto a *smaller set of repeated* legal IDs —
+the neighbours of loud real tags. Bit-7 neighbours of real tags account for 197
+of 5.3.1's false rows against stock's 86.
+
+### 4. Validated% is not a quality metric — it is an artifact
+
+The headline numbers look like a decisive win for 5.3.1:
+
+| firmware | validated%, all rows | validated%, **real tags only** |
+|---|---|---|
+| stock `4.0.0` | 25.0% | **33.2%** |
+| `5.1.0-terra` | 36.4% | **31.9%** |
+| `5.3.1-terra` | **56.4%** | **31.9%** |
+
+**Restricted to real tags all three are identical (~32%).** The 25 → 36 → 56%
+spread is entirely composition of the *non-real* population. For 5.3.1 the cause
+is already in this record: after ECC the CRC agrees *by construction of the
+search*, so every corrected frame is emitted as a `BEEP_1` and counted validated.
+
+Per-tag, `Validated` is binary — `33075555` is 100% on all three firmwares,
+`071E6661` and `55613461` are 0% on all three. It is a property of what the tag
+transmits, not of how well the radio decoded it. **Anyone reading a rising
+validated% as improving quality has it backwards: here it rose because the false
+population grew.**
+
+### 5. Internal counters — what each firmware is actually doing
+
+| | `5.1.0-terra` (ch2) | `5.3.1-terra` (ch3) |
+|---|---|---|
+| `irq_count` | 19841 | 24440 |
+| `emitted` | 15446 | 19929 |
+| yield (emitted/irq) | 77.8% | 81.5% |
+| `gate_dropped` | 4394 | 4511 |
+| — `gate_parity` | 3598 | 3388 |
+| — `gate_msb` | 792 | 1072 |
+| `ecc_fixed` | **field absent** | 819 |
+| `b7_fixed` | **field absent** | 333 |
+
+5.3.1's 3.7-point higher yield is exactly its 1152 corrected frames. Those frames
+are the entire behavioural difference between the two builds — and §"Update
+2026-08-27 (later still)" measured 10–20% of them landing on IDs no other radio
+saw.
+
+### 6. Flash footprint
+
+| firmware | bytes | of 28672 usable |
+|---|---|---|
+| stock `4.0.0` | 15184 | 53.0% |
+| `5.1.0-terra` | 12432 | 43.4% |
+| `5.3.1-terra` | 13178 | 46.0% |
+
+Both terra builds are *smaller* than stock while implementing one preset of six —
+stock spends its extra ~2 KB on `node2`/`node3`/`node3_tx`/`qaqc`/`es200`,
+`rx_type`, `tx_dbm`, `tx_frequency` and a working TX path.
+
+### 7. The operational difference, demonstrated rather than argued
+
+This was proven on the bench today rather than inferred: switching ch4 to node
+detection **required reflashing it from `5.3.1-terra` back to stock first**,
+because terra answers `"unsupported preset"` to anything but `fsktag`. A terra
+channel put into node mode is simply dead.
+
+### Verdict
+
+| criterion | stock `4.0.0` | `5.1.0-terra` | `5.3.1-terra` |
+|---|---|---|---|
+| real-tag detection | 1.000 | 1.000 | 0.994 | 
+| RSSI | ref | −2 dB (< floor) | −1 dB (< floor) |
+| false rate | **2.03%** | 3.32% | 5.90% |
+| real tags found | 18 | 18 | 18 |
+| presets | **6** | 1 | 1 |
+| flash | 53.0% | **43.4%** | 46.0% |
+| unique capability | node/ook/TX | — | ECC recovery counters |
+
+**Stock remains the production firmware**, now on a broader basis than the preset
+argument alone: it is tied on detection, tied on RSSI, and has the lowest false
+rate of the three.
+
+**5.1.0 is the better of the two terra builds for any measurement use.** It is a
+strictly cleaner instrument than 5.3.1 — same real-tag detection, 1.8× fewer false
+rows, smallest flash — because it stops at the gate and does not correct. 5.3.1
+is only preferable when the *recovery counters themselves* are the object of
+study.
+
+Nothing here changes the standing recommendation: the recovery mechanism belongs
+in post-processing on `(id, crc)`, gated by corroboration or a deployed-tag
+whitelist. This comparison adds that the gate is worth having on its own (it
+costs 1.6× in false rate but is what makes the ID space meaningful), while
+correction as currently implemented costs a further 1.8× for no measurable gain
+in real detections.
+
 ---
 <!-- Immutable record: correct only by appending a dated "Update" section below,
      never by editing the findings above. -->
