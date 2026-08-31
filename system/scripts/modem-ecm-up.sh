@@ -32,6 +32,29 @@ if [ -e /etc/ctt/modem-disabled ]; then
   exit 0
 fi
 
+# Serialize invocations. systemd already prevents two runs of the oneshot unit from
+# overlapping, so the udev trigger and the timer cannot collide — but this script is
+# ALSO run directly, outside the unit (OTA post-merge hook, operator shell), and those
+# paths bypass that guarantee. Two concurrent runs would share one pidfile and race
+# `dhclient -x` against a `dhclient` that is still coming up, leaving the lease state
+# ambiguous. Non-blocking: if another instance holds the lock it is already doing this
+# exact work, so there is nothing for us to add. Fail open, like every other exit here.
+# The writability test is not ceremony: a failed `exec` redirection kills a
+# non-interactive shell outright, which would turn a missing lock dir into a station
+# that cannot recover its data path. Test first, and run unguarded rather than not at
+# all — the lock is an optimisation, the bring-up is the point.
+LOCKDIR=/run/lock
+mkdir -p "$LOCKDIR" 2>/dev/null || true
+if [ -w "$LOCKDIR" ]; then
+  exec 9>"$LOCKDIR/modem-ecm-up.lock"
+  if ! flock -n 9; then
+    echo "modem-ecm-up: another instance is already bringing up $IFACE; nothing to do"
+    exit 0
+  fi
+else
+  echo "modem-ecm-up: $LOCKDIR not writable — proceeding without the concurrency guard"
+fi
+
 # Wait (bounded) for the ECM netdev, renamed from the cdc_ether port by
 # 78-ctt-telit-net.rules. Absent = modem off/disabled/non-Telit -> nothing to do.
 for _ in $(seq 1 20); do
@@ -60,8 +83,13 @@ ip link set "$IFACE" up
 # sending a RELEASE, which is what we want: the lease it holds is already dead.
 dhclient -x -pf "/run/dhclient-$IFACE.pid" 2>/dev/null || true
 
-# DHCP the address (Telit-documented method). -1: one attempt then exit — no lingering
-# daemon; the lease is long and the module always offers the same deterministic address.
+# DHCP the address (Telit-documented method). -1 bounds the FAILURE path only: "try
+# once, exit non-zero if no lease". On SUCCESS dhclient still daemonizes and keeps
+# renewing, which is exactly what we want — the renewer that survives this script is
+# what holds the lease for the life of the boot (observed: one dhclient alive 2 d 21 h
+# across 6 clean renewals on V30B0154C65F). ctt-modem-ecm-up.service's KillMode=process
+# exists precisely to keep that daemon alive; do not "simplify" either half without
+# the other, or lease renewal dies fleet-wide.
 # Retry: right after the ECM bind (or before the modem finishes registering) the module
 # may not answer DHCP for a few seconds, so a single attempt can lose the race. Retry a
 # few times before giving up (still fail-open so it never blocks boot).
