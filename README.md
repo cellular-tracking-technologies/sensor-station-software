@@ -187,6 +187,31 @@ The modem is provisioned to ECM (`AT#USBCFG=1` + `AT#ECM=1,0`) once and re-check
 each boot by the idempotent [`ctt-modem-provision.service`](system/systemd/ctt-modem-provision.service)
 guard, which converts a fresh/RNDIS modem automatically.
 
+**Runtime recovery of the data path.** `mdm0` is destroyed and recreated on every
+modem re-enumeration, and the new interface has no address and no route, so the
+bring-up has to re-run at runtime — not only at boot. Two independent triggers:
+
+- the netdev event in [78-ctt-telit-net.rules](system/udev/78-ctt-telit-net.rules),
+  which arms `ctt-modem-ecm-up.service` (marker absent) or
+  `ctt-modem-reassert-off.service` (marker present);
+- [`ctt-modem-ecm-up.timer`](system/systemd/ctt-modem-ecm-up.timer) on `OnCalendar=*:0/5`,
+  which covers the failure the udev path structurally cannot see — the data path dying
+  with no re-enumeration, hence no netdev event.
+
+`modem-ecm-up.sh` is the idempotent worker for both: it returns immediately when
+`mdm0` already has an address *and* a default route, so the healthy 5-minute tick is
+cheap, and it reaps any `dhclient` orphaned on a destroyed netdev (which otherwise
+loops `send_packet: Network is unreachable` forever and can never re-lease).
+
+Two constraints in that rule file are load-bearing and easy to undo by accident.
+`SYSTEMD_WANTS` must match **`add|move`** and must not share a line with the `NAME=`
+assignment: the rename from `wwan0` emits a move event, udev re-runs the rules on it
+and rewrites the device database, so wants set only under `ACTION=="add"` are
+discarded and nothing starts. And `ctt-modem-ecm-up.service` must keep
+`KillMode=process`, because the bring-up deliberately leaves a daemonized `dhclient`
+behind to renew the lease; the default `control-group` would reap it on every run and
+kill lease renewal fleet-wide.
+
 After a hard reset (VBAT loss) the Telit can come up in **ON_OFF# shutdown** —
 absent from the USB bus, so it never self-enumerates. `ctt-board-detect`'s modem
 boot chain assumed self-enumeration, so the station used to come up with no modem

@@ -26,11 +26,34 @@
 # systemd's own 99-systemd.rules already applies TAG+="systemd" and SYSTEMD_ALIAS to
 # every net device, so SYSTEMD_WANTS here is sufficient — no extra tagging needed.
 #
-# Exactly one of the two units below runs per add event; their ConditionPathExists
-# on /etc/ctt/modem-disabled are exact complements:
+# But the WANTS must NOT share a line with the NAME= assignment, and must match MOVE
+# as well as ADD. The netdev is born as wwan0; the NAME= below renames it to mdm0;
+# the kernel emits a MOVE event for that rename; udev re-runs these rules on the move
+# and REWRITES the device database from the result. A SYSTEMD_WANTS set only under
+# ACTION=="add" is discarded there, systemd sees the final (move) property set, and
+# starts nothing. The rename in the rule silently destroyed the trigger in the same
+# rule.
+#
+# Measured on V30B0154C65F 2026-08-31, forced re-enumeration via the `authorized`
+# sysfs toggle:
+#   udevadm test --action=add   -> SYSTEMD_WANTS=ctt-modem-ecm-up ctt-modem-reassert-off
+#   udevadm test --action=move  -> (no SYSTEMD_WANTS)
+# and neither unit appeared in the journal for the event. The data path still came
+# back, but only 173 s later off ctt-modem-ecm-up.timer's next *:0/5 tick — with the
+# modem registered and answering DHCP since 8 s in. ctt-modem-reassert-off has NO
+# timer backstop (udev-activated only), so it could never run at all.
+#
+# Split accordingly: rename on add, arm on add|move.
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0"
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0"
+
+# Exactly one of the two units below runs per event; their ConditionPathExists on
+# /etc/ctt/modem-disabled are exact complements:
 #   marker ABSENT  -> ctt-modem-ecm-up.service      (configure the data path)
 #   marker PRESENT -> ctt-modem-reassert-off.service (re-apply the operator's OFF
 #                     intent: `authorized` resets to 1 on re-enumeration, so a
 #                     disabled modem would otherwise silently come back on the bus)
-ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service", ENV{SYSTEMD_WANTS}+="ctt-modem-reassert-off.service"
-ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service", ENV{SYSTEMD_WANTS}+="ctt-modem-reassert-off.service"
+# Both are Type=oneshot and idempotent, so being armed on both add and move (when
+# udev delivers both) is harmless: systemd coalesces a start request for a job that
+# is already queued or running.
+ACTION=="add|move", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020|7021", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service", ENV{SYSTEMD_WANTS}+="ctt-modem-reassert-off.service"
