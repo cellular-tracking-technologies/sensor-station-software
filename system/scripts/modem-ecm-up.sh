@@ -81,7 +81,7 @@ ip link set "$IFACE" up
 # "send_packet: Network is unreachable" forever (13,703 such lines on V30B0154C65F,
 # 2026-08-27) and would fight the instance we are about to start. -x stops it without
 # sending a RELEASE, which is what we want: the lease it holds is already dead.
-dhclient -x -pf "/run/dhclient-$IFACE.pid" 2>/dev/null || true
+dhclient -x -pf "/run/dhclient-$IFACE.pid" 2>/dev/null 9>&- || true
 
 # DHCP the address (Telit-documented method). -1 bounds the FAILURE path only: "try
 # once, exit non-zero if no lease". On SUCCESS dhclient still daemonizes and keeps
@@ -95,7 +95,15 @@ dhclient -x -pf "/run/dhclient-$IFACE.pid" 2>/dev/null || true
 # few times before giving up (still fail-open so it never blocks boot).
 leased=0
 for attempt in 1 2 3 4 5 6; do
-  if timeout 25 dhclient -1 -pf "/run/dhclient-$IFACE.pid" -lf "/run/dhclient-$IFACE.leases" "$IFACE"; then
+  # 9>&- closes the lock fd for the child. This is NOT optional: dhclient daemonizes
+  # on success and outlives this script, and an flock belongs to the open file
+  # DESCRIPTION, so an inherited fd 9 would leave the renewer holding the lock for the
+  # life of the boot. Every later run — timer tick or udev event — would then fail
+  # `flock -n` and exit early, so the data path would recover exactly once per boot and
+  # never again. Measured on V30B0154C65F 2026-08-31: the first re-enumeration after
+  # the guard landed recovered in 8 s, the second never recovered at all and needed a
+  # reboot. Same reasoning for the -x reap above.
+  if timeout 25 dhclient -1 -pf "/run/dhclient-$IFACE.pid" -lf "/run/dhclient-$IFACE.leases" "$IFACE" 9>&-; then
     leased=1; break
   fi
   echo "modem-ecm-up: no lease on $IFACE yet (attempt $attempt/6); retrying in 5s..."
