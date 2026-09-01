@@ -52,6 +52,9 @@ router.get('/about', async (req, res, next) => {
 		total_mem: os_info.total_mem,
 		uptime: os_info.uptime,
 		disk_usage: os_info.disk_usage,
+		// Pi PMIC under-voltage / throttle flags; null when vcgencmd is unavailable.
+		// The *_since_boot fields latch, so they catch a transient sag that leaves no log.
+		throttled: os_info.throttled,
 	})
 })
 
