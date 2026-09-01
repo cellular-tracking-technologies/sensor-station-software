@@ -16,5 +16,28 @@ PIDFile=/tmp/sensorgnome-service.id
 RestartSec=60
 Restart=on-failure
 
+# Keep the VAH telemetry, but keep it OUT of the journal and the rsyslog flat files.
+#
+# start-sensorgnome.sh's stdout is ~100% "VAH frames" / "VAH info" — 6 lines every
+# 10 s. Measured on a field station: 149,706 of 149,709 `nohup[...]` lines were VAH,
+# 78% of /var/log/syslog by line count, and the SAME stream was duplicated into
+# daemon.log and journald. With journald at its default SystemMaxUse (10% of a 15 GB
+# rootfs ~= 1.5 GB) that evicted every kernel message older than ~12 days and
+# destroyed the history needed to establish a modem-reset cadence — see
+# investigations/2026-08-27 (V30B0154C65F).
+#
+# stderr deliberately stays on the journal so `journalctl -u sensorgnome` still shows
+# faults. The only stdout content this moves out of the journal is the 3-line
+# "SensorGnome server listening on port N" banner, which lands in the file instead.
+#
+# Path is flat in /var/log rather than /var/log/ctt/ on purpose: systemd does NOT
+# create the parent directory for an append: target, and relying on LogsDirectory=
+# to win the race against stdio setup is a needless way to fail a fleet's startup.
+#
+# systemd NEVER rotates an append: target. Rotation is logrotate's job — see
+# system/logrotate/ctt-sensorgnome. Without that config this file grows unbounded.
+StandardOutput=append:/var/log/ctt-sensorgnome.log
+StandardError=journal
+
 [Install]
 WantedBy=multi-user.target

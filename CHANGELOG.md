@@ -62,10 +62,36 @@ regenerated from these entries.
   this branch the pre-existing `active (exited)` state from the *old* unit definition
   swallowed the timer's start and killed the schedule.
 
+- **Sensorgnome VAH telemetry no longer floods the journal and the syslog flat files.**
+  `start-sensorgnome.sh`'s stdout is ~100% `VAH frames` / `VAH info` — 6 lines every 10 s.
+  Measured on a field station: **149,706 of 149,709 `nohup[...]` lines were VAH, 78% of
+  `/var/log/syslog` by line count**, and the same stream was duplicated into `daemon.log`
+  *and* journald, at roughly 17 MB/day per sink. With journald on its default
+  `SystemMaxUse` (10% of a 15 GB rootfs ≈ 1.5 GB, and already at 1.4 GB) that evicted every
+  kernel message older than ~12 days — which is why the modem-reset cadence in
+  investigations/2026-08-27 could not be established. The log noise was destroying the
+  forensic record.
+
+  `sensorgnome.service` now sends stdout straight to **`/var/log/ctt-sensorgnome.log`** via
+  `StandardOutput=append:`, so the telemetry is still captured but never enters journald or
+  rsyslog. `StandardError` stays on the journal, so `journalctl -u sensorgnome` still shows
+  faults; the only stdout content that moves out of it is the 3-line "SensorGnome server
+  listening on port N" banner, which is in the new file.
+
 ### Changed
 
 - `install-systemd.sh` deploys `*.timer` as well as `*.service`. The glob was `*.service` only,
   so a timer added to `system/systemd/` would have silently never reached a station.
+
+### Added
+
+- **`system/logrotate/` + `install-logrotate.sh` OTA hook.** systemd never rotates an
+  `append:` target, so the new log needs logrotate or it grows unbounded on a 15 GB card.
+  `ctt-sensorgnome` rotates daily (`maxsize 20M` as a burst guard), keeps 7, compresses, and
+  uses **`copytruncate` — which is required, not stylistic**: systemd holds the file open and
+  never reopens it, so a rename-based rotation would leave it writing into the renamed inode
+  forever. This is the repo's first logrotate config, hence the new hook; it follows the same
+  `deploy_dir` pattern as `install-udev.sh`.
 
 ## [2.3.4] — 2026-07-31
 

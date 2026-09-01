@@ -1,0 +1,27 @@
+# Rotation for the sensorgnome VAH telemetry stream, which sensorgnome.service
+# writes via StandardOutput=append:. systemd never rotates an append: target, so
+# without this file the log grows unbounded on a 15 GB card. ~17 MB/day observed.
+#
+# copytruncate is REQUIRED here, not a stylistic choice. systemd holds this file
+# open and never reopens it, so the default rename-then-create rotation would leave
+# systemd writing into the renamed inode forever: the "current" log would stay empty
+# and the rotated file would keep growing. copytruncate keeps that descriptor valid,
+# and because systemd opens it O_APPEND, writes resume at offset 0 after the truncate
+# instead of leaving a sparse hole.
+#
+# Trade-off accepted: lines written during the copy window can be lost. That is fine
+# for 6-lines-per-10s telemetry and is the standard cost of copytruncate.
+#
+# daily + maxsize (not `size`): `size` alone REPLACES the time interval, whereas
+# maxsize means "daily, but sooner if it exceeds this" — the burst guard we want.
+/var/log/ctt-sensorgnome.log {
+    daily
+    maxsize 20M
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su root root
+}
