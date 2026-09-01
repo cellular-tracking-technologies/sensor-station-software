@@ -14,6 +14,12 @@
 # Read-only: queries the modem and writes a snapshot file. Does NOT alter
 # modem NV. Temporarily enables MM debug mode and toggles station-modem
 # autoconnect to free the AT port; both are restored at exit.
+#
+# NOTE ON RUNNING THIS REMOTELY: enabling MM debug RESTARTS ModemManager (twice —
+# once to enable, once to restore). On an ECM station that should not disturb the
+# data path (mdm0 is not NM/MM-managed, the #ECM bind is NV-persistent, and the
+# default route is static), but if the station is reached OVER its own modem there
+# is no second link to recover from. Prefer a LAN/bench station.
 
 # NOTE: deliberately NOT using set -e — some AT queries return non-zero
 # when the Telit firmware rejects them ("Operation not allowed"), but we
@@ -109,6 +115,26 @@ OUTFILE="$OUTDIR/modem-IMEI-${IMEI}-${LABEL}-${TIMESTAMP}.txt"
   echo
 
   # AT queries — read-only, no NV writes
+  #
+  # The #ENHRST / +CPSMS / +CEDRXS group answers "why did this modem restart or go
+  # unreachable on its own?", which the snapshot previously could not speak to:
+  #   AT#ENHRST?    periodic-reset config. mode=2 makes the module reboot every
+  #                 <delay> minutes and is NV-persistent, so a module can arrive
+  #                 from a prior deployment already scheduled to reset itself.
+  #                 Directly relevant to investigations/2026-08-27 (V30B0154C65F),
+  #                 where a spontaneous module reboot stranded a station ~22 h.
+  #   AT+CPSMS?     PSM state. PSM detaches the radio into deep sleep, unreachable
+  #                 and unresponsive to AT until the next TAU. NOT in this module's
+  #                 vendor AT reference (it is standard 3GPP 27.007), so it may be
+  #                 rejected on some firmware — harmless, the loop tolerates that.
+  #   AT+CEDRXS?    eDRX requested by us.
+  #   AT+CEDRXRDP   eDRX actually APPLIED BY THE NETWORK — the load-bearing one. The
+  #                 network can grant power-save timers we never asked for, so the
+  #                 requested value alone does not tell you what the module is doing.
+  #
+  # No CTT code path issues AT+CPSMS=0 / AT+CEDRXS=0 (verified by grep over native/,
+  # system/, src/), so whatever the network granted is what is in force. Capturing it
+  # is the first step toward knowing whether that matters.
   for cmd in \
     "AT&V" \
     "AT+CGMI" "AT+CGMM" "AT+CGMR" "AT+CGSN" \
@@ -122,6 +148,7 @@ OUTFILE="$OUTDIR/modem-IMEI-${IMEI}-${LABEL}-${TIMESTAMP}.txt"
     "AT#AUTOATT?" "AT#ENS?" "AT#BND?" \
     "AT#NWEN?" "AT#PSNT?" "AT#PSMRI?" "AT#TXMONMODE?" \
     "AT#CCIDCFG?" "AT#ECM?" "AT#ECMC?" \
+    "AT#ENHRST?" "AT+CPSMS?" "AT+CEDRXS?" "AT+CEDRXRDP" \
     "AT&V0" "AT&V1" "AT&V2"; do
     echo "## $cmd"
     mmcli -m "$MODEM_IDX" --command="$cmd" 2>&1
