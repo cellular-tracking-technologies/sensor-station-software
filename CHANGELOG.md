@@ -93,6 +93,23 @@ regenerated from these entries.
   forever. This is the repo's first logrotate config, hence the new hook; it follows the same
   `deploy_dir` pattern as `install-udev.sh`.
 
+- **Pi under-voltage / throttle flags in the station checkin (`about.throttled`).** The
+  Raspberry Pi PMIC exposes sticky flags via `vcgencmd get_throttled`, and the "has
+  occurred" bits (16–19) **latch for the life of the boot**. That makes them a brownout
+  *detector* rather than a sample: a rail sag far too brief to leave a kernel message, or to
+  be caught by any poll, still sets bit 16 and stays set until reboot. Nothing else on the
+  station can see a transient like that — `ctt-sensors` reads the 24 V battery at ~5-minute
+  resolution, not the 5 V rail.
+
+  Surfaced through `/about` (which `base-station.js` already fetches to build the checkin),
+  as `{raw, undervoltage_now, throttled_now, undervoltage_since_boot, throttled_since_boot}`,
+  or `null` where `vcgencmd` is unavailable. The read is wrapped so it **cannot break
+  check-ins** — an optional diagnostic must never take down the path that reports it.
+
+  Motivated by investigations/2026-08-27 (V30B0154C65F): a Telit module rebooted itself and
+  stranded the station ~22 h; every AT-reachable cause was eliminated, and a power transient
+  could be neither confirmed nor ruled out because no rail telemetry existed.
+
 ## [2.3.4] — 2026-07-31
 
 ### Fixed
