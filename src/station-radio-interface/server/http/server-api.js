@@ -162,6 +162,29 @@ class ServerApi {
   }
 
   /**
+   * Build the modem block for the server check-in.
+   *
+   * The hardware server reports `signal` as a 0-100 percentage and the dBm
+   * reading separately as `rssi`. The check-in API parses `signal` with
+   * int(signal_str.split(',')[0]) and renders the result as dBm, so an
+   * integer percentage both fails that parse and carries the wrong units.
+   * Send the dBm reading as a string in `signal`; every other field --
+   * including `rssi` and the `imei`/`sim` the server keys the modem record
+   * on -- is passed through untouched.
+   *
+   * collectDetails() reports a failed fragment as null, and a disabled modem
+   * makes /modem answer with a literal null, so the falsy guard covers both.
+   * @param {Object|null} modem response from the hardware server /modem route
+   * @returns {Object|null}
+   */
+  modemCheckinInfo(modem) {
+    if (!modem) return modem
+    let dbm = parseInt(modem.rssi)
+    if (isNaN(dbm)) return modem
+    return Object.assign({}, modem, { signal: dbm.toString() })
+  }
+
+  /**
    * Poll the hardware server for the payload fragments.
    *
    * allSettled, not all: uploader.py has no local dependencies at all, whereas
@@ -244,7 +267,7 @@ class ServerApi {
     const responses = await this.collectDetails()
 
     const data = {
-      'modem': responses[0],
+      'modem': this.modemCheckinInfo(responses[0]),
       //'peripherals': responses[2],
       'gps': responses[2],
       'about': responses[3],
