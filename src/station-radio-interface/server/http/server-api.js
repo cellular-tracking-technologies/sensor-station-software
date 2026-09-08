@@ -42,9 +42,16 @@ class ServerApi {
     this.remote_timeout_ms = 20 * 1000
     // the hardware server is on loopback; it should never need 20s
     this.hardware_timeout_ms = 5 * 1000
-    // uploader.py: MAX_ATTEMPTS = 3
-    this.max_attempts = 3
+    // uploader.py uses MAX_ATTEMPTS = 3 with no delay between tries. One more
+    // attempt, spaced by exponential backoff, widens the window a checkin can
+    // survive from ~4s of sleeping to ~40s without delaying the failure report
+    // much -- a cellular outage routinely outlasts a flat 2s ladder.
+    this.max_attempts = 4
     this.retry_delay_ms = 2 * 1000
+    this.max_retry_delay_ms = 30 * 1000
+    // spread retries across a fleet sharing one heartbeat, so a server coming
+    // back up is not hit by every station in lockstep
+    this.retry_jitter_ms = 1 * 1000
   }
 
   sleep(ms) {
@@ -67,9 +74,16 @@ class ServerApi {
     }
   }
 
+  /**
+   * Poll the station's sensor rails and buffer them for the next checkin.
+   *
+   * Resolves with the stamped record so the caller can also hand it to the
+   * data manager for durable logging -- the in-memory buffer here does not
+   * survive a restart. Resolves null when the poll failed.
+   */
   pollSensors() {
     let uri = `${this.hardware_endpoint}sensor/details`
-    this.fetchWithTimeout(uri, {}, this.hardware_timeout_ms).then(res => res.json())
+    return this.fetchWithTimeout(uri, {}, this.hardware_timeout_ms).then(res => res.json())
       .then((data) => {
         let now = moment()
         data.received_at = now.toISOString()
@@ -78,30 +92,44 @@ class ServerApi {
           // only store up to a maximum number of sensor records
           this.sensor_data.shift()
         }
+        return data
       })
       .catch((err) => {
         console.error('error polling sensor details', err.toString())
+        return null
       })
   }
 
+  /**
+   * Drop sub-5-beep tags from the stats sent to the server.
+   *
+   * Returns a filtered COPY. This used to `delete` straight out of the object
+   * it was handed -- which is the live BeepStatManager document, passed by
+   * reference from base-station -- so the tags were destroyed on the first
+   * attempt whether or not the checkin was ever delivered. A checkin that
+   * failed therefore lost them permanently instead of deferring them to the
+   * next one.
+   */
   filterStats(stats) {
-    Object.keys(stats.channels).forEach((channel) => {
-      let channel_data = stats.channels[channel]
-
-      Object.keys(channel_data.beeps).forEach((tag) => {
-        let cnt = channel_data.beeps[tag]
-        if (cnt < 5) {
-          delete channel_data.beeps[tag]
-        }
+    if (!stats || !stats.channels) return stats
+    const keep = (beeps) => {
+      const out = {}
+      Object.keys(beeps || {}).forEach((tag) => {
+        if (beeps[tag] >= 5) out[tag] = beeps[tag]
       })
-      Object.keys(channel_data.nodes.beeps).forEach((tag) => {
-        let cnt = channel_data.nodes.beeps[tag]
-        if (cnt < 5) {
-          delete channel_data.nodes.beeps[tag]
-        }
+      return out
+    }
+    const channels = {}
+    Object.keys(stats.channels).forEach((channel) => {
+      const channel_data = stats.channels[channel]
+      channels[channel] = Object.assign({}, channel_data, {
+        beeps: keep(channel_data.beeps),
+        nodes: Object.assign({}, channel_data.nodes, {
+          beeps: keep(channel_data.nodes ? channel_data.nodes.beeps : {}),
+        }),
       })
     })
-    return stats
+    return Object.assign({}, stats, { channels: channels })
   }
 
   /**
@@ -207,6 +235,17 @@ class ServerApi {
   }
 
   /**
+   * Exponential backoff with jitter: 2s, 8s, then 30s (capped).
+   * @param {Number} attempt 1-based attempt that just failed
+   * @returns {Number} milliseconds to wait before the next attempt
+   */
+  retryDelay(attempt) {
+    const backoff = this.retry_delay_ms * Math.pow(4, attempt - 1)
+    const jitter = Math.random() * this.retry_jitter_ms
+    return Math.min(backoff, this.max_retry_delay_ms) + jitter
+  }
+
+  /**
    * POST the payload, mirroring uploader.py's post(): a bounded attempt count
    * with a request timeout on every try.
    *
@@ -251,7 +290,7 @@ class ServerApi {
       }
 
       if (attempt < this.max_attempts) {
-        await this.sleep(this.retry_delay_ms)
+        await this.sleep(this.retryDelay(attempt))
       }
     }
 
@@ -289,13 +328,19 @@ class ServerApi {
       data.stats = stats
     }
 
-    // logged, never gating -- see checkServerReachable()
-    const reachable = await this.checkServerReachable()
-    if (!reachable) {
-      console.error('server status check did not return 200 - attempting checkin anyway')
-    }
+    // Diagnostic only, and deliberately NOT awaited before the POST. It is
+    // never allowed to gate the checkin (see checkServerReachable()), so
+    // awaiting it here only added its full remote_timeout_ms to the critical
+    // path on exactly the degraded link where latency hurts -- measured at 20s
+    // of an 84s failure. Started alongside the POST, it costs nothing and
+    // still resolves in time to explain the outcome.
+    const probe = this.checkServerReachable()
 
     const accepted = await this.post(data)
+
+    if (!(await probe)) {
+      console.error('server status check did not return 200 - checkin attempted anyway')
+    }
     if (accepted) {
       // we have a successful server checkin - clear sensor data
       this.sensor_data = []

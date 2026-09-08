@@ -8,6 +8,7 @@ import { TelemetryFormatter } from './telemetry-formatter.js'
 import { BeepStatManager } from './beep-stat-manager.js'
 import { BluFormatter } from './blu-formatter.js'
 import { NodeMetaData } from './node-meta-formatter.js'
+import { SensorFormatter } from './sensor-formatter.js'
 import moment from 'moment'
 
 import MessageTypes from '../../../hardware/ctt/messages.js'
@@ -81,6 +82,13 @@ class DataManager {
         suffix: 'node-meta',
         formatter: new NodeMetaData({
           data_format: this.date_format
+        })
+      }),
+      sensor: new Logger({
+        fileuri: this.file_manager.getFileUri('sensor'),
+        suffix: 'sensor',
+        formatter: new SensorFormatter({
+          date_format: this.date_format
         })
       })
     }
@@ -173,6 +181,20 @@ class DataManager {
         this.stats.addBeep(record)
       }
     }
+  }
+
+  /**
+   * station sensor rails (battery / solar / RTC voltage, board temperature).
+   *
+   * Written to its own file so the readings survive a restart, reboot or power
+   * loss. The health checkin still sends them, but this is now their durable
+   * copy -- previously the checkin was their only transport.
+   *
+   * @param {*} record - /sensor/details response stamped with received_at
+   */
+  handleSensor(record) {
+    if (!record) return
+    this.loggers.sensor.addRecord(record)
   }
 
   /**

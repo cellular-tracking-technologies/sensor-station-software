@@ -358,6 +358,14 @@ class BaseStation {
     this.stationLog('polling sensor data')
     try {
       this.server_api.pollSensors()
+        .then((record) => {
+          // also write it to disk -- the checkin buffer is in memory only and
+          // does not survive a restart, reboot or power loss
+          this.data_manager.handleSensor(record)
+        })
+        .catch((err) => {
+          this.stationLog(`error recording sensor data ${err.toString()}`)
+        })
     } catch (err) {
       this.stationLog(`error polling sensor data ${err.toString()}`)
     }

@@ -193,6 +193,17 @@ gets uploaded to the cloud out of band.
 | `telemetry` | `telemetry`   | GPS-tag telemetry beeps          | `ReceivedAt, RecordedAt, Id, RadioId, Rssi, Latitude, Longitude, …, TTFF` |
 | `blu`       | `blu`         | BluSeries / BluTag detections    | `UsbPort, BluRadioId, RadioId, Time, TagRSSI, TagId, Sync, Product, Revision, NodeId, Payload` |
 | `node_meta` | `node-meta`   | per-node collection metadata     | `NodeId, DataType, StartDate, EndDate, Protocol, …, PercentSuccess` |
+| `sensor`    | `sensor`      | station rail voltages + board temp | `Time, BatteryVolts, SolarVolts, RtcVolts, TempCelsius` |
+
+The `sensor` file records the station's own battery / solar / RTC rails and
+board temperature, polled from the hardware server's `/sensor/details` every
+`sensor_data_frequency_minutes`. `ServerApi.pollSensors()` buffers each reading
+for the next check-in *and* returns it so `BaseStation.pollSensors()` can hand
+it to `DataManager.handleSensor()`. Before this file existed the buffer was the
+only copy, so a restart, reboot or power loss discarded readings that had not
+yet been checked in -- and `enable-modem.sh` reboots the station, so modem
+recovery itself lost them. A rail the hardware could not read is reported as
+`-1` and written as an empty cell, never `0`.
 
 In parallel, `BeepStatManager` (`server/data/beep-stat-manager.js`) keeps
 in-memory detection counters that are reported in the cloud check-in and over
