@@ -112,6 +112,96 @@ const initialize_controls = function () {
     }
   })
 
+  // The dropdown IS the scan control: opening it kicks off a WiFi scan and
+  // repopulates itself with the results. No separate "Scan" button.
+  const wifiSsidList = document.querySelector('#wifi-ssid-list')
+  let wifiScanning = false
+  let wifiLastScan = 0
+  const WIFI_SCAN_TTL = 15000 // keep results this long before re-scanning on open
+  const setSsidPlaceholder = (text) => {
+    wifiSsidList.innerHTML = `<option value="">${text}</option>`
+  }
+  const scanWifiNetworks = async () => {
+    if (wifiScanning) return
+    // Don't wipe a fresh list on every open — that would clobber the option
+    // the user is about to click. Only rescan when the list is empty or stale.
+    const fresh = (Date.now() - wifiLastScan) < WIFI_SCAN_TTL && wifiSsidList.options.length > 1
+    if (fresh) return
+    wifiScanning = true
+    setSsidPlaceholder('Scanning…')
+    try {
+      const response = await fetch('/wifi/networks')
+      if (!response.ok) throw new Error('scan failed')
+      const nets = await response.json()
+      const seen = new Set()
+      const ssids = (Array.isArray(nets) ? nets : [])
+        .filter(n => n && n.ssid && !seen.has(n.ssid) && seen.add(n.ssid))
+        .sort((a, b) => (b.signal || 0) - (a.signal || 0))
+      setSsidPlaceholder('— pick a scanned network, or type below —')
+      for (const n of ssids) {
+        const opt = document.createElement('option')
+        opt.value = n.ssid
+        opt.textContent = `${n.ssid} (${Number.isFinite(n.signal) ? n.signal + '%' : '?'})`
+        wifiSsidList.appendChild(opt)
+      }
+      if (!ssids.length) setSsidPlaceholder('No networks found — reopen to rescan (enable WiFi?)')
+      else wifiLastScan = Date.now()
+    } catch (err) {
+      setSsidPlaceholder('Scan failed — reopen to retry (enable WiFi?)')
+    } finally {
+      wifiScanning = false
+    }
+  }
+  // mousedown fires as the dropdown opens (before options render); focus covers
+  // keyboard access. The first open scans; re-opening within the TTL keeps the
+  // list intact so a click can select a network (fills the SSID input below).
+  wifiSsidList.addEventListener('mousedown', () => { scanWifiNetworks() })
+  wifiSsidList.addEventListener('focus', () => { scanWifiNetworks() })
+  wifiSsidList.addEventListener('change', (e) => {
+    if (e.target.value) document.querySelector('#wifi-ssid').value = e.target.value
+  })
+
+  // Show/hide the WiFi password by toggling the input type.
+  const wifiPskShow = document.querySelector('#wifi-psk-show')
+  if (wifiPskShow) {
+    wifiPskShow.addEventListener('change', (e) => {
+      document.querySelector('#wifi-psk').type = e.target.checked ? 'text' : 'password'
+    })
+  }
+
+  document.querySelector('#wifi-connect').addEventListener('click', async (e) => {
+    const ssid = document.querySelector('#wifi-ssid').value.trim()
+    const psk = document.querySelector('#wifi-psk').value
+    if (!ssid) {
+      alert('Enter a WiFi SSID (network name)')
+      return
+    }
+    if (!window.confirm(`Connect to "${ssid}"? If you are reaching the Web Interface over the station's current network, connecting may change how it is reachable.`)) {
+      return
+    }
+    const btn = e.currentTarget
+    btn.disabled = true
+    try {
+      const response = await fetch('/wifi/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssid, psk }),
+      })
+      if (response.ok) {
+        alert(`Connected to "${ssid}"`)
+        document.querySelector('#wifi-psk').value = ''
+      } else {
+        let msg = 'Something went wrong connecting to WiFi (is WiFi enabled and the password correct?)'
+        try { const j = await response.json(); if (j && j.detail) msg += `\n\n${j.detail}` } catch (_) {}
+        alert(msg)
+      }
+    } catch (err) {
+      alert('Something went wrong connecting to WiFi')
+    } finally {
+      btn.disabled = false
+    }
+  })
+
   document.querySelector('#max-row-count').value = MAX_ROW_COUNT
   document.querySelector('#update-max-row-count').addEventListener('click', function (e) {
     MAX_ROW_COUNT = document.querySelector('#max-row-count').value
@@ -1161,7 +1251,12 @@ const render_modem = function () {
     .then(function (res) { return res.json() })
     .then(function (json) {
 
+      const modemText = document.querySelector('#modem-signal-text')
+      const carrierEl = document.querySelector('#modem-carrier')
+
       if (json == null) {
+        if (modemText) modemText.textContent = '—'
+        if (carrierEl) carrierEl.textContent = '—'
         document.querySelector('#modem-icon').setAttribute('class', 'bi bi-reception-0')
         document.querySelector('#modem-icon').setAttribute('style', "width:50; height:30; fill:red;")
         document.querySelector('.modem-path0').setAttribute('d', "M0 13.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5")
@@ -1169,6 +1264,18 @@ const render_modem = function () {
 
         let signal = json.signal
         let state = json.state
+
+        // dBm read-out: use the percent-derived RSSI the modem cache always
+        // provides, matching what the LCD shows (station-stats.js) so the two
+        // surfaces agree.
+        const rssiNum = (json.rssi != null) ? parseFloat(json.rssi) : NaN
+        const dbm = Number.isFinite(rssiNum) ? Math.round(rssiNum) : null
+        if (modemText) {
+          modemText.textContent = Number.isFinite(signal)
+            ? `${signal}%${dbm != null ? ` / ${dbm} dBm` : ''}`
+            : '—'
+        }
+        if (carrierEl) carrierEl.textContent = json.carrier || '—'
 
         if (state == "connected") {
 
@@ -1217,6 +1324,27 @@ const render_wifi = function () {
     .then(function (json) {
       let percent = json.signal
       let state = json.connected
+      const ipEl = document.querySelector('#wifi-ip-address')
+      if (ipEl) {
+        ipEl.textContent = (state == true && json.ip) ? json.ip : '—'
+      }
+
+      // Numeric read-out next to the icon: signal percent from nmcli.
+      const wifiText = document.querySelector('#wifi-signal-text')
+      if (wifiText) {
+        wifiText.textContent = (state == true && Number.isFinite(percent))
+          ? `${percent}%`
+          : '—'
+      }
+      // Prefill the SSID input with the currently-connected network. Only do it
+      // once, and never while the user is editing or has already typed/picked a
+      // value, so we don't clobber a connect-to-a-different-network attempt.
+      const ssidInput = document.querySelector('#wifi-ssid')
+      if (ssidInput && !window.__wifiSsidPrefilled && state == true && json.ssid
+          && document.activeElement !== ssidInput && ssidInput.value === '') {
+        ssidInput.value = json.ssid
+        window.__wifiSsidPrefilled = true
+      }
       if (state == true) {
 
 

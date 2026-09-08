@@ -77,6 +77,8 @@ app.post('/modem/disable', Routes.Controls.ModemDisable)
 app.get('/modem-signal-strength', Routes.Controls.ModemSignalStrength)
 app.post('/wifi/enable', Routes.Controls.WifiEnable)
 app.post('/wifi/disable', Routes.Controls.WifiDisable)
+app.post('/wifi/connect', Routes.Controls.WifiConnect)
+app.get('/wifi/networks', Routes.Controls.WifiNetworks)
 
 app.use((req, res) => {
   res.sendStatus(404)
