@@ -13,3 +13,8 @@ native/third_party/
 
 # Personal Claude Code settings (per-developer)
 .claude/settings.local.json
+
+# Checkin test suite — kept local only, not tracked
+src/station-radio-interface/test/health-checkin.test.js
+src/station-radio-interface/test/unhandled-rejection.test.js
+src/station-radio-interface/test/support/reject-fixture.mjs
