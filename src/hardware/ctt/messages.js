@@ -6,4 +6,5 @@ export default Object.freeze({
     NodeBluHealth: 'node_blu_health',
     NodeBluData: 'node_blue',
     BluTag: 'blu_tag',
+    TerraUhf: 'terra_uhf',
 })

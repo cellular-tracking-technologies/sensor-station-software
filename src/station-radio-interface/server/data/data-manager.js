@@ -8,6 +8,7 @@ import { TelemetryFormatter } from './telemetry-formatter.js'
 import { BeepStatManager } from './beep-stat-manager.js'
 import { BluFormatter } from './blu-formatter.js'
 import { NodeMetaData } from './node-meta-formatter.js'
+import { TerraMetricsFormatter } from './terra-metrics-formatter.js'
 import moment from 'moment'
 
 import MessageTypes from '../../../hardware/ctt/messages.js'
@@ -81,6 +82,13 @@ class DataManager {
         suffix: 'node-meta',
         formatter: new NodeMetaData({
           data_format: this.date_format
+        })
+      }),
+      terra_metrics: new Logger({
+        fileuri: this.file_manager.getFileUri('terra-metrics'),
+        suffix: 'terra-metrics',
+        formatter: new TerraMetricsFormatter({
+          date_format: this.date_format
         })
       })
     }
@@ -176,7 +184,18 @@ class DataManager {
   }
 
   /**
-   * 
+   * terra (5.x) per-detection receiver metrics: noise floor, SNR, FEI, LNA.
+   * Written to its own file; the paired legacy coded-id beep already handles
+   * raw-data and stats, so this only records the extra measurements.
+   *
+   * @param {*} metric - parsed terra_uhf document
+   */
+  handleTerraMetric(metric) {
+    this.loggers.terra_metrics.addRecord(metric)
+  }
+
+  /**
+   *
    * @param {*} record - GPS record
    */
   handleGps(record) {

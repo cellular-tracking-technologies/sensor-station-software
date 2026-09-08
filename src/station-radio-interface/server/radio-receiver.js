@@ -191,7 +191,12 @@ class RadioReceiver extends EventEmitter {
       this.fw_version = raw_beep.firmware
       return
     }
-    if (raw_beep.key) {
+    if (raw_beep.key === 'terra_uhf') {
+      // terra (5.x) per-detection receiver metrics: carries a `key` like a
+      // command response but is a measurement record, not a response. Route it
+      // to its own event so it reaches the data pipeline (noise/SNR/FEI/LNA).
+      this.emit('terra-metric', raw_beep)
+    } else if (raw_beep.key) {
       // radio command response
       this.emit('response', raw_beep)
     } else {

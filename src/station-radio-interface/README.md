@@ -193,6 +193,17 @@ gets uploaded to the cloud out of band.
 | `telemetry` | `telemetry`   | GPS-tag telemetry beeps          | `ReceivedAt, RecordedAt, Id, RadioId, Rssi, Latitude, Longitude, …, TTFF` |
 | `blu`       | `blu`         | BluSeries / BluTag detections    | `UsbPort, BluRadioId, RadioId, Time, TagRSSI, TagId, Sync, Product, Revision, NodeId, Payload` |
 | `node_meta` | `node-meta`   | per-node collection metadata     | `NodeId, DataType, StartDate, EndDate, Protocol, …, PercentSuccess` |
+| `terra_metrics` | `terra-metrics` | terra (5.x) per-detection receiver metrics | `Time, RadioId, TagId, TagRSSI, NoiseFloor, SNR, FEI_Hz, LNA, RSSISrc, CrcOk` |
+
+The terra (5.x RFM69) 434 MHz firmware emits, alongside each legacy coded-id
+beep, a `terra_uhf` JSON document carrying receiver measurements the legacy beep
+has no room for — the sampled noise floor, computed SNR (dB), frequency error
+(FEI, Hz) and LNA gain. `RadioReceiver` routes it to a dedicated `terra-metric`
+event (it carries a `key` like a command response, but is a measurement, not a
+response), and `DataManager.handleTerraMetric` writes it to the `terra-metrics`
+file. The paired coded-id beep still populates `raw-data` and the stats, so this
+file is purely additive and never double-counts. Only 5.x firmware produces
+these rows; 4.x radios emit no `terra_uhf` record.
 
 In parallel, `BeepStatManager` (`server/data/beep-stat-manager.js`) keeps
 in-memory detection counters that are reported in the cloud check-in and over

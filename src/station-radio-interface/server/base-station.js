@@ -513,6 +513,12 @@ class BaseStation {
       beep.msg_type = 'beep'
       this.broadcast(JSON.stringify(beep))
     })
+    beep_reader.on('terra-metric', (metric) => {
+      // terra 5.x per-detection receiver metrics (noise floor / SNR / FEI /
+      // LNA). Recorded to its own file; not broadcast or counted as a beep —
+      // the paired legacy coded-id beep already covers raw-data and stats.
+      this.data_manager.handleTerraMetric(metric)
+    })
     beep_reader.on('radio-fw', (fw_version) => {
       this.radio_fw[channel] = fw_version
     })
