@@ -8,7 +8,7 @@ DefaultDependencies=yes
 
 [Service]
 Type=oneshot
-RemainAfterExit=true
+RemainAfterExit=no
 # Invoke via bash (not direct exec) so a lost executable bit on the script can't
 # strand the service with 203/EXEC — see investigations/2026-07-09 (ECM bring-up).
 ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/modem-ecm-up.sh

@@ -17,3 +17,4 @@
 # should win — but confirm live.
 ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7021", NAME="mdm0"
 ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020", NAME="mdm0"
+ACTION=="add|move", SUBSYSTEM=="net", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="7020|7021", ENV{SYSTEMD_WANTS}+="ctt-modem-ecm-up.service"
