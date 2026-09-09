@@ -18,3 +18,5 @@ native/third_party/
 src/station-radio-interface/test/health-checkin.test.js
 src/station-radio-interface/test/unhandled-rejection.test.js
 src/station-radio-interface/test/support/reject-fixture.mjs
+src/station-radio-interface/test/health-checkin-blackhole.test.js
+src/station-radio-interface/test/support/mocks.mjs
