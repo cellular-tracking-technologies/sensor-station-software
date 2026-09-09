@@ -12,6 +12,23 @@ regenerated from these entries.
 
 ---
 
+## [2.3.5] — 2026-09-09
+
+### Fixed
+
+- **A modem that re-enumerates at runtime now rebuilds its ECM data path instead of going
+  IP-dead until a reboot.** On a clean `lts_26_07.iso` a Telit re-enumeration re-registers the
+  modem and re-creates `mdm0`, but `ctt-modem-ecm-up.service` was wired to run at boot only, so
+  the interface came back with no IP and the station stayed unreachable until someone power-cycled
+  it. Two changes, both required: `78-ctt-telit-net.rules` now fires the service off the `mdm0`
+  `add|move` uevent via `ENV{SYSTEMD_WANTS}` (matching Telit `idProduct` 7020/7021), and
+  `ctt-modem-ecm-up.service` drops `RemainAfterExit=true` so the oneshot no longer latches active
+  after its boot run and can be re-pulled on each re-enumeration. Hardware-verified: after a clean
+  boot, a de-enumeration re-runs `ctt-modem-ecm-up` within ~1s and `mdm0` regains its IP in ~5s,
+  with no reboot.
+
+---
+
 ## [2.3.4] — 2026-07-31
 
 ### Fixed
