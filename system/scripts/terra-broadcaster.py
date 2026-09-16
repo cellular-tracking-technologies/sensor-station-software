@@ -26,7 +26,7 @@ from typing import Dict
 BROADCAST_PORT  = 64644
 BROADCAST_EVERY_S = 30
 
-VERSION_FILE    = "/etc/ctt/station-revision"
+PACKAGE_JSON    = "/usr/lib/ctt/sensor-station-software/package.json"
 SERIAL_FILE     = "/etc/ctt/station-id"
 
 
@@ -120,10 +120,10 @@ def wifi_snapshot() -> str:
 
 def make_message(serial: str, version: str) -> bytes:
     payload: Dict[str, str] = {
-        "Device":  "Terra",
-        "Serial":  serial,
-        "Version": version,
-        "WiFi":    wifi_snapshot(),
+        "Device":    "SensorStation",
+        "Serial":    serial,
+        "Version":   version,
+        "WiFi":      wifi_snapshot(),
     }
     return json.dumps(payload).encode("utf-8")
 
@@ -133,7 +133,11 @@ def main() -> int:
     signal.signal(signal.SIGINT, shutdown)
 
     serial = read_text(SERIAL_FILE)
-    version = read_text(VERSION_FILE)
+    try:
+        with open(PACKAGE_JSON) as f:
+            version = json.loads(f.read()).get("version", "UNKNOWN")
+    except (OSError, json.JSONDecodeError):
+        version = "UNKNOWN"
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
