@@ -1,0 +1,23 @@
+[Unit]
+Description=Terra LAN discovery beacon (UDP broadcast on port 64644)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/ctt/sensor-station-software/system/scripts/terra-broadcaster.py
+Restart=on-failure
+RestartSec=5
+
+# Lowest priority — discovery beacon is purely cosmetic, must never
+# steal CPU from capture/streaming.
+Nice=15
+IOSchedulingClass=idle
+
+# Hardening; same shape as the other terra services.
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

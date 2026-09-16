@@ -43,6 +43,7 @@ MUST_BE_ENABLED=(
   ctt-modem-wake.service         # wake a shut-down Telit at boot (ON_OFF# pulse) so a hard reset self-recovers; runs Before modem-boot-state
   ctt-modem-provision.service    # idempotent ECM provision GUARD; Before MM, no-op on a provisioned modem, converts a fresh/swapped RNDIS one
   ctt-modem-ecm-up.service       # bring up the ECM data iface mdm0 (DHCP + fallback route); NM won't manage an MM modem net port
+  ctt-terra-finder.service       # LAN discovery beacon (UDP broadcast on port 64644)
 
   # Application layer (Node services + SensorGnome). Enable here so an OTA self-heals
   # a lost symlink and an image built without the legacy Ansible enablement still comes
