@@ -59,13 +59,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # A <6GB image expands (apt/npm headroom) then shrinks — a ~15-20GB peak.
-      # Reclaim the runner's preinstalled toolchains to clear well past that.
-      - name: Free disk space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -79,6 +72,20 @@ jobs:
           # baked into the built image (~875MB of self-nested bloat). RUNNER_TEMP is
           # not copied. Base resolves under images/lts_26_07/ (see S3_PREFIX).
           aws s3 cp "$S3_PREFIX/${{ inputs.base_image || 'sensor-station.latest.img.xz' }}" "$RUNNER_TEMP/base.img.xz"
+
+      # arm-runner installs binfmt-support via `apt-get update && apt-get install`,
+      # so any broken third-party runner repo (e.g. dl.google.com "Hash Sum
+      # mismatch", v2.3.5) fails the update, silently skips the install, and the
+      # action later dies on "update-binfmts: command not found". Drop the
+      # runner's non-Ubuntu sources and preinstall its prerequisites ourselves,
+      # failing loudly here if they can't be installed.
+      - name: Preinstall arm-runner prerequisites
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome*.list \
+                     /etc/apt/sources.list.d/microsoft-edge*.list
+          sudo apt-get update || echo "warning: apt-get update reported errors; continuing"
+          sudo apt-get install -y binfmt-support qemu-user-static parted wget dosfstools zip
+          command -v update-binfmts
 
       - name: Update software inside the image
         uses: pguyot/arm-runner-action@v2
