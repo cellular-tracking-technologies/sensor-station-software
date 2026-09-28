@@ -35,6 +35,37 @@ fi
 
 ip link set "$IFACE" up
 
+# Is the dhclient named by our pidfile still running AND still the renewer for this
+# iface? /proc rather than `kill -0` on purpose: kill -0 returns EPERM (not ESRCH) for
+# a root-owned pid when this script is run by hand as ctt, which would report a live
+# renewer as dead. Matching cmdline also rejects a recycled PID.
+dhclient_alive() {
+  local pid
+  pid="$(cat "/run/dhclient-$IFACE.pid" 2>/dev/null)" || return 1
+  case "$pid" in ''|*[!0-9]*) return 1;; esac
+  [ -r "/proc/$pid/comm" ] || return 1
+  # comm is the executable name alone, so an unrelated process whose ARGV merely
+  # mentions dhclient (a shell running this script, a grep) can never match.
+  [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = dhclient ] || return 1
+  # ...and it must be OUR iface's renewer, not another interface's.
+  tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null | grep -qx "$IFACE"
+}
+
+# Already-configured fast path. The timer fires every 5 min; without this guard every
+# tick reaps the renewing dhclient (-x below) and re-runs a full DISCOVER/REQUEST/ACK,
+# so the daemon never survives to its own T1 and the renewal path this unit exists to
+# protect is never exercised (measured on V30B0154C65F 2026-09-28: pid churned
+# 1532 -> 2477 -> 2707 -> 2909, lease T1 ~11 h, never once reached). Requiring all
+# three of address + default route + a LIVE dhclient means any partially-torn-down
+# state still falls through to the full bring-up below — this only short-circuits a
+# data path that is genuinely healthy.
+if ip -4 addr show "$IFACE" 2>/dev/null | grep -q 'inet ' \
+   && ip route show default dev "$IFACE" 2>/dev/null | grep -q . \
+   && dhclient_alive; then
+  echo "modem-ecm-up: $IFACE already configured $(ip -4 -br addr show "$IFACE" | awk '{print $3}') with a live renewer; nothing to do"
+  exit 0
+fi
+
 # Reap a dhclient left over from an earlier bring-up. It SURVIVES a USB
 # re-enumeration but can never re-lease on the new netdev — it just loops
 # "send_packet: Network is unreachable" forever (13,703 such lines on V30B0154C65F,
