@@ -1,0 +1,23 @@
+[Unit]
+Description=Record spontaneous modem USB disconnects (08/27 fault rate)
+# Diagnostic only: reads the kernel journal, touches no hardware and changes no
+# state. Exists because the 08/27 re-enumeration has no established cause and the
+# decision to escalate to Telit depends on how OFTEN it happens — which nothing was
+# measuring. See investigations/2026-09-28-v30b0154c65f-ecm-lease-renewal-regression.md
+After=systemd-journald.service
+ConditionPathExists=!/etc/ctt/modem-disabled
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /lib/ctt/sensor-station-software/system/scripts/tools/modem-disconnect-watch.sh
+# The watcher is a journalctl -f pipeline; if journald restarts the pipe closes and
+# the script exits. Always come back, but slowly enough that a persistent failure
+# cannot spin.
+Restart=always
+RestartSec=30
+Nice=10
+# Diagnostic tool: never let it take the station down with it.
+MemoryMax=32M
+
+[Install]
+WantedBy=multi-user.target
