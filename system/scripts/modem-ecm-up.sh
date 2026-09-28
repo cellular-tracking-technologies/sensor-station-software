@@ -59,8 +59,16 @@ dhclient_alive() {
 # three of address + default route + a LIVE dhclient means any partially-torn-down
 # state still falls through to the full bring-up below — this only short-circuits a
 # data path that is genuinely healthy.
+# The route test checks the METRIC, not merely that some default route exists.
+# dhclient-script re-adds a default route at metric 0 whenever it takes its BOUND
+# path (a lease returning a DIFFERENT address) or its TIMEOUT path (server stopped
+# answering, old lease re-applied). Metric 0 outranks eth0's 50, so cellular would
+# silently capture all station traffic. An existence-only test matched that route and
+# short-circuited the demotion below, making the capture permanent — the 5-minute tick
+# used to undo it before this fast path existed.
 if ip -4 addr show "$IFACE" 2>/dev/null | grep -q 'inet ' \
-   && ip route show default dev "$IFACE" 2>/dev/null | grep -q . \
+   && [ "$(ip route show default dev "$IFACE" 2>/dev/null | wc -l)" = 1 ] \
+   && ip route show default dev "$IFACE" 2>/dev/null | grep -q "metric $METRIC" \
    && dhclient_alive; then
   echo "modem-ecm-up: $IFACE already configured $(ip -4 -br addr show "$IFACE" | awk '{print $3}') with a live renewer; nothing to do"
   exit 0
@@ -106,9 +114,22 @@ fi
 
 # Re-pin the default route dhclient just added (metric 0) to a fallback metric so it
 # cannot preempt wired/WiFi.
-GW=$(ip route show default dev "$IFACE" 2>/dev/null | awk '{print $3; exit}')
+# Parse the gateway positionally ONLY from a route that actually has a "via": a
+# default route without one (link-scope) shifts the fields, and $3 would then be a
+# non-empty but wrong token that the -n fallback below cannot catch.
+GW=$(ip route show default dev "$IFACE" 2>/dev/null | awk '/ via /{for(i=1;i<NF;i++) if($i=="via"){print $(i+1); exit}}')
 [ -n "$GW" ] || GW=192.168.225.1
-ip route del default dev "$IFACE" 2>/dev/null || true
+
+# Delete EVERY default route on this iface, not just the first. `ip route del` removes
+# one match per call, so a single call cannot converge: with two routes present each
+# run would delete one and replace one, leaving two forever. dhclient can produce a
+# second (metric 0, see above), and a DHCP offer carrying several routers makes one
+# per router with incrementing metrics. Bounded so a route we cannot delete cannot
+# spin the loop.
+for _ in 1 2 3 4 5 6 7 8; do
+  ip route show default dev "$IFACE" 2>/dev/null | grep -q . || break
+  ip route del default dev "$IFACE" 2>/dev/null || break
+done
 ip route replace default via "$GW" dev "$IFACE" metric "$METRIC"
 
 echo "modem-ecm-up: $IFACE up $(ip -4 -br addr show "$IFACE" | awk '{print $3}'), default via $GW metric $METRIC (fallback)"
