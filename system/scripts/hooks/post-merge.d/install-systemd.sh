@@ -43,6 +43,7 @@ MUST_BE_ENABLED=(
   ctt-modem-wake.service         # wake a shut-down Telit at boot (ON_OFF# pulse) so a hard reset self-recovers; runs Before modem-boot-state
   ctt-modem-provision.service    # idempotent ECM provision GUARD; Before MM, no-op on a provisioned modem, converts a fresh/swapped RNDIS one
   ctt-modem-ecm-up.service       # bring up the ECM data iface mdm0 (DHCP + fallback route); NM won't manage an MM modem net port
+  ctt-modem-ecm-up.timer         # periodic re-assert of the ECM path; covers a data path that dies with NO netdev uevent (lease expiry), which the udev trigger structurally cannot see
 
   # Application layer (Node services + SensorGnome). Enable here so an OTA self-heals
   # a lost symlink and an image built without the legacy Ansible enablement still comes
@@ -92,8 +93,11 @@ if [ ! -d "$SRC_DIR" ]; then
   exit 0
 fi
 
-# Deploy *.service files (could extend to .timer, .socket, etc. later)
-for src in "$SRC_DIR"/*.service; do
+# Deploy *.service AND *.timer. Timers were skipped here until 2026-09-28, which
+# silently half-deployed any release shipping one: ctt-modem-ecm-up.timer landed in
+# the repo but never in /etc/systemd/system, so the fleet got the unit it guards
+# without the periodic safety net and no error said so (investigations/2026-09-28).
+for src in "$SRC_DIR"/*.service "$SRC_DIR"/*.timer; do
   [ -f "$src" ] || continue
   install_if_diff "$src" "$DST_DIR/$(basename "$src")"
 done
@@ -133,8 +137,13 @@ for unit in "${MUST_BE_ENABLED[@]}"; do
       # already in good state
       ;;
     *)
-      log_info "enabling $unit (was: $state)"
-      systemctl enable "$unit"
+      # --now for timers only: a timer enabled without being started does nothing
+      # until the next reboot, which defeats the point of deploying it over OTA.
+      # Services are left to their normal ordering rather than started mid-update.
+      case "$unit" in
+        *.timer) log_info "enabling + starting $unit (was: $state)"; systemctl enable --now "$unit" ;;
+        *)       log_info "enabling $unit (was: $state)";            systemctl enable "$unit" ;;
+      esac
       ;;
   esac
 done
