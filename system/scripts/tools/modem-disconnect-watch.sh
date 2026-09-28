@@ -26,11 +26,27 @@
 # up with syslog, no new collection path) and are appended to $LOG for quick reading.
 set -u
 
+# Decide replay mode FIRST: note() consults it, and the "watch start" line is emitted
+# before the input source is chosen. Setting it later let that one line reach the
+# production log and syslog tag even under --replay.
+REPLAY=0; [ "${1:-}" = "--replay" ] && REPLAY=1
+
 LOG=/data/modem-disconnect-events.log
 TAG=modem-disconnect
 TELIT_IDS='1bc7:7021 1bc7:7020 2c7c:0125'
 
-note() { logger -t "$TAG" -- "$*"; mkdir -p "$(dirname "$LOG")" 2>/dev/null; printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >> "$LOG"; }
+# In --replay mode events are written to stdout ONLY: never to $LOG and never to the
+# production syslog tag. Replayed history is not an observation, and the entire point
+# of this tool is an accurate count -- letting a test write the same tag as a real
+# event would corrupt the rate it exists to measure. (It did: replaying the 08/27
+# lines on 2026-09-28 put two phantom "SPONTANEOUS DISCONNECT" entries under tag
+# modem-disconnect, which a later reader would have counted as real.)
+note() {
+  if [ "${REPLAY:-0}" = 1 ]; then printf 'REPLAY %s\n' "$*"; return; fi
+  logger -t "$TAG" -- "$*"
+  mkdir -p "$(dirname "$LOG")" 2>/dev/null
+  printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >> "$LOG"
+}
 
 # Resolve the modem's USB port (e.g. 1-1.2.1). Re-resolved after each event because a
 # re-enumeration can land the module on a different device number (never a different
@@ -56,7 +72,7 @@ note "watch start: port=$PORT uptime=$(cut -d. -f1 /proc/uptime)s"
 # reproduced on demand (a driver unbind only rebinds the driver -- the device never
 # leaves the bus, so no "USB disconnect" is emitted), which makes replay the only
 # way to prove the matcher against the signature it exists to catch.
-if [ "${1:-}" = "--replay" ]; then
+if [ "$REPLAY" = 1 ]; then
   SRC=(cat)
 else
   SRC=(journalctl -k -f -n0 -o short-iso)
