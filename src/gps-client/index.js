@@ -5,7 +5,7 @@ import EventEmitter from 'events'
  * maintain a connection to gpsd daemon and maintain most recent gps info
  * merge sky satellites with gps data into gps_sate object
  */
-class GpsClient extends EventEmitter{
+class GpsClient extends EventEmitter {
   constructor(opts) {
     super()
     this.latest_gps_fix
@@ -32,9 +32,9 @@ class GpsClient extends EventEmitter{
    * calculate mean lat/lng for previous set of records up to this.max_gps_records
   */
   meanFix() {
-    let mean_lat=0, mean_lng=0, n=0
+    let mean_lat = 0, mean_lng = 0, n = 0
     if (this.recent_gps_records.length < 1) {
-      return 
+      return
     }
     this.recent_gps_records.forEach((record) => {
       if (record.lat) {
@@ -65,7 +65,7 @@ class GpsClient extends EventEmitter{
   buildGpsClient() {
     this.gps_listener = new gpsd.Listener({
       port: 2947,
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       parse: true
     })
     this.gps_listener.on('TPV', (data) => {

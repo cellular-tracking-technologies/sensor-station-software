@@ -65,7 +65,7 @@ class GpsClient extends EventEmitter {
   buildGpsClient() {
     this.gps_listener = new gpsd.Listener({
       port: 2947,
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       parse: true
     })
     this.gps_listener.on('TPV', (data) => {

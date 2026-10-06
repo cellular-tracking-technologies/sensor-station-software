@@ -210,7 +210,7 @@ class BaseStation {
           }))
           break
         case ('about'):
-          fetch('http://localhost:3000/about')
+          fetch('http://127.0.0.1:3000/about')
             .then(res => res.json())
             .then(async (json) => {
               let data = json

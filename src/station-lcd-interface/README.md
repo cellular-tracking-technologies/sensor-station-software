@@ -30,7 +30,7 @@ npm run start-lcd-interface   # node ./src/station-lcd-interface/index.js
 ```
 
 The service expects the hardware HTTP API to be reachable on
-`http://localhost:3000`. It does not touch the LCD directly — it publishes the
+`http://127.0.0.1:3000`. It does not touch the LCD directly — it publishes the
 desired screen to `/run/ctt/lcd`, which the native `ctt-lcd` daemon renders onto
 the panel. If that daemon is not running the menu logic still runs; the frames
 are simply not displayed.
@@ -141,7 +141,7 @@ A task is a small class with three members:
 | `GpsTask` (`gps-task.js`) | Location | Mean latitude/longitude from `gps` |
 | `LedTask` (`led-task.js`) | (helper) | POST a status-LED state; available as a reusable task class |
 
-URLs above are relative to the hardware API base `http://localhost:3000`.
+URLs above are relative to the hardware API base `http://127.0.0.1:3000`.
 
 ---
 

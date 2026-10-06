@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 
 export default async () => {
-  const station_id = await fetch('http://localhost:3000/id')
+  const station_id = await fetch('http://127.0.0.1:3000/id')
     .then(res => res.json())
     .then((json) => {
       const { id } = json

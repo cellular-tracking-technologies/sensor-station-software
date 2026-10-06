@@ -1,5 +1,5 @@
 export default (req, res) => {
-  fetch('http://localhost:3000/internet/gateway')
+  fetch('http://127.0.0.1:3000/internet/gateway')
     .then(res => res.json())
     .then((json) => {
       res.json(json)

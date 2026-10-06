@@ -45,7 +45,7 @@ buffer of recent fixes used to compute an averaged position.
 
 | Method | Description |
 |--------|-------------|
-| `start()` | Connect to `gpsd` (localhost:2947) and begin watching reports. |
+| `start()` | Connect to `gpsd` (127.0.0.1:2947) and begin watching reports. |
 | `stop()` | Disconnect from `gpsd`. |
 | `info()` | Return `{ gps, sky, mean }` — the latest fix, the latest satellite view, and the mean position. |
 | `meanFix()` | Average lat/lng over the buffered recent fixes; returns `{ lat, lng, n }` (6 decimal places) or `undefined` if no fixes yet. |
