@@ -1,0 +1,42 @@
+# CTT: dhclient ENTER hook for the Telit CDC-ECM data interface (mdm0).
+#
+# Sourced by /sbin/dhclient-script BEFORE it configures the interface, so the
+# variables set here change what it does. Scoped by $interface, so every other
+# dhclient invocation is untouched — in practice there are none: NetworkManager
+# uses its own internal DHCP client for eth0/wlan0, and dhcpcd5 is installed by
+# the Pi image but disabled.
+#
+# new_dhcp_lease_time=""
+#   dhclient-script applies the kernel address lifetime as
+#   ${new_dhcp_lease_time:+valid_lft $new_dhcp_lease_time}, on BOTH of its paths:
+#   `ip -4 addr add` (BOUND/REBOOT) and `ip -4 addr change` (RENEW/REBIND).
+#   Blanking it installs the address PERMANENT rather than DYNAMIC.
+#
+#   Why: the LE910Q1's built-in DHCP server issues an 86400 s lease, and nothing
+#   renews it. ctt-modem-ecm-up.service is a Type=oneshot with RemainAfterExit=no,
+#   so the daemonized dhclient is reaped with the unit's cgroup as soon as
+#   ExecStart returns (deliberately — a renewer that outlives a USB re-enumeration
+#   cannot re-lease on the new netdev and just loops "send_packet: Network is
+#   unreachable"; 13,703 such lines on V30B0154C65F, 2026-08-27). The kernel
+#   therefore deleted mdm0's address exactly 24 h after every boot. With no
+#   non-loopback IPv4 left, glibc's AI_ADDRCONFIG stops returning 127.0.0.1 for
+#   `localhost`, so every internal client resolves ::1 alone and gets
+#   ECONNREFUSED against station-hardware-server (which binds 127.0.0.1 only);
+#   station-radio-interface exits on an unhandled rejection and crash-loops, and
+#   data collection stops. Observed on 6CA25D375881: address withdrawn
+#   2026-10-04 06:43:35, 24 h after the 10-03 boot, first ECONNREFUSED 31 s later.
+#
+# IF_METRIC=700
+#   dhclient-script installs the default route as
+#   `ip -4 route add default via $router dev $interface ${if_metric:+metric ...}`,
+#   taking if_metric from IF_METRIC — and it reads that AFTER sourcing this hook.
+#   Setting it here creates the route at the fallback metric directly, so the
+#   metric-0 route that would outrank eth0 (~50) and wlan0 (~600) and silently
+#   capture all station traffic never exists. 700 is above eth0 (~50) and wlan0
+#   (~600), so cellular is used only when no wired/WiFi default has a route.
+case "$interface" in
+  mdm0)
+    new_dhcp_lease_time=""
+    IF_METRIC=700
+    ;;
+esac
