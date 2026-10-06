@@ -3,7 +3,11 @@ import moment from 'moment'
 class ServerApi {
   constructor() {
     this.endpoint = "https://station.internetofwildlife.com/station/v2/checkin/"
-    this.hardware_endpoint = "http://localhost:3000/"
+    // A literal address, never a hostname. station-hardware-server binds
+    // 127.0.0.1 only, and once the box has no non-loopback IPv4 left, glibc's
+    // AI_ADDRCONFIG drops the v4 answer entirely and leaves ::1 — which nothing
+    // listens on. Dialing the address removes the resolver from the path.
+    this.hardware_endpoint = "http://127.0.0.1:3000/"
     this.details = [
       'modem',
       'sensor/details',

@@ -18,8 +18,8 @@
 export default async (req, res) => {
   try {
     const [info, ppp] = await Promise.all([
-      fetch('http://localhost:3000/modem/signal-strength').then(r => r.json()).catch(() => null),
-      fetch('http://localhost:3000/modem/ppp')
+      fetch('http://127.0.0.1:3000/modem/signal-strength').then(r => r.json()).catch(() => null),
+      fetch('http://127.0.0.1:3000/modem/ppp')
         .then(r => r.json())
         .catch(() => ({ ppp: false })), // probe unavailable -> treat as not connected
     ])

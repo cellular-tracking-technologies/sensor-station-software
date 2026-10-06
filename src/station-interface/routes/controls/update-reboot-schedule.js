@@ -1,6 +1,6 @@
 export default async (req, res) => {
   console.log('rx', req.body)
-  fetch('http://localhost:3000/control/update-reboot-schedule', {
+  fetch('http://127.0.0.1:3000/control/update-reboot-schedule', {
     method: 'post',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req.body)

@@ -1,4 +1,3 @@
-import '../station-utils/prefer-ipv4.js'
 import { BaseStation } from './server/base-station.js'
 
 // instantiate the base station software

@@ -1,7 +1,7 @@
 # station-hardware-server
 
 A small Express HTTP API that exposes the sensor station's hardware behind REST.
-It binds to `127.0.0.1:3000` (localhost only) and is the single point through
+It binds to `127.0.0.1:3000` (127.0.0.1 only) and is the single point through
 which the station's other services — the radio interface, the LCD interface, and
 the local web dashboard — read sensors, query the modem and GPS, drive LEDs, and
 manage USB storage. Those services do not touch the hardware directly; they call
