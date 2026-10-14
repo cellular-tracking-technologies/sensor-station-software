@@ -134,6 +134,7 @@ A task is a small class with three members:
 | `SystemTimeTask` (`system-time-task.js`) | System > Time | RTC vs GPS vs system clock (`hwclock`, `gps`) |
 | `SystemRestartTask` (`system-restart-task.js`) | System > Restart | `shutdown -r now` |
 | `BashUpdateTask` (`bash-update.js`) | System > Bash Update | Run the `bash-update-station` updater |
+| `UpdateStationTask` (`update-station-task.js`) | System > Update Station | Run the git-based `update-station` updater in a transient systemd unit (`ctt-lcd-update-station`), so it survives `update-station` stopping this service; output in `journalctl -u ctt-lcd-update-station` |
 | `DeleteDataTask` / `NoDeleteDataTask` (`system-delete-data-task.js`, `system-no-delete-data-task.js`) | System > Delete Data > Yes/No | Confirm-gated delete of station data (runs `delete-data.sh`); reports disk usage before/after |
 | `ServerConnectRequest` (`server-task.js`) | Server | Trigger a backend check-in via `radio/checkin` |
 | `SensorVoltageTask` (`sensor-voltage-task.js`) | Power | Battery / RTC / solar voltages from `sensor/voltages` |

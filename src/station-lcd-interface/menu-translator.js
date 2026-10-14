@@ -23,6 +23,7 @@ import { HostnameTask } from "./tasks/hostname-task.js"
 import { InternetTask } from "./tasks/internet-task.js"
 import { QaqcRequest } from './tasks/qaqc-task.js'
 import { BashUpdateTask } from './tasks/bash-update.js'
+import { UpdateStationTask } from './tasks/update-station-task.js'
 import { EnableWifi, DisableWifi } from './tasks/enable-disable-wifi-task.js'
 import { EnableModem, DisableModem } from './tasks/enable-disable-modem-task.js'
 import { StationStats } from './station-stats.js'
@@ -91,6 +92,7 @@ class MenuTranslator {
         new MenuItem("Time", new SystemTimeTask(host), []),
         new MenuItem("Restart", new SystemRestartTask(), []),
         new MenuItem("Bash Update", new BashUpdateTask(), []),
+        new MenuItem("Update Station", new UpdateStationTask(), []),
         new MenuItem('Delete Data', null, [
           new MenuItem('Delete All Data?', null, []),
           new MenuItem('Yes', new DeleteDataTask(host), []),
