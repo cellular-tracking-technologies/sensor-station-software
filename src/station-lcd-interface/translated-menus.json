@@ -277,6 +277,14 @@
             }
           },
           {
+            "id": "Update Station",
+            "parent_id": "System",
+            "children": [],
+            "view": {
+              "header": "Update Station"
+            }
+          },
+          {
             "id": "Delete Data",
             "parent_id": "System",
             "children": [
@@ -627,6 +635,14 @@
             "children": [],
             "view": {
               "header": "Bash Update Station"
+            }
+          },
+          {
+            "id": "Actualizar estacion",
+            "parent_id": "Sistema",
+            "children": [],
+            "view": {
+              "header": "Update Station"
             }
           },
           {
@@ -983,6 +999,14 @@
             }
           },
           {
+            "id": "Mettre a jour",
+            "parent_id": "Systeme",
+            "children": [],
+            "view": {
+              "header": "Update Station"
+            }
+          },
+          {
             "id": "Supprimer les donnees",
             "parent_id": "Systeme",
             "children": [
@@ -1336,6 +1360,14 @@
             }
           },
           {
+            "id": "Atualizar estacao",
+            "parent_id": "Sistema-PT",
+            "children": [],
+            "view": {
+              "header": "Update Station"
+            }
+          },
+          {
             "id": "Excluir dados",
             "parent_id": "Sistema-PT",
             "children": [
@@ -1686,6 +1718,14 @@
             "children": [],
             "view": {
               "header": "Bash Update Station"
+            }
+          },
+          {
+            "id": "Station bijwerken",
+            "parent_id": "Systeem",
+            "children": [],
+            "view": {
+              "header": "Update Station"
             }
           },
           {
