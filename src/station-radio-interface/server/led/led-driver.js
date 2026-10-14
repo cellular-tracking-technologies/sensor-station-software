@@ -7,7 +7,11 @@ class LedDriver {
       'b',
       'gps'
     ]
-    this.endpoint = 'http://localhost:3000/led'
+    // A literal address, never a hostname. station-hardware-server binds
+    // 127.0.0.1 only, and once the box has no non-loopback IPv4 left, glibc's
+    // AI_ADDRCONFIG drops the v4 answer entirely and leaves ::1 — which nothing
+    // listens on. Dialing the address removes the resolver from the path.
+    this.endpoint = 'http://127.0.0.1:3000/led'
   }
 
   async post(opts) {

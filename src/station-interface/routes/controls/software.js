@@ -1,5 +1,5 @@
 export default async (req, res) => {
-  fetch('http://localhost:3000/node/version')
+  fetch('http://127.0.0.1:3000/node/version')
     .then(res => res.json())
     .then((json) => {
       res.json(json)

@@ -12,7 +12,11 @@ const LEDS_FILE = '/run/ctt/leds'
 
 class StationLeds {
   constructor() {
-    this.internet_url = 'http://localhost:3000/modem/ppp'
+    // A literal address, never a hostname. station-hardware-server binds
+    // 127.0.0.1 only, and once the box has no non-loopback IPv4 left, glibc's
+    // AI_ADDRCONFIG drops the v4 answer entirely and leaves ::1 — which nothing
+    // listens on. Dialing the address removes the resolver from the path.
+    this.internet_url = 'http://127.0.0.1:3000/modem/ppp'
     this.gps_delay_timeout = 60 * 1000 // if gps time > 60 seconds, turn off light
   }
 

@@ -4,7 +4,7 @@ import moment from 'moment'
 class ServerApi {
   constructor() {
     this.endpoint = "https://station.internetofwildlife.com/station/v2/checkin/"
-    this.hardware_endpoint = "http://localhost:3000/"
+    this.hardware_endpoint = "http://127.0.0.1:3000/"
     this.details = [
       'modem',
       'sensor/details',

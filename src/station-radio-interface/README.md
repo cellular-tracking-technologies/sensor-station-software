@@ -266,8 +266,8 @@ talks to.
 | `/run/ctt/leds` | write | written here; consumed by the `ctt-leds` daemon | `key=value` per line (`gps`/`a`/`b` = `on`\|`off`\|`blink`), written atomically (temp + rename) |
 | `/etc/ctt/station-config.json` | read/write | shared with the web dashboard | JSON (persistent) |
 | `/data/` (+ `/data/rotated/`) | write | local storage | rotating + gzip CSV |
-| Hardware HTTP API (`localhost:3000`) | client | `station-hardware-server` | REST — sensor details, modem/PPP, GPS, `about`, upload state, versions |
-| `gpsd` (`localhost:2947`) | client | system `gpsd` | gpsd protocol (TPV/SKY) |
+| Hardware HTTP API (`127.0.0.1:3000`) | client | `station-hardware-server` | REST — sensor details, modem/PPP, GPS, `about`, upload state, versions |
+| `gpsd` (`127.0.0.1:2947`) | client | system `gpsd` | gpsd protocol (TPV/SKY) |
 | WebSocket `:8001` | server | local web dashboard | JSON control + live data |
 | Cloud check-in | client (POST) | cloud backend | JSON health/stats payload, periodic |
 

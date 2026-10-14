@@ -11,16 +11,16 @@
 # folds mdm0 into that single "modem" device — `nmcli device` never lists mdm0, so
 # NM never DHCPs it. We configure it out of band.
 #
-# Route safety: dhclient installs a metric-0 default via the module, which would
-# PREEMPT eth0/wlan0. We re-pin it to a HIGH fallback metric so cellular is used
-# only when no wired/WiFi default has a route.
+# Route safety: dhclient would install a metric-0 default via the module, which
+# would PREEMPT eth0/wlan0. system/dhcp/dhclient-enter-hooks.d/ctt-mdm0 sets
+# IF_METRIC so dhclient-script creates that route at the fallback metric in the
+# first place, and cellular is used only when no wired/WiFi default has a route.
 #
 # Idempotent; fails open (exit 0) when mdm0 is absent (modem off/disabled/non-Telit)
 # so it never blocks boot.
 set -u
 
 IFACE=mdm0
-METRIC=700   # > eth0 (~50) and wlan0 (~600): cellular is fallback-only
 
 # Wait (bounded) for the ECM netdev, renamed from the cdc_ether port by
 # 78-ctt-telit-net.rules. Absent = modem off/disabled/non-Telit -> nothing to do.
@@ -35,8 +35,13 @@ fi
 
 ip link set "$IFACE" up
 
-# DHCP the address (Telit-documented method). -1: one attempt then exit — no lingering
-# daemon; the lease is long and the module always offers the same deterministic address.
+# DHCP the address (Telit-documented method). -1 bounds the FAILURE path: "try once,
+# exit non-zero if no lease". On success dhclient daemonizes, but systemd reaps that
+# daemon with the unit's cgroup when ExecStart returns, so nothing renews the lease.
+# system/dhcp/dhclient-enter-hooks.d/ctt-mdm0 therefore blanks the lease time so
+# the address is installed PERMANENT; without it the kernel deletes mdm0's address
+# exactly one lease (24 h) after every boot. The same hook sets IF_METRIC, so the
+# default route dhclient-script installs here already carries the fallback metric.
 # Retry: right after the ECM bind (or before the modem finishes registering) the module
 # may not answer DHCP for a few seconds, so a single attempt can lose the race. Retry a
 # few times before giving up (still fail-open so it never blocks boot).
@@ -53,11 +58,4 @@ if [ "$leased" != 1 ]; then
   exit 0
 fi
 
-# Re-pin the default route dhclient just added (metric 0) to a fallback metric so it
-# cannot preempt wired/WiFi.
-GW=$(ip route show default dev "$IFACE" 2>/dev/null | awk '{print $3; exit}')
-[ -n "$GW" ] || GW=192.168.225.1
-ip route del default dev "$IFACE" 2>/dev/null || true
-ip route replace default via "$GW" dev "$IFACE" metric "$METRIC"
-
-echo "modem-ecm-up: $IFACE up $(ip -4 -br addr show "$IFACE" | awk '{print $3}'), default via $GW metric $METRIC (fallback)"
+echo "modem-ecm-up: $IFACE up $(ip -4 -br addr show "$IFACE" | awk '{print $3}'), $(ip route show default dev "$IFACE" 2>/dev/null | head -1)"

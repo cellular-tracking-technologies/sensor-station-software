@@ -143,13 +143,13 @@ example:
 
 | Dashboard route | Proxied call |
 |-----------------|--------------|
-| `GET /software` | `http://localhost:3000/node/version` |
-| `GET /modem-signal-strength` | `http://localhost:3000/modem/signal-strength` |
-| `GET /internet-gateway` | `http://localhost:3000/internet/gateway` |
-| `GET /internet-wifi-strength` | `http://localhost:3000/internet/wifi-networks` |
-| `GET /reboot-schedule` | `http://localhost:3000/control/reboot-schedule` |
-| `POST /update-reboot-schedule` | `http://localhost:3000/control/update-reboot-schedule` |
-| `POST /program-radios` | `http://localhost:3000/program-radios` |
+| `GET /software` | `http://127.0.0.1:3000/node/version` |
+| `GET /modem-signal-strength` | `http://127.0.0.1:3000/modem/signal-strength` |
+| `GET /internet-gateway` | `http://127.0.0.1:3000/internet/gateway` |
+| `GET /internet-wifi-strength` | `http://127.0.0.1:3000/internet/wifi-networks` |
+| `GET /reboot-schedule` | `http://127.0.0.1:3000/control/reboot-schedule` |
+| `POST /update-reboot-schedule` | `http://127.0.0.1:3000/control/update-reboot-schedule` |
+| `POST /program-radios` | `http://127.0.0.1:3000/program-radios` |
 
 This keeps all real hardware I/O behind the hardware server; the dashboard only
 forwards requests and renders results. A handful of actions are handled locally

@@ -1,5 +1,5 @@
 export default async (req, res) => {
-  fetch('http://localhost:3000/program-radios')
+  fetch('http://127.0.0.1:3000/program-radios')
     .then(() => {
       res.sendStatus(200)
     })

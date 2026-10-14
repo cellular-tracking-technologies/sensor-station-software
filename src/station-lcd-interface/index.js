@@ -1,4 +1,3 @@
-import '../station-utils/prefer-ipv4.js'
 // Import Statements
 import MenuItem from "./menu-item.js"
 import MenuManager from "./menu-manager.js"
