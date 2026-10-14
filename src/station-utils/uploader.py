@@ -18,13 +18,20 @@ class StationUploader:
         self.base_uploaded_dir = os.path.join('/', 'data', 'uploaded')
         self.ctt_uploaded_dir = os.path.join(self.base_uploaded_dir, 'ctt')
         self.sg_uploaded_dir = os.path.join(self.base_uploaded_dir, 'sg')
+        self.failed_dir = os.path.join('/', 'data', 'rotated-failed')
         self.hardware_server_port = 3000
         self.internet_check_ping_count = 3
         self.ensureDirs()
         self.station_id = self.getStationId()
         self.station_config_file = '/etc/ctt/station-config.json'
 
-        self.TIMEOUT = 20
+        # The per-request timeout is scaled to the file size: a large file on a
+        # slow uplink must not trip a fixed timeout on every attempt (a single
+        # 42 MB file at ~0.5 MB/s needs ~80 s, far past the old flat 20 s). We
+        # budget a base plus a conservative floor throughput; the real transfer
+        # usually finishes well inside this ceiling.
+        self.BASE_TIMEOUT = 60                       # seconds, floor for any upload
+        self.MIN_UPLOAD_BYTES_PER_SEC = 100 * 1024   # pessimistic uplink for timeout budgeting
         self.MAX_ATTEMPTS = 3
         self.attempt = 0
 
@@ -35,6 +42,7 @@ class StationUploader:
     def ensureDirs(self):
         os.makedirs(self.ctt_uploaded_dir, exist_ok=True)
         os.makedirs(self.sg_uploaded_dir, exist_ok=True)
+        os.makedirs(self.failed_dir, exist_ok=True)
 
     def checkInternetStatus(self):
         url = 'https://station.internetofwildlife.com/status'
@@ -49,10 +57,10 @@ class StationUploader:
             return True
         return False
 
-    def post(self, endpoint, headers, data):
+    def post(self, endpoint, headers, data, timeout):
         self.attempt += 1
         try:
-            response = requests.post(endpoint, headers=headers, data=data, timeout=self.TIMEOUT)
+            response = requests.post(endpoint, headers=headers, data=data, timeout=timeout)
             # check for a 204 response code for validation
             if response.status_code == 204:
                 print('SUCCESS after {} tries'.format(self.attempt))
@@ -68,7 +76,7 @@ class StationUploader:
                 print('exceeding attempts to upload file')
                 return False
             else:
-                return self.post(endpoint, headers, data)
+                return self.post(endpoint, headers, data, timeout)
 
     def uploadFile(self, fileuri, filetype):
         endpoint = self.endpoint
@@ -76,13 +84,27 @@ class StationUploader:
             endpoint = '{}/sg'.format(endpoint)
         else:
             endpoint = '{}/ctt'.format(endpoint)
+        # fresh attempt budget per file (a prior file's exhausted attempts must
+        # not carry over and fail this one immediately)
+        self.attempt = 0
         with open(fileuri, 'rb') as inFile:
             contents = inFile.read()
+            timeout = self.BASE_TIMEOUT + int(len(contents) / self.MIN_UPLOAD_BYTES_PER_SEC)
             headers = {
                 'filename': os.path.basename(fileuri),
                 'Content-Type': 'application/octet-stream'
             }
-            return self.post(endpoint, headers=headers, data=contents)
+            return self.post(endpoint, headers=headers, data=contents, timeout=timeout)
+
+    def quarantineFile(self, fileuri):
+        # a file the server keeps rejecting (or that cannot finish within its
+        # size-scaled timeout) is moved aside so it stops blocking the queue.
+        # Only called once we've confirmed the internet is still up, so this is
+        # not triggered by a transient outage.
+        os.makedirs(self.failed_dir, exist_ok=True)
+        newuri = os.path.join(self.failed_dir, os.path.basename(fileuri))
+        print('quarantining un-uploadable file', os.path.basename(fileuri), 'to', newuri)
+        shutil.move(fileuri, newuri)
 
     def rotateUploaded(self, fileuri, filetype):
         basename = os.path.basename(fileuri)
@@ -104,9 +126,16 @@ class StationUploader:
             for filename in sorted(filenames):
                 res = self.uploadFile(fileuri=filename, filetype='ctt')
                 if res is False:
-                    # if we cannot upload a file - don't upload the rest
-                    print('problem uploading these files - stopping upload process')
-                    return False
+                    # A failed file must not permanently block the queue behind
+                    # it. Distinguish the two causes: if the internet dropped,
+                    # stop and retry the whole batch next run; if we're still
+                    # online the file itself is the problem, so quarantine it
+                    # and keep draining the rest.
+                    if self.checkInternetStatus() is False:
+                        print('lost internet connection - stopping upload, will retry next run')
+                        return False
+                    self.quarantineFile(filename)
+                    continue
                 self.rotateUploaded(fileuri=filename, filetype='ctt')
             return True
         else:
@@ -125,8 +154,13 @@ class StationUploader:
                     # upload files older than 1 hour
                     res = self.uploadFile(fileuri=filename, filetype='sg')
                     if res is False:
-                        print('problem uploading files - aborting upload')
-                        return False
+                        # same policy as CTT: a real outage stops the run; a
+                        # single bad file is quarantined so it stops blocking.
+                        if self.checkInternetStatus() is False:
+                            print('lost internet connection - stopping upload, will retry next run')
+                            return False
+                        self.quarantineFile(filename)
+                        continue
                     self.rotateUploaded(fileuri=filename, filetype='sg')
             return True
         else:

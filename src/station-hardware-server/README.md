@@ -96,7 +96,10 @@ All responses are JSON unless noted. Routes are `GET` except where marked.
 | GET | `/usb` | List USB-bus block devices | `drivelist` |
 | GET | `/usb/mount` | Mount the USB drive at `/mnt/usb` | USB storage driver |
 | GET | `/usb/unmount` | Unmount `/mnt/usb` | USB storage driver |
-| GET | `/usb/data` | Copy `/data` to USB (10-minute timeout) | USB storage driver |
+| GET | `/usb/data` | Copy `/data` to USB, file by file, pausable (20-minute deadline, 60 s per file) | USB copy queue |
+| GET | `/usb/data/progress` | Copy progress: `status`, `phase`, `copied`/`total` file counts | in-memory queue counters |
+| POST | `/usb/data/pause` | Pause an in-flight copy between files; `?phase=paused\|rotating` labels the LCD | USB copy queue |
+| POST | `/usb/data/resume` | Restart a paused copy (reports phase `restarting` briefly) | USB copy queue |
 | GET | `/usb/wifi` | Load WiFi credentials from `/mnt/usb/wifi/credentials.json` and join the network | reads USB file → `nmcli` |
 | GET | `/peripherals` | Enumerate connected USB peripherals | USB helper |
 | GET | `/list-devices` | List attached serial/radio devices | runs `list-devices.sh` |

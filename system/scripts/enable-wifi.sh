@@ -17,6 +17,15 @@ do
     modprobe $chipset
 done
 
+# The modprobe above creates a fresh wlan0. NetworkManager/wpa_supplicant are
+# still bound to the previous (now-removed) interface, so WiFi scans silently
+# return nothing until they re-attach — which is why enabling WiFi used to need
+# a reboot before a scan would work. Restart the two services to re-attach them
+# to the new interface (no reboot required).
+echo "restarting wpa_supplicant and NetworkManager to re-attach to wlan0"
+sudo systemctl restart wpa_supplicant
+sudo systemctl restart NetworkManager
+
 
 
 

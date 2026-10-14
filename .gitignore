@@ -13,3 +13,7 @@ native/third_party/
 
 # Personal Claude Code settings (per-developer)
 .claude/settings.local.json
+
+# hand-rolled USB download patch artifacts
+ctt-usb-download-patch.zip
+usb-update-package/*

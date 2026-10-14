@@ -12,8 +12,10 @@ import Software from './software.js'
 import UpdateRebootSchedule from './update-reboot-schedule.js'
 import RebootSchedule from './reboot-schedule.js'
 import Update from './update.js'
+import WifiConnect from './wifi-connect.js'
 import WifiDisable from './wifi-disable.js'
 import WifiEnable from './wifi-enable.js'
+import WifiNetworks from './wifi-networks.js'
 
 export default {
   Chrony,
@@ -30,6 +32,8 @@ export default {
   RebootSchedule,
   UpdateRebootSchedule,
   Update,
+  WifiConnect,
   WifiDisable,
-  WifiEnable
+  WifiEnable,
+  WifiNetworks
 }
