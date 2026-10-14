@@ -12,6 +12,34 @@ regenerated from these entries.
 
 ---
 
+## [2.3.6] — 2026-10-14
+
+### Fixed
+
+- **`mdm0` no longer loses its IPv4 address 24 hours after boot.** The 2.3.5 change that lets
+  `ctt-modem-ecm-up.service` re-run on re-enumeration (`RemainAfterExit=no`) also meant systemd
+  reaped the daemonized `dhclient` with the unit's cgroup as soon as the oneshot returned. Nothing
+  renewed the LE910Q1's 86400 s lease, and the kernel deleted the address exactly one lease after
+  every boot. A new `dhclient` enter hook scoped to `mdm0` (`system/dhcp/dhclient-enter-hooks.d/ctt-mdm0`,
+  deployed by `install-dhcp.sh`) blanks the lease lifetime, so the address is installed permanent,
+  and sets the default route at the fallback metric 700 directly instead of creating it at metric 0
+  and demoting it. `modem-ecm-up.sh` no longer touches routing. Field-verified: on 6CA25D375881 the
+  monthly reboot on 2026-10-03 lost the address at exactly +24 h on 2.3.5; on this release the
+  same station has held it for 7+ days.
+- **Internal services no longer fail when the station has no non-loopback IPv4 address.** With
+  `mdm0`'s address gone and no other interface up, glibc's `AI_ADDRCONFIG` stopped returning
+  `127.0.0.1` for `localhost`, so clients resolved `::1` alone and got `ECONNREFUSED` from
+  `station-hardware-server`, which listens on `127.0.0.1` only. `station-radio-interface` then
+  crash-looped and data collection stopped. Every internal client now dials `127.0.0.1` directly;
+  `prefer-ipv4.js` is removed (it only reordered resolver results and could not restore a filtered
+  address).
+- **A failed LED toggle no longer kills the radio interface.** `station-leds-v2.toggleAll()` now
+  uses `Promise.allSettled`: its three LED requests are independent, and when the hardware server
+  was unreachable `Promise.all` left two rejections unhandled, which Node ≥ 15 treats as fatal.
+  A failure now logs one line and leaves the LED wrong instead of exiting the process.
+
+---
+
 ## [2.3.5] — 2026-09-09
 
 ### Fixed

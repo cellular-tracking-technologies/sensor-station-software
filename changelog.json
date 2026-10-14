@@ -1,5 +1,16 @@
 [
     {
+        "version": "2.3.6",
+        "date": "2026-10-14",
+        "notes": "Fixes the cellular address loss 24 hours after every boot that 2.3.5 introduced, and stops the radio interface crash-looping when the station has no non-loopback address or the LED hardware server is unreachable.",
+        "features": [],
+        "bugs": [
+            "mdm0 no longer loses its IPv4 address 24 hours after boot. The 2.3.5 change that lets ctt-modem-ecm-up.service re-run on re-enumeration (RemainAfterExit=no) also meant systemd reaped the daemonized dhclient with the unit's cgroup, so nothing renewed the LE910Q1's 86400 s lease and the kernel deleted the address exactly one lease after every boot. A dhclient enter hook scoped to mdm0 now installs the address permanent and creates the default route at the fallback metric 700 directly; modem-ecm-up.sh no longer touches routing. Field-verified: on 6CA25D375881 the monthly reboot on 2026-10-03 lost the address at exactly +24 h on 2.3.5; on this release the same station has held it for 7+ days.",
+            "Internal services no longer fail when the station has no non-loopback IPv4 address. glibc's AI_ADDRCONFIG then stopped returning 127.0.0.1 for localhost, so clients resolved ::1 alone and got ECONNREFUSED from station-hardware-server (bound to 127.0.0.1), and station-radio-interface crash-looped. Every internal client now dials 127.0.0.1 directly; prefer-ipv4.js is removed.",
+            "A failed LED toggle no longer kills the radio interface. station-leds-v2.toggleAll() now uses Promise.allSettled, so an unreachable hardware server logs one line instead of leaving unhandled rejections that Node >= 15 treats as fatal."
+        ]
+    },
+    {
         "version": "2.3.5",
         "date": "2026-09-09",
         "notes": "Restores the ECM data path after a runtime modem re-enumeration. On a clean lts_26_07.iso a Telit that re-enumerated came back with mdm0 re-created but no IP, leaving the station unreachable until a reboot, because ctt-modem-ecm-up.service ran at boot only. The udev rule now pulls the service on each mdm0 add/move uevent and the oneshot no longer latches active, so bring-up re-runs automatically.",
